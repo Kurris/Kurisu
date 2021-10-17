@@ -29,7 +29,7 @@ namespace Kurisu.DataAccessor.Abstractions
         /// <param name="dbContext"></param>
         /// <returns></returns>
         void Add(DbContext dbContext);
-        
+
 
         /// <summary>
         /// 保存所有数据库上下文的更改
@@ -58,10 +58,11 @@ namespace Kurisu.DataAccessor.Abstractions
         /// 提交事务
         /// </summary>
         /// <param name="exception"></param>
-        Task CommitTransactionAsync(Exception exception = default);
-        
+        /// <param name="isManualSaveChanges"></param>
+        Task CommitTransactionAsync(bool isManualSaveChanges = true, Exception exception = default);
 
-        /// <summary>
+
+        /// <summary>`
         /// 关闭所有数据库连接
         /// </summary>
         Task CloseAsync();

@@ -22,12 +22,12 @@ namespace TestApi.Controllers
     {
         private readonly ITestService _service;
         private readonly IOptions<CorsAppSetting> _options;
-        private readonly IOptions<JWTAppSetting> _jwt;
+        private readonly IOptions<JwtAppSetting> _jwt;
 
         public WeatherForecastController(
             ITestService testService
             , IOptions<CorsAppSetting> options
-            , IOptions<JWTAppSetting> jwt
+            , IOptions<JwtAppSetting> jwt
         )
         {
             _service = testService;

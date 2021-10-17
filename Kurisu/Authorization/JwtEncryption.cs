@@ -10,7 +10,7 @@ namespace Kurisu.Authorization
     /// <summary>
     /// jwt 加密
     /// </summary>
-    public static class JWTEncryption
+    public static class JwtEncryption
     {
         /// <summary>
         /// token 生成方法
@@ -25,8 +25,8 @@ namespace Kurisu.Authorization
         {
             var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(key));
 
-            DateTime dtNow = DateTime.Now;
-            DateTime dtExpires = DateTime.Now.AddMinutes(exp);
+            var dtNow = DateTime.Now;
+            var dtExpires = DateTime.Now.AddMinutes(exp);
 
             var descriptor = new SecurityTokenDescriptor()
             {

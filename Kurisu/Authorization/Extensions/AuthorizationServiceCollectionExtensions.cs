@@ -16,11 +16,12 @@ namespace Kurisu.Authorization.Extensions
         /// 添加jwt鉴权
         /// </summary>
         /// <param name="services"></param>
+        /// <exception cref="ArgumentNullException"></exception>
         /// <returns></returns>
         public static IServiceCollection AddAppAuthentication(this IServiceCollection services)
         {
-            var jwtAppSetting = App.GetConfig<JWTAppSetting>();
-            if (jwtAppSetting == null) return services;
+            var jwtAppSetting = App.GetConfig<JwtAppSetting>();
+            if (jwtAppSetting == null) throw new ArgumentNullException(nameof(JwtAppSetting));
 
             services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
                 .AddJwtBearer(options =>
@@ -56,7 +57,6 @@ namespace Kurisu.Authorization.Extensions
                         RequireExpirationTime = true,
                     };
                 });
-
 
             return services;
         }

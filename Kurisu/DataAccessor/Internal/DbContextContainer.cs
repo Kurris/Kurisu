@@ -9,7 +9,7 @@ using Kurisu.DataAccessor.Abstractions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
 
-namespace Kurisu.DataAccessor
+namespace Kurisu.DataAccessor.Internal
 {
     /// <summary>
     /// 数据库上下文容器
@@ -124,8 +124,9 @@ namespace Kurisu.DataAccessor
         }
 
 
-        public async Task CommitTransactionAsync(Exception exception = default)
+        public async Task CommitTransactionAsync(bool isManualSaveChanges, Exception exception = default)
         {
+            //存在异常
             if (exception != null)
             {
                 //回滚事务 
@@ -141,7 +142,11 @@ namespace Kurisu.DataAccessor
                 //提交事务
                 try
                 {
-                    var changesCount = await SaveChangesAsync();
+                    //如果不是手动提交,则直接执行
+                    var changesCount = !isManualSaveChanges
+                        ? await SaveChangesAsync()
+                        : 0;
+
                     if (DbContextTransaction != null) await DbContextTransaction.CommitAsync();
                     await this.CloseAsync();
                 }
