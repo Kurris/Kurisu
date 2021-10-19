@@ -8,6 +8,7 @@ using Kurisu.Authorization.Extensions;
 using Kurisu.ConfigurableOptions.Extensions;
 using Kurisu.Cors;
 using Kurisu.Cors.Extensions;
+using Kurisu.DataAccessor.Extensions;
 using Kurisu.DependencyInjection.Extensions;
 using Kurisu.ObjectMapper;
 using Kurisu.ObjectMapper.Extensions;
@@ -44,7 +45,7 @@ namespace TestApi
             // {
             //     options.SerializerSettings.ReferenceLoopHandling = ReferenceLoopHandling.Ignore;
             // } );
-            services.AddSwaggerGen(c => { c.SwaggerDoc("v1", new OpenApiInfo { Title = "TestApi", Version = "v1" }); });
+            services.AddSwaggerGen(c => { c.SwaggerDoc("v1", new OpenApiInfo {Title = "TestApi", Version = "v1"}); });
 
             // services.AddCorsPolicy();
             services.AddObjectMapper(Assembly.GetExecutingAssembly());
@@ -53,11 +54,12 @@ namespace TestApi
             var cors = Configuration.GetSection(nameof(CorsAppSetting));
             ChangeToken.OnChange(Configuration.GetReloadToken,
                 () => { Console.WriteLine("文件改变:" + cors["PolicyName"]); });
-        
+
             services.AddAllConfigurationWithConfigurationAttribute();
 
-            services.AddAppAuthentication();
+           // services.AddAppAuthentication();
             services.AddDependencyInjectionService();
+            services.AddDatabaseAccessor();
             // services.AddTransient<IGeneratic<GenService>,GenService>();
         }
 
@@ -80,7 +82,7 @@ namespace TestApi
 
             app.UseRouting();
 
-            app.UseAuthorization();
+           // app.UseAuthorization();
 
             app.UseEndpoints(endpoints => { endpoints.MapControllers(); });
         }

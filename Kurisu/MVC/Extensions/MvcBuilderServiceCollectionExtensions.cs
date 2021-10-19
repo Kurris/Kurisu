@@ -38,11 +38,11 @@ namespace Kurisu.MVC.Extensions
             where TFilter : IFilterMetadata
         {
             // 非 Web 环境跳过注册
-            if (App.WebHostEnvironment == default) return services;
+            // if (App.WebHostEnvironment == default) return services;
 
             services.Configure<MvcOptions>(options =>
             {
-                options.Filters.AddService<TFilter>();
+                options.Filters.Add<TFilter>();
 
                 // 其他额外配置
                 configure?.Invoke(options);

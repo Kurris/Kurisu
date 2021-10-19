@@ -12,6 +12,7 @@ namespace Kurisu.DataAccessor.Abstractions
     /// </summary>
     public interface IDbCommonOperation
     {
+
         /// <summary>
         /// 查找主键和主键值
         /// </summary>
@@ -99,14 +100,14 @@ namespace Kurisu.DataAccessor.Abstractions
         /// <param name="strSql">sql字符串</param>
         /// <param name="keyValues">参数</param>
         /// <returns>返回受影响行<see cref="int"/></returns>
-        Task RunSqlAsync(string strSql, IDictionary<string, object> keyValues = null);
+        Task<int> RunSqlAsync(string strSql, IDictionary<string, object> keyValues = null);
 
         /// <summary>
         /// 执行SQL(插值)
         /// </summary>
         /// <param name="strSql">内插sql字符串</param>
         /// <returns>返回受影响行<see cref="int"/></returns>
-        Task RunSqlInterAsync(FormattableString strSql);
+        Task<int> RunSqlInterAsync(FormattableString strSql);
 
         /// <summary>
         /// 执行存储过程

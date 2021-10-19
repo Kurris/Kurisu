@@ -85,7 +85,6 @@ namespace Kurisu.DataAccessor.Internal
         public async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
         {
             var tasks = _dbContexts.Where(x => x.Value != null
-                                               && x.Value.ChangeTracker.HasChanges()
                                                && !_failedDbContexts.Contains(x))
                 .Select(x => x.Value.SaveChangesAsync(cancellationToken));
 
@@ -96,7 +95,6 @@ namespace Kurisu.DataAccessor.Internal
         public async Task<int> SaveChangesAsync(bool acceptAllChangesOnSuccess, CancellationToken cancellationToken = default)
         {
             var tasks = _dbContexts.Where(x => x.Value != null
-                                               && x.Value.ChangeTracker.HasChanges()
                                                && !_failedDbContexts.Contains(x))
                 .Select(x => x.Value.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken));
 

@@ -47,9 +47,9 @@ namespace Kurisu.DataAccessor.Helpers
         /// <returns></returns>
         internal DbParameter[] GetParams()
         {
-            var vals = _dbParameters.ToArray();
+            var values = _dbParameters.ToArray();
             _dbParameters.Clear();
-            return vals;
+            return values;
         }
 
         /// <summary>

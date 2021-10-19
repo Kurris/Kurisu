@@ -99,7 +99,7 @@ namespace Kurisu.DataAccessor.Abstractions
         /// <typeparam name="T">实体类型</typeparam>
         /// <param name="keyValues">一组主键</param>
         /// <returns>返回受影响行<see cref="int"/></returns>
-        Task DeleteAsync<T>(IEnumerable<int> keyValues) where T : class, new();
+        Task DeleteAsync<T>(IEnumerable<object> keyValues) where T : class, new();
 
 
         /// <summary>

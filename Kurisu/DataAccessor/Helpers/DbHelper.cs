@@ -145,10 +145,10 @@ namespace Kurisu.DataAccessor.Helpers
                         return dt;
                     }
                 }
-                catch (Exception ex)
+                catch
                 {
                     await cmd.DisposeAsync();
-                    throw ex;
+                    throw;
                 }
             }
         }

@@ -47,7 +47,7 @@ namespace Kurisu.DataAccessor.Internal
         {
             var entityType = DbContext.Model.FindEntityType(typeof(T));
             var key = entityType.FindPrimaryKey();
-            var propInfo = key.Properties.FirstOrDefault()?.PropertyInfo;
+            var propInfo = key.Properties.First().PropertyInfo;
             return (propInfo.Name, propInfo.GetValue(t));
         }
 
@@ -55,7 +55,7 @@ namespace Kurisu.DataAccessor.Internal
         {
             var entityType = DbContext.Model.FindEntityType(entity.GetType());
             var key = entityType.FindPrimaryKey();
-            var propInfo = key.Properties.FirstOrDefault()?.PropertyInfo;
+            var propInfo = key.Properties.First().PropertyInfo;
             return (propInfo.Name, propInfo.GetValue(entity));
         }
 
@@ -97,23 +97,22 @@ namespace Kurisu.DataAccessor.Internal
 
         #endregion
 
-        public virtual async Task RunSqlAsync(string strSql, IDictionary<string, object> keyValues = null)
+        public virtual async Task<int> RunSqlAsync(string strSql, IDictionary<string, object> keyValues = null)
         {
             if (keyValues != null)
-                await DbContext.Database.ExecuteSqlRawAsync(strSql, new DbParameterBuilder(this.DbContext).AddParams(keyValues).GetParams());
+                return await DbContext.Database.ExecuteSqlRawAsync(strSql, new DbParameterBuilder(this.DbContext).AddParams(keyValues).GetParams());
             else
-                await DbContext.Database.ExecuteSqlRawAsync(strSql);
+                return await DbContext.Database.ExecuteSqlRawAsync(strSql);
         }
 
-        public virtual async Task RunSqlInterAsync(FormattableString strSql) => await DbContext.Database.ExecuteSqlInterpolatedAsync(strSql);
+        public virtual async Task<int> RunSqlInterAsync(FormattableString strSql) => await DbContext.Database.ExecuteSqlInterpolatedAsync(strSql);
 
-        public virtual async Task ExecProcAsync(string procName, IDictionary<string, object> keyValues = null) => throw new NotImplementedException("请在派生类中实现");
+        public virtual Task ExecProcAsync(string procName, IDictionary<string, object> keyValues = null) => throw new NotImplementedException("请在派生类中实现");
 
         public virtual async ValueTask SaveAsync(object entity)
         {
             var (_, value) = this.FindFirstPrimaryKeyValue(entity);
             if (value == default)
-
                 await this.DbContext.AddAsync(entity);
             else
                 Db.RecursionAttach(this.DbContext, entity);
@@ -140,6 +139,8 @@ namespace Kurisu.DataAccessor.Internal
                 this.DbContext.Update(entity);
             else
                 Db.RecursionAttach(this.DbContext, entity);
+
+            await Task.CompletedTask;
         }
 
         public virtual async Task UpdateAsync<T>(IEnumerable<T> entities, bool updateAll = false) where T : class, new()
@@ -155,8 +156,6 @@ namespace Kurisu.DataAccessor.Internal
             where T : class, new()
         {
             var (table, keys) = FindPrimaryKeyWithTable<T>();
-            var tableName = table;
-
             var whereCondition = new ConditionBuilderVisitor("MySql");
             whereCondition.Visit(wherePredicate);
             var whereString = whereCondition.CombineWithWhere();
@@ -168,13 +167,22 @@ namespace Kurisu.DataAccessor.Internal
                 return setCondition.Combine();
             })).TrimStart('(', ' ').TrimEnd(')', ' ');
 
-            var sql = $@"UPDATE {tableName} SET {setStrings} {whereString}";
+            var sql = $@"UPDATE {table} SET {setStrings} {whereString}";
 
             await this.RunSqlAsync(sql, keyValues);
         }
 
-        public virtual async Task DeleteAsync<T>(T entity) where T : class, new() => DbContext.Set<T>().Remove(entity);
-        public virtual async Task DeleteAsync<T>(IEnumerable<T> entities) where T : class, new() => DbContext.Set<T>().RemoveRange(entities);
+        public virtual async Task DeleteAsync<T>(T entity) where T : class, new()
+        {
+            DbContext.Set<T>().Remove(entity);
+            await Task.CompletedTask;
+        }
+
+        public virtual async Task DeleteAsync<T>(IEnumerable<T> entities) where T : class, new()
+        {
+            DbContext.Set<T>().RemoveRange(entities);
+            await Task.CompletedTask;
+        }
 
         public virtual async Task DeleteAsync<T>(object keyValue) where T : class, new()
         {
@@ -184,25 +192,30 @@ namespace Kurisu.DataAccessor.Internal
             await this.DeleteAsync(t);
         }
 
-        public virtual async Task DeleteAsync<T>(IEnumerable<int> keyValues) where T : class, new()
+        public virtual async Task DeleteAsync<T>(IEnumerable<object> keyValues) where T : class, new()
         {
+            var ts = new List<T>(keyValues.Count());
             foreach (var item in keyValues)
             {
                 var t = new T();
                 var (key, _) = FindFirstPrimaryKeyValue(t);
                 t.GetType().GetProperty(key).SetValue(t, item);
-
-                await this.DeleteAsync(t);
+                ts.Add(t);
             }
+
+            await this.DeleteAsync(ts);
         }
 
         public virtual async Task DeleteAsync<T>(Expression<Func<T, bool>> predicate) where T : class, new()
         {
-            var ts = await this.FindListAsync(predicate);
-            if (ts != null && ts.Any())
-            {
-                await DeleteAsync(ts);
-            }
+            var (table, keys) = FindPrimaryKeyWithTable<T>();
+            var whereCondition = new ConditionBuilderVisitor("MySql");
+            whereCondition.Visit(predicate);
+            var whereString = whereCondition.CombineWithWhere();
+
+            var sql = $@"DELETE FROM `{table}`  {whereString}";
+            
+            await this.RunSqlAsync(sql);
         }
 
         public virtual async Task<T> FindFirstAsync<T>() where T : class, new() => await DbContext.Set<T>().FirstOrDefaultAsync();

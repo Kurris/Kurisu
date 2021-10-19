@@ -265,7 +265,7 @@ namespace Kurisu.DependencyInjection.Extensions
                 nameof(ITransient) => RegisterType.Transient,
                 nameof(ISingleton) => RegisterType.Singleton,
                 nameof(IScope) => RegisterType.Scoped,
-                _ => throw new InvalidCastException($"非法生命周期类型{lifeTimeType?.Name}")
+                _ => throw new InvalidCastException($"非法生命周期类型{lifeTimeType.Name}")
             };
         }
 
@@ -297,22 +297,22 @@ namespace Kurisu.DependencyInjection.Extensions
             {
                 case RegisterType.Transient:
                     // services.AddTransient(proxyType, AOPFactory);
-                    services.AddTransient(@interface, AOPFactory);
+                    services.AddTransient(@interface, AopFactory);
                     break;
                 case RegisterType.Scoped:
                     //  services.AddScoped(typeof(DispatchProxy), proxyType);
-                    services.AddScoped(@interface, AOPFactory);
+                    services.AddScoped(@interface, AopFactory);
                     break;
                 case RegisterType.Singleton:
                     //  services.AddSingleton(typeof(DispatchProxy), proxyType);
-                    services.AddTransient(@interface, AOPFactory);
+                    services.AddTransient(@interface, AopFactory);
                     break;
                 default:
                     throw new ArgumentOutOfRangeException();
             }
 
             //aop method factory
-            DispatchProxy AOPFactory(IServiceProvider serviceProvider)
+            DispatchProxy AopFactory(IServiceProvider serviceProvider)
             {
                 DispatchProxy proxy = _dispatchCreateMethod.MakeGenericMethod(@interface, proxyType).Invoke(null, null) as DispatchProxy;
 

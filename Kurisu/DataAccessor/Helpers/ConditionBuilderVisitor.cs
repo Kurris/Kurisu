@@ -125,11 +125,11 @@ namespace Kurisu.DataAccessor.Helpers
             }
             else
             {
-                if (Convert.ToBoolean(node.Value))
+                if (bool.TryParse(node.Value + "", out _))
                 {
                     this._stringStack.Push(" 1=1 ");
                 }
-                else if (node.Value is object)
+                else if (node.Value != null)
                 {
                     var t = node.Value.GetType();
                     if (t.IsEnum)

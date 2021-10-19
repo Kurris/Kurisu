@@ -43,6 +43,12 @@ namespace Kurisu.DataAccessor.Abstractions
         /// <returns>实体<see cref="{T}"/></returns>
         Task<T> FindAsync<T>(Expression<Func<T, bool>> predicate) where T : class, new();
 
+        /// <summary>
+        /// 查询列表
+        /// </summary>
+        /// <returns>总数<see cref="int"/> 当前页<see cref="IEnumerable{T}"/></returns>
+        Task<IEnumerable<T>> FindListAsync<T>(Expression<Func<T, bool>> predicate = null) where T : class, new();
+
 
         /// <summary>
         /// 分页查询
