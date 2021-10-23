@@ -8,6 +8,8 @@ using Kurisu.DataAccessor.Abstractions;
 using Kurisu.DataAccessor.Extensions;
 using Kurisu.DataAccessor.Helpers;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.ChangeTracking;
+using Microsoft.EntityFrameworkCore.Metadata;
 
 namespace Kurisu.DataAccessor.Internal
 {
@@ -27,12 +29,23 @@ namespace Kurisu.DataAccessor.Internal
         /// </summary>
         public DbContext DbContext { get; }
 
+
+        public IEntityType GetEntityType<T>() where T : class, new()
+        {
+            return DbContext.Model.FindEntityType(typeof(T));
+        }
+
+        public IEntityType GetEntityType(object obj)
+        {
+            return DbContext.Model.FindEntityType(obj.GetType());
+        }
+
+
         #region 主键,主键值,表名
 
         public virtual IDictionary<string, object> FindPrimaryKeyValue<T>(T t) where T : class, new()
         {
-            var entityType = DbContext.Model.FindEntityType(typeof(T));
-            var key = entityType.FindPrimaryKey();
+            var key = GetEntityType<T>().FindPrimaryKey();
             var dic = new Dictionary<string, object>(key.Properties.Count);
             foreach (var item in key.Properties)
             {
@@ -45,23 +58,21 @@ namespace Kurisu.DataAccessor.Internal
 
         public virtual (string key, object value) FindFirstPrimaryKeyValue<T>(T t) where T : class, new()
         {
-            var entityType = DbContext.Model.FindEntityType(typeof(T));
-            var key = entityType.FindPrimaryKey();
+            var key = GetEntityType<T>().FindPrimaryKey();
             var propInfo = key.Properties.First().PropertyInfo;
             return (propInfo.Name, propInfo.GetValue(t));
         }
 
         public virtual (string key, object value) FindFirstPrimaryKeyValue(object entity)
         {
-            var entityType = DbContext.Model.FindEntityType(entity.GetType());
-            var key = entityType.FindPrimaryKey();
+            var key = GetEntityType(entity).FindPrimaryKey();
             var propInfo = key.Properties.First().PropertyInfo;
             return (propInfo.Name, propInfo.GetValue(entity));
         }
 
         public virtual (string table, IEnumerable<string> keys) FindPrimaryKeyWithTable<T>() where T : class, new()
         {
-            var entityType = this.DbContext.Model.FindEntityType(typeof(T));
+            var entityType = GetEntityType<T>();
             var tableName = entityType.GetTableName();
             var key = entityType.FindPrimaryKey();
             return (tableName, key.Properties.Select(x => x.PropertyInfo.Name));
@@ -69,9 +80,45 @@ namespace Kurisu.DataAccessor.Internal
 
         public virtual IEnumerable<string> FindPrimaryKey<T>() where T : class, new()
         {
-            var entityType = this.DbContext.Model.FindEntityType(typeof(T));
-            var key = entityType.FindPrimaryKey();
+            var key = GetEntityType<T>().FindPrimaryKey();
             return key.Properties.Select(x => x.PropertyInfo.Name);
+        }
+
+
+        public T BuildEntity<T>(object keyValue, EntityState entityState) where T : class, new()
+        {
+            var keyProperty = GetEntityType<T>().FindPrimaryKey().Properties.FirstOrDefault()?.PropertyInfo;
+            if (keyProperty == null) return default;
+
+            var trackInfo = GetTrackState<T>(keyValue);
+            if (trackInfo.isTrack)
+            {
+                trackInfo.trackEntity.State = entityState;
+                return trackInfo.trackEntity.Entity as T;
+            }
+
+            var entity = new T();
+            keyProperty.SetValue(keyValue, entity);
+
+            ChangeEntityState(entity, entityState);
+            return entity;
+        }
+
+        public virtual EntityEntry<T> ChangeEntityState<T>(T entity, EntityState entityState) where T : class, new()
+        {
+            var entry = DbContext.Entry(entity);
+            entry.State = entityState;
+            return entry;
+        }
+
+
+        public (bool isTrack, EntityEntry trackEntity) GetTrackState<T>(object keyValue) where T : class, new()
+        {
+            var entities = DbContext.ChangeTracker.Entries<T>();
+            var keyName = FindPrimaryKey<T>().First();
+
+            var trackEntity = entities.FirstOrDefault(x => x.CurrentValues[keyName] == keyValue);
+            return (trackEntity != null, trackEntity);
         }
 
         #endregion
@@ -108,6 +155,8 @@ namespace Kurisu.DataAccessor.Internal
         public virtual async Task<int> RunSqlInterAsync(FormattableString strSql) => await DbContext.Database.ExecuteSqlInterpolatedAsync(strSql);
 
         public virtual Task ExecProcAsync(string procName, IDictionary<string, object> keyValues = null) => throw new NotImplementedException("请在派生类中实现");
+
+        #region Write Implementation
 
         public virtual async ValueTask SaveAsync(object entity)
         {
@@ -151,27 +200,6 @@ namespace Kurisu.DataAccessor.Internal
             }
         }
 
-
-        public virtual async Task UpdateAsync<T>(IEnumerable<Expression<Func<T, bool>>> setPredicates, Expression<Func<T, bool>> wherePredicate, IDictionary<string, object> keyValues = default)
-            where T : class, new()
-        {
-            var (table, keys) = FindPrimaryKeyWithTable<T>();
-            var whereCondition = new ConditionBuilderVisitor("MySql");
-            whereCondition.Visit(wherePredicate);
-            var whereString = whereCondition.CombineWithWhere();
-
-            var setStrings = string.Join(",", setPredicates.Select(x =>
-            {
-                var setCondition = new ConditionBuilderVisitor("MySql");
-                setCondition.Visit(x);
-                return setCondition.Combine();
-            })).TrimStart('(', ' ').TrimEnd(')', ' ');
-
-            var sql = $@"UPDATE {table} SET {setStrings} {whereString}";
-
-            await this.RunSqlAsync(sql, keyValues);
-        }
-
         public virtual async Task DeleteAsync<T>(T entity) where T : class, new()
         {
             DbContext.Set<T>().Remove(entity);
@@ -186,10 +214,11 @@ namespace Kurisu.DataAccessor.Internal
 
         public virtual async Task DeleteAsync<T>(object keyValue) where T : class, new()
         {
-            var t = new T();
-            var (key, _) = FindFirstPrimaryKeyValue(t);
-            t.GetType().GetProperty(key).SetValue(t, keyValue);
-            await this.DeleteAsync(t);
+            var entity = BuildEntity<T>(keyValue, EntityState.Deleted);
+            if (entity != null) return;
+
+            entity = await FindAsync<T>(keyValue);
+            if (entity != null) await this.DeleteAsync(entity);
         }
 
         public virtual async Task DeleteAsync<T>(IEnumerable<object> keyValues) where T : class, new()
@@ -206,17 +235,9 @@ namespace Kurisu.DataAccessor.Internal
             await this.DeleteAsync(ts);
         }
 
-        public virtual async Task DeleteAsync<T>(Expression<Func<T, bool>> predicate) where T : class, new()
-        {
-            var (table, keys) = FindPrimaryKeyWithTable<T>();
-            var whereCondition = new ConditionBuilderVisitor("MySql");
-            whereCondition.Visit(predicate);
-            var whereString = whereCondition.CombineWithWhere();
+        #endregion
 
-            var sql = $@"DELETE FROM `{table}`  {whereString}";
-            
-            await this.RunSqlAsync(sql);
-        }
+        #region Read Implementation
 
         public virtual async Task<T> FindFirstAsync<T>() where T : class, new() => await DbContext.Set<T>().FirstOrDefaultAsync();
         public virtual async ValueTask<T> FindAsync<T>(params object[] keyValues) where T : class, new() => await DbContext.Set<T>().FindAsync(keyValues);
@@ -256,5 +277,7 @@ namespace Kurisu.DataAccessor.Internal
         {
             return await new DbHelper(this.DbContext).GetScalar(strSql, keyValues);
         }
+
+        #endregion
     }
 }

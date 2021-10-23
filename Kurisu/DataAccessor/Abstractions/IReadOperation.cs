@@ -15,15 +15,21 @@ namespace Kurisu.DataAccessor.Abstractions
         /// 返回第一个实体
         /// </summary>
         /// <typeparam name="T">实体类型</typeparam>
-        /// <returns>实体<see cref="{T}"/></returns>
+        /// <returns>实体<see>
+        ///         <cref>{T}</cref>
+        ///     </see>
+        /// </returns>
         Task<T> FindFirstAsync<T>() where T : class, new();
 
         /// <summary>
         /// 根据主键查找实体
         /// </summary>
         /// <typeparam name="T">实体类型</typeparam>
-        /// <param name="KeyValue">主键</param>
-        /// <returns>实体<see cref="{T}"/></returns>
+        /// <param name="keyValues">主键</param>
+        /// <returns>实体<see>
+        ///         <cref>{T}</cref>
+        ///     </see>
+        /// </returns>
         ValueTask<T> FindAsync<T>(params object[] keyValues) where T : class, new();
 
 

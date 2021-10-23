@@ -44,6 +44,7 @@ namespace TestApi.Controllers
                 Name = "ligy"
             });
 
+            _db.FindFirstAsync<User>();
             // var users = await _db.FindListAsync<User>();
 
             await _aService.Delete();

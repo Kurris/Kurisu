@@ -58,17 +58,6 @@ namespace Kurisu.DataAccessor.Abstractions
         /// <returns>返回受影响行<see cref="int"/></returns>
         Task UpdateAsync<T>(IEnumerable<T> entities, bool updateAll = false) where T : class, new();
 
-
-        /// <summary>
-        /// 更新
-        /// </summary>
-        /// <typeparam name="T">实体类型</typeparam>
-        /// <param name="setPredicates">set条件</param>
-        /// <param name="wherePredicate">where条件</param>
-        /// <param name="keyValues">参数</param>
-        /// <returns>返回受影响行<see cref="int"/></returns>
-        Task UpdateAsync<T>(IEnumerable<Expression<Func<T, bool>>> setPredicates, Expression<Func<T, bool>> wherePredicate, IDictionary<string, object> keyValues = default) where T : class, new();
-
         /// <summary>
         /// 删除一个实体
         /// </summary>
@@ -100,14 +89,5 @@ namespace Kurisu.DataAccessor.Abstractions
         /// <param name="keyValues">一组主键</param>
         /// <returns>返回受影响行<see cref="int"/></returns>
         Task DeleteAsync<T>(IEnumerable<object> keyValues) where T : class, new();
-
-
-        /// <summary>
-        /// 删除
-        /// </summary>
-        /// <typeparam name="T">实体类型</typeparam>
-        /// <param name="predicate">where表达式</param>
-        /// <returns>返回受影响行<see cref="int"/></returns>
-        Task DeleteAsync<T>(Expression<Func<T, bool>> predicate) where T : class, new();
     }
 }
