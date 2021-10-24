@@ -2,9 +2,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Kurisu.DataAccessor.Internal
 {
-    public class MySqlDb : DbOperationImplementation
+    internal class MySqlDb : DbOperationImplementation
     {
-        public MySqlDb(DbContext dbContext) : base(dbContext)
+        internal MySqlDb(DbContext dbContext) : base(dbContext)
         {
         }
     }

@@ -15,14 +15,19 @@ namespace Kurisu.DataAccessor.Abstractions
         /// </summary>
         /// <param name="entity"></param>
         /// <returns></returns>
-        ValueTask SaveAsync(object entity);
+        ValueTask<T> SaveAsync<T>(object entity) where T : class, new();
+
+        ValueTask SaveAsync<T>(T entity) where T : class, new();
 
         /// <summary>
         /// 保存多个实体
         /// </summary>
         /// <param name="entities"></param>
         /// <returns></returns>
-        ValueTask SaveAsync(IEnumerable<object> entities);
+        ValueTask<IEnumerable<T>> SaveAsync<T>(IEnumerable<object> entities) where T : class, new();
+
+
+        ValueTask SaveAsync<T>(IEnumerable<T> entities) where T : class, new();
 
         /// <summary>
         /// 添加一个实体
