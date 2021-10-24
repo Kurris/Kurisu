@@ -89,7 +89,9 @@ namespace Kurisu.DataAccessor.Internal
                 .Select(x => x.Value.SaveChangesAsync(cancellationToken));
 
             var result = await Task.WhenAll(tasks);
-            return result.Sum();
+            return result == null
+                ? 0
+                : result.Sum();
         }
 
         public async Task<int> SaveChangesAsync(bool acceptAllChangesOnSuccess, CancellationToken cancellationToken = default)
@@ -145,7 +147,10 @@ namespace Kurisu.DataAccessor.Internal
                         ? await SaveChangesAsync()
                         : 0;
 
-                    if (DbContextTransaction != null) await DbContextTransaction.CommitAsync();
+                    if (DbContextTransaction != null)
+                    {
+                        await DbContextTransaction.CommitAsync();
+                    }
                     await this.CloseAsync();
                 }
                 catch

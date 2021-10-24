@@ -5,13 +5,11 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Kurisu.DataAccessor.Helpers
 {
-   
     /// <summary>
     /// 数据库参数建造帮助类
     /// </summary>
     internal class DbParameterBuilder
     {
-
         internal DbParameterBuilder(DbContext dbContext)
         {
             this._dbContext = dbContext;
@@ -35,8 +33,10 @@ namespace Kurisu.DataAccessor.Helpers
                     {
                         throw new ArgumentNullException("DbContext 不能为空");
                     }
+
                     _dbProviderFactory = DbProviderFactories.GetFactory(_dbContext.Database.GetDbConnection());
                 }
+
                 return _dbProviderFactory;
             }
         }
@@ -58,7 +58,7 @@ namespace Kurisu.DataAccessor.Helpers
         /// <param name="name"></param>
         /// <param name="value"></param>
         /// <returns></returns>
-        internal DbParameterBuilder AddParams(IDictionary<string,object> dicParams)
+        internal DbParameterBuilder AddParams(IDictionary<string, object> dicParams)
         {
             foreach (var item in dicParams)
             {
@@ -67,6 +67,7 @@ namespace Kurisu.DataAccessor.Helpers
                 para.Value = item.Value;
                 _dbParameters.Add(para);
             }
+
             return this;
         }
     }

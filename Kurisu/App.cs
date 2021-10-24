@@ -11,6 +11,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 
 namespace Kurisu
 {
@@ -24,10 +25,11 @@ namespace Kurisu
             //未托管类型
             _unManagedObjects = new ConcurrentBag<IDisposable>();
 
-
             //有效类型
             LoadActiveTypes();
         }
+
+        public static bool IsDebug => WebHostEnvironment.IsDevelopment();
 
         /// <summary>
         /// 应用程序有效类型
@@ -93,7 +95,7 @@ namespace Kurisu
             return options;
         }
 
-        
+
         /// <summary>
         /// 释放未托管的对象
         /// </summary>

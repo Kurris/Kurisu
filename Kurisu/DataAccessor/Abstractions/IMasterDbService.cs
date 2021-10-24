@@ -1,56 +1,22 @@
 using System;
 using System.Collections.Generic;
-using System.Data;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore;
 
 namespace Kurisu.DataAccessor.Abstractions
 {
     /// <summary>
-    /// 数据库操作通用接口
+    /// 主库接口
     /// </summary>
-    public interface IDbCommonOperation
+    public interface IMasterDbService : IWriteOperation, ISlaveDbService
     {
-
         /// <summary>
-        /// 查找主键和主键值
+        /// 数据库上下文
         /// </summary>
-        /// <typeparam name="T">实体类型</typeparam>
-        /// <param name="t">实例</param>
-        /// <returns>主键和值 <see cref="IDictionary{string, object}"/> </returns>
-        IDictionary<string, object> FindPrimaryKeyValue<T>(T t) where T : class, new();
-
-
-        /// <summary>
-        /// 查找主键和主键值
-        /// </summary>
-        /// <typeparam name="T">实体类型</typeparam>
-        /// <param name="t">实例</param>
-        /// <returns>主键和值 <see cref="(string,object)"/> </returns>
-        (string key, object value) FindFirstPrimaryKeyValue<T>(T t) where T : class, new();
-
-        /// <summary>
-        /// 查找主键和主键值
-        /// </summary>
-        /// <param name="entity">实例</param>
-        /// <returns>主键和值 <see cref="(string,int)"/> </returns>
-        (string key, object value) FindFirstPrimaryKeyValue(object entity);
-
-        /// <summary>
-        /// 查找表和主键
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <returns><see cref="(string table, IEnumerable{string} keys) "/></returns>
-        (string table, IEnumerable<string> keys) FindPrimaryKeyWithTable<T>() where T : class, new();
-
-        /// <summary>
-        /// 查找主键
-        /// </summary>
-        /// <typeparam name="T">实体类型</typeparam>
-        /// <returns>主键名称 <see cref="IEnumerable{String}"/></returns>
-        IEnumerable<string> FindPrimaryKey<T>() where T : class, new();
-
+        public DbContext DbContext { get; }
+        
         /// <summary>
         /// 转成IQueryable
         /// </summary>
@@ -80,7 +46,7 @@ namespace Kurisu.DataAccessor.Abstractions
         /// DbContext 转成无跟踪
         /// </summary>
         /// <returns></returns>
-        IDbCommonOperation AsNoTracking();
+        IMasterDbService AsNoTracking();
 
         /// <summary>
         /// DbContext 转成无跟踪,如果存在连表,那么关联表的数据将会以key为准,相同key将会使用同一个外表实例
@@ -92,7 +58,7 @@ namespace Kurisu.DataAccessor.Abstractions
         ///  Users中可能有相同的Role,那么Role就会以key为准,公用一个实例
         /// </code>
         /// <returns></returns>
-        IDbCommonOperation AsNoTrackingWithIdentityResolution();
+        IMasterDbService AsNoTrackingWithIdentityResolution();
 
         /// <summary>
         /// 执行SQL

@@ -21,7 +21,6 @@ namespace Kurisu.DataAccessor
         internal static IQueryable<T> Sort<T>(IQueryable<T> tempData, string sort, bool isAsc) where T : class
         {
             var sortArr = sort.Split(',');
-            MethodCallExpression resultExpression = null;
 
             for (var i = 0; i < sortArr.Length; i++)
             {
@@ -40,6 +39,7 @@ namespace Kurisu.DataAccessor
                 var propertyAccess = Expression.MakeMemberAccess(parameter, property);
                 var orderByExpression = Expression.Lambda(propertyAccess, parameter);
 
+                MethodCallExpression resultExpression;
                 if (i == 0)
                 {
                     resultExpression = Expression.Call(
@@ -59,87 +59,6 @@ namespace Kurisu.DataAccessor
             }
 
             return tempData;
-        }
-
-        /// <summary>
-        /// 递归附加
-        /// </summary>
-        /// <param name="dbContext">当前上下文</param>
-        /// <param name="entity">实例</param>
-        internal static void RecursionAttach(DbContext dbContext, object entity)
-        {
-            var entityType = FindTrackingEntity(dbContext, entity);
-
-            if (entityType == null)
-                dbContext.Attach(entity);
-            else if (entityType.State == EntityState.Modified || entityType.State == EntityState.Added)
-                return;
-
-            foreach (var prop in entity.GetType().GetProperties().Where(x => !x.IsDefined(typeof(NotMappedAttribute), false)))
-            {
-                if (prop.Name.Equals("Id", StringComparison.OrdinalIgnoreCase)) continue;
-
-                var obj = prop.GetValue(entity);
-                if (obj == null) continue;
-
-                var subEntityType = FindTrackingEntity(dbContext, obj);
-
-                //List<Entity>
-                if (prop.PropertyType.IsGenericType && prop.PropertyType.IsClass)
-                {
-                    IEnumerable<object> objs = (IEnumerable<object>) obj;
-                    foreach (var item in objs)
-                    {
-                        RecursionAttach(dbContext, item);
-                    }
-                }
-                //string/int
-                else if (subEntityType == null)
-                {
-                    dbContext.Entry(entity).Property(prop.Name).IsModified = true;
-                }
-                //Entity
-                else if (subEntityType != null && subEntityType.State == EntityState.Unchanged)
-                {
-                    RecursionAttach(dbContext, obj);
-                }
-            }
-        }
-
-        /// <summary>
-        /// 根据ID匹配是否存在
-        /// </summary>
-        /// <param name="dbContext">当前上下文</param>
-        /// <param name="entity">实例</param>
-        /// <returns></returns>
-        private static EntityEntry FindTrackingEntity(DbContext dbContext, object entity)
-        {
-            foreach (var item in dbContext.ChangeTracker.Entries())
-            {
-                if (item.State == EntityState.Added)
-                {
-                    if (item.Entity == entity)
-                    {
-                        return item;
-                    }
-                }
-
-                var key = "Id";
-
-                var tryObj = item.Properties.FirstOrDefault(x => x.Metadata.PropertyInfo.Name.Equals(key))?.CurrentValue;
-                if (tryObj != null)
-                {
-                    int tracking = (int) tryObj;
-                    int now = (int) entity.GetType().GetProperty(key)?.GetValue(entity);
-
-                    if (tracking == now)
-                    {
-                        return item;
-                    }
-                }
-            }
-
-            return null;
         }
     }
 }

@@ -8,15 +8,16 @@ namespace TestApi.Services
 {
     public class AService : ITransient
     {
-        private readonly IMasterDbImplementation _db;
+        private readonly IMasterDbService _db;
 
-        public AService(IMasterDbImplementation db)
+        public AService(IMasterDbService db)
         {
             _db = db;
         }
 
-        public async Task Delete()
+        public async Task Delete(Guid guid)
         {
+            await _db.DeleteAsync<User>(guid);
             await Task.CompletedTask;
         }
     }

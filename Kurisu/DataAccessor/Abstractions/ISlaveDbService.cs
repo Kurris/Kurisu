@@ -7,9 +7,9 @@ using System.Threading.Tasks;
 namespace Kurisu.DataAccessor.Abstractions
 {
     /// <summary>
-    /// 读操作
+    /// 从库接口
     /// </summary>
-    public interface IReadOperation
+    public interface ISlaveDbService
     {
         /// <summary>
         /// 返回第一个实体
@@ -19,7 +19,7 @@ namespace Kurisu.DataAccessor.Abstractions
         ///         <cref>{T}</cref>
         ///     </see>
         /// </returns>
-        Task<T> FindFirstAsync<T>() where T : class, new();
+        Task<T> FirstOrDefaultAsync<T>() where T : class, new();
 
         /// <summary>
         /// 根据主键查找实体
@@ -30,7 +30,7 @@ namespace Kurisu.DataAccessor.Abstractions
         ///         <cref>{T}</cref>
         ///     </see>
         /// </returns>
-        ValueTask<T> FindAsync<T>(params object[] keyValues) where T : class, new();
+        ValueTask<T> FirstOrDefaultAsync<T>(params object[] keyValues) where T : class, new();
 
 
         /// <summary>
@@ -39,7 +39,7 @@ namespace Kurisu.DataAccessor.Abstractions
         /// <param name="type">实体类型</param>
         /// <param name="keys">主键</param>
         /// <returns></returns>
-        ValueTask<object> FindAsync(Type type, params object[] keys);
+        ValueTask<object> FirstOrDefaultAsync(Type type, params object[] keys);
 
         /// <summary>
         /// 查找实体
@@ -47,7 +47,7 @@ namespace Kurisu.DataAccessor.Abstractions
         /// <typeparam name="T">实体类型</typeparam>
         /// <param name="predicate">表达式</param>
         /// <returns>实体<see cref="{T}"/></returns>
-        Task<T> FindAsync<T>(Expression<Func<T, bool>> predicate) where T : class, new();
+        Task<T> FirstOrDefaultAsync<T>(Expression<Func<T, bool>> predicate) where T : class, new();
 
         /// <summary>
         /// 查询列表

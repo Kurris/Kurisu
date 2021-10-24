@@ -1,4 +1,4 @@
-using System.Diagnostics;
+using System;
 using Kurisu.DataAccessor.Abstractions;
 using Kurisu.DataAccessor.Interceptors;
 using Kurisu.DataAccessor.Internal;
@@ -7,6 +7,9 @@ using Kurisu.MVC.Extensions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
+using Serilog;
+using Serilog.Extensions.Logging;
 
 namespace Kurisu.DataAccessor.Extensions
 {
@@ -19,52 +22,62 @@ namespace Kurisu.DataAccessor.Extensions
         /// 添加EFCore支持
         /// </summary>
         /// <param name="services"></param>
+        /// <exception cref="ArgumentNullException"></exception>
         /// <returns></returns>
         public static IServiceCollection AddDatabaseAccessor(this IServiceCollection services)
         {
-            services.AddDbContext<AppDbContext>(options =>
+            services.AddDbContext<AppDbContext>((provider, options) =>
             {
-                options.AddInterceptors(new ConnectionProfilerInterceptor(), new DbContextSaveChangesInterceptor(), new ProfilerInterceptor());
-                options.UseMySql("data source=localhost;database=test; uid=root;pwd=123456;", ServerVersion.Parse("8.0.0"), builder =>
-                {
-                    builder.CommandTimeout(5);
-                    builder.MigrationsAssembly("TestApi");
-                });
+                var dbAppSetting = provider.GetService<IOptions<DbAppSetting>>()?.Value;
+                if (dbAppSetting == null) throw new ArgumentNullException(nameof(DbAppSetting));
 
-                options.UseLoggerFactory(LoggerFactory.Create(builder =>
+                var profileLogger = provider.GetService<ILogger<ProfilerInterceptor>>();
+
+                options.AddInterceptors(new ConnectionProfilerInterceptor()
+                    , new DbContextSaveChangesInterceptor()
+                    , new ProfilerInterceptor(dbAppSetting, profileLogger));
+
+                options.UseMySql(dbAppSetting.SqlConnectionString, ServerVersion.Parse(dbAppSetting.Version),
+                    builder =>
+                    {
+                        builder.CommandTimeout(dbAppSetting.Timeout);
+                        builder.MigrationsAssembly(dbAppSetting.MigrationsAssembly);
+                    });
+
+                if (App.IsDebug)
                 {
-                    builder.AddFilter((category, level) =>
-                        category == DbLoggerCategory.Database.Command.Name
-                        && level == LogLevel.Information).AddConsole();
-                }));
+                    var loggerFactory = provider.GetService<ILoggerFactory>();
+                    // options.UseLoggerFactory(LoggerFactory.Create(builder =>
+                    // {
+                    //     builder.AddFilter((category, level) =>
+                    //             category == DbLoggerCategory.Database.Command.Name
+                    //             && level == LogLevel.Information)
+                    //         .AddConsole();
+                    // }));
+
+                    options.UseLoggerFactory(loggerFactory);
+                }
             });
 
-            //注册局部容器
+            //注册局部工作单元容器
             services.AddScoped<IDbContextContainer, DbContextContainer>();
 
+            //数据库操作实现类
             services.AddTransient<DbOperationImplementation>(provider =>
             {
+                //获取上下文
                 DbContext dbContext = provider.GetService<AppDbContext>();
                 //获取容器
                 var container = provider.GetService<IDbContextContainer>();
                 container?.Add(dbContext);
 
-                var db = new MySqlDb(dbContext);
-                return db;
+                return new MySqlDb(dbContext);
             });
 
-            services.AddTransient<IMasterDbImplementation>(provider => provider.GetService<DbOperationImplementation>());
-            services.AddTransient<ISlaveDbImplementation>(provider =>
-            {
-                var db = provider.GetService<DbOperationImplementation>();
-                if (db != null)
-                {
-                    db.AsNoTrackingWithIdentityResolution();
-                    return db;
-                }
-
-                return null;
-            });
+            //主库操作
+            services.AddTransient<IMasterDbService>(provider => provider.GetService<DbOperationImplementation>());
+            //从库操作
+            services.AddTransient<ISlaveDbService>(provider => provider.GetService<DbOperationImplementation>());
 
             //工作单元
             services.AddMvcFilter<UnitOfWorkFilter>();
