@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using Kurisu.ConfigurableOptions.Attributes;
 
 namespace Kurisu.DataAccessor
@@ -11,9 +12,14 @@ namespace Kurisu.DataAccessor
         public int SlowSqlTime { get; set; }
 
         /// <summary>
-        /// sql连接字符串
+        /// 默认连接字符串
         /// </summary>
-        public string SqlConnectionString { get; set; }
+        public string DefaultConnectionString { get; set; }
+
+        /// <summary>
+        /// 读库连接字符串
+        /// </summary>
+        public List<string> ReadConnectionStrings { get; set; }
 
         /// <summary>
         /// sql查询超时时间
@@ -24,12 +30,10 @@ namespace Kurisu.DataAccessor
         /// 版本号
         /// </summary>
         public string Version { get; set; }
-        
+
         /// <summary>
         /// 迁移类库
         /// </summary>
         public string MigrationsAssembly { get; set; }
-        
-        
     }
 }

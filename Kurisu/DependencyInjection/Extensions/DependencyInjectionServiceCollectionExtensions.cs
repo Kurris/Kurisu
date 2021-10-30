@@ -1,14 +1,11 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 using System.Linq;
-using System.Linq.Expressions;
 using System.Reflection;
 using Kurisu.DependencyInjection.Abstractions;
 using Kurisu.DependencyInjection.Attributes;
 using Kurisu.DependencyInjection.Enums;
-using Kurisu.Proxy;
 using Kurisu.Proxy.Attributes;
 using Kurisu.Proxy.Global;
 using Microsoft.Extensions.DependencyInjection;
@@ -64,7 +61,7 @@ namespace Kurisu.DependencyInjection.Extensions
         public static IServiceCollection AddDependencyInjectionService(this IServiceCollection services)
         {
             //生命周期类型
-            var lifeTimeTypes = new[] { typeof(ITransient), typeof(IScope), typeof(ISingleton) };
+            var lifeTimeTypes = new[] {typeof(ITransient), typeof(IScope), typeof(ISingleton)};
 
             //可注册类型
             var serviceTypes = App.ActiveTypes
@@ -73,7 +70,6 @@ namespace Kurisu.DependencyInjection.Extensions
                             && x.IsPublic
                             && !x.IsAbstract
                             && !x.IsInterface);
-
 
             //注册依赖注入
             foreach (var service in serviceTypes)
@@ -96,7 +92,6 @@ namespace Kurisu.DependencyInjection.Extensions
                 //能够注册的接口
                 var ableInterfaces = interfaces.Where(x => !lifeTimeInterfaces.Contains(x)
                                                            && x != typeof(IDependency));
-
 
                 // 缓存类型注册
                 var typeNamed = registerAttribute?.Named ?? service.Name;
@@ -122,8 +117,7 @@ namespace Kurisu.DependencyInjection.Extensions
         /// <param name="services"></param>
         /// <typeparam name="TLifeTimeType"></typeparam>
         /// <exception cref="ArgumentOutOfRangeException"></exception>
-        private static void RegisterNamedService<TLifeTimeType>(this IServiceCollection services)
-            where TLifeTimeType : IDependency
+        private static void RegisterNamedService<TLifeTimeType>(this IServiceCollection services) where TLifeTimeType : IDependency
         {
             var registerType = GetRegisterType(typeof(TLifeTimeType));
             switch (registerType)
@@ -139,7 +133,7 @@ namespace Kurisu.DependencyInjection.Extensions
                                 : null;
                         }
 
-                        return (Func<string, ITransient, object>)Method;
+                        return (Func<string, ITransient, object>) Method;
                     });
                     break;
                 case RegisterType.Scoped:
@@ -153,7 +147,7 @@ namespace Kurisu.DependencyInjection.Extensions
                                 : null;
                         }
 
-                        return (Func<string, IScope, object>)Method;
+                        return (Func<string, IScope, object>) Method;
                     });
                     break;
                 case RegisterType.Singleton:
@@ -167,7 +161,7 @@ namespace Kurisu.DependencyInjection.Extensions
                                 : null;
                         }
 
-                        return (Func<string, ISingleton, object>)Method;
+                        return (Func<string, ISingleton, object>) Method;
                     });
                     break;
                 default:
@@ -220,7 +214,7 @@ namespace Kurisu.DependencyInjection.Extensions
                     else
                     {
                         services.AddTransient(@interface, service);
-                        AddDispatchProxy(services, lifeTimeType, service, registerAttribute.Proxy, @interface, true);
+                        AddDispatchProxy(services, lifeTimeType, service, registerAttribute.Proxy, @interface);
                     }
 
                     break;
@@ -230,7 +224,7 @@ namespace Kurisu.DependencyInjection.Extensions
                     else
                     {
                         services.AddScoped(@interface, service);
-                        AddDispatchProxy(services, lifeTimeType, service, registerAttribute.Proxy, @interface, true);
+                        AddDispatchProxy(services, lifeTimeType, service, registerAttribute.Proxy, @interface);
                     }
 
                     break;
@@ -240,7 +234,7 @@ namespace Kurisu.DependencyInjection.Extensions
                     else
                     {
                         services.AddSingleton(@interface, service);
-                        AddDispatchProxy(services, lifeTimeType, service, registerAttribute.Proxy, @interface, true);
+                        AddDispatchProxy(services, lifeTimeType, service, registerAttribute.Proxy, @interface);
                     }
 
                     break;
@@ -278,33 +272,26 @@ namespace Kurisu.DependencyInjection.Extensions
         /// <param name="service"></param>
         /// <param name="proxyType"></param>
         /// <param name="interface"></param>
-        /// <param name="hasTarget"></param>
-        [SuppressMessage("ReSharper", "PossibleNullReferenceException")]
         private static void AddDispatchProxy(IServiceCollection services, Type lifeTimeType, Type service,
-            Type proxyType, Type @interface, bool hasTarget = true)
+            Type proxyType, Type @interface)
         {
             proxyType ??= _globalServiceProxyType;
             if (proxyType == null
                 || service != null && service.IsDefined(typeof(SuppressProxyAttribute), true) //服务
-                || proxyType.IsDefined(typeof(SuppressProxyAttribute), true)) return;         //aop拦截器 
-
+                || proxyType.IsDefined(typeof(SuppressProxyAttribute), true)) return; //aop拦截器 
 
             var registerType = GetRegisterType(lifeTimeType);
-            //var dispatchProxy = AOPFactory(App.ServiceProvider);
 
             //替换接口原有的注入类型
             switch (registerType)
             {
                 case RegisterType.Transient:
-                    // services.AddTransient(proxyType, AOPFactory);
                     services.AddTransient(@interface, AopFactory);
                     break;
                 case RegisterType.Scoped:
-                    //  services.AddScoped(typeof(DispatchProxy), proxyType);
                     services.AddScoped(@interface, AopFactory);
                     break;
                 case RegisterType.Singleton:
-                    //  services.AddSingleton(typeof(DispatchProxy), proxyType);
                     services.AddTransient(@interface, AopFactory);
                     break;
                 default:
@@ -314,7 +301,7 @@ namespace Kurisu.DependencyInjection.Extensions
             //aop method factory
             DispatchProxy AopFactory(IServiceProvider serviceProvider)
             {
-                DispatchProxy proxy = _dispatchCreateMethod.MakeGenericMethod(@interface, proxyType).Invoke(null, null) as DispatchProxy;
+                var proxy = _dispatchCreateMethod.MakeGenericMethod(@interface, proxyType).Invoke(null, null) as DispatchProxy;
 
                 proxy.ServiceProvider = serviceProvider;
                 if (service != null) proxy.Target = serviceProvider.GetService(service);

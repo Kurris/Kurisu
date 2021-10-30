@@ -10,9 +10,6 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using MySqlConnector;
-using Pomelo.EntityFrameworkCore.MySql.Storage.Internal;
-using Serilog;
-using Serilog.Extensions.Logging;
 
 namespace Kurisu.DataAccessor.Extensions
 {
@@ -29,17 +26,58 @@ namespace Kurisu.DataAccessor.Extensions
         /// <returns></returns>
         public static IServiceCollection AddDatabaseAccessor(this IServiceCollection services)
         {
-            services.AddScoped<DbConnection>(provider =>
+            //注册局部工作单元容器
+            services.AddScoped<IDbContextContainer, DbContextContainer>();
+
+            services.AddScoped(provider =>
             {
-                var dbAppSetting = provider.GetService<IOptions<DbAppSetting>>()?.Value;
-                var connection = new MySqlConnection
+                DbConnection connectionResolve(Type dbType)
                 {
-                    ConnectionString = dbAppSetting.SqlConnectionString
-                };
-                return connection;
+                    var connection = new MySqlConnection();
+                    var dbAppSetting = provider.GetService<IOptions<DbAppSetting>>()?.Value;
+
+                    if (dbType == typeof(IMasterDbService))
+                        connection.ConnectionString = dbAppSetting.DefaultConnectionString;
+                    else
+                    {
+                        var index = new Random().Next(dbAppSetting.ReadConnectionStrings.Count);
+                        connection.ConnectionString = dbAppSetting.ReadConnectionStrings[index];
+
+                        if (string.IsNullOrEmpty(connection.ConnectionString))
+                            connection.ConnectionString = dbAppSetting.DefaultConnectionString;
+                    }
+
+                    return connection;
+                }
+
+                return (Func<Type, DbConnection>) connectionResolve;
             });
 
-            services.AddDbContext<AppDbContext>((provider, options) =>
+            AddDbContext<IMasterDbService>(services);
+            AddDbContext<ISlaveDbService>(services);
+
+            //主库操作
+            services.AddTransient<IMasterDbService>(provider => provider.GetService<Func<Type, DbOperationImplementation>>()?.Invoke(typeof(IMasterDbService)));
+            //从库操作
+            services.AddTransient<ISlaveDbService>(provider => provider.GetService<Func<Type, DbOperationImplementation>>()?.Invoke(typeof(ISlaveDbService)));
+
+            //工作单元
+            services.AddMvcFilter<UnitOfWorkFilter>();
+
+            return services;
+        }
+
+
+        /// <summary>
+        /// 添加DbContext
+        /// </summary>
+        /// <param name="services"></param>
+        /// <typeparam name="TDbService"></typeparam>
+        /// <exception cref="ArgumentNullException"></exception>
+        /// <exception cref="NullReferenceException"></exception>
+        private static void AddDbContext<TDbService>(IServiceCollection services) where TDbService : IDbService
+        {
+            services.AddDbContext<AppDbContext<TDbService>>((provider, options) =>
             {
                 var dbAppSetting = provider.GetService<IOptions<DbAppSetting>>()?.Value;
                 if (dbAppSetting == null) throw new ArgumentNullException(nameof(DbAppSetting));
@@ -50,15 +88,9 @@ namespace Kurisu.DataAccessor.Extensions
                     , new DbContextSaveChangesInterceptor()
                     , new ProfilerInterceptor(dbAppSetting, profileLogger));
 
-                // options.UseMySql(dbAppSetting.SqlConnectionString, ServerVersion.Parse(dbAppSetting.Version),
-                //     builder =>
-                //     {
-                //         builder.CommandTimeout(dbAppSetting.Timeout);
-                //         builder.MigrationsAssembly(dbAppSetting.MigrationsAssembly);
-                //     });
-
                 //局部共享连接
-                var connection = provider.GetService<DbConnection>();
+                var connectionResolve = provider.GetService<Func<Type, DbConnection>>() ?? throw new NullReferenceException("connection");
+                var connection = connectionResolve.Invoke(typeof(TDbService));
                 options.UseMySql(connection, MySqlServerVersion.LatestSupportedServerVersion, builder =>
                 {
                     builder.CommandTimeout(dbAppSetting.Timeout);
@@ -67,42 +99,36 @@ namespace Kurisu.DataAccessor.Extensions
 
                 if (!App.IsDebug) return;
 
+                options.EnableSensitiveDataLogging().EnableDetailedErrors();
+                
                 var loggerFactory = provider.GetService<ILoggerFactory>();
-                // options.UseLoggerFactory(LoggerFactory.Create(builder =>
-                // {
-                //     builder.AddFilter((category, level) =>
-                //             category == DbLoggerCategory.Database.Command.Name
-                //             && level == LogLevel.Information)
-                //         .AddConsole();
-                // }));
-
                 options.UseLoggerFactory(loggerFactory);
-            },ServiceLifetime.Transient);
+            }, ServiceLifetime.Transient);
 
-            //注册局部工作单元容器
-            services.AddScoped<IDbContextContainer, DbContextContainer>();
-
-            //数据库操作实现类
-            services.AddTransient<DbOperationImplementation>(provider =>
+            services.AddTransient(provider =>
             {
-                //获取上下文
-                DbContext dbContext = provider.GetService<AppDbContext>();
-                //获取容器
-                var container = provider.GetService<IDbContextContainer>();
-                container?.Add(dbContext);
+                DbOperationImplementation DbOperationImplementationResolve(Type dbType)
+                {
+                    //获取上下文
+                    DbContext dbContext;
 
-                return new MySqlDb(dbContext);
+                    if (dbType == typeof(IMasterDbService))
+                        dbContext = provider.GetService<AppDbContext<IMasterDbService>>();
+                    else
+                    {
+                        dbContext = provider.GetService<AppDbContext<ISlaveDbService>>();
+                        dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTrackingWithIdentityResolution;
+                    }
+
+                    //获取容器
+                    var container = provider.GetService<IDbContextContainer>();
+                    container?.Add(dbContext);
+
+                    return new MySqlDb(dbContext);
+                }
+
+                return (Func<Type, DbOperationImplementation>) DbOperationImplementationResolve;
             });
-
-            //主库操作
-            services.AddTransient<IMasterDbService>(provider => provider.GetService<DbOperationImplementation>());
-            //从库操作
-            services.AddTransient<ISlaveDbService>(provider => provider.GetService<DbOperationImplementation>());
-
-            //工作单元
-            services.AddMvcFilter<UnitOfWorkFilter>();
-
-            return services;
         }
     }
 }

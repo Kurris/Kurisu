@@ -10,8 +10,11 @@ using Kurisu.Cors;
 using Kurisu.Cors.Extensions;
 using Kurisu.DataAccessor.Extensions;
 using Kurisu.DependencyInjection.Extensions;
+using Kurisu.MVC.Extensions;
 using Kurisu.ObjectMapper;
 using Kurisu.ObjectMapper.Extensions;
+using Kurisu.UnifyResultAndValidation.Extensions;
+using Kurisu.UnifyResultAndValidation.Filters;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.HttpsPolicy;
@@ -61,6 +64,8 @@ namespace TestApi
             services.AddDependencyInjectionService();
             services.AddDatabaseAccessor();
             // services.AddTransient<IGeneratic<GenService>,GenService>();
+
+            services.AddUnify();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

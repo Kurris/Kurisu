@@ -19,6 +19,7 @@ namespace TestApi.Entities
         /// <summary>
         /// 用户名
         /// </summary>
+        [Required]
         public string Name { get; set; }
 
         /// <summary>

@@ -2,7 +2,7 @@ using Microsoft.AspNetCore.Mvc.Filters;
 
 namespace Kurisu.Authorization.Abstractions
 {
-    public interface IGlobalAuthorizHandler
+    public interface IGlobalAuthorizeHandler
     {
         /// <summary>
         /// 鉴权完成后

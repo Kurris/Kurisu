@@ -22,8 +22,7 @@ namespace Kurisu.Authorization.Attributes
             get => Policy?.Split(",", StringSplitOptions.RemoveEmptyEntries);
             set => Policy = string.Join(",", value);
         }
-
-
+        
         public void OnAuthorization(AuthorizationFilterContext context)
         {
             

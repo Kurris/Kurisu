@@ -9,7 +9,7 @@ namespace Kurisu.DataAccessor.Abstractions
     /// <summary>
     /// 从库接口
     /// </summary>
-    public interface ISlaveDbService
+    public interface ISlaveDbService : IDbService
     {
         /// <summary>
         /// 返回第一个实体
