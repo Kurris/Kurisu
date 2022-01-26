@@ -17,16 +17,16 @@ namespace Kurisu.Cors.Extensions
         /// 使用跨域中间件
         /// </summary>
         /// <param name="app"></param>
-        /// <param name="corsPolicybuilder"></param>
+        /// <param name="builder"></param>
         /// <returns></returns>
         public static IApplicationBuilder UseCorsPolicy(this IApplicationBuilder app,
-            Action<CorsPolicyBuilder> corsPolicybuilder = default)
+            Action<CorsPolicyBuilder> builder = default)
         {
             var corsAppSetting = app.ApplicationServices.GetService<IOptions<CorsAppSetting>>()?.Value;
 
-            return corsPolicybuilder == null
+            return builder == null
                 ? app.UseCors(corsAppSetting?.PolicyName)
-                : app.UseCors(corsPolicybuilder);
+                : app.UseCors(builder);
         }
     }
 }

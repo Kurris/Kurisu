@@ -13,7 +13,7 @@ namespace Kurisu.UnifyResultAndValidation.Extensions
         /// <returns></returns>
         public static IServiceCollection AddUnify(this IServiceCollection services)
         {
-            services.AddMvcFilter<ValidateFilter>();
+            services.AddMvcFilter<ValidateAndPackResultFilter>();
             return services;
         }
     }
