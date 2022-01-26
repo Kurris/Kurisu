@@ -29,7 +29,7 @@ namespace Kurisu.UnifyResultAndValidation.Filters
             {
                 if (context.Result is ObjectResult objectResult)
                 {
-                    var result = objectResult.Value;
+                    var result = objectResult.Value ?? string.Empty;
                     var type = result.GetType();
 
                     if (type.IsGenericType && typeof(IApiResult).IsAssignableFrom(type))
