@@ -1,5 +1,6 @@
 using System.Linq;
 using System.Threading.Tasks;
+using Kurisu.UnifyResultAndValidation.Abstractions;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.Extensions.DependencyInjection;
@@ -23,7 +24,7 @@ namespace Kurisu.UnifyResultAndValidation.Filters
 
                 var apiResult = provider.GetService<IApiResult>();
 
-                context.Result = new ObjectResult(apiResult.GetDefaultValidateResult(errorResults));
+                context.Result = new ObjectResult(apiResult.GetDefaultSuccessApiResult(errorResults));
             }
             else
             {
@@ -37,7 +38,7 @@ namespace Kurisu.UnifyResultAndValidation.Filters
                     else
                     {
                         var apiResult = provider.GetService<IApiResult>();
-                        context.Result = new ObjectResult(apiResult.GetDefaultSuccessResult(result));
+                        context.Result = new ObjectResult(apiResult.GetDefaultSuccessApiResult(result));
                     }
                 }
             }
