@@ -33,7 +33,7 @@ namespace Kurisu.DataAccessor
             {
                 if (TotalCount > 0)
                 {
-                    return (TotalCount % PageSize) == 0
+                    return TotalCount % PageSize == 0
                         ? TotalCount / PageSize
                         : TotalCount / PageSize + 1;
                 }
