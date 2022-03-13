@@ -37,9 +37,6 @@ namespace Kurisu.MVC.Extensions
         public static IServiceCollection AddMvcFilter<TFilter>(this IServiceCollection services, Action<MvcOptions> configure = default)
             where TFilter : IFilterMetadata
         {
-            // 非 Web 环境跳过注册
-            // if (App.WebHostEnvironment == default) return services;
-
             services.Configure<MvcOptions>(options =>
             {
                 options.Filters.Add<TFilter>();

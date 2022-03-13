@@ -1,5 +1,9 @@
 using System;
+using System.Threading.Tasks;
+using Kurisu.DataAccessor.Abstractions;
+using Microsoft.AspNetCore.Mvc.Controllers;
 using Microsoft.AspNetCore.Mvc.Filters;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Kurisu.DataAccessor.UnitOfWork.Attributes
 {
@@ -7,7 +11,7 @@ namespace Kurisu.DataAccessor.UnitOfWork.Attributes
     /// 工作单元
     /// </summary>
     [AttributeUsage(AttributeTargets.Method)]
-    public class UnitOfWorkAttribute : Attribute
+    public class UnitOfWorkAttribute : Attribute, IAsyncActionFilter, IOrderedFilter
     {
         /// <summary>
         /// 是否为手动保存更改
@@ -27,5 +31,23 @@ namespace Kurisu.DataAccessor.UnitOfWork.Attributes
         /// 是否为手动保存更改
         /// </summary>
         public bool IsManualSaveChanges => _isManualSaveChanges;
+
+        public int Order { get; } = 999;
+
+
+        public async Task OnActionExecutionAsync(ActionExecutingContext context, ActionExecutionDelegate next)
+        {
+            var dbContextContainer = context.HttpContext.RequestServices.GetService<IDbContextContainer>();
+            //开启事务
+            await dbContextContainer?.BeginTransactionAsync();
+
+            //获取结果
+            var result = await next();
+
+            //提交事务
+            await dbContextContainer?.CommitTransactionAsync(this._isManualSaveChanges, result.Exception);
+
+            await dbContextContainer?.CloseAsync();
+        }
     }
 }

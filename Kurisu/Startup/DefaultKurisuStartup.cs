@@ -1,24 +1,20 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Text;
 using System.Threading.Tasks;
-using Kurisu;
 using Kurisu.Authorization.Extensions;
+using Kurisu.Authorization.Middlewares;
 using Kurisu.ConfigurableOptions.Extensions;
 using Kurisu.Cors;
-using Kurisu.Cors.Extensions;
 using Kurisu.DataAccessor.Extensions;
 using Kurisu.DependencyInjection.Extensions;
-using Kurisu.MVC.Extensions;
-using Kurisu.ObjectMapper;
 using Kurisu.ObjectMapper.Extensions;
+using Kurisu.Startup.Abstractions;
 using Kurisu.UnifyResultAndValidation.Extensions;
-using Kurisu.UnifyResultAndValidation.Filters;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.HttpsPolicy;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -26,53 +22,53 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Primitives;
 using Microsoft.OpenApi.Models;
 using Newtonsoft.Json;
-using TestApi.Services;
+using Newtonsoft.Json.Serialization;
 
-namespace TestApi
+namespace Kurisu.Startup
 {
-    public class Startup
+    /// <summary>
+    /// 默认启动类
+    /// </summary>
+    public abstract class DefaultKurisuStartup : BasePack
     {
-        public Startup(IConfiguration configuration)
+        private readonly IConfiguration _configuration;
+
+        public DefaultKurisuStartup(IConfiguration configuration)
         {
-            Configuration = configuration;
+            _configuration = configuration;
+            App.Configuration = _configuration;
+            _configuration = configuration;
         }
 
-        public IConfiguration Configuration { get; }
-
-        // This method gets called by the runtime. Use this method to add services to the container.
-        public void ConfigureServices(IServiceCollection services)
+        public override void ConfigureServices(IServiceCollection services)
         {
-            App.Configuration = Configuration;
             services.AddControllers();
-            // services.AddControllers().AddNewtonsoftJson(options =>
-            // {
-            //     options.SerializerSettings.ReferenceLoopHandling = ReferenceLoopHandling.Ignore;
-            // } );
-            services.AddSwaggerGen(c => { c.SwaggerDoc("v1", new OpenApiInfo {Title = "TestApi", Version = "v1"}); });
+            services.AddControllers().AddNewtonsoftJson(options =>
+            {
+                options.SerializerSettings.ReferenceLoopHandling = ReferenceLoopHandling.Ignore;
+                options.SerializerSettings.ContractResolver = new CamelCasePropertyNamesContractResolver();
+            });
 
-            // services.AddCorsPolicy();
+
+            services.AddSwaggerGen(c => { c.SwaggerDoc("v1", new OpenApiInfo { Title = "TestApi", Version = "v1" }); });
             services.AddObjectMapper(Assembly.GetExecutingAssembly());
 
-            //     services.AddCorsPolicy();
-            var cors = Configuration.GetSection(nameof(CorsAppSetting));
-            ChangeToken.OnChange(Configuration.GetReloadToken,
+            var cors = _configuration.GetSection(nameof(CorsAppSetting));
+            ChangeToken.OnChange(_configuration.GetReloadToken,
                 () => { Console.WriteLine("文件改变:" + cors["PolicyName"]); });
 
             services.AddAllConfigurationWithConfigurationAttribute();
 
-           // services.AddAppAuthentication();
+            // services.AddJwtAuthentication();
             services.AddDependencyInjectionService();
             services.AddDatabaseAccessor();
-            // services.AddTransient<IGeneratic<GenService>,GenService>();
-
             services.AddUnify();
         }
 
-        // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
-        public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
+        public override void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
             App.ServiceProvider = app.ApplicationServices;
-            App.WebHostEnvironment = env;
+            App.Env = env;
             if (env.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();
@@ -84,12 +80,11 @@ namespace TestApi
                 });
             }
 
-            //    app.UseCorsPolicy();
+            // app.UseMiddleware<ExceptionMiddleware>();
 
+
+            // app.UseAuthorization();
             app.UseRouting();
-
-           // app.UseAuthorization();
-
             app.UseEndpoints(endpoints => { endpoints.MapControllers(); });
         }
     }

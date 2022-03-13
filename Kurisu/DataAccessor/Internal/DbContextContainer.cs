@@ -67,7 +67,7 @@ namespace Kurisu.DataAccessor.Internal
 
         private async void OnDbContextOnSaveChangesFailed(object s, SaveChangesFailedEventArgs e)
         {
-            var contextSender = (DbContext) s;
+            var contextSender = (DbContext)s;
             var failedInstanceId = contextSender.ContextId.InstanceId;
             //已存在就不添加
             if (!_failedDbContexts.TryAdd(failedInstanceId, contextSender)) return;
@@ -108,7 +108,7 @@ namespace Kurisu.DataAccessor.Internal
 
         public async Task<IDbContextContainer> BeginTransactionAsync(bool ensureTransaction = false)
         {
-            if (!_dbContexts.Any()) throw new ArgumentException(nameof(_dbContexts));
+            if (!_dbContexts.Any()) return null;
 
             if (DbContextTransaction == null)
             {
@@ -212,5 +212,7 @@ namespace Kurisu.DataAccessor.Internal
                 await db.UseTransactionAsync(transaction);
             }
         }
+
+        public int Count => _dbContexts.Count;
     }
 }

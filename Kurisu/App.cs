@@ -5,8 +5,8 @@ using System.Linq;
 using System.Reflection;
 using System.Security.Claims;
 using Kurisu.ConfigurableOptions.Abstractions;
-using Kurisu.DependencyInjection.Abstractions;
 using Kurisu.DependencyInjection.Attributes;
+using Kurisu.Startup;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
@@ -29,8 +29,6 @@ namespace Kurisu
             LoadActiveTypes();
         }
 
-        public static bool IsDebug => WebHostEnvironment.IsDevelopment();
-
         /// <summary>
         /// 应用程序有效类型
         /// </summary>
@@ -41,10 +39,11 @@ namespace Kurisu
         /// </summary>
         public static IServiceProvider ServiceProvider { get; set; }
 
+
         /// <summary>
         /// 全局配置文件
         /// </summary>
-        public static IConfiguration Configuration { get; set; }
+        internal static IConfiguration Configuration { get; set; }
 
         /// <summary>
         /// 请求上下文
@@ -60,7 +59,12 @@ namespace Kurisu
         /// <summary>
         /// web主机运行环境
         /// </summary>
-        public static IWebHostEnvironment WebHostEnvironment { get; set; }
+        public static IWebHostEnvironment Env { get; set; }
+
+        /// <summary>
+        /// 自定义处理pack
+        /// </summary>
+        public static IEnumerable<BasePack> Packs { get; set; }
 
 
         /// <summary>
@@ -95,6 +99,45 @@ namespace Kurisu
             return options;
         }
 
+        /// <summary>
+        /// 加载可用类型
+        /// </summary>
+        private static void LoadActiveTypes()
+        {
+            //所有程序集
+            var activeAssemblies = new List<Assembly>();
+
+            //添加当前程序集
+            activeAssemblies.AddRange(AppDomain.CurrentDomain.GetAssemblies());
+
+            var references = Assembly.GetExecutingAssembly().GetReferencedAssemblies();
+
+            //添加引用的程序集
+            foreach (var reference in references)
+            {
+                if (!activeAssemblies.Exists(x => x.FullName.Equals(reference.FullName, StringComparison.OrdinalIgnoreCase)))
+                {
+                    var refAssembly = Assembly.Load(reference);
+                    activeAssemblies.Add(refAssembly);
+                }
+            }
+
+            //排除无效type
+            ActiveTypes = activeAssemblies.SelectMany(x => x.GetTypes()
+                .Where(type => type.IsPublic)
+                .Where(x => !x.FullName.StartsWith("System"))
+                .Where(x => !x.FullName.StartsWith("Microsoft"))
+                .Where(x => !x.FullName.StartsWith("Internal"))
+                .Where(x => !x.FullName.StartsWith("Swashbuckle"))
+                .Where(x => !x.FullName.StartsWith("Serilog"))
+                .Where(x => !x.FullName.StartsWith("Mapster"))
+                .Where(x => !x.FullName.StartsWith("Pomelo"))
+                .Where(x => !x.FullName.StartsWith("Newtonsoft"))
+                .Where(x => !x.FullName.StartsWith("MySql"))
+                .Where(type => !type.IsDefined(typeof(SkipScanAttribute), false))
+                );
+
+        }
 
         /// <summary>
         /// 释放未托管的对象
@@ -103,36 +146,17 @@ namespace Kurisu
         {
             foreach (var unManagedObject in _unManagedObjects)
             {
-                unManagedObject.Dispose();
-            }
-
-            _unManagedObjects.Clear();
-        }
-
-        /// <summary>
-        /// 加载可用的活动类型
-        /// </summary>
-        private static void LoadActiveTypes()
-        {
-            //所有程序集
-            List<Assembly> activeAssemblies = new List<Assembly>();
-
-            //添加当前程序集
-            activeAssemblies.AddRange(AppDomain.CurrentDomain.GetAssemblies());
-
-            //添加引用的程序集
-            foreach (var reference in Assembly.GetExecutingAssembly().GetReferencedAssemblies())
-            {
-                if (!activeAssemblies.Exists(x => x.FullName == reference.FullName))
+                try
                 {
-                    var refAssembly = Assembly.Load(reference);
-                    activeAssemblies.Add(refAssembly);
+                    unManagedObject.Dispose();
+                }
+                catch
+                {
+
                 }
             }
 
-            //获取没有SkipScanAttribute的类型
-            ActiveTypes = activeAssemblies.SelectMany(u => u.GetTypes()
-                .Where(type => type.IsPublic && !type.IsDefined(typeof(SkipScanAttribute), false)));
+            _unManagedObjects.Clear();
         }
     }
 }

@@ -3,10 +3,10 @@ using System.Data.Common;
 using Kurisu.DataAccessor.Abstractions;
 using Kurisu.DataAccessor.Interceptors;
 using Kurisu.DataAccessor.Internal;
-using Kurisu.DataAccessor.UnitOfWork.Filters;
 using Kurisu.MVC.Extensions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using MySqlConnector;
@@ -31,26 +31,24 @@ namespace Kurisu.DataAccessor.Extensions
 
             services.AddScoped(provider =>
             {
-                DbConnection connectionResolve(Type dbType)
-                {
-                    var connection = new MySqlConnection();
-                    var dbAppSetting = provider.GetService<IOptions<DbAppSetting>>()?.Value;
-
-                    if (dbType == typeof(IMasterDbService))
-                        connection.ConnectionString = dbAppSetting.DefaultConnectionString;
-                    else
+                return (Func<Type, DbConnection>)(dbType =>
                     {
-                        var index = new Random().Next(dbAppSetting.ReadConnectionStrings.Count);
-                        connection.ConnectionString = dbAppSetting.ReadConnectionStrings[index];
+                        var connection = new MySqlConnection();
+                        var dbAppSetting = provider.GetService<IOptions<DbAppSetting>>()?.Value;
 
-                        if (string.IsNullOrEmpty(connection.ConnectionString))
+                        if (dbType == typeof(IMasterDbService))
                             connection.ConnectionString = dbAppSetting.DefaultConnectionString;
-                    }
+                        else
+                        {
+                            var index = new Random().Next(dbAppSetting.ReadConnectionStrings.Count);
+                            connection.ConnectionString = dbAppSetting.ReadConnectionStrings[index];
 
-                    return connection;
-                }
+                            if (string.IsNullOrEmpty(connection.ConnectionString))
+                                connection.ConnectionString = dbAppSetting.DefaultConnectionString;
+                        }
 
-                return (Func<Type, DbConnection>) connectionResolve;
+                        return connection;
+                    });
             });
 
             AddDbContext<IMasterDbService>(services);
@@ -62,7 +60,7 @@ namespace Kurisu.DataAccessor.Extensions
             services.AddTransient<ISlaveDbService>(provider => provider.GetService<Func<Type, DbOperationImplementation>>()?.Invoke(typeof(ISlaveDbService)));
 
             //工作单元
-            services.AddMvcFilter<UnitOfWorkFilter>();
+            // services.AddMvcFilter<UnitOfWorkFilter>();
 
             return services;
         }
@@ -82,11 +80,11 @@ namespace Kurisu.DataAccessor.Extensions
                 var dbAppSetting = provider.GetService<IOptions<DbAppSetting>>()?.Value;
                 if (dbAppSetting == null) throw new ArgumentNullException(nameof(DbAppSetting));
 
-                var profileLogger = provider.GetService<ILogger<ProfilerInterceptor>>();
+                var cmdInterceptor = provider.GetRequiredService<DefaultDbCommandInterceptor>();
 
-                options.AddInterceptors(new ConnectionProfilerInterceptor()
-                    , new DbContextSaveChangesInterceptor()
-                    , new ProfilerInterceptor(dbAppSetting, profileLogger));
+
+                //new ConnectionProfilerInterceptor()  , new DbContextSaveChangesInterceptor()
+                options.AddInterceptors(cmdInterceptor);
 
                 //局部共享连接
                 var connectionResolve = provider.GetService<Func<Type, DbConnection>>() ?? throw new NullReferenceException("connection");
@@ -97,10 +95,10 @@ namespace Kurisu.DataAccessor.Extensions
                     builder.MigrationsAssembly(dbAppSetting.MigrationsAssembly);
                 });
 
-                if (!App.IsDebug) return;
+                if (!App.Env.IsDevelopment()) return;
 
                 options.EnableSensitiveDataLogging().EnableDetailedErrors();
-                
+
                 var loggerFactory = provider.GetService<ILoggerFactory>();
                 options.UseLoggerFactory(loggerFactory);
             }, ServiceLifetime.Transient);
@@ -127,7 +125,7 @@ namespace Kurisu.DataAccessor.Extensions
                     return new MySqlDb(dbContext);
                 }
 
-                return (Func<Type, DbOperationImplementation>) DbOperationImplementationResolve;
+                return (Func<Type, DbOperationImplementation>)DbOperationImplementationResolve;
             });
         }
     }

@@ -2,42 +2,59 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Kurisu.UnifyResultAndValidation.Abstractions;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Kurisu.UnifyResultAndValidation.Filters
 {
     public class ValidateFilter : IAsyncResultFilter
     {
+        public ValidateFilter()
+        {
+
+        }
+
+
         public async Task OnResultExecutionAsync(ResultExecutingContext context, ResultExecutionDelegate next)
         {
             if (!context.ModelState.IsValid)
             {
-                var errorResults = context.ModelState.Keys.SelectMany(key =>
-                    context.ModelState[key].Errors.Where(x => !string.IsNullOrEmpty(key)).Select(x => new
-                    {
-                        Field = key,
-                        Message = x.ErrorMessage
-                    }));
+                var errorResults = context.ModelState
+                    .Keys
+                    .SelectMany(key =>
+                        context.ModelState[key].Errors
+                        .Where(x => !string.IsNullOrEmpty(key))
+                        .Select(x => new
+                        {
+                            Field = key,
+                            Message = x.ErrorMessage
+                        }));
 
                 context.Result = new ObjectResult(
                     new ApiResult<IEnumerable<object>>
                     (
                         "参数不合法",
                         errorResults,
-                        Status.ValidateEntityError
+                        Status.ValidateError
                     )
                 );
             }
             else
             {
-                var successResult = (context.Result as ObjectResult)?.Value;
-
-                if (successResult != null)
+                if (context.Result is ObjectResult objectResult)
                 {
-                    context.Result = successResult.GetType().Name.StartsWith("ApiResult")
-                        ? new ObjectResult(successResult)
-                        : new ObjectResult(new ApiResult<object>("请求成功", successResult, Status.Success));
+                    var result = objectResult.Value ?? string.Empty;
+                    var type = result.GetType();
+
+                    if (type.IsGenericType && typeof(IApiResult).IsAssignableFrom(type))
+                        context.Result = new ObjectResult(result);
+                    else
+                    {
+                        var injectApiResult = context.HttpContext.RequestServices.GetService<IApiResult>();
+                        context.Result = new ObjectResult(injectApiResult.GetDefaultSuccessApiResult(result));
+                    }
                 }
             }
 

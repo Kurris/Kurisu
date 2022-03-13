@@ -13,6 +13,11 @@ namespace Kurisu.DataAccessor.Abstractions
     public interface IDbContextContainer
     {
         /// <summary>
+        /// DbContext数据
+        /// </summary>
+        public int Count { get; }
+
+        /// <summary>
         /// 数据库上下文事务
         /// </summary>
         public IDbContextTransaction DbContextTransaction { get; set; }

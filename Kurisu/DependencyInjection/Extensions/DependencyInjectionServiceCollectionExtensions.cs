@@ -61,11 +61,11 @@ namespace Kurisu.DependencyInjection.Extensions
         public static IServiceCollection AddDependencyInjectionService(this IServiceCollection services)
         {
             //生命周期类型
-            var lifeTimeTypes = new[] {typeof(ITransient), typeof(IScope), typeof(ISingleton)};
+            var lifeTimeTypes = new[] { typeof(ITransientDependency), typeof(IScopeDependency), typeof(ISingletonDependency) };
 
             //可注册类型
             var serviceTypes = App.ActiveTypes
-                .Where(x => typeof(IDependency).IsAssignableFrom(x)
+                .Where(x => x.IsAssignableTo(typeof(IDependency))
                             && x.IsClass
                             && x.IsPublic
                             && !x.IsAbstract
@@ -84,7 +84,7 @@ namespace Kurisu.DependencyInjection.Extensions
 
                 //获取注册的生命周期类型,不允许多个依赖注入接口
                 var lifeTimeInterfaces = interfaces.Where(x => lifeTimeTypes.Contains(x)).Distinct();
-                if (lifeTimeInterfaces.Count() > 1) throw new ApplicationException($"{service.FullName}存在多个生命周期配置");
+                if (lifeTimeInterfaces.Count() > 1) throw new ApplicationException($"{service.FullName}存在多个生命周期依赖");
 
                 //具体的生命周期类型
                 var currentLifeTimeInterface = lifeTimeInterfaces.First();
@@ -93,19 +93,21 @@ namespace Kurisu.DependencyInjection.Extensions
                 var ableInterfaces = interfaces.Where(x => !lifeTimeInterfaces.Contains(x)
                                                            && x != typeof(IDependency));
 
-                // 缓存类型注册
                 var typeNamed = registerAttribute?.Named ?? service.Name;
-                if (_typeNamedCollection.TryAdd(typeNamed, service))
+                if (!service.IsGenericType)
                 {
-                    //注册服务
-                    RegisterService(services, currentLifeTimeInterface, service, registerAttribute, ableInterfaces);
+                    //缓存类型注册
+                    _typeNamedCollection.TryAdd(typeNamed, service);
                 }
+
+                //注册服务
+                RegisterService(services, currentLifeTimeInterface, service, registerAttribute, ableInterfaces);
             }
 
             //注册命名服务
-            RegisterNamedService<ITransient>(services);
-            RegisterNamedService<IScope>(services);
-            RegisterNamedService<ISingleton>(services);
+            RegisterNamedService<ITransientDependency>(services);
+            RegisterNamedService<IScopeDependency>(services);
+            RegisterNamedService<ISingletonDependency>(services);
 
             return services;
         }
@@ -125,43 +127,37 @@ namespace Kurisu.DependencyInjection.Extensions
                 case RegisterType.Transient:
                     services.AddTransient(provider =>
                     {
-                        object Method(string named, ITransient _)
+                        return (Func<string, IScopeDependency, object>)((named, _) =>
                         {
                             var isRegister = _typeNamedCollection.TryGetValue(named, out var service);
                             return isRegister
                                 ? provider.GetService(service)
                                 : null;
-                        }
-
-                        return (Func<string, ITransient, object>) Method;
+                        });
                     });
                     break;
                 case RegisterType.Scoped:
                     services.AddScoped(provider =>
                     {
-                        object Method(string named, IScope _)
+                        return (Func<string, IScopeDependency, object>)((named, _) =>
                         {
                             var isRegister = _typeNamedCollection.TryGetValue(named, out var service);
                             return isRegister
                                 ? provider.GetService(service)
                                 : null;
-                        }
-
-                        return (Func<string, IScope, object>) Method;
+                        });
                     });
                     break;
                 case RegisterType.Singleton:
                     services.AddSingleton(provider =>
                     {
-                        object Method(string named, ISingleton _)
+                        return (Func<string, ISingletonDependency, object>)((named, _) =>
                         {
                             var isRegister = _typeNamedCollection.TryGetValue(named, out var service);
                             return isRegister
                                 ? provider.GetService(service)
                                 : null;
-                        }
-
-                        return (Func<string, ISingleton, object>) Method;
+                        });
                     });
                     break;
                 default:
@@ -205,6 +201,12 @@ namespace Kurisu.DependencyInjection.Extensions
         private static void Register(IServiceCollection services, Type lifeTimeType, Type service,
             RegisterAttribute registerAttribute, Type @interface = null)
         {
+            if (service.IsGenericType)
+            {
+                service = service.MakeGenericType(typeof(object));
+            }
+
+
             var registerType = GetRegisterType(lifeTimeType);
             switch (registerType)
             {
@@ -256,9 +258,9 @@ namespace Kurisu.DependencyInjection.Extensions
             //判断注册方式
             return lifeTimeType.Name switch
             {
-                nameof(ITransient) => RegisterType.Transient,
-                nameof(ISingleton) => RegisterType.Singleton,
-                nameof(IScope) => RegisterType.Scoped,
+                nameof(ITransientDependency) => RegisterType.Transient,
+                nameof(ISingletonDependency) => RegisterType.Singleton,
+                nameof(IScopeDependency) => RegisterType.Scoped,
                 _ => throw new InvalidCastException($"非法生命周期类型{lifeTimeType.Name}")
             };
         }

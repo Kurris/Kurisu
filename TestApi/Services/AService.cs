@@ -6,7 +6,7 @@ using TestApi.Entities;
 
 namespace TestApi.Services
 {
-    public class AService : ITransient
+    public class AService : ITransientDependency
     {
         private readonly IMasterDbService _db;
 

@@ -4,7 +4,7 @@ using Kurisu.DependencyInjection.Attributes;
 
 namespace TestApi.Services
 {
-    public interface ITestService : ITransient
+    public interface ITestService : ITransientDependency
     {
         string Get();
 

@@ -3,7 +3,7 @@ namespace Kurisu.Utils.Extensions
     /// <summary>
     /// 字符串工具类
     /// </summary>
-    public static class StringUtils
+    public static class StringExtensions
     {
         /// <summary>
         /// 是否为空

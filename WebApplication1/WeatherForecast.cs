@@ -1,8 +1,8 @@
 using System;
 
-namespace TestApi
+namespace WebApplication1
 {
-    public class WeatherForecastDto
+    public class WeatherForecast
     {
         public DateTime Date { get; set; }
 

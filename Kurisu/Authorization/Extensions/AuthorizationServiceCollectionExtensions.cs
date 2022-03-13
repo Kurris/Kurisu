@@ -18,7 +18,7 @@ namespace Kurisu.Authorization.Extensions
         /// <param name="services"></param>
         /// <exception cref="ArgumentNullException"></exception>
         /// <returns></returns>
-        public static IServiceCollection AddAppAuthentication(this IServiceCollection services)
+        public static IServiceCollection AddJwtAuthentication(this IServiceCollection services)
         {
             var jwtAppSetting = App.GetConfig<JwtAppSetting>();
             if (jwtAppSetting == null) throw new ArgumentNullException(nameof(JwtAppSetting));

@@ -17,7 +17,7 @@ namespace Kurisu.DependencyInjection.Extensions
         /// <param name="named"></param>
         /// <typeparam name="TService"></typeparam>
         /// <returns></returns>
-        public static TService Get<TService>(this Func<string, ITransient, object> func, string named) where TService : class
+        public static TService Get<TService>(this Func<string, ITransientDependency, object> func, string named) where TService : class
         {
             return func.Invoke(named, default) as TService;
         }
@@ -29,7 +29,7 @@ namespace Kurisu.DependencyInjection.Extensions
         /// <param name="named"></param>
         /// <typeparam name="TService"></typeparam>
         /// <returns></returns>
-        public static TService Get<TService>(this Func<string, IScope, object> func, string named) where TService : class
+        public static TService Get<TService>(this Func<string, IScopeDependency, object> func, string named) where TService : class
         {
             return func.Invoke(named, default) as TService;
         }
@@ -41,7 +41,7 @@ namespace Kurisu.DependencyInjection.Extensions
         /// <param name="named"></param>
         /// <typeparam name="TService"></typeparam>
         /// <returns></returns>
-        public static TService Get<TService>(this Func<string, ISingleton, object> func, string named) where TService : class
+        public static TService Get<TService>(this Func<string, ISingletonDependency, object> func, string named) where TService : class
         {
             return func.Invoke(named, default) as TService;
         }
