@@ -38,11 +38,11 @@ namespace Kurisu.Elasticsearch
                 _item = new EsItem(new Dictionary<string, object>
                 {
                     ["bool"] = @bool
-                });           
+                });
             }
 
             _deepItem.Clear();
-            if (_top.Count>0)
+            if (_top.Count > 0)
             {
                 var tops = _top.ToDictionary(x => x.Key, x => x.Value);
 
@@ -58,7 +58,7 @@ namespace Kurisu.Elasticsearch
                     })
                 });
             }
-           
+
 
             return _item;
         }
@@ -117,7 +117,7 @@ namespace Kurisu.Elasticsearch
                 _setIndexRecords.Push(_deep);
             }
 
-           
+
             if (nodeType is EsConditionType.Must or EsConditionType.Should)
             {
                 bool hasSetIndexRecords = false;
@@ -162,7 +162,7 @@ namespace Kurisu.Elasticsearch
                     var tops = _top.ToDictionary(x => x.Key, x => x.Value);
 
                     var elementes = tops.SelectMany(x => x.Value);
-                 
+
                     _item = new EsItem(new Dictionary<string, object>
                     {
                         ["bool"] = new EsItem(new Dictionary<string, object>()
@@ -177,40 +177,49 @@ namespace Kurisu.Elasticsearch
                     return node;
                 }
 
-                var @bool = new EsItem(new Dictionary<string, object>
+                //TODO 为空的原因
+                if (mustOrShould.Count > 0)
                 {
-                    [key] = mustOrShould
-                });
-
-                var top = new EsItem(new Dictionary<string, object>
-                {
-                    ["bool"] = @bool
-                });
-
-                _top.TryAdd(_deep, new List<EsItem>());
-                _top.TryGetValue(_deep, out var lis);
-                lis.Add(top);
-
-                if (_preCombineDeep == _deep || _deep==1)
-                {
-                    _top.TryAdd(_deep - 1, new List<EsItem>());
-                    _top.TryGetValue(_deep - 1, out var lis1);
-
-                    @bool = new EsItem(new Dictionary<string, object>
+                    var @bool = new EsItem(new Dictionary<string, object>
                     {
-                        [key] = lis
+                        [key] = mustOrShould
                     });
 
-                    top = new EsItem(new Dictionary<string, object>
+                    var top = new EsItem(new Dictionary<string, object>
                     {
                         ["bool"] = @bool
                     });
-                    lis1.Add(top);
 
-                    _top.Remove(_deep);
+                    _top.TryAdd(_deep, new List<EsItem>());
+                    _top.TryGetValue(_deep, out var lis);
+                    lis.Add(top);
+
+                    if (_preCombineDeep == _deep || _deep == 1)
+                    {
+                        _top.TryAdd(_deep - 1, new List<EsItem>());
+                        _top.TryGetValue(_deep - 1, out var lis1);
+
+                        @bool = new EsItem(new Dictionary<string, object>
+                        {
+                            [key] = lis
+                        });
+
+                        top = new EsItem(new Dictionary<string, object>
+                        {
+                            ["bool"] = @bool
+                        });
+                        lis1.Add(top);
+
+                        _top.Remove(_deep);
+                    }
+
+                    _preCombineDeep = _deep;
+
                 }
+                else
+                {
 
-                _preCombineDeep = _deep;
+                }
 
             }
 
