@@ -2,7 +2,6 @@ using System;
 using System.ComponentModel.DataAnnotations;
 using Kurisu.ConfigurableOptions.Abstractions;
 using Kurisu.ConfigurableOptions.Attributes;
-using Kurisu.DependencyInjection.Attributes;
 using Microsoft.Extensions.Configuration;
 
 namespace Kurisu.Cors

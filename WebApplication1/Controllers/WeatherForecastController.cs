@@ -1,10 +1,18 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Threading.Tasks;
+using Elasticsearch.Net;
+using Kurisu.Cors;
 using Kurisu.DataAccessor.UnitOfWork.Attributes;
+using Kurisu.Elasticsearch;
+using Kurisu.Elasticsearch.Abstractions;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
+using Nest;
+using Newtonsoft.Json;
 
 namespace WebApplication1.Controllers
 {
@@ -18,18 +26,24 @@ namespace WebApplication1.Controllers
         };
 
         private readonly ILogger<WeatherForecastController> _logger;
+        private readonly IOptions<CorsAppSetting> _options;
+        private readonly IElasticSearchService _esService;
 
-        public WeatherForecastController(ILogger<WeatherForecastController> logger)
+        public WeatherForecastController(ILogger<WeatherForecastController> logger, IOptions<CorsAppSetting> options
+            , IElasticSearchService esService)
         {
             _logger = logger;
+            _options = options;
+            _esService = esService;
         }
 
-      
+
         [UnitOfWork]
         [HttpGet("a")]
-        public string GetA()
+        public async Task<object> GetA()
         {
-            return "a";
+
+            return null;
         }
 
         [HttpGet("b")]
@@ -37,5 +51,14 @@ namespace WebApplication1.Controllers
         {
             return "b";
         }
+    }
+
+    public class Users
+    {
+        public int No { get; set; }
+        public string Name { get; set; }
+        public int Age { get; set; }
+        public string Address { get; set; }
+        public string Job { get; set; }
     }
 }

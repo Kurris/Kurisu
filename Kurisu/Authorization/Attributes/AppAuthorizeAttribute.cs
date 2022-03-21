@@ -1,31 +1,26 @@
 using System;
+using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc.Filters;
+using Microsoft.EntityFrameworkCore.ChangeTracking;
 
 namespace Kurisu.Authorization.Attributes
 {
-    public class AppAuthorizeAttribute : AuthorizeAttribute, IAuthorizationFilter
+    public class JAuthorizeAttribute : Attribute, IAsyncAuthorizationFilter
     {
-        public AppAuthorizeAttribute(params string[] policies)
+        private readonly string _group;
+        private readonly string _jAuth;
+
+        public JAuthorizeAttribute(string group, string jAuth)
         {
-            if (policies is { Length: > 0 })
-            {
-                Policies = policies;
-            }
+            _group = group;
+            _jAuth = jAuth;
         }
 
-        /// <summary>
-        /// 策略
-        /// </summary>
-        private string[] Policies
+
+        public async Task OnAuthorizationAsync(AuthorizationFilterContext context)
         {
-            get => Policy?.Split(",", StringSplitOptions.RemoveEmptyEntries);
-            set => Policy = string.Join(",", value);
-        }
-        
-        public void OnAuthorization(AuthorizationFilterContext context)
-        {
-            
+            throw new NotImplementedException();
         }
     }
 }

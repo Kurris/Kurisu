@@ -5,6 +5,7 @@ using Kurisu.ConfigurableOptions.Abstractions;
 using Kurisu.ConfigurableOptions.Attributes;
 using Kurisu.Cors;
 using Kurisu.DependencyInjection.Attributes;
+using Kurisu.UnifyResultAndValidation;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -21,59 +22,69 @@ namespace Kurisu.ConfigurableOptions.Extensions
         /// </summary>
         /// <param name="services"></param>
         /// <returns></returns>
-        public static IServiceCollection AddAllConfigurationWithConfigurationAttribute(this IServiceCollection services)
+        public static IServiceCollection AddAppSettingMapping(this IServiceCollection services)
         {
-            var appSettings = App.ActiveTypes.Where(x => x.IsDefined(typeof(ConfigurationAttribute), false));
-            if (!appSettings.Any()) return services;
+            var typesNeedToMapping = App.ActiveTypes.Where(x => x.IsDefined(typeof(ConfigurationAttribute), false));
+            if (!typesNeedToMapping.Any()) return services;
 
             var configuration = App.Configuration;
-            var config = typeof(OptionsConfigurationServiceCollectionExtensions).GetRuntimeMethod("Configure", new[] { typeof(IServiceCollection), typeof(IConfiguration) });
+            var method = typeof(OptionsConfigurationServiceCollectionExtensions).GetRuntimeMethod("Configure",
+                new[]
+                {
+                    typeof(IServiceCollection), typeof(IConfiguration)
 
-            foreach (var appSetting in appSettings)
+                });
+
+            foreach (var type in typesNeedToMapping)
             {
                 //取ConfigurationAttribute
-                var configurationAttribute = appSetting.GetCustomAttribute<ConfigurationAttribute>(false);
-                var configSectionPath = configurationAttribute?.SectionPath;
-
+                var configurationAttribute = type.GetCustomAttribute<ConfigurationAttribute>(false);
+                
                 //配置路径
-                var sectionPath = string.IsNullOrEmpty(configSectionPath)
-                    ? appSetting.Name
-                    : configSectionPath;
-
+                var sectionPath = string.IsNullOrEmpty(configurationAttribute.Section)
+                    ? type.Name
+                    : configurationAttribute.Section;
+                
                 var section = configuration.GetSection(sectionPath);
                 
                 //绑定配置
-                config?.MakeGenericMethod(appSetting).Invoke(null, new object[] { services, section });
+                method?.MakeGenericMethod(type).Invoke(null, new object[] {services, section});
             }
 
             return services;
         }
 
         /// <summary>
-        /// 添加配置选项
+        /// 添加配置选项,验证配置
         /// </summary>
-        /// <param name="serivces">服务容器</param>
+        /// <param name="services">服务容器</param>
         /// <typeparam name="TOptions">选项类型</typeparam>
         /// <returns></returns>
-        public static IServiceCollection AddConfigurableOptions<TOptions>(this IServiceCollection serivces)
-            where TOptions : class, new()
+        public static IServiceCollection AddOptionsMapping<TOptions>(this IServiceCollection services)  where TOptions : class, new()
         {
             var optionsType = typeof(TOptions);
 
-            //取ConfigurationAttribute
-            var configurationAttribute = optionsType.GetCustomAttribute<ConfigurationAttribute>(true);
-            var configSectionPath = configurationAttribute?.SectionPath;
+            string sectionPath;
+            if (!optionsType.IsDefined(typeof(ConfigurationAttribute),false))
+            {
+                sectionPath = optionsType.Name;
+            }
+            else
+            {
+                //取ConfigurationAttribute
+                var configurationAttribute = optionsType.GetCustomAttribute<ConfigurationAttribute>(false);
+                //配置路径
+                sectionPath =  string.IsNullOrEmpty(configurationAttribute.Section)
+                    ? optionsType.Name
+                    : configurationAttribute.Section;
+            }
 
-            //配置路径
-            var sectionPath = string.IsNullOrEmpty(configSectionPath)
-                ? optionsType.Name
-                : configSectionPath;
-
+            
             var configuration = App.Configuration;
             var section = configuration.GetSection(sectionPath);
 
             //绑定配置
-            var builder = serivces.AddOptions<TOptions>()
+            var builder = services.AddOptions<TOptions>()
                 .Bind(section)
                 .ValidateDataAnnotations(); //配置验证
 
@@ -82,9 +93,8 @@ namespace Kurisu.ConfigurableOptions.Extensions
             {
                 builder.PostConfigure(options => { (options as IPostConfigure<TOptions>)?.PostConfigure(configuration, options); });
             }
-
-            serivces.Configure<TOptions>(configuration.GetSection(""));
-            return serivces;
+            
+            return services;
         }
     }
 }

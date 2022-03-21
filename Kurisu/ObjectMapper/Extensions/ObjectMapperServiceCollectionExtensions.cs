@@ -24,6 +24,7 @@ namespace Kurisu.ObjectMapper.Extensions
             //扫描IRegister
             if (assemblies != null && assemblies.Any()) globalSettings.Scan(assemblies);
 
+            //名称匹配规则
             globalSettings.Default.NameMatchingStrategy(NameMatchingStrategy.Flexible);
 
             //globalSettings 一定要单例注入
@@ -31,7 +32,7 @@ namespace Kurisu.ObjectMapper.Extensions
             services.AddScoped<IMapper, ServiceMapper>();
 
             //提前编译会增加内容
-            // globalSettings.Compile();
+            //globalSettings.Compile();
 
             return services;
         }

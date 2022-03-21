@@ -12,7 +12,7 @@ using Microsoft.Extensions.DependencyInjection;
 using System.Linq;
 using System.Reflection;
 
-namespace Kurisu.Startup.Extentsions
+namespace Kurisu.Startup.Extensions
 {
     public static class ProgramExtensions
     {

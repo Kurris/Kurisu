@@ -23,20 +23,21 @@ namespace Kurisu.Cors.Extensions
             Action<CorsOptions> setupAction = null)
         {
             //注入cors配置
-            services.AddConfigurableOptions<CorsAppSetting>();
-
-            var corsAppSetting = App.GetConfig<CorsAppSetting>(loadPostConfigure: true);
-
+             services.AddOptionsMapping<CorsAppSetting>();
+            
             //添加跨域中间件
             services.AddCors(options =>
             {
+                var corsAppSetting = App.GetOptions<CorsAppSetting>(loadPostConfigure: true);
+                
+                //根据配置文件处理
                 options.AddPolicy(corsAppSetting.PolicyName, builder =>
                 {
                     //hasOrigins 用于判断Origins和Credentials
                     var hasOrigins = corsAppSetting.WithOrigins == null || !corsAppSetting.WithOrigins.Any();
                     if (!hasOrigins) builder.AllowAnyOrigin();
                     else
-                        builder.WithOrigins(corsAppSetting.WithOrigins)
+                        builder.WithOrigins(corsAppSetting.WithOrigins!)
                             .SetIsOriginAllowedToAllowWildcardSubdomains();
 
                     // 配置跨域凭据
@@ -47,6 +48,7 @@ namespace Kurisu.Cors.Extensions
                         builder.SetPreflightMaxAge(TimeSpan.FromSeconds(corsAppSetting.SetPreflightMaxAge.Value));
                 });
 
+                //外部处理,覆盖配置
                 setupAction?.Invoke(options);
             });
 

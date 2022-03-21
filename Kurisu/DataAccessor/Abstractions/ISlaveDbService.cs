@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Data;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
+using Kurisu.Common.Dto;
 
 namespace Kurisu.DataAccessor.Abstractions
 {

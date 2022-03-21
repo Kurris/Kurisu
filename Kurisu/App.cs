@@ -73,13 +73,13 @@ namespace Kurisu
         private static readonly ConcurrentBag<IDisposable> _unManagedObjects;
 
         /// <summary>
-        /// 获取静态缓存配置，程序初始化使用
+        /// 从Configuration中直接获取
         /// </summary>
         /// <typeparam name="TOptions">配置类</typeparam>
         /// <param name="path">配置节点路径,如果为空,取类型名称</param>
         /// <param name="loadPostConfigure">是否设置默认值</param>
         /// <returns><see cref="TOptions"/></returns>
-        public static TOptions GetConfig<TOptions>(string path = null, bool loadPostConfigure = false)
+        internal static TOptions GetOptions<TOptions>(string path = null, bool loadPostConfigure = false)
             where TOptions : class, new()
         {
             var options = path == null
@@ -90,11 +90,9 @@ namespace Kurisu
             if (!loadPostConfigure || !typeof(IPostConfigure<TOptions>).IsAssignableFrom(typeof(TOptions)))
                 return options;
 
-            if (options is IPostConfigure<TOptions> postConfigure)
-            {
-                options ??= Activator.CreateInstance<TOptions>();
-                postConfigure.PostConfigure(Configuration, options);
-            }
+            if (options is not IPostConfigure<TOptions> postConfigure) return options;
+
+            postConfigure.PostConfigure(Configuration, options);
 
             return options;
         }

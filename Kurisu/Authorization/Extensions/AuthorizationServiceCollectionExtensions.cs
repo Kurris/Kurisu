@@ -20,7 +20,7 @@ namespace Kurisu.Authorization.Extensions
         /// <returns></returns>
         public static IServiceCollection AddJwtAuthentication(this IServiceCollection services)
         {
-            var jwtAppSetting = App.GetConfig<JwtAppSetting>();
+            var jwtAppSetting = App.GetOptions<JwtAppSetting>();
             if (jwtAppSetting == null) throw new ArgumentNullException(nameof(JwtAppSetting));
 
             services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)

@@ -1,24 +1,26 @@
 using System;
+using Kurisu.DependencyInjection.Attributes;
 
 namespace Kurisu.ConfigurableOptions.Attributes
 {
     /// <summary>
-    /// appsetting.json 映射
+    /// AppSetting.json 映射
     /// </summary>
-    [AttributeUsage(AttributeTargets.Class | AttributeTargets.Interface)]
+    [SkipScan]
+    [AttributeUsage(AttributeTargets.Class)]
     public sealed class ConfigurationAttribute : Attribute
     {
         /// <summary>
-        /// 构造函数，使用sectionPath在appsetting.json进行搜索
+        /// 构造函数
         /// </summary>
-        /// <param name="sectionPath">节点路径</param>
-        public ConfigurationAttribute(string sectionPath)
+        /// <param name="section">节点路径</param>
+        public ConfigurationAttribute(string section)
         {
-            SectionPath = sectionPath;
+            Section = section;
         }
 
         /// <summary>
-        /// 构造函数,使用类型名为Section的Key在appsetting.json进行搜索
+        /// 构造函数
         /// </summary>
         public ConfigurationAttribute() : this(string.Empty)
         {
@@ -27,6 +29,6 @@ namespace Kurisu.ConfigurableOptions.Attributes
         /// <summary>
         /// 节点路径
         /// </summary>
-        public string SectionPath { get; }
+        public string Section { get; }
     }
 }

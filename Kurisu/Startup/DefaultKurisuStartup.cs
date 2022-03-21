@@ -8,6 +8,7 @@ using Kurisu.Authorization.Extensions;
 using Kurisu.Authorization.Middlewares;
 using Kurisu.ConfigurableOptions.Extensions;
 using Kurisu.Cors;
+using Kurisu.Cors.Extensions;
 using Kurisu.DataAccessor.Extensions;
 using Kurisu.DependencyInjection.Extensions;
 using Kurisu.ObjectMapper.Extensions;
@@ -37,28 +38,34 @@ namespace Kurisu.Startup
         {
             _configuration = configuration;
             App.Configuration = _configuration;
-            _configuration = configuration;
         }
 
         public override void ConfigureServices(IServiceCollection services)
         {
             services.AddControllers();
+            
+            //处理api相应时,循环序列化问题
+            //返回json为小驼峰命名
             services.AddControllers().AddNewtonsoftJson(options =>
             {
                 options.SerializerSettings.ReferenceLoopHandling = ReferenceLoopHandling.Ignore;
                 options.SerializerSettings.ContractResolver = new CamelCasePropertyNamesContractResolver();
             });
 
+            //映射配置文件 appSetting.json
+            services.AddAppSettingMapping();
+            services.AddCorsPolicy();
 
             services.AddSwaggerGen(c => { c.SwaggerDoc("v1", new OpenApiInfo { Title = "TestApi", Version = "v1" }); });
+            
+            //添加对象关系映射,扫描程序集
             services.AddObjectMapper(Assembly.GetExecutingAssembly());
 
             var cors = _configuration.GetSection(nameof(CorsAppSetting));
+            
             ChangeToken.OnChange(_configuration.GetReloadToken,
                 () => { Console.WriteLine("文件改变:" + cors["PolicyName"]); });
-
-            services.AddAllConfigurationWithConfigurationAttribute();
-
+            
             // services.AddJwtAuthentication();
             services.AddDependencyInjectionService();
             services.AddDatabaseAccessor();

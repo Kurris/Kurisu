@@ -8,10 +8,10 @@ using Microsoft.Extensions.DependencyInjection;
 namespace Kurisu.DataAccessor.UnitOfWork.Attributes
 {
     /// <summary>
-    /// 工作单元
+    /// 工作单元,局部事务
     /// </summary>
     [AttributeUsage(AttributeTargets.Method)]
-    public class UnitOfWorkAttribute : Attribute, IAsyncActionFilter, IOrderedFilter
+    public class UnitOfWorkAttribute : Attribute, IAsyncActionFilter
     {
         /// <summary>
         /// 是否为手动保存更改
@@ -26,14 +26,6 @@ namespace Kurisu.DataAccessor.UnitOfWork.Attributes
         {
             _isManualSaveChanges = isManualSaveChanges;
         }
-
-        /// <summary>
-        /// 是否为手动保存更改
-        /// </summary>
-        public bool IsManualSaveChanges => _isManualSaveChanges;
-
-        public int Order { get; } = 999;
-
 
         public async Task OnActionExecutionAsync(ActionExecutingContext context, ActionExecutionDelegate next)
         {

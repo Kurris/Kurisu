@@ -1,13 +1,12 @@
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 
-namespace Kurisu.DataAccessor
+namespace Kurisu.Common.Dto
 {
     /// <summary>
     /// 分页参数
     /// </summary>
-    /// <typeparam name="TEntity">数据实体</typeparam>
-    public class Pagination<TEntity> where TEntity : class, new()
+    /// <typeparam name="T">数据实体</typeparam>
+    public class Pagination<T> where T : class, new()
     {
         /// <summary>
         /// 页码
@@ -55,7 +54,7 @@ namespace Kurisu.DataAccessor
         /// <summary>
         /// 当前页集合
         /// </summary>
-        public IEnumerable<TEntity> Items { get; set; }
+        public IEnumerable<T> Items { get; set; }
     }
 
     /// <summary>
