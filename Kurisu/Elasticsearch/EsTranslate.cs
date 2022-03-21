@@ -20,45 +20,47 @@ namespace Kurisu.Elasticsearch
         private readonly Stack<int> _setIndexRecords = new();
 
 
-        private readonly List<EsConditionType> _searchRules = new();
+        private EsItem _item;
+        private EsConditionType _lastConditionType;
 
 
         public EsItem GetQuery(Expression node)
         {
             this.Visit(node);
 
-            if (_deepItem.SelectMany(x=>x.Value).Any())
+            if (_deepItem.SelectMany(x => x.Value).Any())
             {
                 var @bool = new EsItem(new Dictionary<string, object>
                 {
                     ["must"] = _deepItem.First().Value
                 });
 
-                var top = new EsItem(new Dictionary<string, object>
+                _item = new EsItem(new Dictionary<string, object>
                 {
                     ["bool"] = @bool
-                });
-
-                _top.TryAdd(999,new List<EsItem>());
-                _top.TryGetValue(999, out var list);
-                list.Add(top);
+                });           
             }
 
             _deepItem.Clear();
-            var tops = _top.ToDictionary(x => x.Key, x => x.Value);
-
-            var lis = tops.SelectMany(x => x.Value);
-
-            var key = _searchRules.Distinct().Count() > 1 ? "should" : "must";
-            var query = new EsItem(new Dictionary<string, object>
+            if (_top.Count>0)
             {
-                ["bool"] = new EsItem(new Dictionary<string, object>()
-                {
-                    [key] = lis
-                })
-            });
+                var tops = _top.ToDictionary(x => x.Key, x => x.Value);
 
-            return query;
+                var lis = tops.SelectMany(x => x.Value);
+
+                //var rules = _searchRules.Distinct();
+                //var key = rules.All(x => x == EsConditionType.Should) || rules.Count() > 1 ? "should" : "must";
+                _item = new EsItem(new Dictionary<string, object>
+                {
+                    ["bool"] = new EsItem(new Dictionary<string, object>()
+                    {
+                        [_lastConditionType.ToString().ToLower()] = lis
+                    })
+                });
+            }
+           
+
+            return _item;
         }
 
         private bool _isOrder;
@@ -80,6 +82,8 @@ namespace Kurisu.Elasticsearch
             _isOrder = false;
             return elements;
         }
+
+        private int _preCombineDeep;
 
 
         protected override Expression VisitBinary(BinaryExpression node)
@@ -113,39 +117,37 @@ namespace Kurisu.Elasticsearch
                 _setIndexRecords.Push(_deep);
             }
 
-            if ((nodeType is EsConditionType.Must or EsConditionType.Should || _deepItem.Count == 1) && _setIndexRecords.Count > 0)
+           
+            if (nodeType is EsConditionType.Must or EsConditionType.Should)
             {
-                if (_deepItem.Count == 1)
+                bool hasSetIndexRecords = false;
+                if (_setIndexRecords.Count > 0)
                 {
-                    mustOrShould = _deepItem.First().Value;
-                }
-                else
-                {
+                    hasSetIndexRecords = true;
+
+                    var current = _setIndexRecords.Pop();
                     if (_setIndexRecords.Count > 0)
                     {
-                        var current = _setIndexRecords.Pop();
-                        if (_setIndexRecords.Count > 0)
+                        var next = _setIndexRecords.Pop();
+                        while (next == current)
                         {
-                            var next = _setIndexRecords.Pop();
-                            while (next == current)
+                            if (_setIndexRecords.Count > 0)
                             {
-                                if (_setIndexRecords.Count > 0)
-                                {
-                                    next = _setIndexRecords.Pop();
-                                }
-                                else
-                                {
-                                    break;
-                                }
+                                next = _setIndexRecords.Pop();
                             }
-
-                            _setIndexRecords.Push(next);
+                            else
+                            {
+                                break;
+                            }
                         }
 
-                        _deepItem.TryGetValue(current, out mustOrShould);
-                        _deepItem.Remove(current);
-                        _deepItem.TryAdd(current,new List<EsItem>());
+                        _setIndexRecords.Push(next);
                     }
+
+
+                    _deepItem.TryGetValue(current, out mustOrShould);
+                    _deepItem.Remove(current);
+                    _deepItem.TryAdd(current, new List<EsItem>());
                 }
 
                 var key = "must";
@@ -153,8 +155,27 @@ namespace Kurisu.Elasticsearch
                 {
                     key = "should";
                 }
+                _lastConditionType = nodeType;
 
-                _searchRules.Add(nodeType);
+                if (!hasSetIndexRecords)
+                {
+                    var tops = _top.ToDictionary(x => x.Key, x => x.Value);
+
+                    var elementes = tops.SelectMany(x => x.Value);
+                 
+                    _item = new EsItem(new Dictionary<string, object>
+                    {
+                        ["bool"] = new EsItem(new Dictionary<string, object>()
+                        {
+                            [key] = elementes
+                        })
+                    });
+
+                    _top.Clear();
+
+                    _deep--;
+                    return node;
+                }
 
                 var @bool = new EsItem(new Dictionary<string, object>
                 {
@@ -169,6 +190,28 @@ namespace Kurisu.Elasticsearch
                 _top.TryAdd(_deep, new List<EsItem>());
                 _top.TryGetValue(_deep, out var lis);
                 lis.Add(top);
+
+                if (_preCombineDeep == _deep || _deep==1)
+                {
+                    _top.TryAdd(_deep - 1, new List<EsItem>());
+                    _top.TryGetValue(_deep - 1, out var lis1);
+
+                    @bool = new EsItem(new Dictionary<string, object>
+                    {
+                        [key] = lis
+                    });
+
+                    top = new EsItem(new Dictionary<string, object>
+                    {
+                        ["bool"] = @bool
+                    });
+                    lis1.Add(top);
+
+                    _top.Remove(_deep);
+                }
+
+                _preCombineDeep = _deep;
+
             }
 
             _deep--;
@@ -192,7 +235,7 @@ namespace Kurisu.Elasticsearch
             {
                 if (!_isOrder && !_isMethodCall)
                 {
-                    var conditionType = (EsConditionType) _resultStack.Pop();
+                    var conditionType = (EsConditionType)_resultStack.Pop();
                     var value = _resultStack.Pop();
                     var item = EsCondition.GetItem(node.Member.Name, value, conditionType);
                     _resultStack.Push(item);
@@ -242,13 +285,13 @@ namespace Kurisu.Elasticsearch
                         var type = this._memberAccessTypes.Pop();
 
                         value = this.GetType().GetMethod(nameof(EsTranslate.AccessValue), BindingFlags.NonPublic | BindingFlags.Static)
-                            .MakeGenericMethod(value.GetType(), type).Invoke(null, new[] {value, memberName});
+                            .MakeGenericMethod(value.GetType(), type).Invoke(null, new[] { value, memberName });
 
                         if (_memberAccessNames.Count == 0)
                         {
                             if (value.GetType().IsEnum)
                             {
-                                value = (int) value;
+                                value = (int)value;
                             }
 
                             _resultStack.Push(value);
