@@ -14,17 +14,17 @@ namespace Kurisu.Elasticsearch.LowLinq.Syntax
                 case EsConditionType.Term:
                     return new EsItem(new Dictionary<string, object>
                     {
-                        ["term"] = new EsTerm(new Dictionary<string, object> {
-                        { field, new EsValue
+                        ["term"] = new EsItem(new Dictionary<string, object> {
+                        { field, new
                             {
-                                Value = value
+                               value
                             }
                         }})
                     });
                 case EsConditionType.Match:
                     return new EsItem(new Dictionary<string, object>
                     {
-                        ["match"] = new EsMatch(new Dictionary<string, object> { { field, value } })
+                        ["match"] = new EsItem(new Dictionary<string, object> { { field, value } })
                     });
                 default:
                     throw new NotImplementedException();
@@ -44,6 +44,6 @@ namespace Kurisu.Elasticsearch.LowLinq.Syntax
         /// </summary>
         Match = 1,
         Should = 2,
-        Must= 3,
+        Must = 3,
     }
 }
