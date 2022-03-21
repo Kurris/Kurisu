@@ -34,7 +34,7 @@ namespace Kurisu.Startup.Extentsions
         /// <returns></returns>
         public static async Task RunKurisuAsync(this IHostBuilder hostBuilder, bool useGrpc = false)
         {
-           //TODO
+            //TODO
             await hostBuilder.RunKurisuAsync(null, useGrpc);
         }
 
@@ -48,16 +48,12 @@ namespace Kurisu.Startup.Extentsions
         public static async Task RunKurisuAsync(this IHostBuilder hostBuilder, Type startup, bool useGrpc = false)
         {
             await hostBuilder.ConfigureLogging(builder =>
-            {
-                builder.ClearProviders();
-                builder.AddSerilog();
-
-            }).ConfigureWebHostDefaults(webBuilder =>
-            {
-                webBuilder.UseSerilogDefault().UseStartup(startup);
-            })
-               .Build()
-               .RunAsync();
+                {
+                    builder.ClearProviders();
+                    builder.AddSerilog();
+                }).ConfigureWebHostDefaults(webBuilder => { webBuilder.UseSerilogDefault().UseStartup(startup); })
+                .Build()
+                .RunAsync();
         }
     }
 }
