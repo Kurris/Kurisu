@@ -35,5 +35,12 @@ namespace Kurisu.Elasticsearch.Extensions
         {
             return new OrderedList<TDocument>().OrderByDescending(searchable, orderExpression);
         }
+
+
+        public static ISelectable<TDocument, TResult> Select<TDocument, TResult>(this ISearchable<TDocument> searchable, Expression<Func<TDocument, TResult>> selectExpression)
+            where TDocument : class, new() where TResult : class
+        {
+            return new Selectable<TDocument, TResult>();
+        }
     }
 }

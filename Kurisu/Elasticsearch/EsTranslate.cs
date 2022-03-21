@@ -26,6 +26,24 @@ namespace Kurisu.Elasticsearch
         public EsItem GetQuery(Expression node)
         {
             this.Visit(node);
+
+            if (_deepItem.SelectMany(x=>x.Value).Any())
+            {
+                var @bool = new EsItem(new Dictionary<string, object>
+                {
+                    ["must"] = _deepItem.First().Value
+                });
+
+                var top = new EsItem(new Dictionary<string, object>
+                {
+                    ["bool"] = @bool
+                });
+
+                _top.TryAdd(999,new List<EsItem>());
+                _top.TryGetValue(999, out var list);
+                list.Add(top);
+            }
+
             _deepItem.Clear();
             var tops = _top.ToDictionary(x => x.Key, x => x.Value);
 

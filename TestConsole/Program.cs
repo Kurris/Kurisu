@@ -31,15 +31,14 @@ namespace TestConsole
             //    .Where(x => x.No == 1)
             //    .ToListAsync();
 
-            //  lis = await service.PostSearch<Users>()
-            //     .OrderByDescending(x => new {x.Age})
-            //     .ThenByDescending(x => x.No)
-            //     .Where(x => x.No == 2 || x.No == 3 && x.Job == "it")
-            //     .ToListAsync();
-            //
-           var  lis = await service.PostSearch<Users>()
-                .Where(x => x.Name == "ligy" || x.Age == 25 || x.Address.Contains("杭州"))
+            var lis =await service.PostSearch<Users>()            
+               .Where(x => x.Name.Contains("ligy") || x.Name.Contains("xiao"))
                .ToListAsync();
+              
+          
+            //var  lis = await service.PostSearch<Users>()
+            //     .Where(x => x.Name == "ligy" || x.Age == 25 || x.Address.Contains("杭州"))
+            //    .ToListAsync();  
         }
     }
 
