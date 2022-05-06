@@ -1,10 +1,13 @@
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
+using Kurisu.ConfigurableOptions.Abstractions;
 using Kurisu.ConfigurableOptions.Attributes;
+using Microsoft.Extensions.Configuration;
 
 namespace Kurisu.DataAccessor
 {
     [Configuration]
-    public class DbAppSetting
+    public class DbAppSetting : IPostConfigure<DbAppSetting>
     {
         /// <summary>
         /// 慢sql规定时间
@@ -24,6 +27,7 @@ namespace Kurisu.DataAccessor
         /// <summary>
         /// sql查询超时时间
         /// </summary>
+        [Required]
         public int Timeout { get; set; }
 
         /// <summary>
@@ -35,5 +39,10 @@ namespace Kurisu.DataAccessor
         /// 迁移类库
         /// </summary>
         public string MigrationsAssembly { get; set; }
+
+        public void PostConfigure(IConfiguration configuration, DbAppSetting options)
+        {
+            options.ReadConnectionStrings ??= new List<string>();
+        }
     }
 }

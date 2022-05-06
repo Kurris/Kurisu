@@ -16,9 +16,9 @@ namespace Kurisu.DataAccessor.Helpers
         }
 
 
-        private readonly List<DbParameter> _dbParameters = new List<DbParameter>();
+        private readonly List<DbParameter> _dbParameters = new();
         private readonly DbContext _dbContext;
-        private DbProviderFactory _dbProviderFactory = null;
+        private DbProviderFactory _dbProviderFactory;
 
         /// <summary>
         /// 数据库引擎工厂
@@ -55,8 +55,6 @@ namespace Kurisu.DataAccessor.Helpers
         /// <summary>
         /// 添加参数
         /// </summary>
-        /// <param name="name"></param>
-        /// <param name="value"></param>
         /// <returns></returns>
         internal DbParameterBuilder AddParams(IDictionary<string, object> dicParams)
         {

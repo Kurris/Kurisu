@@ -51,7 +51,12 @@ namespace Kurisu.Startup.Extensions
                 {
                     builder.ClearProviders();
                     builder.AddSerilog();
-                }).ConfigureWebHostDefaults(webBuilder => { webBuilder.UseSerilogDefault().UseStartup(startup); })
+                })
+                .ConfigureWebHostDefaults(webBuilder =>
+                {
+                    webBuilder.UseSerilogDefault()
+                        .UseStartup(startup);
+                })
                 .Build()
                 .RunAsync();
         }

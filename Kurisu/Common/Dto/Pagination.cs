@@ -5,7 +5,7 @@ namespace Kurisu.Common.Dto
     /// <summary>
     /// 分页参数
     /// </summary>
-    /// <typeparam name="T">数据实体</typeparam>
+    /// <typeparam name="T">数据类型</typeparam>
     public class Pagination<T> where T : class, new()
     {
         /// <summary>
@@ -21,7 +21,7 @@ namespace Kurisu.Common.Dto
         /// <summary>
         /// 总条数
         /// </summary>
-        public int TotalCount { get; set; }
+        public int Total { get; set; }
 
         /// <summary>
         /// 总页数
@@ -30,11 +30,11 @@ namespace Kurisu.Common.Dto
         {
             get
             {
-                if (TotalCount > 0)
+                if (Total > 0)
                 {
-                    return TotalCount % PageSize == 0
-                        ? TotalCount / PageSize
-                        : TotalCount / PageSize + 1;
+                    return Total % PageSize == 0
+                        ? Total / PageSize
+                        : Total / PageSize + 1;
                 }
 
                 return 0;
@@ -54,7 +54,7 @@ namespace Kurisu.Common.Dto
         /// <summary>
         /// 当前页集合
         /// </summary>
-        public IEnumerable<T> Items { get; set; }
+        public IEnumerable<T> Data { get; set; }
     }
 
     /// <summary>

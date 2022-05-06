@@ -45,29 +45,14 @@ namespace Kurisu.DataAccessor.Internal
 
             base.OnModelCreating(modelBuilder);
         }
-
-        public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = new CancellationToken())
-        {
-            try
-            {
-                return await base.SaveChangesAsync(cancellationToken);
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-            }
-
-            return await Task.FromResult(0);
-        }
     }
 
-    // ReSharper disable UnusedTypeParameter
     public class AppDbContext<TDbService> : DbContext where TDbService : IDbService
-    // ReSharper restore UnusedTypeParameter
     {
         public AppDbContext(DbContextOptions<AppDbContext<TDbService>> options) : base(options)
         {
         }
-        
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             foreach (var entityType in App.ActiveTypes.Where(x => x.IsDefined(typeof(TableAttribute), false)))
@@ -92,19 +77,6 @@ namespace Kurisu.DataAccessor.Internal
             }
 
             base.OnModelCreating(modelBuilder);
-        }
-
-        public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = new CancellationToken())
-        {
-            try
-            {
-                return await base.SaveChangesAsync(cancellationToken);
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-            }
-
-            return await Task.FromResult(0);
         }
     }
 }

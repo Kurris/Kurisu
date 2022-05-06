@@ -43,7 +43,7 @@ namespace Kurisu.Startup
         public override void ConfigureServices(IServiceCollection services)
         {
             services.AddControllers();
-            
+
             //处理api相应时,循环序列化问题
             //返回json为小驼峰命名
             services.AddControllers().AddNewtonsoftJson(options =>
@@ -56,16 +56,16 @@ namespace Kurisu.Startup
             services.AddAppSettingMapping();
             services.AddCorsPolicy();
 
-            services.AddSwaggerGen(c => { c.SwaggerDoc("v1", new OpenApiInfo { Title = "TestApi", Version = "v1" }); });
-            
+            services.AddSwaggerGen(c => { c.SwaggerDoc("v1", new OpenApiInfo {Title = "TestApi", Version = "v1"}); });
+
             //添加对象关系映射,扫描程序集
             services.AddObjectMapper(Assembly.GetExecutingAssembly());
 
             var cors = _configuration.GetSection(nameof(CorsAppSetting));
-            
+
             ChangeToken.OnChange(_configuration.GetReloadToken,
                 () => { Console.WriteLine("文件改变:" + cors["PolicyName"]); });
-            
+
             // services.AddJwtAuthentication();
             services.AddDependencyInjectionService();
             services.AddDatabaseAccessor();
@@ -87,8 +87,7 @@ namespace Kurisu.Startup
                 });
             }
 
-            // app.UseMiddleware<ExceptionMiddleware>();
-
+            app.UseMiddleware<ExceptionMiddleware>();
 
             // app.UseAuthorization();
             app.UseRouting();

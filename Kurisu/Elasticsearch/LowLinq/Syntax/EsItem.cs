@@ -1,12 +1,14 @@
 using System.Collections.Generic;
 using Kurisu.Elasticsearch.Abstractions;
 
-namespace Kurisu.Elasticsearch.LowLinq.Syntax;
-
-internal class EsItem : BaseElasticSearchOperation
+namespace Kurisu.Elasticsearch.LowLinq.Syntax
 {
-    public EsItem(Dictionary<string,object> dic)
+    internal class EsItem : BaseElasticSearchOperation
     {
-        _properties = dic;
+        public EsItem(Dictionary<string,object> dic)
+        {
+            _properties = dic;
+        }
     }
 }
+

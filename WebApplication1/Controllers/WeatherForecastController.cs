@@ -5,6 +5,7 @@ using System.Linq.Expressions;
 using System.Threading.Tasks;
 using Elasticsearch.Net;
 using Kurisu.Cors;
+using Kurisu.DataAccessor.Abstractions;
 using Kurisu.DataAccessor.UnitOfWork.Attributes;
 using Kurisu.Elasticsearch;
 using Kurisu.Elasticsearch.Abstractions;
@@ -20,30 +21,28 @@ namespace WebApplication1.Controllers
     [Route("[controller]")]
     public class WeatherForecastController : ControllerBase
     {
-        private static readonly string[] Summaries = new[]
-        {
-            "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
-        };
-
         private readonly ILogger<WeatherForecastController> _logger;
         private readonly IOptions<CorsAppSetting> _options;
         private readonly IElasticSearchService _esService;
+        private readonly ISlaveDbService _slaveDbService;
 
-        public WeatherForecastController(ILogger<WeatherForecastController> logger, IOptions<CorsAppSetting> options
-            , IElasticSearchService esService)
+        public WeatherForecastController(ILogger<WeatherForecastController> logger
+            , IOptions<CorsAppSetting> options
+            , IElasticSearchService esService
+            , ISlaveDbService slaveDbService)
         {
             _logger = logger;
             _options = options;
             _esService = esService;
+            _slaveDbService = slaveDbService;
         }
 
 
         [UnitOfWork]
-        [HttpGet("a")]
-        public async Task<object> GetA()
+        [HttpGet("menus")]
+        public async Task<IEnumerable<Menu>> GetMenus()
         {
-
-            return null;
+            return await _slaveDbService.ToListAsync<Menu>();
         }
 
         [HttpGet("b")]

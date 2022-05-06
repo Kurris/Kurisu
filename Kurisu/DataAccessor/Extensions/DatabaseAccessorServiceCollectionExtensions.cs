@@ -1,5 +1,6 @@
 using System;
 using System.Data.Common;
+using Kurisu.ConfigurableOptions.Extensions;
 using Kurisu.DataAccessor.Abstractions;
 using Kurisu.DataAccessor.Interceptors;
 using Kurisu.DataAccessor.Internal;
@@ -26,29 +27,35 @@ namespace Kurisu.DataAccessor.Extensions
         /// <returns></returns>
         public static IServiceCollection AddDatabaseAccessor(this IServiceCollection services)
         {
+            services.AddOptionsMapping<DbAppSetting>();
+
             //注册局部工作单元容器
             services.AddScoped<IDbContextContainer, DbContextContainer>();
 
+            //注册局部操作类型对应的连接
             services.AddScoped(provider =>
             {
-                return (Func<Type, DbConnection>)(dbType =>
+                return (Func<Type, DbConnection>) (dbType =>
+                {
+                    var connection = new MySqlConnection();
+                    var dbAppSetting = provider.GetService<IOptions<DbAppSetting>>()?.Value;
+
+                    if (dbType == typeof(IMasterDbService))
+                        connection.ConnectionString = dbAppSetting.DefaultConnectionString;
+                    else
                     {
-                        var connection = new MySqlConnection();
-                        var dbAppSetting = provider.GetService<IOptions<DbAppSetting>>()?.Value;
-
-                        if (dbType == typeof(IMasterDbService))
-                            connection.ConnectionString = dbAppSetting.DefaultConnectionString;
-                        else
+                        if (dbAppSetting.ReadConnectionStrings.Count > 0)
                         {
-                            var index = new Random().Next(dbAppSetting.ReadConnectionStrings.Count);
+                            var index = new Random().Next();
                             connection.ConnectionString = dbAppSetting.ReadConnectionStrings[index];
-
-                            if (string.IsNullOrEmpty(connection.ConnectionString))
-                                connection.ConnectionString = dbAppSetting.DefaultConnectionString;
                         }
 
-                        return connection;
-                    });
+                        if (string.IsNullOrEmpty(connection.ConnectionString))
+                            connection.ConnectionString = dbAppSetting.DefaultConnectionString;
+                    }
+
+                    return connection;
+                });
             });
 
             AddDbContext<IMasterDbService>(services);
@@ -80,19 +87,23 @@ namespace Kurisu.DataAccessor.Extensions
                 var dbAppSetting = provider.GetService<IOptions<DbAppSetting>>()?.Value;
                 if (dbAppSetting == null) throw new ArgumentNullException(nameof(DbAppSetting));
 
-                var cmdInterceptor = provider.GetRequiredService<DefaultDbCommandInterceptor>();
+                var cmdInterceptor = provider.GetService<DefaultDbCommandInterceptor>();
+                //new ConnectionProfilerInterceptor(),new DbContextSaveChangesInterceptor()
 
-
-                //new ConnectionProfilerInterceptor()  , new DbContextSaveChangesInterceptor()
-                options.AddInterceptors(cmdInterceptor);
+                options.AddInterceptors(cmdInterceptor!);
 
                 //局部共享连接
                 var connectionResolve = provider.GetService<Func<Type, DbConnection>>() ?? throw new NullReferenceException("connection");
                 var connection = connectionResolve.Invoke(typeof(TDbService));
+
                 options.UseMySql(connection, MySqlServerVersion.LatestSupportedServerVersion, builder =>
                 {
                     builder.CommandTimeout(dbAppSetting.Timeout);
-                    builder.MigrationsAssembly(dbAppSetting.MigrationsAssembly);
+
+                    if (!string.IsNullOrEmpty(dbAppSetting.MigrationsAssembly))
+                    {
+                        builder.MigrationsAssembly(dbAppSetting.MigrationsAssembly);
+                    }
                 });
 
                 if (!App.Env.IsDevelopment()) return;
@@ -125,7 +136,7 @@ namespace Kurisu.DataAccessor.Extensions
                     return new MySqlDb(dbContext);
                 }
 
-                return (Func<Type, DbOperationImplementation>)DbOperationImplementationResolve;
+                return (Func<Type, DbOperationImplementation>) DbOperationImplementationResolve;
             });
         }
     }

@@ -12,8 +12,6 @@ namespace Kurisu.Elasticsearch
         private readonly Stack<string> _memberAccessNames = new();
         private readonly Stack<Type> _memberAccessTypes = new();
 
-    
-
         public object GetQuery(Expression node)
         {
             this.Visit(node);

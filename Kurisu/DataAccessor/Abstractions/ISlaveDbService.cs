@@ -4,11 +4,12 @@ using System.Data;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
 using Kurisu.Common.Dto;
+using Kurisu.DataAccessor.Entity;
 
 namespace Kurisu.DataAccessor.Abstractions
 {
     /// <summary>
-    /// 从库接口
+    /// 从库接口,读操作
     /// </summary>
     public interface ISlaveDbService : IDbService
     {
@@ -16,22 +17,16 @@ namespace Kurisu.DataAccessor.Abstractions
         /// 返回第一个实体
         /// </summary>
         /// <typeparam name="T">实体类型</typeparam>
-        /// <returns>实体<see>
-        ///         <cref>{T}</cref>
-        ///     </see>
-        /// </returns>
-        Task<T> FirstOrDefaultAsync<T>() where T : class, new();
+        /// <returns></returns>
+        Task<T> FirstOrDefaultAsync<T>()where T : class, new();
 
         /// <summary>
         /// 根据主键查找实体
         /// </summary>
         /// <typeparam name="T">实体类型</typeparam>
         /// <param name="keyValues">主键</param>
-        /// <returns>实体<see>
-        ///         <cref>{T}</cref>
-        ///     </see>
-        /// </returns>
-        ValueTask<T> FirstOrDefaultAsync<T>(params object[] keyValues) where T : class, new();
+        /// <returns></returns>
+        ValueTask<T> FirstOrDefaultAsync<T>(params object[] keyValues)where T : class, new();
 
 
         /// <summary>
@@ -47,14 +42,14 @@ namespace Kurisu.DataAccessor.Abstractions
         /// </summary>
         /// <typeparam name="T">实体类型</typeparam>
         /// <param name="predicate">表达式</param>
-        /// <returns>实体<see cref="{T}"/></returns>
-        Task<T> FirstOrDefaultAsync<T>(Expression<Func<T, bool>> predicate) where T : class, new();
+        /// <returns></returns>
+        Task<T> FirstOrDefaultAsync<T>(Expression<Func<T, bool>> predicate)where T : class, new();
 
         /// <summary>
         /// 查询列表
         /// </summary>
         /// <returns>总数<see cref="int"/> 当前页<see cref="IEnumerable{T}"/></returns>
-        Task<IEnumerable<T>> FindListAsync<T>(Expression<Func<T, bool>> predicate = null) where T : class, new();
+        Task<IEnumerable<T>> ToListAsync<T>(Expression<Func<T, bool>> predicate = null)where T : class, new();
 
 
         /// <summary>
@@ -63,7 +58,7 @@ namespace Kurisu.DataAccessor.Abstractions
         /// <param name="pageSize">页行数</param>
         /// <param name="pageIndex">当前页</param>
         /// <returns>总数<see cref="int"/> 当前页<see cref="IEnumerable{T}"/></returns>
-        Task<Pagination<T>> FindListAsync<T>(int pageIndex, int pageSize) where T : class, new();
+        Task<Pagination<T>> ToPageAsync<T>(int pageIndex, int pageSize) where T : class, new();
 
         /// <summary>
         /// 分页查询
@@ -73,32 +68,32 @@ namespace Kurisu.DataAccessor.Abstractions
         /// <param name="pageSize">页行数</param>
         /// <param name="pageIndex">当前页</param>
         /// <returns>总数<see cref="int"/> 当前页<see cref="IEnumerable{T}"/></returns>
-        Task<Pagination<T>> FindListAsync<T>(Expression<Func<T, bool>> predicate, int pageIndex, int pageSize) where T : class, new();
+        Task<Pagination<T>> ToPageAsync<T>(Expression<Func<T, bool>> predicate, int pageIndex, int pageSize) where T : class, new();
 
 
         /// <summary>
         /// 获取DataTable
         /// </summary>
-        /// <param name="strSql">sql字符串</param>
+        /// <param name="sql">sql字符串</param>
         /// <param name="keyValues">参数</param>
         /// <returns><see cref="DataTable"/></returns>
-        Task<DataTable> GetTableAsync(string strSql, IDictionary<string, object> keyValues = null);
+        Task<DataTable> GetTableAsync(string sql, IDictionary<string, object> keyValues = null);
 
 
         /// <summary>
         /// 获取首行数据(需要对IDataReader数据在使用后及时释放)
         /// </summary>
-        /// <param name="strSql">sql字符串</param>
+        /// <param name="sql">sql字符串</param>
         /// <param name="keyValues">参数</param>
         /// <returns>首行<see cref="IDataReader"/></returns>
-        Task<IDataReader> GetReaderAsync(string strSql, IDictionary<string, object> keyValues = null);
+        Task<IDataReader> GetReaderAsync(string sql, IDictionary<string, object> keyValues = null);
 
         /// <summary>
         /// 获取首行首列值
         /// </summary>
-        /// <param name="strSql">sql字符串</param>
+        /// <param name="sql">sq</param>
         /// <param name="keyValues">参数</param>
         /// <returns>首行首列<see cref="object"/></returns>
-        Task<object> GetScalarAsync(string strSql, IDictionary<string, object> keyValues = null);
+        Task<object> GetScalarAsync(string sql, IDictionary<string, object> keyValues = null);
     }
 }

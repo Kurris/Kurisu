@@ -32,8 +32,8 @@ namespace Kurisu.Serilog.Extensions
                     var hasWriteTo = context.Configuration["Serilog:WriteTo:0:Name"];
                     if (hasWriteTo == null)
                     {
-                        config.WriteTo.Console(outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] {Message:lj} {Properties:j}{NewLine}{Exception}")
-                            .WriteTo.File(Path.Combine(AppContext.BaseDirectory, "logs", "application.log"), LogEventLevel.Information, rollingInterval: RollingInterval.Day, retainedFileCountLimit: null, encoding: Encoding.UTF8);
+                        // {Properties:j}
+                        config.WriteTo.Console(outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] [{SourceContext}] {Message:lj}{NewLine}{Exception}");
                     }
                 }
             });
@@ -63,8 +63,7 @@ namespace Kurisu.Serilog.Extensions
                     var hasWriteTo = context.Configuration["Serilog:WriteTo:0:Name"];
                     if (hasWriteTo == null)
                     {
-                        config.WriteTo.Console(outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] {Message:lj} {Properties:j}{NewLine}{Exception}")
-                            .WriteTo.File(Path.Combine(AppContext.BaseDirectory, "logs", "application.log"), LogEventLevel.Information, rollingInterval: RollingInterval.Day, retainedFileCountLimit: null, encoding: Encoding.UTF8);
+                        config.WriteTo.Console(outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] {Message:lj} {Properties:j}{NewLine}{Exception}");
                     }
                 }
             });

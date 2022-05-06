@@ -8,6 +8,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.VisualBasic;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Serialization;
 
 namespace Kurisu.Authorization.Middlewares
 {
@@ -34,7 +35,10 @@ namespace Kurisu.Authorization.Middlewares
 
                     context.Response.StatusCode = 200;
                     var apiResult = context.RequestServices.GetService<IApiResult>();
-                    var resultJson = JsonConvert.SerializeObject(apiResult.GetDefaultForbiddenApiResult());
+                    var resultJson = JsonConvert.SerializeObject(apiResult.GetDefaultForbiddenApiResult(), new JsonSerializerSettings
+                    {
+                        ContractResolver = new CamelCasePropertyNamesContractResolver()
+                    });
                     var content = Encoding.UTF8.GetBytes(resultJson);
 
                     context.Response.ContentType = "application/json";
@@ -49,7 +53,10 @@ namespace Kurisu.Authorization.Middlewares
 
                 context.Response.StatusCode = 200;
                 var apiResult = context.RequestServices.GetService<IApiResult>();
-                var resultJson = JsonConvert.SerializeObject(apiResult.GetDefaultErrorApiResult(msg));
+                var resultJson = JsonConvert.SerializeObject(apiResult.GetDefaultErrorApiResult(msg), new JsonSerializerSettings
+                {
+                    ContractResolver = new CamelCasePropertyNamesContractResolver()
+                });
                 var content = Encoding.UTF8.GetBytes(resultJson);
 
                 context.Response.ContentType = "application/json";

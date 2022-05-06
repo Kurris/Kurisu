@@ -32,11 +32,11 @@ namespace Kurisu.Authorization
             {
                 Subject = new ClaimsIdentity(new Claim[]
                 {
-                    new Claim(JwtClaimTypes.Issuer, iss),
-                    new Claim(JwtClaimTypes.Audience, aud),
-                    new Claim(JwtClaimTypes.Id, userId),
-                    new Claim(JwtClaimTypes.NotBefore, dtNow.ToString()),
-                    new Claim(JwtClaimTypes.Expiration, dtExpires.ToString())
+                    new(JwtClaimTypes.Issuer, iss),
+                    new(JwtClaimTypes.Audience, aud),
+                    new(JwtClaimTypes.Id, userId),
+                    new(JwtClaimTypes.NotBefore, dtNow.ToString()),
+                    new(JwtClaimTypes.Expiration, dtExpires.ToString())
                 }),
                 IssuedAt = dtNow, //颁发时间
                 NotBefore = dtNow,

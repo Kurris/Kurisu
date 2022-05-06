@@ -16,16 +16,13 @@ namespace Kurisu.DataAccessor.Abstractions
         /// 数据库上下文
         /// </summary>
         public DbContext DbContext { get; }
-        
+
         /// <summary>
         /// 转成IQueryable
         /// </summary>
-        /// <remarks>
-        /// 如果表达式为 <see cref="null"/>, 则返回无条件的 IQueryable
-        /// </remarks>
         /// <typeparam name="T">实体类型</typeparam>
         /// <param name="predicate">表达式</param>
-        /// <returns><see cref="IQueryable"/></returns>
+        /// <returns><see cref="IQueryable{T}"/></returns>
         IQueryable<T> AsQueryable<T>(Expression<Func<T, bool>> predicate) where T : class, new();
 
         /// <summary>
@@ -55,7 +52,7 @@ namespace Kurisu.DataAccessor.Abstractions
         /// var users = await _dbContext.Users.AsNoTrackingWithIdentityResolution()
         ///                          .Include(a => a.Role).ToListAsync();
         ///
-        ///  Users中可能有相同的Role,那么Role就会以key为准,公用一个实例
+        /// Users中可能有相同的Role,那么Role就会以key为准,公用一个实例
         /// </code>
         /// <returns></returns>
         IMasterDbService AsNoTrackingWithIdentityResolution();
