@@ -1,4 +1,5 @@
-namespace Kurisu.DependencyInjection.Abstractions
+// ReSharper disable once CheckNamespace
+namespace Microsoft.Extensions.DependencyInjection
 {
     /// <summary>
     /// 依赖注入接口

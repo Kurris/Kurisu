@@ -10,7 +10,7 @@ namespace Kurisu.Elasticsearch.LowLinq.Syntax
 {
     internal class EsPage
     {
-        internal Dictionary<string, int> Build(PageIn pageIn)
+        internal Dictionary<string, int> Build(PageInput pageIn)
         {
             return new Dictionary<string, int>()
             {

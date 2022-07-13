@@ -10,7 +10,7 @@ namespace Kurisu.Authorization
     /// <summary>
     /// jwt 加密
     /// </summary>
-    public static class JwtEncryption
+    internal static class JwtEncryption
     {
         /// <summary>
         /// token 生成方法

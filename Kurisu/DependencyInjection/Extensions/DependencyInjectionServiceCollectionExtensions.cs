@@ -3,15 +3,10 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using Kurisu.DependencyInjection.Abstractions;
-using Kurisu.DependencyInjection.Attributes;
-using Kurisu.DependencyInjection.Enums;
-using Kurisu.Proxy.Attributes;
-using Kurisu.Proxy.Global;
-using Microsoft.Extensions.DependencyInjection;
-using DispatchProxy = Kurisu.Proxy.DispatchProxy;
+using Kurisu;
 
-namespace Kurisu.DependencyInjection.Extensions
+// ReSharper disable once CheckNamespace
+namespace Microsoft.Extensions.DependencyInjection
 {
     /// <summary>
     /// 依赖注入扩展类
@@ -22,17 +17,8 @@ namespace Kurisu.DependencyInjection.Extensions
         /// <summary>
         /// 类型名称集合,name->registerService
         /// </summary>
-        private static readonly ConcurrentDictionary<string, Type> _typeNamedCollection;
+        private static readonly ConcurrentDictionary<string, Type> TypeNamedCollection;
 
-        /// <summary>
-        /// 创建代理的方法
-        /// </summary>
-        private static readonly MethodInfo _dispatchCreateMethod;
-
-        /// <summary>
-        /// 全局服务代理类型
-        /// </summary>
-        private static readonly Type _globalServiceProxyType;
 
         /// <summary>
         /// 静态初始化
@@ -40,17 +26,7 @@ namespace Kurisu.DependencyInjection.Extensions
         static DependencyInjectionServiceCollectionExtensions()
         {
             //命名服务容器
-            _typeNamedCollection = new ConcurrentDictionary<string, Type>();
-
-            //代理创建方法
-            _dispatchCreateMethod = typeof(DispatchProxy).GetMethod(nameof(DispatchProxy.Create), BindingFlags.Static | BindingFlags.NonPublic);
-
-            //全局代理类型
-            _globalServiceProxyType = App.ActiveTypes.FirstOrDefault(u => typeof(DispatchProxy).IsAssignableFrom(u)
-                                                                          && typeof(IGlobalDispatchProxy).IsAssignableFrom(u)
-                                                                          && u.IsClass
-                                                                          && !u.IsInterface
-                                                                          && !u.IsAbstract);
+            TypeNamedCollection = new ConcurrentDictionary<string, Type>();
         }
 
         /// <summary>
@@ -58,10 +34,10 @@ namespace Kurisu.DependencyInjection.Extensions
         /// </summary>
         /// <param name="services">服务容器</param>
         /// <returns><see cref="IServiceCollection"/></returns>
-        public static IServiceCollection AddDependencyInjectionService(this IServiceCollection services)
+        public static IServiceCollection AddKurisuDependencyInjection(this IServiceCollection services)
         {
             //生命周期类型
-            var lifeTimeTypes = new[] { typeof(ITransientDependency), typeof(IScopeDependency), typeof(ISingletonDependency) };
+            var lifeTimeTypes = new[] {typeof(ITransientDependency), typeof(IScopeDependency), typeof(ISingletonDependency)};
 
             //可注册类型
             var serviceTypes = App.ActiveTypes
@@ -97,11 +73,11 @@ namespace Kurisu.DependencyInjection.Extensions
                 if (!service.IsGenericType)
                 {
                     //缓存类型注册
-                    _typeNamedCollection.TryAdd(typeNamed, service);
+                    TypeNamedCollection.TryAdd(typeNamed, service);
                 }
 
                 //注册服务
-                RegisterService(services, currentLifeTimeInterface, service, registerAttribute, ableInterfaces);
+                RegisterService(services, currentLifeTimeInterface, service, ableInterfaces);
             }
 
             //注册命名服务
@@ -127,9 +103,9 @@ namespace Kurisu.DependencyInjection.Extensions
                 case RegisterType.Transient:
                     services.AddTransient(provider =>
                     {
-                        return (Func<string, IScopeDependency, object>)((named, _) =>
+                        return (Func<string, IScopeDependency, object>) ((named, _) =>
                         {
-                            var isRegister = _typeNamedCollection.TryGetValue(named, out var service);
+                            var isRegister = TypeNamedCollection.TryGetValue(named, out var service);
                             return isRegister
                                 ? provider.GetService(service)
                                 : null;
@@ -139,9 +115,9 @@ namespace Kurisu.DependencyInjection.Extensions
                 case RegisterType.Scoped:
                     services.AddScoped(provider =>
                     {
-                        return (Func<string, IScopeDependency, object>)((named, _) =>
+                        return (Func<string, IScopeDependency, object>) ((named, _) =>
                         {
-                            var isRegister = _typeNamedCollection.TryGetValue(named, out var service);
+                            var isRegister = TypeNamedCollection.TryGetValue(named, out var service);
                             return isRegister
                                 ? provider.GetService(service)
                                 : null;
@@ -151,9 +127,9 @@ namespace Kurisu.DependencyInjection.Extensions
                 case RegisterType.Singleton:
                     services.AddSingleton(provider =>
                     {
-                        return (Func<string, ISingletonDependency, object>)((named, _) =>
+                        return (Func<string, ISingletonDependency, object>) ((named, _) =>
                         {
-                            var isRegister = _typeNamedCollection.TryGetValue(named, out var service);
+                            var isRegister = TypeNamedCollection.TryGetValue(named, out var service);
                             return isRegister
                                 ? provider.GetService(service)
                                 : null;
@@ -172,20 +148,18 @@ namespace Kurisu.DependencyInjection.Extensions
         /// <param name="services">服务容器</param>
         /// <param name="lifeTimeType">生命周期类型</param>
         /// <param name="service">服务类型</param>
-        /// <param name="registerAttribute">注册特性</param>
         /// <param name="ableInterfaces">可注册接口</param>
-        private static void RegisterService(IServiceCollection services, Type lifeTimeType, Type service,
-            RegisterAttribute registerAttribute, IEnumerable<Type> ableInterfaces)
+        private static void RegisterService(IServiceCollection services, Type lifeTimeType, Type service, IEnumerable<Type> ableInterfaces)
         {
             //注册自己
-            Register(services, lifeTimeType, service, registerAttribute);
+            Register(services, lifeTimeType, service);
 
             //没有可注册的接口
             if (!ableInterfaces.Any()) return;
 
             //注册所有接口
             foreach (var @interface in ableInterfaces)
-                Register(services, lifeTimeType, service, registerAttribute, @interface);
+                Register(services, lifeTimeType, service, @interface);
         }
 
 
@@ -195,17 +169,14 @@ namespace Kurisu.DependencyInjection.Extensions
         /// <param name="services"></param>
         /// <param name="lifeTimeType"></param>
         /// <param name="service"></param>
-        /// <param name="registerAttribute"></param>
         /// <param name="interface"></param>
         /// <exception cref="ArgumentOutOfRangeException"></exception>
-        private static void Register(IServiceCollection services, Type lifeTimeType, Type service,
-            RegisterAttribute registerAttribute, Type @interface = null)
+        private static void Register(IServiceCollection services, Type lifeTimeType, Type service, Type @interface = null)
         {
             if (service.IsGenericType)
             {
                 service = service.MakeGenericType(typeof(object));
             }
-
 
             var registerType = GetRegisterType(lifeTimeType);
             switch (registerType)
@@ -216,7 +187,6 @@ namespace Kurisu.DependencyInjection.Extensions
                     else
                     {
                         services.AddTransient(@interface, service);
-                        AddDispatchProxy(services, lifeTimeType, service, registerAttribute.Proxy, @interface);
                     }
 
                     break;
@@ -226,7 +196,6 @@ namespace Kurisu.DependencyInjection.Extensions
                     else
                     {
                         services.AddScoped(@interface, service);
-                        AddDispatchProxy(services, lifeTimeType, service, registerAttribute.Proxy, @interface);
                     }
 
                     break;
@@ -236,7 +205,6 @@ namespace Kurisu.DependencyInjection.Extensions
                     else
                     {
                         services.AddSingleton(@interface, service);
-                        AddDispatchProxy(services, lifeTimeType, service, registerAttribute.Proxy, @interface);
                     }
 
                     break;
@@ -263,59 +231,6 @@ namespace Kurisu.DependencyInjection.Extensions
                 nameof(IScopeDependency) => RegisterType.Scoped,
                 _ => throw new InvalidCastException($"非法生命周期类型{lifeTimeType.Name}")
             };
-        }
-
-
-        /// <summary>
-        /// 创建服务代理
-        /// </summary>
-        /// <param name="services"></param>
-        /// <param name="lifeTimeType"></param>
-        /// <param name="service"></param>
-        /// <param name="proxyType"></param>
-        /// <param name="interface"></param>
-        private static void AddDispatchProxy(IServiceCollection services, Type lifeTimeType, Type service,
-            Type proxyType, Type @interface)
-        {
-            proxyType ??= _globalServiceProxyType;
-            if (proxyType == null
-                || service != null && service.IsDefined(typeof(SuppressProxyAttribute), true) //服务
-                || proxyType.IsDefined(typeof(SuppressProxyAttribute), true)) return; //aop拦截器 
-
-            var registerType = GetRegisterType(lifeTimeType);
-
-            //替换接口原有的注入类型
-            switch (registerType)
-            {
-                case RegisterType.Transient:
-                    services.AddTransient(@interface, AopFactory);
-                    break;
-                case RegisterType.Scoped:
-                    services.AddScoped(@interface, AopFactory);
-                    break;
-                case RegisterType.Singleton:
-                    services.AddTransient(@interface, AopFactory);
-                    break;
-                default:
-                    throw new ArgumentOutOfRangeException();
-            }
-
-            //aop method factory
-            DispatchProxy AopFactory(IServiceProvider serviceProvider)
-            {
-                var proxy = _dispatchCreateMethod.MakeGenericMethod(@interface, proxyType).Invoke(null, null) as DispatchProxy;
-
-                proxy.ServiceProvider = serviceProvider;
-                if (service != null) proxy.Target = serviceProvider.GetService(service);
-
-                //属性注入
-                foreach (var propertyInfo in proxy.GetType().GetProperties().Where(x => x.IsDefined(typeof(RegisterAttribute))))
-                {
-                    propertyInfo.SetValue(proxy, serviceProvider.GetService(propertyInfo.PropertyType));
-                }
-
-                return proxy;
-            }
         }
     }
 }

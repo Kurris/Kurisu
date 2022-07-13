@@ -1,34 +1,38 @@
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
-using Kurisu.ConfigurableOptions.Abstractions;
+using System.Linq;
 using Kurisu.ConfigurableOptions.Attributes;
-using Microsoft.Extensions.Configuration;
 
 namespace Kurisu.DataAccessor
 {
+    /// <summary>
+    /// 数据库配置
+    /// </summary>
     [Configuration]
-    public class DbAppSetting : IPostConfigure<DbAppSetting>
+    public class DbSetting
     {
         /// <summary>
-        /// 慢sql规定时间
+        /// 慢sql指定时间
         /// </summary>
         public int SlowSqlTime { get; set; }
 
         /// <summary>
         /// 默认连接字符串
         /// </summary>
+        [Required(ErrorMessage = "默认连接字符串为空")]
         public string DefaultConnectionString { get; set; }
 
         /// <summary>
         /// 读库连接字符串
         /// </summary>
-        public List<string> ReadConnectionStrings { get; set; }
+        public IEnumerable<string> ReadConnectionStrings { get; set; } = Enumerable.Empty<string>();
 
         /// <summary>
         /// sql查询超时时间
+        /// 默认30秒
         /// </summary>
-        [Required]
-        public int Timeout { get; set; }
+        public int Timeout { get; set; } = TimeSpan.FromSeconds(30).Seconds;
 
         /// <summary>
         /// 版本号
@@ -39,10 +43,5 @@ namespace Kurisu.DataAccessor
         /// 迁移类库
         /// </summary>
         public string MigrationsAssembly { get; set; }
-
-        public void PostConfigure(IConfiguration configuration, DbAppSetting options)
-        {
-            options.ReadConnectionStrings ??= new List<string>();
-        }
     }
 }

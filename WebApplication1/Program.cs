@@ -1,5 +1,5 @@
 using System.Threading.Tasks;
-using Kurisu.Startup.Extensions;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 
 

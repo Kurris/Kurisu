@@ -3,7 +3,7 @@ namespace Kurisu.Common.Dto
     /// <summary>
     /// 分页入参数
     /// </summary>
-    public class PageIn
+    public class PageInput
     {
         /// <summary>
         /// 当前页

@@ -1,18 +1,14 @@
 ﻿using System.Threading.Tasks;
-using Kurisu.Startup.Abstractions;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Serilog;
 using Kurisu.Serilog.Extensions;
-using Microsoft.AspNetCore.Builder;
 using System;
-using Microsoft.Extensions.DependencyInjection;
-using System.Linq;
-using System.Reflection;
+using Kurisu.Startup;
 
-namespace Kurisu.Startup.Extensions
+// ReSharper disable once CheckNamespace
+namespace Microsoft.Extensions.DependencyInjection
 {
     public static class ProgramExtensions
     {
@@ -30,12 +26,11 @@ namespace Kurisu.Startup.Extensions
         /// 运行kurisu framework
         /// </summary>
         /// <param name="hostBuilder"></param>
-        /// <param name="useGrpc"></param>
         /// <returns></returns>
-        public static async Task RunKurisuAsync(this IHostBuilder hostBuilder, bool useGrpc = false)
+        public static async Task RunKurisuAsync(this IHostBuilder hostBuilder)
         {
             //TODO
-            await hostBuilder.RunKurisuAsync(null, useGrpc);
+            await hostBuilder.RunKurisuAsync(null, false);
         }
 
         /// <summary>
@@ -45,7 +40,7 @@ namespace Kurisu.Startup.Extensions
         /// <param name="startup"></param>
         /// <param name="useGrpc"></param>
         /// <returns></returns>
-        public static async Task RunKurisuAsync(this IHostBuilder hostBuilder, Type startup, bool useGrpc = false)
+        public static async Task RunKurisuAsync(this IHostBuilder hostBuilder, Type startup, bool useGrpc)
         {
             await hostBuilder.ConfigureLogging(builder =>
                 {

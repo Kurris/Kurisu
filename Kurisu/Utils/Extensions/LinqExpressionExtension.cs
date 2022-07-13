@@ -13,14 +13,19 @@ namespace Kurisu.Utils.Extensions
         /// </summary>
         /// <typeparam name="T">类型</typeparam>
         /// <returns><see cref="Expression{Func{T, bool}}"/></returns>
-        public static Expression<Func<T, bool>> True<T>() { return x => true; }
+        public static Expression<Func<T, bool>> True<T>()
+        {
+            return x => true;
+        }
 
         /// <summary>
         /// 返回一个默认<see cref="false"/>的表达式
         /// </summary>
         /// <typeparam name="T">类型</typeparam>
-        /// <returns><see cref="Expression{Func{T, bool}}"/></returns>
-        public static Expression<Func<T, bool>> False<T>() { return x => false; }
+        public static Expression<Func<T, bool>> False<T>()
+        {
+            return x => false;
+        }
 
         /// <summary>
         /// 并且
@@ -135,7 +140,6 @@ namespace Kurisu.Utils.Extensions
     /// </summary>
     public static class ExpressionHelper
     {
-
         /// <summary>
         /// Ids 获取Or表达式
         /// </summary>
@@ -151,6 +155,7 @@ namespace Kurisu.Utils.Extensions
                 var exp = func.Invoke(id);
                 exps = exps.Or(exp);
             }
+
             return exps;
         }
 
@@ -162,6 +167,7 @@ namespace Kurisu.Utils.Extensions
                 var exp = func.Invoke(id);
                 exps = exps.Or(exp);
             }
+
             return exps;
         }
 
@@ -180,6 +186,7 @@ namespace Kurisu.Utils.Extensions
                 var exp = func.Invoke(t);
                 exps = exps.Or(exp);
             }
+
             return exps;
         }
 
@@ -222,7 +229,7 @@ namespace Kurisu.Utils.Extensions
         public static Expression<Func<T, bool>> GetStringContains<T>(this ParameterExpression parameterExpression, string propertityName, string value) where T : class
         {
             MemberExpression prop = Expression.Property(parameterExpression, propertityName);
-            MethodInfo eq = typeof(string).GetMethod("Contains", new Type[] { typeof(string) });
+            MethodInfo eq = typeof(string).GetMethod("Contains", new Type[] {typeof(string)});
             ConstantExpression constant = Expression.Constant(value, typeof(string));
             MethodCallExpression containsExp = Expression.Call(prop, eq, constant);
 

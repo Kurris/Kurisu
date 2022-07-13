@@ -16,7 +16,7 @@ namespace Kurisu.DataAccessor.Helpers
         }
 
 
-        private readonly List<DbParameter> _dbParameters = new();
+        private readonly List<object> _dbParameters = new();
         private readonly DbContext _dbContext;
         private DbProviderFactory _dbProviderFactory;
 
@@ -45,11 +45,11 @@ namespace Kurisu.DataAccessor.Helpers
         /// 获取参数数组
         /// </summary>
         /// <returns></returns>
-        internal DbParameter[] GetParams()
+        internal object[] GetParams()
         {
-            var values = _dbParameters.ToArray();
+            object[] values = _dbParameters.ToArray();
             _dbParameters.Clear();
-            return values;
+            return (object[]) values;
         }
 
         /// <summary>

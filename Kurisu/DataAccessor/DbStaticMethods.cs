@@ -1,30 +1,26 @@
 using System;
-using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
 using System.Linq.Expressions;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.ChangeTracking;
 
 namespace Kurisu.DataAccessor
 {
-    public static class Db
+    public static class DbStaticMethods
     {
         /// <summary>
         /// 动态排序
         /// </summary>
-        /// <param name="tempData"></param>
+        /// <param name="queryable"></param>
         /// <param name="sort"></param>
         /// <param name="isAsc"></param>
         /// <typeparam name="T"></typeparam>
         /// <returns></returns>
-        internal static IQueryable<T> Sort<T>(IQueryable<T> tempData, string sort, bool isAsc) where T : class
+        public static IQueryable<T> Sort<T>(this IQueryable<T> queryable, string sort, bool isAsc) where T : class
         {
             var sortArr = sort.Split(',');
 
             for (var i = 0; i < sortArr.Length; i++)
             {
-                var sortColAndRuleArr = sortArr[i].Trim().Split(new string[] {" "}, StringSplitOptions.RemoveEmptyEntries);
+                var sortColAndRuleArr = sortArr[i].Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries);
                 var sortField = sortColAndRuleArr.First();
                 var sortAsc = isAsc;
 
@@ -45,20 +41,20 @@ namespace Kurisu.DataAccessor
                     resultExpression = Expression.Call(
                         typeof(Queryable), //调用的类型
                         sortAsc ? "OrderBy" : "OrderByDescending", //方法名称
-                        new[] {typeof(T), property.PropertyType}, tempData.Expression, Expression.Quote(orderByExpression));
+                        new[] {typeof(T), property.PropertyType}, queryable.Expression, Expression.Quote(orderByExpression));
                 }
                 else
                 {
                     resultExpression = Expression.Call(
                         typeof(Queryable),
                         sortAsc ? "ThenBy" : "ThenByDescending",
-                        new[] {typeof(T), property.PropertyType}, tempData.Expression, Expression.Quote(orderByExpression));
+                        new[] {typeof(T), property.PropertyType}, queryable.Expression, Expression.Quote(orderByExpression));
                 }
 
-                tempData = tempData.Provider.CreateQuery<T>(resultExpression);
+                queryable = queryable.Provider.CreateQuery<T>(resultExpression);
             }
 
-            return tempData;
+            return queryable;
         }
     }
 }

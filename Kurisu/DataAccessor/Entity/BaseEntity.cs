@@ -7,7 +7,7 @@ namespace Kurisu.DataAccessor.Entity
     /// 基础实体
     /// </summary>
     /// <typeparam name="TKey"></typeparam>
-    public class BaseEntity<TKey> : IBaseEntity
+    public abstract class BaseEntity<TKey>
     {
         /// <summary>
         /// 主键
@@ -18,7 +18,7 @@ namespace Kurisu.DataAccessor.Entity
         /// <summary>
         /// 创建人
         /// </summary>
-        [Required]
+        [Required(ErrorMessage = "创建人不能为空")]
         [Range(0, int.MaxValue)]
         public int Creator { get; set; }
 

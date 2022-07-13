@@ -1,4 +1,3 @@
-using System;
 using Kurisu.UnifyResultAndValidation.Abstractions;
 
 namespace Kurisu.UnifyResultAndValidation
@@ -19,7 +18,7 @@ namespace Kurisu.UnifyResultAndValidation
         /// </summary>
         public ApiResult()
         {
-            this.Code = Status.Fail;
+            this.Code = Status.Error;
         }
 
         /// <summary>
@@ -51,9 +50,9 @@ namespace Kurisu.UnifyResultAndValidation
         public Status Code { get; set; }
 
 
-        public IApiResult GetDefaultSuccessApiResult<TResult>(TResult apiResult)
+        public virtual IApiResult GetDefaultSuccessApiResult<TResult>(TResult apiResult)
         {
-            return new ApiResult<TResult>()
+            return new ApiResult<TResult>
             {
                 Code = Status.Success,
                 Message = "操作成功",
@@ -61,9 +60,9 @@ namespace Kurisu.UnifyResultAndValidation
             };
         }
 
-        public IApiResult GetDefaultValidateApiResult<TResult>(TResult apiResult)
+        public virtual IApiResult GetDefaultValidateApiResult<TResult>(TResult apiResult)
         {
-            return new ApiResult<TResult>()
+            return new ApiResult<TResult>
             {
                 Code = Status.ValidateError,
                 Message = "实体验证失败",
@@ -71,20 +70,19 @@ namespace Kurisu.UnifyResultAndValidation
             };
         }
 
-        public IApiResult GetDefaultForbiddenApiResult()
+        public virtual IApiResult GetDefaultForbiddenApiResult()
         {
-            return new ApiResult<object>()
+            return new ApiResult<object>
             {
                 Code = Status.Forbidden,
                 Message = "无权访问"
             };
         }
 
-        public IApiResult GetDefaultErrorApiResult(string errorMessage)
+        public virtual IApiResult GetDefaultErrorApiResult(string errorMessage)
         {
-            return new ApiResult<object>()
+            return new ApiResult<object>
             {
-                Code = Status.Error,
                 Message = errorMessage
             };
         }
@@ -99,11 +97,6 @@ namespace Kurisu.UnifyResultAndValidation
         /// 操作成功
         /// </summary>
         Success = 200,
-
-        /// <summary>
-        /// 操作失败
-        /// </summary>
-        Fail = 202,
 
         /// <summary>
         /// 鉴权失败
@@ -128,66 +121,6 @@ namespace Kurisu.UnifyResultAndValidation
         /// <summary>
         /// 执行异常
         /// </summary>
-        Error = 500,
-    }
-
-
-    /// <summary>
-    /// ApiResult扩展方法
-    /// </summary>
-    public static class ApiResultExtensions
-    {
-        public static ApiResult<T> Success<T>(this T data)
-        {
-            return new ApiResult<T>
-            {
-                Code = Status.Success,
-                Message = "操作成功",
-                Data = data
-            };
-        }
-
-
-        /// <summary>
-        /// 设置异常状态
-        /// </summary>
-        /// <param name="ex"></param>
-        /// <returns></returns>
-        public static ApiResult<T> Error<T>(Exception ex)
-        {
-            return new ApiResult<T>
-            {
-                Code = Status.Error,
-                Message = ex.GetBaseException().Message
-            };
-        }
-
-        /// <summary>
-        /// 设置异常状态
-        /// </summary>
-        /// <param name="errorMsg"></param>
-        /// <returns></returns>
-        public static ApiResult<T> Error<T>(string errorMsg)
-        {
-            return new ApiResult<T>
-            {
-                Code = Status.Error,
-                Message = errorMsg
-            };
-        }
-
-        /// <summary>
-        /// 设置失败状态
-        /// </summary>
-        /// <param name="failMsg"></param>
-        /// <returns></returns>
-        public static ApiResult<T> Fail<T>(string failMsg)
-        {
-            return new ApiResult<T>
-            {
-                Code = Status.Fail,
-                Message = failMsg
-            };
-        }
+        Error = 500
     }
 }

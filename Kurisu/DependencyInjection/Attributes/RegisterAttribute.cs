@@ -1,7 +1,8 @@
 using System;
-using Kurisu.DependencyInjection.Enums;
 
-namespace Kurisu.DependencyInjection.Attributes
+
+// ReSharper disable once CheckNamespace
+namespace Microsoft.Extensions.DependencyInjection
 {
     /// <summary>
     /// 依赖注入特性
@@ -10,10 +11,6 @@ namespace Kurisu.DependencyInjection.Attributes
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Property)]
     public class RegisterAttribute : Attribute
     {
-        public RegisterAttribute()
-        {
-        }
-
         /// <summary>
         /// 注册类型,默认瞬时
         /// </summary>

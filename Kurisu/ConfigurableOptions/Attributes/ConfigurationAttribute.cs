@@ -1,10 +1,10 @@
 using System;
-using Kurisu.DependencyInjection.Attributes;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Kurisu.ConfigurableOptions.Attributes
 {
     /// <summary>
-    /// AppSetting.json 映射
+    /// 配置文件映射
     /// </summary>
     [SkipScan]
     [AttributeUsage(AttributeTargets.Class)]
@@ -13,22 +13,24 @@ namespace Kurisu.ConfigurableOptions.Attributes
         /// <summary>
         /// 构造函数
         /// </summary>
-        /// <param name="section">节点路径</param>
-        public ConfigurationAttribute(string section)
-        {
-            Section = section;
-        }
-
-        /// <summary>
-        /// 构造函数
-        /// </summary>
         public ConfigurationAttribute() : this(string.Empty)
         {
         }
 
+
+        /// <summary>
+        /// 构造函数
+        /// </summary>
+        /// <param name="path">节点路径</param>
+        public ConfigurationAttribute(string path)
+        {
+            Path = path;
+        }
+
+
         /// <summary>
         /// 节点路径
         /// </summary>
-        public string Section { get; }
+        public string Path { get; }
     }
 }

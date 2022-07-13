@@ -3,7 +3,6 @@ using System.Collections.Concurrent;
 using System.Data;
 using System.Data.Common;
 using System.Linq;
-using System.Threading;
 using System.Threading.Tasks;
 using Kurisu.DataAccessor.Abstractions;
 using Microsoft.EntityFrameworkCore;
@@ -46,6 +45,7 @@ namespace Kurisu.DataAccessor.Internal
         /// <returns></returns>
         public ConcurrentDictionary<Guid, DbContext> GetDbContexts() => this._dbContexts;
 
+
         /// <summary>
         /// 添加上下文到容器中
         /// </summary>
@@ -54,6 +54,7 @@ namespace Kurisu.DataAccessor.Internal
         {
             //非关系型数据库
             if (!dbContext.Database.IsRelational()) return;
+            //排除只读
             if (dbContext.ChangeTracker.QueryTrackingBehavior is QueryTrackingBehavior.NoTracking
                 or QueryTrackingBehavior.NoTrackingWithIdentityResolution) return;
 
@@ -67,48 +68,50 @@ namespace Kurisu.DataAccessor.Internal
 
         private async void OnDbContextOnSaveChangesFailed(object s, SaveChangesFailedEventArgs e)
         {
-            var contextSender = (DbContext)s;
+            var contextSender = (DbContext) s;
             var failedInstanceId = contextSender.ContextId.InstanceId;
             //已存在就不添加
             if (!_failedDbContexts.TryAdd(failedInstanceId, contextSender)) return;
 
             var database = contextSender.Database;
 
+            //事务共享，为null则都不存在
             var transaction = database.CurrentTransaction;
             if (transaction == null) return;
-
-            //用于打印信息
-            var connection = database.GetDbConnection();
 
             //回滚
             await transaction.RollbackAsync();
         }
 
-        public async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+        public async Task<int> SaveChangesAsync()
         {
-            var tasks = _dbContexts.Where(x => x.Value != null
-                                               && !_failedDbContexts.Contains(x))
-                .Select(x => x.Value.SaveChangesAsync(cancellationToken));
-
-            var result = await Task.WhenAll(tasks);
-            return result == null
-                ? 0
-                : result.Sum();
-        }
-
-        public async Task<int> SaveChangesAsync(bool acceptAllChangesOnSuccess, CancellationToken cancellationToken = default)
-        {
-            var tasks = _dbContexts.Where(x => x.Value != null
-                                               && !_failedDbContexts.Contains(x))
-                .Select(x => x.Value.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken));
+            var tasks = _dbContexts.Where(x => x.Value != null && !_failedDbContexts.Contains(x))
+                .Select(x => x.Value.SaveChangesAsync());
 
             var result = await Task.WhenAll(tasks);
             return result.Sum();
         }
 
+        public async Task<int> SaveChangesAsync(bool acceptAllChangesOnSuccess)
+        {
+            var tasks = _dbContexts.Where(x => x.Value != null && !_failedDbContexts.Contains(x))
+                .Select(x => x.Value.SaveChangesAsync(acceptAllChangesOnSuccess));
+
+            var result = await Task.WhenAll(tasks);
+            return result.Sum();
+        }
+
+        /// <summary>
+        /// 开启事务
+        /// </summary>
+        /// <param name="ensureTransaction"></param>
+        /// <returns></returns>
         public async Task<IDbContextContainer> BeginTransactionAsync(bool ensureTransaction = false)
         {
-            if (!_dbContexts.Any()) return null;
+            if (!_dbContexts.Any())
+            {
+                return this;
+            }
 
             if (DbContextTransaction == null)
             {
@@ -119,25 +122,26 @@ namespace Kurisu.DataAccessor.Internal
                     ? dbContext.Database.CurrentTransaction
                     : await _dbContexts.First().Value.Database.BeginTransactionAsync();
 
-                await UseTransactionAsync(DbContextTransaction.GetDbTransaction());
+                await ShareTransactionAsync(DbContextTransaction.GetDbTransaction());
             }
 
             return this;
         }
 
 
-        public async Task CommitTransactionAsync(bool isManualSaveChanges, Exception exception = default)
+        /// <summary>
+        /// 提交事务
+        /// </summary>
+        /// <param name="isManualSaveChanges"></param>
+        /// <param name="exception"></param>
+        public async Task CommitTransactionAsync(bool isManualSaveChanges, Exception exception = null)
         {
             //存在异常
             if (exception != null)
             {
                 //回滚事务 
-                if (DbContextTransaction != null)
-                {
-                    if (DbContextTransaction.GetDbTransaction().Connection != null) await DbContextTransaction.RollbackAsync();
-                    await DbContextTransaction.DisposeAsync();
-                    DbContextTransaction = null;
-                }
+                if (DbContextTransaction?.GetDbTransaction().Connection != null)
+                    await DbContextTransaction.RollbackAsync();
             }
             else
             {
@@ -145,38 +149,42 @@ namespace Kurisu.DataAccessor.Internal
                 try
                 {
                     //如果不是手动提交,则直接执行
-                    var changesCount = !isManualSaveChanges
+                    _ = !isManualSaveChanges
                         ? await SaveChangesAsync()
                         : 0;
 
-                    if (DbContextTransaction != null)
-                    {
-                        await DbContextTransaction.CommitAsync();
-                    }
-
-                    await this.CloseAsync();
+                    await DbContextTransaction?.CommitAsync();
                 }
                 catch
                 {
                     // 回滚事务
-                    if (DbContextTransaction?.GetDbTransaction()?.Connection != null) await DbContextTransaction?.RollbackAsync();
-                    throw;
-                }
-                finally
-                {
                     if (DbContextTransaction?.GetDbTransaction()?.Connection != null)
-                    {
-                        await DbContextTransaction.DisposeAsync();
-                        DbContextTransaction = null;
-                    }
+                        await DbContextTransaction.RollbackAsync();
+
+                    //原始错误
+                    throw;
                 }
             }
         }
 
+
         /// <summary>
-        /// 关闭所有
+        /// 共享上下文事务
         /// </summary>
-        public async Task CloseAsync()
+        /// <param name="transaction"></param>
+        private async Task ShareTransactionAsync(DbTransaction transaction)
+        {
+            var dic = _dbContexts.Where(x => x.Value != null && x.Value.Database.CurrentTransaction == null);
+            foreach (var kv in dic)
+            {
+                var db = kv.Value.Database;
+                await db.UseTransactionAsync(transaction);
+            }
+        }
+
+        public int Count => _dbContexts.Count;
+
+        public async ValueTask DisposeAsync()
         {
             //释放上下文
             foreach (var kv in _dbContexts)
@@ -190,6 +198,21 @@ namespace Kurisu.DataAccessor.Internal
                 await dbContext.DisposeAsync();
             }
 
+            _dbContexts.Clear();
+
+            foreach (var kv in _failedDbContexts)
+            {
+                var dbContext = kv.Value;
+                var dbConnection = dbContext.Database.GetDbConnection();
+                if (dbConnection.State != ConnectionState.Open) continue;
+
+                await dbConnection.CloseAsync();
+                await dbConnection.DisposeAsync();
+                await dbContext.DisposeAsync();
+            }
+
+            _failedDbContexts.Clear();
+
             //释放事务
             if (DbContextTransaction != null)
             {
@@ -197,22 +220,5 @@ namespace Kurisu.DataAccessor.Internal
                 DbContextTransaction = null;
             }
         }
-
-
-        /// <summary>
-        /// 共享上下文事务
-        /// </summary>
-        /// <param name="transaction"></param>
-        private async Task UseTransactionAsync(DbTransaction transaction)
-        {
-            foreach (var kv in _dbContexts.Where(x => x.Value != null
-                                                      && x.Value.Database.CurrentTransaction == null))
-            {
-                var db = kv.Value.Database;
-                await db.UseTransactionAsync(transaction);
-            }
-        }
-
-        public int Count => _dbContexts.Count;
     }
 }

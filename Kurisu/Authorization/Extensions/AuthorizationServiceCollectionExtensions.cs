@@ -1,11 +1,12 @@
 using System;
 using System.Text;
 using System.Threading.Tasks;
+using Kurisu.Authorization;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
 
-namespace Kurisu.Authorization.Extensions
+// ReSharper disable once CheckNamespace
+namespace Microsoft.Extensions.DependencyInjection
 {
     /// <summary>
     /// 授权扩展
@@ -16,44 +17,32 @@ namespace Kurisu.Authorization.Extensions
         /// 添加jwt鉴权
         /// </summary>
         /// <param name="services"></param>
+        /// <param name="jwtSetting"></param>
+        /// <param name="onMessageReceived"></param>
         /// <exception cref="ArgumentNullException"></exception>
         /// <returns></returns>
-        public static IServiceCollection AddJwtAuthentication(this IServiceCollection services)
+        public static IServiceCollection AddKurisuJwtAuthentication(this IServiceCollection services, JwtSetting jwtSetting, Action<MessageReceivedContext> onMessageReceived)
         {
-            var jwtAppSetting = App.GetOptions<JwtAppSetting>();
-            if (jwtAppSetting == null) throw new ArgumentNullException(nameof(JwtAppSetting));
-
             services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
                 .AddJwtBearer(options =>
                 {
-                    options.Events = new JwtBearerEvents()
+                    options.Events = new JwtBearerEvents
                     {
                         OnMessageReceived = context =>
                         {
-                            var loginProvider = "WebApi";
-                            if (!context.Request.Path.StartsWithSegments("/api")) loginProvider = "Signalr";
-                            var tokenName = jwtAppSetting.TokenName;
-
-                            context.Token = loginProvider switch
-                            {
-                                "WebApi" => context.Request.Headers[tokenName],
-                                "Signalr" => context.Request.Query[tokenName],
-                                _ => throw new NotSupportedException(loginProvider)
-                            };
+                            onMessageReceived?.Invoke(context);
                             return Task.CompletedTask;
                         }
                     };
-                    options.TokenValidationParameters = new TokenValidationParameters()
+                    options.TokenValidationParameters = new TokenValidationParameters
                     {
-                        ValidateIssuer = true,
-                        ValidateAudience = true,
+                        ValidateIssuer = !string.IsNullOrEmpty(jwtSetting.Issuer),
+                        ValidateAudience = !string.IsNullOrEmpty(jwtSetting.Audience),
                         ValidateLifetime = true,
                         ValidateIssuerSigningKey = true,
-                        ValidIssuer = jwtAppSetting.Issuer,
-                        ValidAudience = jwtAppSetting.Audience,
-                        IssuerSigningKey =
-                            new SymmetricSecurityKey(
-                                Encoding.UTF8.GetBytes(jwtAppSetting.TokenSecretKey)),
+                        ValidIssuer = jwtSetting.Issuer,
+                        ValidAudience = jwtSetting.Audience,
+                        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSetting.TokenSecretKey)),
                         RequireExpirationTime = true,
                     };
                 });

@@ -1,17 +1,24 @@
 ﻿using System;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Kurisu.Startup.Abstractions
 {
-    public interface IKurisuPack
+    public interface IKurisuPack : IOrderedFilter
     {
+        bool IsEnable { get; set; }
+
         /// <summary>
-        /// 触发动作
+        /// 服务提供器
         /// </summary>
-        /// <param name="serviceProvider"></param>
-        void OnRun(IServiceProvider serviceProvider);
+        IServiceProvider ServiceProvider { get; set; }
+
+        /// <summary>
+        /// 触发方法
+        /// </summary>
+        void Invoke();
 
         /// <summary>
         /// 添加服务
@@ -24,7 +31,6 @@ namespace Kurisu.Startup.Abstractions
         /// </summary>
         /// <param name="app"></param>
         /// <param name="env"></param>
-        /// <param name="serviceProvider"></param>
         void Configure(IApplicationBuilder app, IWebHostEnvironment env);
     }
 }

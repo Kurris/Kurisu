@@ -1,8 +1,8 @@
 using System.Data.Common;
 using System.Threading;
 using System.Threading.Tasks;
-using Kurisu.DependencyInjection.Abstractions;
 using Microsoft.EntityFrameworkCore.Diagnostics;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
@@ -13,10 +13,10 @@ namespace Kurisu.DataAccessor.Interceptors
     /// </summary>
     public class DefaultDbCommandInterceptor : DbCommandInterceptor, ISingletonDependency
     {
-        private readonly DbAppSetting _dbAppSetting;
+        private readonly DbSetting _dbAppSetting;
         private readonly ILogger<DefaultDbCommandInterceptor> _logger;
 
-        public DefaultDbCommandInterceptor(IOptions<DbAppSetting> options, ILogger<DefaultDbCommandInterceptor> logger)
+        public DefaultDbCommandInterceptor(IOptions<DbSetting> options, ILogger<DefaultDbCommandInterceptor> logger)
         {
             _dbAppSetting = options.Value;
             _logger = logger;

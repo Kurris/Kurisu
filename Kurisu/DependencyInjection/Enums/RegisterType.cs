@@ -1,6 +1,5 @@
-using Kurisu.DependencyInjection.Attributes;
-
-namespace Kurisu.DependencyInjection.Enums
+// ReSharper disable once CheckNamespace
+namespace Microsoft.Extensions.DependencyInjection
 {
     /// <summary>
     /// 依赖注入类型

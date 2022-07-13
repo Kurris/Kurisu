@@ -1,8 +1,7 @@
 using System;
-using Kurisu.DependencyInjection.Abstractions;
-using Kurisu.DependencyInjection.Attributes;
 
-namespace Kurisu.DependencyInjection.Extensions
+// ReSharper disable once CheckNamespace
+namespace Microsoft.Extensions.DependencyInjection
 {
     /// <summary>
     /// Func扩展类 

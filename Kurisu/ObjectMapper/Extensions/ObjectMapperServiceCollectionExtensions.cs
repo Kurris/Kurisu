@@ -2,9 +2,9 @@ using System.Linq;
 using System.Reflection;
 using Mapster;
 using MapsterMapper;
-using Microsoft.Extensions.DependencyInjection;
 
-namespace Kurisu.ObjectMapper.Extensions
+// ReSharper disable once CheckNamespace
+namespace Microsoft.Extensions.DependencyInjection
 {
     /// <summary>
     /// 对象关系映射扩展类
@@ -17,7 +17,7 @@ namespace Kurisu.ObjectMapper.Extensions
         /// <param name="services">服务容器</param>
         /// <param name="assemblies">扫描程序集</param>
         /// <returns></returns>
-        public static IServiceCollection AddObjectMapper(this IServiceCollection services, params Assembly[] assemblies)
+        public static IServiceCollection AddKurisuObjectMapper(this IServiceCollection services, params Assembly[] assemblies)
         {
             var globalSettings = TypeAdapterConfig.GlobalSettings;
 

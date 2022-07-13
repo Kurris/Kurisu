@@ -1,14 +1,14 @@
-using Kurisu.MVC.Extensions;
 using Kurisu.UnifyResultAndValidation.Filters;
-using Microsoft.Extensions.DependencyInjection;
+using Kurisu.UnifyResultAndValidation;
 
-namespace Kurisu.UnifyResultAndValidation.Extensions
+// ReSharper disable once CheckNamespace
+namespace Microsoft.Extensions.DependencyInjection
 {
     public static class UnifyServiceCollectionExtensions
     {
         /// <summary>
-        /// 统一格式处理
-        /// </summary>
+        /// 统一格式处理，使用默认返回类<see cref="ApiResult{T}"/>包装结果
+        /// </summary>                        
         /// <param name="services"></param>
         /// <returns></returns>
         public static IServiceCollection AddUnify(this IServiceCollection services)

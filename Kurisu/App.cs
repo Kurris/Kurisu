@@ -1,32 +1,24 @@
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Security.Claims;
-using Kurisu.ConfigurableOptions.Abstractions;
-using Kurisu.DependencyInjection.Attributes;
 using Kurisu.Startup;
-using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Options;
 
 namespace Kurisu
 {
     /// <summary>
     /// 应用程序全局类
     /// </summary>
-    public static class App
+    public class App
     {
         static App()
         {
-            //未托管类型
-            _unManagedObjects = new ConcurrentBag<IDisposable>();
-
-            //有效类型
-            LoadActiveTypes();
+            Initialize();
         }
 
         /// <summary>
@@ -56,45 +48,45 @@ namespace Kurisu
         public static ClaimsPrincipal User => HttpContext?.User;
 
 
-        /// <summary>
-        /// web主机运行环境
-        /// </summary>
-        public static IWebHostEnvironment Env { get; set; }
+        private static IEnumerable<BasePack> _packs;
 
         /// <summary>
         /// 自定义处理pack
         /// </summary>
-        public static IEnumerable<BasePack> Packs { get; set; }
+        public static IEnumerable<BasePack> Packs
+        {
+            get
+            {
+                if (_packs == null)
+                {
+                    var packTypes = ActiveTypes.Where(x => x.IsSubclassOf(typeof(BasePack)));
+                    _packs = packTypes.Select(x => Activator.CreateInstance(x) as BasePack)
+                        .Where(x => x.IsEnable)
+                        .OrderBy(x => x.Order);
+                }
 
-
-        /// <summary>
-        /// 未托管的对象集合
-        /// </summary>
-        private static readonly ConcurrentBag<IDisposable> _unManagedObjects;
+                return _packs;
+            }
+        }
 
         /// <summary>
         /// 从Configuration中直接获取
         /// </summary>
         /// <typeparam name="TOptions">配置类</typeparam>
-        /// <param name="path">配置节点路径,如果为空,取类型名称</param>
-        /// <param name="loadPostConfigure">是否设置默认值</param>
         /// <returns><see cref="TOptions"/></returns>
-        internal static TOptions GetOptions<TOptions>(string path = null, bool loadPostConfigure = false)
+        internal static TOptions GetOptions<TOptions>()
             where TOptions : class, new()
         {
-            var options = path == null
-                ? Configuration.GetSection(typeof(TOptions).Name).Get<TOptions>()
-                : Configuration.GetSection(path).Get<TOptions>();
+            var options = ServiceProvider.GetService<IOptions<TOptions>>();
+            return options?.Value;
+        }
 
-            // 加载默认选项配置
-            if (!loadPostConfigure || !typeof(IPostConfigure<TOptions>).IsAssignableFrom(typeof(TOptions)))
-                return options;
-
-            if (options is not IPostConfigure<TOptions> postConfigure) return options;
-
-            postConfigure.PostConfigure(Configuration, options);
-
-            return options;
+        /// <summary>
+        /// 初始化
+        /// </summary>
+        private static void Initialize()
+        {
+            LoadActiveTypes();
         }
 
         /// <summary>
@@ -123,38 +115,19 @@ namespace Kurisu
             //排除无效type
             ActiveTypes = activeAssemblies.SelectMany(x => x.GetTypes()
                 .Where(type => type.IsPublic)
-                .Where(x => !x.FullName.StartsWith("System"))
-                .Where(x => !x.FullName.StartsWith("Microsoft"))
-                .Where(x => !x.FullName.StartsWith("Internal"))
-                .Where(x => !x.FullName.StartsWith("Swashbuckle"))
-                .Where(x => !x.FullName.StartsWith("Serilog"))
-                .Where(x => !x.FullName.StartsWith("Mapster"))
-                .Where(x => !x.FullName.StartsWith("Pomelo"))
-                .Where(x => !x.FullName.StartsWith("Newtonsoft"))
-                .Where(x => !x.FullName.StartsWith("MySql"))
-                .Where(type => !type.IsDefined(typeof(SkipScanAttribute), false))
-                );
-
-        }
-
-        /// <summary>
-        /// 释放未托管的对象
-        /// </summary>
-        public static void Dispose()
-        {
-            foreach (var unManagedObject in _unManagedObjects)
-            {
-                try
-                {
-                    unManagedObject.Dispose();
-                }
-                catch
-                {
-
-                }
-            }
-
-            _unManagedObjects.Clear();
+                .Where(type => !type.FullName.StartsWith("System"))
+                .Where(type => !type.FullName.StartsWith("Microsoft"))
+                .Where(type => !type.FullName.StartsWith("Internal"))
+                .Where(type => !type.FullName.StartsWith("Swashbuckle"))
+                .Where(type => !type.FullName.StartsWith("Serilog"))
+                .Where(type => !type.FullName.StartsWith("Mapster"))
+                .Where(type => !type.FullName.StartsWith("Pomelo"))
+                .Where(type => !type.FullName.StartsWith("Newtonsoft"))
+                .Where(type => !type.FullName.StartsWith("MySql"))
+                .Where(type => !type.FullName.StartsWith("Nest"))
+                .Where(type => !type.FullName.StartsWith("Elasticsearch"))
+                .Where(type => !type.IsDefined(typeof(SkipScanAttribute)))
+            );
         }
     }
 }

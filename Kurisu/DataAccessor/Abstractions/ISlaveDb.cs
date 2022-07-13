@@ -1,24 +1,27 @@
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Linq;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
 using Kurisu.Common.Dto;
-using Kurisu.DataAccessor.Entity;
+using Kurisu.DataAccessor.Internal;
 
 namespace Kurisu.DataAccessor.Abstractions
 {
     /// <summary>
     /// 从库接口,读操作
     /// </summary>
-    public interface ISlaveDbService : IDbService
+    public interface ISlaveDb : IDb
     {
+        public AppDbContext<ISlaveDb> SlaveDbContext { get; }
+
         /// <summary>
         /// 返回第一个实体
         /// </summary>
         /// <typeparam name="T">实体类型</typeparam>
         /// <returns></returns>
-        Task<T> FirstOrDefaultAsync<T>()where T : class, new();
+        Task<T> FirstOrDefaultAsync<T>() where T : class, new();
 
         /// <summary>
         /// 根据主键查找实体
@@ -26,7 +29,7 @@ namespace Kurisu.DataAccessor.Abstractions
         /// <typeparam name="T">实体类型</typeparam>
         /// <param name="keyValues">主键</param>
         /// <returns></returns>
-        ValueTask<T> FirstOrDefaultAsync<T>(params object[] keyValues)where T : class, new();
+        ValueTask<T> FirstOrDefaultAsync<T>(params object[] keyValues) where T : class, new();
 
 
         /// <summary>
@@ -43,13 +46,13 @@ namespace Kurisu.DataAccessor.Abstractions
         /// <typeparam name="T">实体类型</typeparam>
         /// <param name="predicate">表达式</param>
         /// <returns></returns>
-        Task<T> FirstOrDefaultAsync<T>(Expression<Func<T, bool>> predicate)where T : class, new();
+        Task<T> FirstOrDefaultAsync<T>(Expression<Func<T, bool>> predicate) where T : class, new();
 
         /// <summary>
         /// 查询列表
         /// </summary>
         /// <returns>总数<see cref="int"/> 当前页<see cref="IEnumerable{T}"/></returns>
-        Task<IEnumerable<T>> ToListAsync<T>(Expression<Func<T, bool>> predicate = null)where T : class, new();
+        Task<IEnumerable<T>> ToListAsync<T>(Expression<Func<T, bool>> predicate = null) where T : class, new();
 
 
         /// <summary>

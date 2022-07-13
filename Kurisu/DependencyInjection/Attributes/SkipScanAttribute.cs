@@ -1,6 +1,8 @@
 using System;
 
-namespace Kurisu.DependencyInjection.Attributes
+
+// ReSharper disable once CheckNamespace
+namespace Microsoft.Extensions.DependencyInjection
 {
     /// <summary>
     /// 跳过自动扫描

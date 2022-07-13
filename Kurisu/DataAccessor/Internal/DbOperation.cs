@@ -15,77 +15,60 @@ using Microsoft.EntityFrameworkCore.Metadata;
 namespace Kurisu.DataAccessor.Internal
 {
     /// <summary>
-    /// 数据库操作抽象类
+    /// 数据库操作
     /// </summary>
-    internal abstract class DbOperationImplementation : IMasterDbService
+    public class DbOperation<TIDb> : IDbOperation where TIDb : IDb
     {
-        internal DbOperationImplementation(DbContext dbContext)
+        internal DbOperation(IAppDbContext dbContext)
         {
-            this.DbContext = dbContext;
+            DbContext = (AppDbContext<TIDb>) dbContext;
         }
 
-        public DbContext DbContext { get; }
+        public AppDbContext<TIDb> DbContext { get; }
 
-        #region 跟踪,可查询
-
-        public virtual IQueryable<T> AsQueryable<T>(Expression<Func<T, bool>> predicate) where T : class, new()
-        {
-            return DbContext.Set<T>().Where(predicate);
-        }
-
-        public virtual IQueryable<T> AsQueryable<T>() where T : class, new()
-        {
-            return DbContext.Set<T>().AsQueryable();
-        }
-
-        public virtual IQueryable<T> AsNoTracking<T>() where T : class, new()
-        {
-            return DbContext.Set<T>().AsNoTracking();
-        }
-
-        public virtual IQueryable<T> AsNoTrackingWithIdentityResolution<T>() where T : class, new()
-        {
-            return DbContext.Set<T>().AsNoTrackingWithIdentityResolution();
-        }
-
-        public virtual IMasterDbService AsNoTracking()
-        {
-            DbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
-            return this;
-        }
-
-        public virtual IMasterDbService AsNoTrackingWithIdentityResolution()
-        {
-            DbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTrackingWithIdentityResolution;
-            return this;
-        }
-
-        #endregion
-
+        /// <summary>
+        /// 执行sql
+        /// </summary>
+        /// <param name="sql"></param>
+        /// <param name="keyValues"></param>
+        /// <returns></returns>
         public virtual async Task<int> RunSqlAsync(string sql, IDictionary<string, object> keyValues = null)
         {
             if (keyValues != null)
                 return await DbContext.Database.ExecuteSqlRawAsync(sql, new DbParameterBuilder(this.DbContext).AddParams(keyValues).GetParams());
-            else
-                return await DbContext.Database.ExecuteSqlRawAsync(sql);
+
+            return await DbContext.Database.ExecuteSqlRawAsync(sql);
         }
 
+        /// <summary>
+        /// 执行sql
+        /// 插值{}将会被替换成参数模式
+        /// </summary>
+        /// <param name="strSql"></param>
+        /// <returns></returns>
         public virtual async Task<int> RunSqlInterAsync(FormattableString strSql) => await DbContext.Database.ExecuteSqlInterpolatedAsync(strSql);
 
+        /// <summary>
+        /// 执行存储过程
+        /// </summary>
+        /// <param name="procName"></param>
+        /// <param name="keyValues"></param>
+        /// <returns></returns>
+        /// <exception cref="NotImplementedException"></exception>
         public virtual Task ExecProcAsync(string procName, IDictionary<string, object> keyValues = null) => throw new NotImplementedException("请在派生类中实现");
 
-        #region Write Implementation
 
         public virtual async ValueTask<T> SaveAsync<T>(object entity) where T : class, new()
         {
-            var (_, value) = this.FindKeyValue<object>(entity);
+            var (_, value) = FindKeyValue<object>(entity);
 
             switch (value)
             {
                 case Guid guid when guid == Guid.Empty:
                     throw new ArgumentException("主键为Guid类型时，主键必须存在唯一值");
-                case Guid _:
+                case Guid:
                 case null:
+                case 0:
                     await this.DbContext.AddAsync(entity);
                     break;
                 default:
@@ -225,13 +208,11 @@ namespace Kurisu.DataAccessor.Internal
             await this.DeleteAsync(ts);
         }
 
-        #endregion
-
         #region Read Implementation
 
         public virtual async Task<T> FirstOrDefaultAsync<T>() where T : class, new()
         {
-            return await AsNoTracking<T>().FirstOrDefaultAsync();
+            return await DbContext.Set<T>().FirstOrDefaultAsync();
         }
 
         public virtual async ValueTask<T> FirstOrDefaultAsync<T>(params object[] keyValues) where T : class, new()
@@ -246,26 +227,26 @@ namespace Kurisu.DataAccessor.Internal
 
         public virtual async Task<T> FirstOrDefaultAsync<T>(Expression<Func<T, bool>> predicate) where T : class, new()
         {
-            return await AsNoTracking<T>().FirstOrDefaultAsync(predicate);
+            return await DbContext.Set<T>().FirstOrDefaultAsync(predicate);
         }
 
         public virtual async Task<IEnumerable<T>> ToListAsync<T>(Expression<Func<T, bool>> predicate = null) where T : class, new()
         {
             IEnumerable<T> data = predicate == null
-                ? await AsNoTracking<T>().ToListAsync()
-                : await AsNoTracking<T>().Where(predicate).ToListAsync();
+                ? await DbContext.Set<T>().ToListAsync()
+                : await DbContext.Set<T>().Where(predicate).ToListAsync();
 
             return data;
         }
 
         public virtual async Task<Pagination<T>> ToPageAsync<T>(int pageIndex, int pageSize) where T : class, new()
         {
-            return await AsNoTracking<T>().ToPagedListAsync(pageIndex, pageSize);
+            return await DbContext.Set<T>().ToPagedListAsync(pageIndex, pageSize);
         }
 
         public virtual async Task<Pagination<T>> ToPageAsync<T>(Expression<Func<T, bool>> predicate, int pageIndex, int pageSize) where T : class, new()
         {
-            return await AsNoTracking<T>().Where(predicate).ToPagedListAsync(pageIndex, pageSize);
+            return await DbContext.Set<T>().Where(predicate).ToPagedListAsync(pageIndex, pageSize);
         }
 
         public virtual async Task<DataTable> GetTableAsync(string sql, IDictionary<string, object> keyValues = null)
@@ -285,6 +266,11 @@ namespace Kurisu.DataAccessor.Internal
 
         #endregion
 
+        /// <summary>
+        /// 忽略null值
+        /// </summary>
+        /// <param name="entity"></param>
+        /// <typeparam name="T"></typeparam>
         private void IgnoreNullValues<T>(T entity) where T : class, new()
         {
             // 获取所有的属性
@@ -309,7 +295,7 @@ namespace Kurisu.DataAccessor.Internal
         }
 
 
-        #region help method
+        /*=================================================== Help methods =========================================================*/
 
         private IEntityType GetEntityType<T>() where T : class, new()
         {
@@ -327,6 +313,7 @@ namespace Kurisu.DataAccessor.Internal
         /// <param name="t"></param>
         /// <typeparam name="T"></typeparam>
         /// <returns></returns>
+        // ReSharper disable once UnusedMember.Local
         private IDictionary<string, object> FindKeyValues<T>(T t) where T : class, new()
         {
             var key = GetEntityType<T>().FindPrimaryKey();
@@ -354,6 +341,7 @@ namespace Kurisu.DataAccessor.Internal
         /// <typeparam name="TEntity"></typeparam>
         /// <typeparam name="TKey"></typeparam>
         /// <returns></returns>
+        // ReSharper disable once UnusedMember.Local
         private (string key, TKey value) FindKeyValue<TEntity, TKey>(TEntity t) where TEntity : class, new()
         {
             var key = GetEntityType<TEntity>().FindPrimaryKey();
@@ -366,6 +354,8 @@ namespace Kurisu.DataAccessor.Internal
         /// </summary>
         /// <param name="entity"></param>
         /// <returns></returns>
+        // ReSharper disable once UnusedMember.Local
+        // ReSharper disable once UnusedTupleComponentInReturnValue
         private (string key, TKey value) FindKeyValue<TKey>(object entity)
         {
             var key = GetEntityType(entity).FindPrimaryKey();
@@ -378,6 +368,7 @@ namespace Kurisu.DataAccessor.Internal
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <returns></returns>
+        // ReSharper disable once UnusedMember.Local
         private (string table, IEnumerable<string> keys) FindTableAndKeys<T>() where T : class, new()
         {
             var entityType = GetEntityType<T>();
@@ -391,6 +382,7 @@ namespace Kurisu.DataAccessor.Internal
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <returns></returns>
+        // ReSharper disable once UnusedMember.Local
         private IEnumerable<string> FindKeys<T>() where T : class, new()
         {
             var key = GetEntityType<T>().FindPrimaryKey();
@@ -456,7 +448,5 @@ namespace Kurisu.DataAccessor.Internal
             var trackEntity = entities.FirstOrDefault(x => x.CurrentValues[keyName].ToString() == keyValue.ToString());
             return (trackEntity != null, trackEntity);
         }
-
-        #endregion
     }
 }

@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Concurrent;
-using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
@@ -10,7 +9,7 @@ namespace Kurisu.DataAccessor.Abstractions
     /// <summary>
     /// 数据库连接容器
     /// </summary>
-    public interface IDbContextContainer
+    public interface IDbContextContainer : IAsyncDisposable
     {
         /// <summary>
         /// DbContext数据
@@ -35,21 +34,18 @@ namespace Kurisu.DataAccessor.Abstractions
         /// <returns></returns>
         void Add(DbContext dbContext);
 
-
         /// <summary>
         /// 保存所有数据库上下文的更改
         /// </summary>
-        /// <param name="cancellationToken"></param>
         /// <returns></returns>
-        Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
+        Task<int> SaveChangesAsync();
 
         /// <summary>
         /// 保存所有数据库上下文的更改
         /// </summary>
         /// <param name="acceptAllChangesOnSuccess"></param>
-        /// <param name="cancellationToken"></param>
         /// <returns></returns>
-        Task<int> SaveChangesAsync(bool acceptAllChangesOnSuccess, CancellationToken cancellationToken = default);
+        Task<int> SaveChangesAsync(bool acceptAllChangesOnSuccess);
 
 
         /// <summary>
@@ -64,12 +60,6 @@ namespace Kurisu.DataAccessor.Abstractions
         /// </summary>
         /// <param name="exception"></param>
         /// <param name="isManualSaveChanges"></param>
-        Task CommitTransactionAsync(bool isManualSaveChanges = true, Exception exception = default);
-
-
-        /// <summary>`
-        /// 关闭所有数据库连接
-        /// </summary>
-        Task CloseAsync();
+        Task CommitTransactionAsync(bool isManualSaveChanges = true, Exception exception = null);
     }
 }
