@@ -55,29 +55,29 @@ namespace Microsoft.Extensions.DependencyInjection
             //注册局部操作类型对应的连接
             services.AddScoped(provider =>
             {
-                return (Func<Type, DbConnection>) (dbType =>
-                {
-                    var connection = new MySqlConnection();
-                    var dbSetting = provider.GetService<IOptions<DbSetting>>()?.Value;
-                    action?.Invoke(dbSetting);
+                return (Func<Type, DbConnection>)(dbType =>
+               {
+                   var connection = new MySqlConnection();
+                   var dbSetting = provider.GetService<IOptions<DbSetting>>()?.Value;
+                   action?.Invoke(dbSetting);
 
-                    if (dbType == typeof(IMasterDb))
-                        connection.ConnectionString = dbSetting.DefaultConnectionString;
-                    else
-                    {
-                        if (dbSetting.ReadConnectionStrings.Any())
-                        {
-                            var index = new Random().Next(0, dbSetting.ReadConnectionStrings.Count() - 1);
-                            connection.ConnectionString = dbSetting.ReadConnectionStrings.ElementAt(index);
-                        }
+                   if (dbType == typeof(IMasterDb))
+                       connection.ConnectionString = dbSetting.DefaultConnectionString;
+                   else
+                   {
+                       if (dbSetting.ReadConnectionStrings?.Any() == true)
+                       {
+                           var index = new Random().Next(0, dbSetting.ReadConnectionStrings.Count() - 1);
+                           connection.ConnectionString = dbSetting.ReadConnectionStrings.ElementAt(index);
+                       }
 
                         //如果读库连接不存在，则使用默认连接
                         if (string.IsNullOrEmpty(connection.ConnectionString))
-                            connection.ConnectionString = dbSetting.DefaultConnectionString;
-                    }
+                           connection.ConnectionString = dbSetting.DefaultConnectionString;
+                   }
 
-                    return connection;
-                });
+                   return connection;
+               });
             });
 
             return services;
@@ -124,27 +124,27 @@ namespace Microsoft.Extensions.DependencyInjection
             //读写操作实现类
             services.AddScoped(provider =>
             {
-                return (Func<Type, IDbOperation>) (dbType =>
-                {
+                return (Func<Type, IDbOperation>)(dbType =>
+               {
                     //获取容器
                     var container = provider.GetService<IDbContextContainer>();
-                    IDbOperation implementation;
+                   IDbOperation implementation;
 
-                    if (dbType == typeof(IMasterDb))
-                    {
-                        var masterDbContext = provider.GetService<AppDbContext<IMasterDb>>();
-                        implementation = new WriteImplementation(masterDbContext);
-                        container.Add(masterDbContext);
-                    }
-                    else
-                    {
-                        var slaveDbContext = provider.GetService<AppDbContext<ISlaveDb>>();
-                        slaveDbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTrackingWithIdentityResolution;
-                        implementation = new ReadImplementation(slaveDbContext);
-                    }
+                   if (dbType == typeof(IMasterDb))
+                   {
+                       var masterDbContext = provider.GetService<AppDbContext<IMasterDb>>();
+                       implementation = new WriteImplementation(masterDbContext);
+                       container.Add(masterDbContext);
+                   }
+                   else
+                   {
+                       var slaveDbContext = provider.GetService<AppDbContext<ISlaveDb>>();
+                       slaveDbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTrackingWithIdentityResolution;
+                       implementation = new ReadImplementation(slaveDbContext);
+                   }
 
-                    return implementation;
-                });
+                   return implementation;
+               });
             });
         }
     }

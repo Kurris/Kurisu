@@ -1,5 +1,7 @@
 using System;
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+using Microsoft.EntityFrameworkCore.Metadata.Internal;
 
 namespace Kurisu.DataAccessor.Entity
 {
@@ -25,6 +27,7 @@ namespace Kurisu.DataAccessor.Entity
         /// <summary>
         /// 创建时间
         /// </summary>
+        [Column(TypeName = "datetime(3)")]
         [Required(ErrorMessage = "创建时间不能为空")]
         public DateTime CreateTime { get; set; }
 
@@ -36,6 +39,7 @@ namespace Kurisu.DataAccessor.Entity
         /// <summary>
         /// 更新时间
         /// </summary>
+        [Column(TypeName = "datetime(3)")]
         public DateTime? UpdateTime { get; set; }
     }
 }

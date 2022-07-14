@@ -1,4 +1,5 @@
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace Kurisu.DataAccessor.Abstractions
 {
@@ -8,5 +9,6 @@ namespace Kurisu.DataAccessor.Abstractions
     public interface IDb
     {
         IQueryable<T> Queryable<T>() where T : class, new();
+        Task<int> SaveChangesAsync();
     }
 }
