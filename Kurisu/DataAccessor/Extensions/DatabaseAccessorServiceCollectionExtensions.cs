@@ -121,6 +121,7 @@ namespace Microsoft.Extensions.DependencyInjection
 #endif
             });
 
+            //读写操作实现类
             services.AddScoped(provider =>
             {
                 return (Func<Type, IDbOperation>) (dbType =>
@@ -131,15 +132,14 @@ namespace Microsoft.Extensions.DependencyInjection
 
                     if (dbType == typeof(IMasterDb))
                     {
-                        var dbContext = provider.GetService<AppDbContext<IMasterDb>>();
-                        implementation = new WriteImplementation(dbContext);
+                        var masterDbContext = provider.GetService<AppDbContext<IMasterDb>>();
+                        implementation = new WriteImplementation(masterDbContext);
+                        container.Add(masterDbContext);
                     }
                     else
                     {
                         var slaveDbContext = provider.GetService<AppDbContext<ISlaveDb>>();
                         slaveDbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTrackingWithIdentityResolution;
-                        container?.Add(slaveDbContext);
-
                         implementation = new ReadImplementation(slaveDbContext);
                     }
 

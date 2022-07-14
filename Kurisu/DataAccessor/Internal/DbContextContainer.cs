@@ -55,8 +55,8 @@ namespace Kurisu.DataAccessor.Internal
             //非关系型数据库
             if (!dbContext.Database.IsRelational()) return;
             //排除只读
-            if (dbContext.ChangeTracker.QueryTrackingBehavior is QueryTrackingBehavior.NoTracking
-                or QueryTrackingBehavior.NoTrackingWithIdentityResolution) return;
+            if (dbContext.ChangeTracker.QueryTrackingBehavior is QueryTrackingBehavior.NoTracking or QueryTrackingBehavior.NoTrackingWithIdentityResolution)
+                return;
 
             var instanceId = dbContext.ContextId.InstanceId;
             //已存在就不添加
@@ -149,9 +149,10 @@ namespace Kurisu.DataAccessor.Internal
                 try
                 {
                     //如果不是手动提交,则直接执行
-                    _ = !isManualSaveChanges
-                        ? await SaveChangesAsync()
-                        : 0;
+                    if (!isManualSaveChanges)
+                    {
+                        await SaveChangesAsync();
+                    }
 
                     await DbContextTransaction?.CommitAsync();
                 }

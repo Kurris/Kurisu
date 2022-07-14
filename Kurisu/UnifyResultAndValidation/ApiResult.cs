@@ -18,7 +18,7 @@ namespace Kurisu.UnifyResultAndValidation
         /// </summary>
         public ApiResult()
         {
-            this.Code = Status.Error;
+            this.Status = Status.Error;
         }
 
         /// <summary>
@@ -31,7 +31,7 @@ namespace Kurisu.UnifyResultAndValidation
         {
             this.Message = message;
             this.Data = data;
-            this.Code = status;
+            this.Status = status;
         }
 
         /// <summary>
@@ -47,14 +47,14 @@ namespace Kurisu.UnifyResultAndValidation
         /// <summary>
         /// 状态
         /// </summary>
-        public Status Code { get; set; }
+        public Status Status { get; set; }
 
 
         public virtual IApiResult GetDefaultSuccessApiResult<TResult>(TResult apiResult)
         {
             return new ApiResult<TResult>
             {
-                Code = Status.Success,
+                Status = Status.Success,
                 Message = "操作成功",
                 Data = apiResult
             };
@@ -64,7 +64,7 @@ namespace Kurisu.UnifyResultAndValidation
         {
             return new ApiResult<TResult>
             {
-                Code = Status.ValidateError,
+                Status = Status.ValidateError,
                 Message = "实体验证失败",
                 Data = apiResult
             };
@@ -74,7 +74,7 @@ namespace Kurisu.UnifyResultAndValidation
         {
             return new ApiResult<object>
             {
-                Code = Status.Forbidden,
+                Status = Status.Forbidden,
                 Message = "无权访问"
             };
         }
