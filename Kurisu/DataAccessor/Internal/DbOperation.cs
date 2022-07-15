@@ -21,10 +21,15 @@ namespace Kurisu.DataAccessor.Internal
     {
         internal DbOperation(IAppDbContext dbContext)
         {
-            DbContext = (AppDbContext<TIDb>) dbContext;
+            DbContext = (AppDbContext<TIDb>)dbContext;
         }
 
         public AppDbContext<TIDb> DbContext { get; }
+
+        public async Task<int> SaveChangesAsync()
+        {
+            return await DbContext.SaveChangesAsync();
+        }
 
         /// <summary>
         /// 执行sql
@@ -76,7 +81,7 @@ namespace Kurisu.DataAccessor.Internal
                     break;
             }
 
-            return (T) value;
+            return (T)value;
         }
 
         public async ValueTask SaveAsync<T>(T entity) where T : class, new()
@@ -118,7 +123,7 @@ namespace Kurisu.DataAccessor.Internal
                         break;
                 }
 
-                result.Add((T) value);
+                result.Add((T)value);
             }
 
             return result;
@@ -346,7 +351,7 @@ namespace Kurisu.DataAccessor.Internal
         {
             var key = GetEntityType<TEntity>().FindPrimaryKey();
             var propInfo = key.Properties[0].PropertyInfo;
-            return (propInfo.Name, (TKey) propInfo.GetValue(t));
+            return (propInfo.Name, (TKey)propInfo.GetValue(t));
         }
 
         /// <summary>
@@ -360,7 +365,7 @@ namespace Kurisu.DataAccessor.Internal
         {
             var key = GetEntityType(entity).FindPrimaryKey();
             var propInfo = key.Properties[0].PropertyInfo;
-            return (propInfo.Name, (TKey) propInfo.GetValue(entity));
+            return (propInfo.Name, (TKey)propInfo.GetValue(entity));
         }
 
         /// <summary>
@@ -408,7 +413,7 @@ namespace Kurisu.DataAccessor.Internal
             {
                 //如果已经跟踪的实体状态为dded，那么删除实体时，只需要设置为unchanged
                 trackEntity.State = trackEntity.State == EntityState.Added ? EntityState.Unchanged : entityState;
-                return (T) trackEntity.Entity;
+                return (T)trackEntity.Entity;
             }
 
             //返回创建的新实体和定义的跟踪状态

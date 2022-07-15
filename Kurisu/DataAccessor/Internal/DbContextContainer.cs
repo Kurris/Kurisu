@@ -55,8 +55,8 @@ namespace Kurisu.DataAccessor.Internal
             //非关系型数据库
             if (!dbContext.Database.IsRelational()) return;
             //排除只读
-            if (dbContext.ChangeTracker.QueryTrackingBehavior is QueryTrackingBehavior.NoTracking
-                or QueryTrackingBehavior.NoTrackingWithIdentityResolution) return;
+            if (dbContext.ChangeTracker.QueryTrackingBehavior is QueryTrackingBehavior.NoTracking or QueryTrackingBehavior.NoTrackingWithIdentityResolution)
+                return;
 
             var instanceId = dbContext.ContextId.InstanceId;
             //已存在就不添加
@@ -149,9 +149,10 @@ namespace Kurisu.DataAccessor.Internal
                 try
                 {
                     //如果不是手动提交,则直接执行
-                    _ = !isManualSaveChanges
-                        ? await SaveChangesAsync()
-                        : 0;
+                    if (!isManualSaveChanges)
+                    {
+                        await SaveChangesAsync();
+                    }
 
                     await DbContextTransaction?.CommitAsync();
                 }
@@ -186,39 +187,39 @@ namespace Kurisu.DataAccessor.Internal
 
         public async ValueTask DisposeAsync()
         {
-            //释放上下文
-            foreach (var kv in _dbContexts)
-            {
-                var dbContext = kv.Value;
-                var dbConnection = dbContext.Database.GetDbConnection();
-                if (dbConnection.State != ConnectionState.Open) continue;
+            ////释放上下文
+            //foreach (var kv in _dbContexts)
+            //{
+            //    var dbContext = kv.Value;
+            //    var dbConnection = dbContext.Database.GetDbConnection();
+            //    if (dbConnection.State != ConnectionState.Open) continue;
 
-                await dbConnection.CloseAsync();
-                await dbConnection.DisposeAsync();
-                await dbContext.DisposeAsync();
-            }
+            //    await dbConnection.CloseAsync();
+            //    await dbConnection.DisposeAsync();
+            //    await dbContext.DisposeAsync();
+            //}
 
-            _dbContexts.Clear();
+            //_dbContexts.Clear();
 
-            foreach (var kv in _failedDbContexts)
-            {
-                var dbContext = kv.Value;
-                var dbConnection = dbContext.Database.GetDbConnection();
-                if (dbConnection.State != ConnectionState.Open) continue;
+            //foreach (var kv in _failedDbContexts)
+            //{
+            //    var dbContext = kv.Value;
+            //    var dbConnection = dbContext.Database.GetDbConnection();
+            //    if (dbConnection.State != ConnectionState.Open) continue;
 
-                await dbConnection.CloseAsync();
-                await dbConnection.DisposeAsync();
-                await dbContext.DisposeAsync();
-            }
+            //    await dbConnection.CloseAsync();
+            //    await dbConnection.DisposeAsync();
+            //    await dbContext.DisposeAsync();
+            //}
 
-            _failedDbContexts.Clear();
+            //_failedDbContexts.Clear();
 
-            //释放事务
-            if (DbContextTransaction != null)
-            {
-                await DbContextTransaction.DisposeAsync();
-                DbContextTransaction = null;
-            }
+            ////释放事务
+            //if (DbContextTransaction != null)
+            //{
+            //    await DbContextTransaction.DisposeAsync();
+            //    DbContextTransaction = null;
+            //}
         }
     }
 }

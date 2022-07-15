@@ -26,11 +26,14 @@ namespace Kurisu.Startup
 
         public override void ConfigureServices(IServiceCollection services)
         {
+            services.AddHttpContextAccessor();
+
             //处理api响应时,循环序列化问题
             //返回json为驼峰命名
             services.AddControllers().AddNewtonsoftJson(options =>
             {
                 options.SerializerSettings.ReferenceLoopHandling = ReferenceLoopHandling.Ignore;
+                options.SerializerSettings.DateFormatString = "yyyy-MM-dd HH:mm:ss";
                 options.SerializerSettings.ContractResolver = new CamelCasePropertyNamesContractResolver();
             });
 

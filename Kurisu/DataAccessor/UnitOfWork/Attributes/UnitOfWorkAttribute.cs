@@ -29,17 +29,17 @@ namespace Kurisu.DataAccessor.UnitOfWork.Attributes
 
         public async Task OnActionExecutionAsync(ActionExecutingContext context, ActionExecutionDelegate next)
         {
-            await using (var dbContextContainer = context.HttpContext.RequestServices.GetService<IDbContextContainer>())
-            {
+            var dbContextContainer = context.HttpContext.RequestServices.GetService<IDbContextContainer>();
+
                 //开启事务
-                await dbContextContainer?.BeginTransactionAsync();
+            await dbContextContainer?.BeginTransactionAsync();
 
-                //获取结果
-                var result = await next();
+            //获取结果
+            var result = await next();
 
-                //提交事务
-                await dbContextContainer?.CommitTransactionAsync(this._isManualSaveChanges, result.Exception);
-            }
+            //提交事务
+            await dbContextContainer?.CommitTransactionAsync(this._isManualSaveChanges, result.Exception);
+
         }
     }
 }

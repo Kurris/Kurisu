@@ -26,7 +26,7 @@ namespace Kurisu.DataAccessor
         /// <summary>
         /// 读库连接字符串
         /// </summary>
-        public IEnumerable<string> ReadConnectionStrings { get; set; } = Enumerable.Empty<string>();
+        public IEnumerable<string> ReadConnectionStrings { get; set; }
 
         /// <summary>
         /// sql查询超时时间

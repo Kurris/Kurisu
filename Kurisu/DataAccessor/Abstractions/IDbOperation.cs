@@ -1,4 +1,4 @@
-namespace Kurisu.DataAccessor.Internal
+namespace Kurisu.DataAccessor.Abstractions
 {
     /// <summary>
     /// 数据库操作接口
