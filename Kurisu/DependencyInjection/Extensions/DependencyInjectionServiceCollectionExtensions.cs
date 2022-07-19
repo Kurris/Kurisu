@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using Castle.DynamicProxy;
 using Kurisu;
 
 // ReSharper disable once CheckNamespace
@@ -36,108 +37,152 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <returns><see cref="IServiceCollection"/></returns>
         public static IServiceCollection AddKurisuDependencyInjection(this IServiceCollection services)
         {
+            //注册服务拦截器
+            services.InterceptorRegister();
+
+            //注册服务
+            services.ServiceRegister();
+
+            //注册命名服务
+            services.NamedRegister();
+
+            return services;
+        }
+
+        /// <summary>
+        /// 注册服务
+        /// </summary>
+        /// <param name="services"></param>
+        /// <exception cref="ApplicationException"></exception>
+        private static void ServiceRegister(this IServiceCollection services)
+        {
+            //接口依赖注入类型
             //生命周期类型
             var lifeTimeTypes = new[] {typeof(ITransientDependency), typeof(IScopeDependency), typeof(ISingletonDependency)};
 
-            //可注册类型
             var serviceTypes = App.ActiveTypes
                 .Where(x => x.IsAssignableTo(typeof(IDependency))
+                            && !x.IsAssignableTo(typeof(IAsyncInterceptor))
+                            && !x.IsAssignableTo(typeof(IInterceptor))
                             && x.IsClass
                             && x.IsPublic
                             && !x.IsAbstract
                             && !x.IsInterface);
 
-            //注册依赖注入
             foreach (var service in serviceTypes)
             {
-                // 服务特性注册方式
-                var registerAttribute = service.IsDefined(typeof(RegisterAttribute), false)
-                    ? service.GetCustomAttribute<RegisterAttribute>()
-                    : new RegisterAttribute();
-
                 //获取服务的所有接口
                 var interfaces = service.GetInterfaces();
 
                 //获取注册的生命周期类型,不允许多个依赖注入接口
                 var lifeTimeInterfaces = interfaces.Where(x => lifeTimeTypes.Contains(x)).Distinct();
-                if (lifeTimeInterfaces.Count() > 1) throw new ApplicationException($"{service.FullName}存在多个生命周期依赖");
+                if (lifeTimeInterfaces.Count() > 1) throw new ApplicationException($"{service.FullName}存在多个生命周期定义");
 
                 //具体的生命周期类型
                 var currentLifeTimeInterface = lifeTimeInterfaces.First();
 
                 //能够注册的接口
-                var ableInterfaces = interfaces.Where(x => !lifeTimeInterfaces.Contains(x)
-                                                           && x != typeof(IDependency));
+                var ableRegisterInterfaces = interfaces.Where(x => !lifeTimeInterfaces.Contains(x) && x != typeof(IDependency));
 
-                var typeNamed = registerAttribute?.Named ?? service.Name;
-                if (!service.IsGenericType)
+                //获取特性RegisterAttribute
+                if (service.IsDefined(typeof(RegisterAttribute), false))
                 {
-                    //缓存类型注册
-                    TypeNamedCollection.TryAdd(typeNamed, service);
+                    var registerAttribute = service.GetCustomAttribute<RegisterAttribute>();
+                    var typeNamed = registerAttribute?.Name;
+                    if (!service.IsGenericType && !string.IsNullOrEmpty(typeNamed))
+                    {
+                        //缓存类型注册,重复key异常抛出
+                        TypeNamedCollection.TryAdd(typeNamed, service);
+                    }
+
+                    if (registerAttribute.Interceptors?.Any() == true)
+                    {
+                        //注册服务
+                        RegisterService(services, currentLifeTimeInterface, service, ableRegisterInterfaces, registerAttribute.Interceptors);
+                    }
                 }
-
-                //注册服务
-                RegisterService(services, currentLifeTimeInterface, service, ableInterfaces);
+                else
+                {
+                    //注册服务
+                    RegisterService(services, currentLifeTimeInterface, service, ableRegisterInterfaces);
+                }
             }
+        }
 
-            //注册命名服务
+        /// <summary>
+        /// 注册服务拦截器
+        /// </summary>
+        /// <param name="services"></param>
+        private static void InterceptorRegister(this IServiceCollection services)
+        {
+            var serviceTypes = App.ActiveTypes
+                .Where(x => x.IsAssignableTo(typeof(IAsyncInterceptor))
+                            && x.IsClass
+                            && x.IsPublic
+                            && !x.IsAbstract
+                            && !x.IsInterface);
+
+            foreach (var service in serviceTypes)
+            {
+                RegisterService(services, typeof(ISingletonDependency), service);
+            }
+        }
+
+        /// <summary>
+        /// 注册命名服务
+        /// </summary>
+        /// <param name="services"></param>
+        /// <exception cref="ArgumentOutOfRangeException"></exception>
+        private static void NamedRegister(this IServiceCollection services)
+        {
             RegisterNamedService<ITransientDependency>(services);
             RegisterNamedService<IScopeDependency>(services);
             RegisterNamedService<ISingletonDependency>(services);
 
-            return services;
-        }
-
-
-        /// <summary>
-        /// 命名注册服务
-        /// </summary>
-        /// <param name="services"></param>
-        /// <typeparam name="TLifeTimeType"></typeparam>
-        /// <exception cref="ArgumentOutOfRangeException"></exception>
-        private static void RegisterNamedService<TLifeTimeType>(this IServiceCollection services) where TLifeTimeType : IDependency
-        {
-            var registerType = GetRegisterType(typeof(TLifeTimeType));
-            switch (registerType)
+            static void RegisterNamedService<TLifeTimeType>(IServiceCollection services) where TLifeTimeType : IDependency
             {
-                case RegisterType.Transient:
-                    services.AddTransient(provider =>
-                    {
-                        return (Func<string, IScopeDependency, object>) ((named, _) =>
+                var registerType = GetRegisterType(typeof(TLifeTimeType));
+                switch (registerType)
+                {
+                    case RegisterType.Transient:
+                        services.AddTransient(provider =>
                         {
-                            var isRegister = TypeNamedCollection.TryGetValue(named, out var service);
-                            return isRegister
-                                ? provider.GetService(service)
-                                : null;
+                            return (Func<string, IScopeDependency, object>) ((named, _) =>
+                            {
+                                var isRegister = TypeNamedCollection.TryGetValue(named, out var service);
+                                return isRegister
+                                    ? provider.GetService(service)
+                                    : null;
+                            });
                         });
-                    });
-                    break;
-                case RegisterType.Scoped:
-                    services.AddScoped(provider =>
-                    {
-                        return (Func<string, IScopeDependency, object>) ((named, _) =>
+                        break;
+                    case RegisterType.Scoped:
+                        services.AddScoped(provider =>
                         {
-                            var isRegister = TypeNamedCollection.TryGetValue(named, out var service);
-                            return isRegister
-                                ? provider.GetService(service)
-                                : null;
+                            return (Func<string, IScopeDependency, object>) ((named, _) =>
+                            {
+                                var isRegister = TypeNamedCollection.TryGetValue(named, out var service);
+                                return isRegister
+                                    ? provider.GetService(service)
+                                    : null;
+                            });
                         });
-                    });
-                    break;
-                case RegisterType.Singleton:
-                    services.AddSingleton(provider =>
-                    {
-                        return (Func<string, ISingletonDependency, object>) ((named, _) =>
+                        break;
+                    case RegisterType.Singleton:
+                        services.AddSingleton(provider =>
                         {
-                            var isRegister = TypeNamedCollection.TryGetValue(named, out var service);
-                            return isRegister
-                                ? provider.GetService(service)
-                                : null;
+                            return (Func<string, ISingletonDependency, object>) ((named, _) =>
+                            {
+                                var isRegister = TypeNamedCollection.TryGetValue(named, out var service);
+                                return isRegister
+                                    ? provider.GetService(service)
+                                    : null;
+                            });
                         });
-                    });
-                    break;
-                default:
-                    throw new ArgumentOutOfRangeException();
+                        break;
+                    default:
+                        throw new ArgumentOutOfRangeException();
+                }
             }
         }
 
@@ -148,18 +193,22 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <param name="services">服务容器</param>
         /// <param name="lifeTimeType">生命周期类型</param>
         /// <param name="service">服务类型</param>
-        /// <param name="ableInterfaces">可注册接口</param>
-        private static void RegisterService(IServiceCollection services, Type lifeTimeType, Type service, IEnumerable<Type> ableInterfaces)
+        /// <param name="ableRegisterInterfaces">可注册接口</param>
+        /// <param name="interceptors"></param>
+        private static void RegisterService(IServiceCollection services, Type lifeTimeType, Type service, IEnumerable<Type> ableRegisterInterfaces = null, Type[] interceptors = null)
         {
             //注册自己
             Register(services, lifeTimeType, service);
 
             //没有可注册的接口
-            if (!ableInterfaces.Any()) return;
+            if (ableRegisterInterfaces == null || !ableRegisterInterfaces.Any())
+            {
+                return;
+            }
 
             //注册所有接口
-            foreach (var @interface in ableInterfaces)
-                Register(services, lifeTimeType, service, @interface);
+            foreach (var @interface in ableRegisterInterfaces)
+                Register(services, lifeTimeType, service, @interface, interceptors);
         }
 
 
@@ -170,8 +219,9 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <param name="lifeTimeType"></param>
         /// <param name="service"></param>
         /// <param name="interface"></param>
+        /// <param name="interceptors"></param>
         /// <exception cref="ArgumentOutOfRangeException"></exception>
-        private static void Register(IServiceCollection services, Type lifeTimeType, Type service, Type @interface = null)
+        private static void Register(IServiceCollection services, Type lifeTimeType, Type service, Type @interface = null, Type[] interceptors = null)
         {
             if (service.IsGenericType)
             {
@@ -186,7 +236,28 @@ namespace Microsoft.Extensions.DependencyInjection
                         services.AddTransient(service);
                     else
                     {
-                        services.AddTransient(@interface, service);
+                        if (interceptors?.Any() == true)
+                        {
+                            services.AddTransient(@interface, provider =>
+                            {
+                                var currService = provider.GetService(service);
+                                var currInterceptors = interceptors.Select(x =>
+                                {
+                                    var i = provider.GetService(x);
+                                    return i switch
+                                    {
+                                        IAsyncInterceptor asyncInterceptor => asyncInterceptor.ToInterceptor(),
+                                        IInterceptor interceptor => interceptor,
+                                        _ => null
+                                    };
+                                }).Where(x => x != null).ToArray();
+                                return new ProxyGenerator().CreateInterfaceProxyWithTargetInterface(@interface, currService, currInterceptors);
+                            });
+                        }
+                        else
+                        {
+                            services.AddTransient(@interface, service);
+                        }
                     }
 
                     break;
@@ -195,7 +266,28 @@ namespace Microsoft.Extensions.DependencyInjection
                         services.AddScoped(service);
                     else
                     {
-                        services.AddScoped(@interface, service);
+                        if (interceptors?.Any() == true)
+                        {
+                            services.AddScoped(@interface, provider =>
+                            {
+                                var currService = provider.GetService(service);
+                                var currInterceptors = interceptors.Select(x =>
+                                {
+                                    var i = provider.GetService(x);
+                                    return i switch
+                                    {
+                                        IAsyncInterceptor asyncInterceptor => asyncInterceptor.ToInterceptor(),
+                                        IInterceptor interceptor => interceptor,
+                                        _ => null
+                                    };
+                                }).Where(x => x != null).ToArray();
+                                return new ProxyGenerator().CreateInterfaceProxyWithTargetInterface(@interface, currService, currInterceptors);
+                            });
+                        }
+                        else
+                        {
+                            services.AddScoped(@interface, service);
+                        }
                     }
 
                     break;
@@ -204,7 +296,28 @@ namespace Microsoft.Extensions.DependencyInjection
                         services.AddSingleton(service);
                     else
                     {
-                        services.AddSingleton(@interface, service);
+                        if (interceptors?.Any() == true)
+                        {
+                            services.AddSingleton(@interface, provider =>
+                            {
+                                var currService = provider.GetService(service);
+                                var currInterceptors = interceptors.Select(x =>
+                                {
+                                    var i = provider.GetService(x);
+                                    return i switch
+                                    {
+                                        IAsyncInterceptor asyncInterceptor => asyncInterceptor.ToInterceptor(),
+                                        IInterceptor interceptor => interceptor,
+                                        _ => null
+                                    };
+                                }).Where(x => x != null).ToArray();
+                                return new ProxyGenerator().CreateInterfaceProxyWithTargetInterface(@interface, currService, currInterceptors);
+                            });
+                        }
+                        else
+                        {
+                            services.AddSingleton(@interface, service);
+                        }
                     }
 
                     break;
@@ -212,7 +325,7 @@ namespace Microsoft.Extensions.DependencyInjection
                     throw new ArgumentOutOfRangeException();
             }
         }
-
+        /*========================================= help methods ====================================================*/
 
         /// <summary>
         /// 判断生命周期

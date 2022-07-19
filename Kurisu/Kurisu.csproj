@@ -6,6 +6,8 @@
     </PropertyGroup>
 
     <ItemGroup>
+      <PackageReference Include="Castle.Core" Version="5.0.0" />
+      <PackageReference Include="Castle.Core.AsyncInterceptor" Version="2.1.0" />
       <PackageReference Include="IdentityModel" Version="5.1.0" />
       <PackageReference Include="IdentityModel.AspNetCore.OAuth2Introspection" Version="5.1.0" />
       <PackageReference Include="Mapster" Version="7.2.0" />
