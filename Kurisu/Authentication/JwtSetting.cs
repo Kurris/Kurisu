@@ -1,4 +1,4 @@
-namespace Kurisu.Authorization
+namespace Kurisu.Authentication
 {
     public class JwtSetting
     {

@@ -5,7 +5,7 @@ using System.Text;
 using IdentityModel;
 using Microsoft.IdentityModel.Tokens;
 
-namespace Kurisu.Authorization
+namespace Kurisu.Authentication
 {
     /// <summary>
     /// jwt 加密

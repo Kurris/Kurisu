@@ -1,15 +1,17 @@
 ﻿using System.Collections.Generic;
 using System.Threading.Tasks;
 using Kurisu.DataAccessor.Abstractions;
-using Kurisu.DataAccessor.UnitOfWork.Attributes;
-using Kurisu.Elasticsearch.Abstractions;
+using Kurisu.MVC;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
 namespace WebApplication1.Controllers
 {
+    [Authorize]
     [ApiController]
+    [ApiDefinition("天气")]
     [Route("[controller]")]
     public class WeatherForecastController : ControllerBase
     {
@@ -32,23 +34,7 @@ namespace WebApplication1.Controllers
         [HttpGet("menus")]
         public async Task<IEnumerable<Menu>> GetMenus()
         {
-           return await _slaveDb.Queryable<Menu>().ToListAsync();
-           // return null;
+            return await _slaveDb.Queryable<Menu>().ToListAsync();
         }
-
-        [HttpGet("b")]
-        public string GetB()
-        {
-            return "b";
-        }
-    }
-
-    public class Users
-    {
-        public int No { get; set; }
-        public string Name { get; set; }
-        public int Age { get; set; }
-        public string Address { get; set; }
-        public string Job { get; set; }
     }
 }

@@ -11,7 +11,7 @@ namespace Microsoft.Extensions.DependencyInjection
         /// </summary>                        
         /// <param name="services"></param>
         /// <returns></returns>
-        public static IServiceCollection AddUnify(this IServiceCollection services)
+        public static IServiceCollection AddKurisuUnify(this IServiceCollection services)
         {
             services.AddMvcFilter<ValidateAndPackResultFilter>();
             return services;

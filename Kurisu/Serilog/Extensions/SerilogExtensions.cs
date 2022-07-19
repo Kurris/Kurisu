@@ -1,10 +1,7 @@
 using System;
-using System.IO;
-using System.Text;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Hosting;
 using Serilog;
-using Serilog.Events;
 
 namespace Kurisu.Serilog.Extensions
 {

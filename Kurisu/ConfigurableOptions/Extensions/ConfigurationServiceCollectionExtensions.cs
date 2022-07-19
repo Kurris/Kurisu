@@ -54,7 +54,7 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <param name="services">服务容器</param>
         /// <typeparam name="TOptions">选项类型</typeparam>
         /// <returns></returns>
-        public static IServiceCollection AddKurisuOptions<TOptions>(this IServiceCollection services) where TOptions : class, new()
+        public static TOptions AddKurisuOptions<TOptions>(this IServiceCollection services) where TOptions : class, new()
         {
             var optionsType = typeof(TOptions);
 
@@ -81,8 +81,7 @@ namespace Microsoft.Extensions.DependencyInjection
                 .Bind(section)
                 .ValidateDataAnnotations(); //配置验证
 
-
-            return services;
+            return section.Get<TOptions>();
         }
     }
 }

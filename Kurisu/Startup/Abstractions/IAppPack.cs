@@ -6,19 +6,12 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Kurisu.Startup.Abstractions
 {
-    public interface IKurisuPack : IOrderedFilter
+    public interface IAppPack : IOrderedFilter
     {
-        bool IsEnable { get; set; }
-
-        /// <summary>
-        /// 服务提供器
-        /// </summary>
-        IServiceProvider ServiceProvider { get; set; }
-
         /// <summary>
         /// 触发方法
         /// </summary>
-        void Invoke();
+        void Invoke(IServiceProvider serviceProvider);
 
         /// <summary>
         /// 添加服务

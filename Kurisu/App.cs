@@ -2,12 +2,9 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using System.Security.Claims;
 using Kurisu.Startup;
-using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Options;
 
 namespace Kurisu
 {
@@ -37,48 +34,29 @@ namespace Kurisu
         /// </summary>
         internal static IConfiguration Configuration { get; set; }
 
-        /// <summary>
-        /// 请求上下文
-        /// </summary>
-        public static HttpContext HttpContext => ServiceProvider?.GetService<IHttpContextAccessor>()?.HttpContext;
 
         /// <summary>
-        /// 请求上下文用户
+        /// 自定义应用pack
         /// </summary>
-        public static ClaimsPrincipal User => HttpContext?.User;
-
-
-        private static IEnumerable<BasePack> _packs;
+        private static IEnumerable<BaseAppPack> _packs;
 
         /// <summary>
-        /// 自定义处理pack
+        /// 自定义应用pack
         /// </summary>
-        public static IEnumerable<BasePack> Packs
+        public static IEnumerable<BaseAppPack> AppPacks
         {
             get
             {
                 if (_packs == null)
                 {
-                    var packTypes = ActiveTypes.Where(x => x.IsSubclassOf(typeof(BasePack)));
-                    _packs = packTypes.Select(x => Activator.CreateInstance(x) as BasePack)
+                    var packTypes = ActiveTypes.Where(x => x.IsSubclassOf(typeof(BaseAppPack)));
+                    _packs = packTypes.Select(x => Activator.CreateInstance(x) as BaseAppPack)
                         .Where(x => x.IsEnable)
                         .OrderBy(x => x.Order);
                 }
 
                 return _packs;
             }
-        }
-
-        /// <summary>
-        /// 从Configuration中直接获取
-        /// </summary>
-        /// <typeparam name="TOptions">配置类</typeparam>
-        /// <returns><see cref="TOptions"/></returns>
-        internal static TOptions GetOptions<TOptions>()
-            where TOptions : class, new()
-        {
-            var options = ServiceProvider.GetService<IOptions<TOptions>>();
-            return options?.Value;
         }
 
         /// <summary>

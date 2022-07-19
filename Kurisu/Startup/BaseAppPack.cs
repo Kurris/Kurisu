@@ -9,16 +9,21 @@ namespace Kurisu.Startup
     /// <summary>
     /// 基础Pack
     /// </summary>
-    public abstract class BasePack : IKurisuPack
+    public abstract class BaseAppPack : IAppPack
     {
         public int Order => 1;
 
-        public bool IsEnable { get; set; } = true;
+        /// <summary>
+        /// 是否启用
+        /// </summary>
+        public virtual bool IsEnable => true;
 
-        public IServiceProvider ServiceProvider { get; set; }
+        /// <summary>
+        /// 在Startup Configure 请求管道中,以UseRouting依据添加自定义AppPack
+        /// </summary>
+        public abstract bool IsBeforeUseRouting { get; }
 
-
-        public virtual void Invoke()
+        public virtual void Invoke(IServiceProvider serviceProvider)
         {
         }
 

@@ -1,25 +1,22 @@
-using Kurisu.Startup;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace WebApplication1
+namespace Kurisu.Startup.AppPacks
 {
-    public class Startup : DefaultKurisuStartup
+    public class DefaultIdentityServerAuthenticationPack : BaseAppPack
     {
-        public Startup(IConfiguration configuration) : base(configuration)
-        {
-        }
+        public override bool IsBeforeUseRouting => false;
 
         public override void ConfigureServices(IServiceCollection services)
         {
-            base.ConfigureServices(services);
+            services.AddKurisuOAuth2Authentication();
         }
 
         public override void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
-            base.Configure(app, env);
+            app.UseAuthentication();
+            app.UseAuthorization();
         }
     }
 }

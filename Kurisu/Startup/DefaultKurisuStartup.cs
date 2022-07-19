@@ -1,11 +1,9 @@
-﻿using System;
-using System.Reflection;
+﻿using System.Reflection;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
-using Microsoft.OpenApi.Models;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 
@@ -15,14 +13,15 @@ namespace Kurisu.Startup
     /// 默认启动类
     /// </summary>
     [SkipScan]
-    public abstract class DefaultKurisuStartup : BasePack
+    public abstract class DefaultKurisuStartup : BaseAppPack
     {
-        private readonly string _cors = "defaultCors";
-
-        public DefaultKurisuStartup(IConfiguration configuration)
+        protected DefaultKurisuStartup(IConfiguration configuration)
         {
             App.Configuration = configuration;
         }
+
+        // ReSharper disable once UnassignedGetOnlyAutoProperty
+        public override bool IsBeforeUseRouting { get; }
 
         public override void ConfigureServices(IServiceCollection services)
         {
@@ -38,22 +37,10 @@ namespace Kurisu.Startup
             });
 
             //格式统一
-            services.AddUnify();
+            services.AddKurisuUnify();
 
             //映射配置文件 
             services.AddKurisuConfiguration();
-
-            //添加跨域支持
-            services.AddCors(options =>
-            {
-                options.AddPolicy(_cors, builder =>
-                {
-                    builder.SetIsOriginAllowed(_ => true)
-                        .AllowAnyHeader()
-                        .AllowAnyMethod()
-                        .AllowCredentials();
-                });
-            });
 
             //添加对象关系映射,扫描程序集
             services.AddKurisuObjectMapper(Assembly.GetExecutingAssembly());
@@ -63,23 +50,14 @@ namespace Kurisu.Startup
 
             services.AddKurisuDatabaseAccessor();
 
-            foreach (var pack in App.Packs)
-            {
-                pack.ConfigureServices(services);
-            }
+            services.AddKurisuAppPacks();
         }
 
         public override void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
-            app.UseCors(_cors);
-
-            foreach (var pack in App.Packs)
-            {
-                pack.ServiceProvider = ServiceProvider;
-                pack.Configure(app, env);
-            }
-
+            app.UseKurisuAppPacks(env, app.ApplicationServices, true);
             app.UseRouting();
+            app.UseKurisuAppPacks(env, app.ApplicationServices, false);
             app.UseEndpoints(endpoints => { endpoints.MapControllers(); });
         }
     }
