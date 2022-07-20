@@ -7,7 +7,6 @@ using System.Linq.Expressions;
 using System.Text;
 using System.Threading.Tasks;
 using Elasticsearch.Net;
-using Kurisu.Common.Dto;
 using Kurisu.Elasticsearch.Abstractions;
 using Kurisu.Elasticsearch.LowLinq.Syntax;
 using Kurisu.Utils.Extensions;

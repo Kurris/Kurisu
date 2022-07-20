@@ -2,7 +2,7 @@ using System;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using Kurisu.Common.Dto;
+using Kurisu.DataAccessor.Dto;
 using Microsoft.EntityFrameworkCore;
 
 namespace Kurisu.DataAccessor.Extensions

@@ -21,19 +21,12 @@ namespace Kurisu
         /// <summary>
         /// 应用程序有效类型
         /// </summary>
-        public static IEnumerable<Type> ActiveTypes { get; private set; }
-
-        /// <summary>
-        /// 服务提供器
-        /// </summary>
-        public static IServiceProvider ServiceProvider { get; set; }
-
+        internal static IEnumerable<Type> ActiveTypes { get; private set; }
 
         /// <summary>
         /// 全局配置文件
         /// </summary>
         internal static IConfiguration Configuration { get; set; }
-
 
         /// <summary>
         /// 自定义应用pack

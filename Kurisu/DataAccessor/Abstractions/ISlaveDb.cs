@@ -4,7 +4,7 @@ using System.Data;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
-using Kurisu.Common.Dto;
+using Kurisu.DataAccessor.Dto;
 using Kurisu.DataAccessor.Internal;
 
 namespace Kurisu.DataAccessor.Abstractions

@@ -1,7 +1,6 @@
 ﻿using System.Reflection;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json;
@@ -15,6 +14,7 @@ namespace Kurisu.Startup
     [SkipScan]
     public abstract class DefaultKurisuStartup : BaseAppPack
     {
+
         protected DefaultKurisuStartup(IConfiguration configuration)
         {
             App.Configuration = configuration;
@@ -48,8 +48,10 @@ namespace Kurisu.Startup
             //依赖注入
             services.AddKurisuDependencyInjection();
 
+            //注入数据访问
             services.AddKurisuDatabaseAccessor();
 
+            //注入自定义pack
             services.AddKurisuAppPacks();
         }
 

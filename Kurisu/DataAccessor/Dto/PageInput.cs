@@ -1,4 +1,4 @@
-namespace Kurisu.Common.Dto
+namespace Kurisu.DataAccessor.Dto
 {
     /// <summary>
     /// 分页入参数

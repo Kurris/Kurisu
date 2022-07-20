@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 
-namespace Kurisu.Common.Dto
+namespace Kurisu.DataAccessor.Dto
 {
     /// <summary>
     /// 分页参数

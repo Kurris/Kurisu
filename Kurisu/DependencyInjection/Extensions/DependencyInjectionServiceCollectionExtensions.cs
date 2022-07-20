@@ -99,13 +99,12 @@ namespace Microsoft.Extensions.DependencyInjection
                     {
                         //注册服务
                         RegisterService(services, currentLifeTimeInterface, service, ableRegisterInterfaces, registerAttribute.Interceptors);
+                        continue;
                     }
                 }
-                else
-                {
-                    //注册服务
-                    RegisterService(services, currentLifeTimeInterface, service, ableRegisterInterfaces);
-                }
+
+                //注册服务
+                RegisterService(services, currentLifeTimeInterface, service, ableRegisterInterfaces);
             }
         }
 
@@ -147,7 +146,7 @@ namespace Microsoft.Extensions.DependencyInjection
                     case RegisterType.Transient:
                         services.AddTransient(provider =>
                         {
-                            return (Func<string, IScopeDependency, object>) ((named, _) =>
+                            return (Func<string, ITransientDependency, object>) ((named, _) =>
                             {
                                 var isRegister = TypeNamedCollection.TryGetValue(named, out var service);
                                 return isRegister

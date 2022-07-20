@@ -4,7 +4,7 @@ using System;
 namespace Microsoft.Extensions.DependencyInjection
 {
     /// <summary>
-    /// Func扩展类 
+    /// 命名服务获取扩展类 
     /// </summary>
     [SkipScan]
     public static class FuncExtensions

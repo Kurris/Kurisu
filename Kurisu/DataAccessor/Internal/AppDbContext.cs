@@ -8,17 +8,18 @@ using Kurisu.DataAccessor.Abstractions;
 using Kurisu.DataAccessor.Entity;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 
 namespace Kurisu.DataAccessor.Internal
 {
+    /// <summary>
+    /// AppDbContext 程序默认DbContext
+    /// </summary>
+    /// <typeparam name="TIDb"></typeparam>
     public class AppDbContext<TIDb> : DbContext, IAppDbContext where TIDb : IDb
     {
-        private readonly IHttpContextAccessor _httpContextAccessor;
-
-        public AppDbContext(DbContextOptions<AppDbContext<TIDb>> options, IHttpContextAccessor httpContextAccessor) : base(options)
+        public AppDbContext(DbContextOptions<AppDbContext<TIDb>> options) : base(options)
         {
-            _httpContextAccessor = httpContextAccessor;
         }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -32,29 +33,44 @@ namespace Kurisu.DataAccessor.Internal
                 modelBuilder.Entity(entityType);
             }
 
-            //var dateTimeConverter = new ValueConverter<DateTime, DateTime>(
-            //    v => DateTime.Parse(v.ToString("yyyy-MM-dd HH:mm:ss")),
-            //    v => DateTime.Parse(v.ToString("yyyy-MM-dd HH:mm:ss"))
-            //);
-
-            //foreach (var item in modelBuilder.Model.GetEntityTypes())
-            //{
-            //    foreach (var prop in item.GetProperties().Where(x => x.ClrType == typeof(DateTime) || x.ClrType == typeof(DateTime?)))
-            //    {
-            //        prop.SetValueConverter(dateTimeConverter);
-            //    }
-            //}
-
             base.OnModelCreating(modelBuilder);
         }
 
         public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
         {
+            GenerateDefaultValues();
+            return base.SaveChangesAsync(cancellationToken);
+        }
+
+        public override int SaveChanges(bool acceptAllChangesOnSuccess)
+        {
+            GenerateDefaultValues();
+            return base.SaveChanges(acceptAllChangesOnSuccess);
+        }
+
+        public override int SaveChanges()
+        {
+            GenerateDefaultValues();
+            return base.SaveChanges();
+        }
+
+        public override Task<int> SaveChangesAsync(bool acceptAllChangesOnSuccess, CancellationToken cancellationToken = new())
+        {
+            GenerateDefaultValues();
+            return base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
+        }
+
+        /// <summary>
+        /// 生成默认
+        /// </summary>
+        private void GenerateDefaultValues()
+        {
+            var httpContext = this.GetService<IHttpContextAccessor>().HttpContext;
+            int sub = int.Parse((httpContext?.User.Identity as ClaimsIdentity)?.FindFirst("sub")?.Value ?? "0");
+
             var entities = this.ChangeTracker.Entries();
             foreach (var entity in entities)
             {
-                int sub = int.Parse((_httpContextAccessor.HttpContext?.User?.Identity as ClaimsIdentity)?.FindFirst("sub")?.Value ?? "0");
-
                 switch (entity.State)
                 {
                     case EntityState.Modified:
@@ -65,13 +81,8 @@ namespace Kurisu.DataAccessor.Internal
                         entity.Property(nameof(BaseEntity<object>.Creator)).CurrentValue = sub;
                         entity.Property(nameof(BaseEntity<object>.CreateTime)).CurrentValue = DateTime.Now;
                         break;
-                    default:
-                        break;
                 }
             }
-
-
-            return base.SaveChangesAsync(cancellationToken);
         }
     }
 }

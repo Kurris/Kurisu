@@ -4,7 +4,7 @@ using System.Linq;
 using System.Reflection.Emit;
 using System.Text;
 using System.Threading.Tasks;
-using Kurisu.Common.Dto;
+using Kurisu.DataAccessor.Dto;
 
 namespace Kurisu.Elasticsearch.LowLinq.Syntax
 {
