@@ -8,12 +8,20 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Kurisu.UnifyResultAndValidation.Filters
 {
-    public class ValidateAndPackResultFilter : ActionFilterAttribute
+    /// <summary>
+    /// 实体验证和包装返回值过滤器
+    /// </summary>
+    public class ValidateAndPackResultFilter : IAsyncActionFilter, IAsyncResultFilter
     {
-        public override async Task OnResultExecutionAsync(ResultExecutingContext context, ResultExecutionDelegate next)
+        public async Task OnActionExecutionAsync(ActionExecutingContext context, ActionExecutionDelegate next)
         {
-            var provider = context.HttpContext.RequestServices;
-            var apiResult = provider.GetService<IApiResult>();
+            await next();
+        }
+
+        public async Task OnResultExecutionAsync(ResultExecutingContext context, ResultExecutionDelegate next)
+        {
+            var serviceProvider = context.HttpContext.RequestServices;
+            var apiResult = serviceProvider.GetService<IApiResult>();
             if (apiResult == null)
             {
                 throw new ArgumentNullException(nameof(IApiResult));
@@ -42,17 +50,19 @@ namespace Kurisu.UnifyResultAndValidation.Filters
                     var type = result.GetType();
 
                     //返回值已经包装
-                    if (type.IsGenericType && typeof(IApiResult).IsAssignableFrom(type))
+                    if (type.IsGenericType && type.IsAssignableTo(typeof(IApiResult)))
                         context.Result = new ObjectResult(result);
                     else
-                    {
-                        //获取自定义包装处理
                         context.Result = new ObjectResult(apiResult.GetDefaultSuccessApiResult(result));
-                    }
+                }
+                //空 task
+                else if (context.Result is EmptyResult)
+                {
+                    context.Result = new ObjectResult(apiResult.GetDefaultSuccessApiResult((object) null));
                 }
             }
 
-            await base.OnResultExecutionAsync(context, next);
+            await next();
         }
     }
 }

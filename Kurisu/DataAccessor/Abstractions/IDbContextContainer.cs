@@ -2,14 +2,13 @@ using System;
 using System.Collections.Concurrent;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Storage;
 
 namespace Kurisu.DataAccessor.Abstractions
 {
     /// <summary>
     /// 数据库连接容器
     /// </summary>
-    public interface IDbContextContainer : IAsyncDisposable
+    public interface IDbContextContainer
     {
         /// <summary>
         /// DbContext数据
@@ -17,9 +16,9 @@ namespace Kurisu.DataAccessor.Abstractions
         public int Count { get; }
 
         /// <summary>
-        /// 数据库上下文事务
+        /// 是否自动提交
         /// </summary>
-        public IDbContextTransaction DbContextTransaction { get; set; }
+        public bool IsAutomaticSaveChanges { get;  set; }
 
         /// <summary>
         /// 获取所有数据库上下文
@@ -51,15 +50,13 @@ namespace Kurisu.DataAccessor.Abstractions
         /// <summary>
         /// 打开事务
         /// </summary>
-        /// <param name="ensureTransaction"></param>
         /// <returns></returns>
-        Task<IDbContextContainer> BeginTransactionAsync(bool ensureTransaction = false);
+        Task<IDbContextContainer> BeginTransactionAsync();
 
         /// <summary>
         /// 提交事务
         /// </summary>
         /// <param name="exception"></param>
-        /// <param name="isManualSaveChanges"></param>
-        Task CommitTransactionAsync(bool isManualSaveChanges = true, Exception exception = null);
+        Task CommitTransactionAsync(Exception exception = null);
     }
 }

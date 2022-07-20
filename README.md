@@ -10,7 +10,7 @@
         }
     }
 ```
-- **Startup** 中继承`DefaultKurisuStartup`使用默认的配置, override修饰的方法按需重写
+- **Startup** 继承`DefaultKurisuStartup`使用默认的配置, override修饰的方法按需重写
 ```csharp 
     public class Startup : DefaultKurisuStartup
     {

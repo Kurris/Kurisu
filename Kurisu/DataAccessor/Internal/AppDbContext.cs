@@ -22,6 +22,9 @@ namespace Kurisu.DataAccessor.Internal
         {
         }
 
+        public bool IsAutomaticSaveChanges { get; set; }
+
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             var entities = App.ActiveTypes.Where(x => x.IsDefined(typeof(TableAttribute), false));

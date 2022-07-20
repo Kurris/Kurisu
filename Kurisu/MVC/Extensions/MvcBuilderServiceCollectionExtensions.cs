@@ -22,7 +22,6 @@ namespace Microsoft.Extensions.DependencyInjection
             where TFilter : IFilterMetadata
         {
             mvcBuilder.Services.AddMvcFilter<TFilter>(configure);
-
             return mvcBuilder;
         }
 

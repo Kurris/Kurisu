@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Concurrent;
-using System.Data;
 using System.Data.Common;
 using System.Linq;
 using System.Threading.Tasks;
@@ -36,7 +35,7 @@ namespace Kurisu.DataAccessor.Internal
         /// <summary>
         /// 数据库上下文事务
         /// </summary>
-        public IDbContextTransaction DbContextTransaction { get; set; }
+        private IDbContextTransaction DbContextTransaction { get; set; }
 
 
         /// <summary>
@@ -104,14 +103,10 @@ namespace Kurisu.DataAccessor.Internal
         /// <summary>
         /// 开启事务
         /// </summary>
-        /// <param name="ensureTransaction"></param>
         /// <returns></returns>
-        public async Task<IDbContextContainer> BeginTransactionAsync(bool ensureTransaction = false)
+        public async Task<IDbContextContainer> BeginTransactionAsync()
         {
-            if (!_dbContexts.Any())
-            {
-                return this;
-            }
+            if (!_dbContexts.Any()) return this;
 
             if (DbContextTransaction == null)
             {
@@ -132,9 +127,8 @@ namespace Kurisu.DataAccessor.Internal
         /// <summary>
         /// 提交事务
         /// </summary>
-        /// <param name="isManualSaveChanges"></param>
         /// <param name="exception"></param>
-        public async Task CommitTransactionAsync(bool isManualSaveChanges, Exception exception = null)
+        public async Task CommitTransactionAsync(Exception exception = null)
         {
             //存在异常
             if (exception != null)
@@ -148,13 +142,16 @@ namespace Kurisu.DataAccessor.Internal
                 //提交事务
                 try
                 {
-                    //如果不是手动提交,则直接执行
-                    if (!isManualSaveChanges)
+                    //如果指定提交,则直接执行
+                    if (IsAutomaticSaveChanges)
                     {
                         await SaveChangesAsync();
                     }
 
-                    await DbContextTransaction?.CommitAsync();
+                    if (DbContextTransaction != null)
+                    {
+                        await DbContextTransaction.CommitAsync();
+                    }
                 }
                 catch
                 {
@@ -185,41 +182,20 @@ namespace Kurisu.DataAccessor.Internal
 
         public int Count => _dbContexts.Count;
 
-        public async ValueTask DisposeAsync()
+        private bool _isAutomaticSaveChanges;
+
+        public bool IsAutomaticSaveChanges
         {
-            ////释放上下文
-            //foreach (var kv in _dbContexts)
-            //{
-            //    var dbContext = kv.Value;
-            //    var dbConnection = dbContext.Database.GetDbConnection();
-            //    if (dbConnection.State != ConnectionState.Open) continue;
-
-            //    await dbConnection.CloseAsync();
-            //    await dbConnection.DisposeAsync();
-            //    await dbContext.DisposeAsync();
-            //}
-
-            //_dbContexts.Clear();
-
-            //foreach (var kv in _failedDbContexts)
-            //{
-            //    var dbContext = kv.Value;
-            //    var dbConnection = dbContext.Database.GetDbConnection();
-            //    if (dbConnection.State != ConnectionState.Open) continue;
-
-            //    await dbConnection.CloseAsync();
-            //    await dbConnection.DisposeAsync();
-            //    await dbContext.DisposeAsync();
-            //}
-
-            //_failedDbContexts.Clear();
-
-            ////释放事务
-            //if (DbContextTransaction != null)
-            //{
-            //    await DbContextTransaction.DisposeAsync();
-            //    DbContextTransaction = null;
-            //}
+            get => _isAutomaticSaveChanges;
+            set
+            {
+                _isAutomaticSaveChanges = value;
+                var dbContexts = GetDbContexts().Select(x => x.Value);
+                foreach (var dbContext in dbContexts)
+                {
+                    (dbContext as IAppDbContext).IsAutomaticSaveChanges = value;
+                }
+            }
         }
     }
 }

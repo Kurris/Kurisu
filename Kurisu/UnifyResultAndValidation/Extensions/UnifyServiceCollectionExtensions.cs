@@ -13,8 +13,8 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <returns></returns>
         public static IServiceCollection AddKurisuUnify(this IServiceCollection services)
         {
-            services.AddMvcFilter<ValidateAndPackResultFilter>();
-            return services;
+            return services.AddMvcFilter<ValidateAndPackResultFilter>()
+                .AddMvcFilter<ExceptionPackFilter>();
         }
     }
 }

@@ -5,14 +5,14 @@ namespace Kurisu.Utils.Extensions
     /// </summary>
     public static class StringExtensions
     {
-        /// <summary>
-        /// 是否为空
-        /// </summary>
-        /// <param name="str"></param>
-        /// <returns></returns>
-        public static bool IsEmpty(this string str)
+        public static bool IsNullOrEmpty(this string str)
         {
-            return string.IsNullOrEmpty(str?.Trim());
+            return string.IsNullOrEmpty(str);
+        }
+
+        public static bool IsNullOrWhiteSpace(this string str)
+        {
+            return string.IsNullOrWhiteSpace(str);
         }
     }
 }

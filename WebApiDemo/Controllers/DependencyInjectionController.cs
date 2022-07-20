@@ -6,6 +6,9 @@ using WebApiDemo.Services.DI;
 
 namespace WebApiDemo.Controllers
 {
+    /// <summary>
+    /// 
+    /// </summary>
     [ApiDefinition("DI测试")]
     [ApiController]
     [Route("[controller]")]
@@ -15,6 +18,12 @@ namespace WebApiDemo.Controllers
         private readonly IServiceProvider _serviceProvider;
         private readonly SingletonService2 _singletonService2;
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="funcNamedService"></param>
+        /// <param name="serviceProvider"></param>
+        /// <param name="singletonService2"></param>
         public DependencyInjectionController(Func<string, IScopeDependency, object> funcNamedService
             , IServiceProvider serviceProvider
             , SingletonService2 singletonService2)
