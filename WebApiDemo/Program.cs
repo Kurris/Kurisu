@@ -4,7 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 
 
-namespace WebApplication1
+namespace WebApiDemo
 {
     public class Program
     {

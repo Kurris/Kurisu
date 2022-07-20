@@ -1,21 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Dynamic;
-using System.Linq;
-using System.Linq.Expressions;
-using System.Text.Json.Serialization;
+﻿using System.Linq;
 using System.Threading.Tasks;
-using Elasticsearch.Net;
-using Kurisu.Elasticsearch;
 using Kurisu.Elasticsearch.Extensions;
 using Kurisu.Elasticsearch.Implements;
-using Kurisu.Elasticsearch.LowLinq;
-using Mapster;
-using Nest;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 
-namespace TestConsole
+namespace ConsoleDemo
 {
     class Program
     {
@@ -31,11 +19,10 @@ namespace TestConsole
             //    .Where(x => x.No == 1)
             //    .ToListAsync();
 
-            var lis =await service.PostSearch<Users>()            
-               .Where(x => x.Name.Contains("ligy") || x.Name.Contains("xiao"))
-               .ToListAsync();
-              
-          
+            var lis = await service.PostSearch<Users>()
+                .Where(x => x.Name.Contains("ligy") || x.Name.Contains("xiao"))
+                .ToListAsync();
+
             //var  lis = await service.PostSearch<Users>()
             //     .Where(x => x.Name == "ligy" || x.Age == 25 || x.Address.Contains("杭州"))
             //    .ToListAsync();  

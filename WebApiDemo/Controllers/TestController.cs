@@ -2,7 +2,7 @@ using Kurisu.MVC;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
-namespace WebApplication1.Controllers
+namespace WebApiDemo.Controllers
 {
     [ApiDefinition("测试")]
     [Authorize]
@@ -10,10 +10,10 @@ namespace WebApplication1.Controllers
     [Route("[controller]")]
     public class TestController : ControllerBase
     {
-        [HttpGet("T")]
-        public string GetT()
+        [HttpGet("testOne")]
+        public string TestOne()
         {
-            return "GetT";
+            return "TestOne";
         }
     }
 }
