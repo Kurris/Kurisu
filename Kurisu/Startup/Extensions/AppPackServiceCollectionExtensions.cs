@@ -7,7 +7,7 @@ using Microsoft.AspNetCore.Hosting;
 // ReSharper disable once CheckNamespace
 namespace Microsoft.Extensions.DependencyInjection
 {
-    public static class AppPackExtensions
+    public static class AppPackServiceCollectionExtensions
     {
         /// <summary>
         /// 添加自定义appPacks
@@ -27,10 +27,10 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <summary>
         /// 使用自定义appPacks
         /// </summary>
-        /// <param name="app"></param>
-        /// <param name="env"></param>
-        /// <param name="serviceProvider"></param>
-        /// <param name="isBeforeUseRouting"></param>
+        /// <param name="app">应用程序</param>
+        /// <param name="env">web环境</param>
+        /// <param name="serviceProvider">服务提供器</param>
+        /// <param name="isBeforeUseRouting">在使用UseRouting之前</param>
         /// <returns></returns>
         public static IApplicationBuilder UseKurisuAppPacks(this IApplicationBuilder app, IWebHostEnvironment env, IServiceProvider serviceProvider, bool isBeforeUseRouting)
         {
