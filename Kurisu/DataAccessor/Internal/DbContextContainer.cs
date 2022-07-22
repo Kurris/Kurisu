@@ -6,13 +6,15 @@ using System.Threading.Tasks;
 using Kurisu.DataAccessor.Abstractions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Kurisu.DataAccessor.Internal
 {
     /// <summary>
     /// 数据库上下文容器
     /// </summary>
-    public class DbContextContainer : IDbContextContainer
+    [SkipScan]
+    public sealed class DbContextContainer : IDbContextContainer
     {
         /// <summary>
         /// 有效上下文

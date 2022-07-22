@@ -1,8 +1,11 @@
+using Microsoft.Extensions.DependencyInjection;
+
 namespace Kurisu.DataAccessor.Dto
 {
     /// <summary>
     /// 分页入参数
     /// </summary>
+    [SkipScan]
     public class PageInput
     {
         /// <summary>

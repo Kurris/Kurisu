@@ -34,12 +34,11 @@ namespace Microsoft.Extensions.DependencyInjection
             services.AddDbConnections(action);
 
             //dbContext
-            services.AddDbContext<IMasterDb>();
-            services.AddDbContext<ISlaveDb>();
+            services.AddDbContext<IAppMasterDb>();
+            services.AddDbContext<IAppSlaveDb>();
 
-            //主库操作
-            services.AddScoped(typeof(IMasterDb), provider => provider.GetService<Func<Type, IDbOperation>>()?.Invoke(typeof(IMasterDb)));
-            services.AddScoped(typeof(ISlaveDb), provider => provider.GetService<Func<Type, IDbOperation>>()?.Invoke(typeof(ISlaveDb)));
+            //主从库操作
+            services.AddScoped<IAppDbService, AppDbService>();
 
             return services;
         }
@@ -61,7 +60,7 @@ namespace Microsoft.Extensions.DependencyInjection
                     var dbSetting = provider.GetService<IOptions<DbSetting>>()?.Value;
                     action?.Invoke(dbSetting);
 
-                    if (dbType == typeof(IMasterDb))
+                    if (dbType == typeof(IAppMasterDb))
                         connection.ConnectionString = dbSetting.DefaultConnectionString;
                     else
                     {
@@ -91,7 +90,7 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <typeparam name="TIDb"></typeparam>
         /// <exception cref="ArgumentNullException"></exception>
         /// <exception cref="NullReferenceException"></exception>
-        private static void AddDbContext<TIDb>(this IServiceCollection services) where TIDb : IDb
+        private static void AddDbContext<TIDb>(this IServiceCollection services) where TIDb : IDbService
         {
             services.AddDbContext<AppDbContext<TIDb>>((provider, options) =>
             {
@@ -124,21 +123,22 @@ namespace Microsoft.Extensions.DependencyInjection
             //读写操作实现类
             services.AddScoped(provider =>
             {
-                return (Func<Type, IDbOperation>) (dbType =>
+                return (Func<Type, IDbService>) (dbType =>
                 {
                     //获取容器
-                    var container = provider.GetService<IDbContextContainer>();
-                    IDbOperation implementation;
+                    IDbService implementation;
 
-                    if (dbType == typeof(IMasterDb))
+                    if (dbType == typeof(IAppMasterDb))
                     {
-                        var masterDbContext = provider.GetService<AppDbContext<IMasterDb>>();
+                        var masterDbContext = provider.GetService<AppDbContext<IAppMasterDb>>();
                         implementation = new WriteImplementation(masterDbContext);
+
+                        var container = provider.GetService<IDbContextContainer>();
                         container.Add(masterDbContext);
                     }
                     else
                     {
-                        var slaveDbContext = provider.GetService<AppDbContext<ISlaveDb>>();
+                        var slaveDbContext = provider.GetService<AppDbContext<IAppSlaveDb>>();
                         slaveDbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTrackingWithIdentityResolution;
                         implementation = new ReadImplementation(slaveDbContext);
                     }

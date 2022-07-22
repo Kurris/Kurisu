@@ -46,7 +46,6 @@ namespace Kurisu.DataAccessor.Abstractions
         /// <returns></returns>
         Task<int> SaveChangesAsync(bool acceptAllChangesOnSuccess);
 
-
         /// <summary>
         /// 打开事务
         /// </summary>

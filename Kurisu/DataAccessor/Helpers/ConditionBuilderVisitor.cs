@@ -9,25 +9,8 @@ namespace Kurisu.DataAccessor.Helpers
     /// </summary>
     internal class ConditionBuilderVisitor : ExpressionVisitor
     {
-        internal ConditionBuilderVisitor(string sqlType)
-        {
-            _filedTagLeft = sqlType switch
-            {
-                "SqlServer" => " [",
-                "MySql" => " `",
-                _ => throw new NotSupportedException(sqlType)
-            };
-
-            _filedTagRight = sqlType switch
-            {
-                "SqlServer" => "] ",
-                "MySql" => "` ",
-                _ => throw new NotSupportedException(sqlType)
-            };
-        }
-
-        private readonly string _filedTagLeft = string.Empty;
-        private readonly string _filedTagRight = string.Empty;
+        private readonly string _filedTagLeft = " `";
+        private readonly string _filedTagRight = "` ";
 
         private readonly Stack<string> _stringStack = new Stack<string>();
 

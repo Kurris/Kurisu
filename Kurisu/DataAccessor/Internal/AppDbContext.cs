@@ -16,7 +16,7 @@ namespace Kurisu.DataAccessor.Internal
     /// AppDbContext 程序默认DbContext
     /// </summary>
     /// <typeparam name="TIDb"></typeparam>
-    public class AppDbContext<TIDb> : DbContext, IAppDbContext where TIDb : IDb
+    public class AppDbContext<TIDb> : DbContext, IAppDbContext where TIDb : IDbService
     {
         public AppDbContext(DbContextOptions<AppDbContext<TIDb>> options) : base(options)
         {
@@ -66,7 +66,8 @@ namespace Kurisu.DataAccessor.Internal
         /// <summary>
         /// 生成默认
         /// </summary>
-        private void GenerateDefaultValues()
+        // ReSharper disable once MemberCanBePrivate.Global
+        protected void GenerateDefaultValues()
         {
             var httpContext = this.GetService<IHttpContextAccessor>().HttpContext;
             int sub = int.Parse((httpContext?.User.Identity as ClaimsIdentity)?.FindFirst("sub")?.Value ?? "0");

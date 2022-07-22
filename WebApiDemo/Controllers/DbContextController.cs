@@ -8,18 +8,22 @@ using WebApiDemo.Entities;
 
 namespace WebApiDemo.Controllers
 {
+    /// <summary>
+    /// 
+    /// </summary>
     [Route("[controller]")]
     [ApiController]
     public class DbContextController : ControllerBase
     {
-        private readonly ISlaveDb _slaveDb;
-        private readonly IMasterDb _masterDb;
+        private readonly IAppDbService _dbService;
 
-        public DbContextController(ISlaveDb slaveDb
-            , IMasterDb masterDb)
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="dbService"></param>
+        public DbContextController(IAppDbService dbService)
         {
-            _slaveDb = slaveDb;
-            _masterDb = masterDb;
+            _dbService = dbService;
         }
 
 
@@ -30,14 +34,18 @@ namespace WebApiDemo.Controllers
         [HttpGet("doSomething")]
         public async Task<IEnumerable<Menu>> QueryMenus()
         {
-            return await _slaveDb.Queryable<Menu>().ToListAsync();
+            await _dbService.Queryable<Menu>().ToListAsync();
+            await _dbService.Queryable<Menu>(true).ToListAsync();
+
+            await _dbService.FirstOrDefaultAsync<Menu>();
+            return await _dbService.ToListAsync<Menu>();
         }
 
         [UnitOfWork(true)]
         [HttpPost]
         public async Task AddMenu(Menu menu)
         {
-            await _masterDb.AddAsync(menu);
+            await _dbService.InsertAsync(menu);
         }
     }
 }

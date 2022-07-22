@@ -2,6 +2,9 @@
 
 namespace Kurisu.UnifyResultAndValidation.Abstractions
 {
+    /// <summary>
+    /// api返回值接口
+    /// </summary>
     public interface IApiResult : ISingletonDependency
     {
         /// <summary>

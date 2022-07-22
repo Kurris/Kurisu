@@ -54,7 +54,7 @@ namespace Kurisu.DataAccessor.Dto
         /// <summary>
         /// 当前页集合
         /// </summary>
-        public IEnumerable<T> Data { get; set; }
+        public List<T> Data { get; set; }
     }
 
     /// <summary>
