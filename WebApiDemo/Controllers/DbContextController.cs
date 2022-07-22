@@ -41,7 +41,6 @@ namespace WebApiDemo.Controllers
             return await _dbService.ToListAsync<Menu>();
         }
 
-        [UnitOfWork(true)]
         [HttpPost]
         public async Task AddMenu(Menu menu)
         {

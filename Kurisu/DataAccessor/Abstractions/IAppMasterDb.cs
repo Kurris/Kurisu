@@ -2,19 +2,20 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Kurisu.DataAccessor.Internal;
+using Microsoft.EntityFrameworkCore;
 
 namespace Kurisu.DataAccessor.Abstractions
 {
     /// <summary>
     /// 主库接口
     /// </summary>
-    public interface IAppMasterDb : IDbService
+    public interface IAppMasterDb : IAppSlaveDb
     {
         /// <summary>
         /// 数据库上下文
         /// </summary>
         /// <returns></returns>
-        public AppDbContext<IAppMasterDb> GetMasterDbContext();
+        public DbContext GetMasterDbContext();
 
         /// <summary>
         /// 保存更新

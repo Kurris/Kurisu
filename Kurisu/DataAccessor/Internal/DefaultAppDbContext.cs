@@ -16,9 +16,9 @@ namespace Kurisu.DataAccessor.Internal
     /// AppDbContext 程序默认DbContext
     /// </summary>
     /// <typeparam name="TIDb"></typeparam>
-    public class AppDbContext<TIDb> : DbContext, IAppDbContext where TIDb : IDbService
+    public class DefaultAppDbContext<TIDb> : DbContext, IAppDbContext where TIDb : IDbService
     {
-        public AppDbContext(DbContextOptions<AppDbContext<TIDb>> options) : base(options)
+        public DefaultAppDbContext(DbContextOptions<DefaultAppDbContext<TIDb>> options) : base(options)
         {
         }
 

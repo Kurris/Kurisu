@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
-using Kurisu.DataAccessor.Internal;
+using Microsoft.EntityFrameworkCore;
 
 namespace Kurisu.DataAccessor.Abstractions
 {
@@ -11,7 +11,7 @@ namespace Kurisu.DataAccessor.Abstractions
     /// </summary>
     public interface IAppSlaveDb : IDbService
     {
-        AppDbContext<IAppSlaveDb> GetDbContext();
+        DbContext GetSlaveDbContext();
 
         /// <summary>
         /// 返回第一个实体

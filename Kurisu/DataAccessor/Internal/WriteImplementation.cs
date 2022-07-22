@@ -9,18 +9,18 @@ using Microsoft.EntityFrameworkCore.Metadata;
 
 namespace Kurisu.DataAccessor.Internal
 {
-    internal sealed class WriteImplementation : IAppMasterDb
+    internal sealed class WriteImplementation : ReadImplementation, IAppMasterDb
     {
-        internal WriteImplementation(AppDbContext<IAppMasterDb> dbContext)
+        internal WriteImplementation(DbContext dbContext) : base(dbContext)
         {
             DbContext = dbContext;
         }
 
-        public AppDbContext<IAppMasterDb> DbContext { get; }
+        public override DbContext DbContext { get; }
 
-        public AppDbContext<IAppMasterDb> GetMasterDbContext() => DbContext;
+        public DbContext GetMasterDbContext() => DbContext;
 
-        public IQueryable<T> Queryable<T>() where T : class, new()
+        public new IQueryable<T> Queryable<T>() where T : class, new()
         {
             return DbContext.Set<T>().AsQueryable();
         }
@@ -45,7 +45,7 @@ namespace Kurisu.DataAccessor.Internal
             return await DbContext.Database.ExecuteSqlInterpolatedAsync(strSql);
         }
 
-        public async ValueTask SaveAsync(object entity) 
+        public async ValueTask SaveAsync(object entity)
         {
             var (_, value) = FindKeyAndValue<object>(entity);
 

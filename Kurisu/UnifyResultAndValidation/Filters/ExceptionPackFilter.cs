@@ -16,6 +16,7 @@ namespace Kurisu.UnifyResultAndValidation.Filters
             var apiResult = context.HttpContext.RequestServices.GetService<IApiResult>();
             context.Result = new ObjectResult(apiResult.GetDefaultErrorApiResult(context.Exception.Message));
 
+            context.ExceptionHandled = true;
             await Task.CompletedTask;
         }
     }

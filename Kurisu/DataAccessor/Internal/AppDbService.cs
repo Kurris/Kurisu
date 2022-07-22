@@ -4,7 +4,7 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
 using Kurisu.DataAccessor.Abstractions;
-using Kurisu.DataAccessor.Dto;
+using Microsoft.EntityFrameworkCore;
 
 namespace Kurisu.DataAccessor.Internal
 {
@@ -13,26 +13,27 @@ namespace Kurisu.DataAccessor.Internal
     /// </summary>
     internal class AppDbService : IAppDbService
     {
-        private readonly Func<Type, IDbService> _dbResolver;
-
         public AppDbService(Func<Type, IDbService> dbResolver)
         {
-            _dbResolver = dbResolver;
+            SlaveDb = dbResolver.Invoke(typeof(IAppSlaveDb)) as IAppSlaveDb;
+            MasterDb = dbResolver.Invoke(typeof(IAppMasterDb)) as IAppMasterDb;
         }
 
-        private IAppSlaveDb _slaveDb;
-        public IAppSlaveDb SlaveDb => _slaveDb ??= _dbResolver.Invoke(typeof(IAppSlaveDb)) as IAppSlaveDb;
+        public IAppSlaveDb SlaveDb { get; }
 
+        public IAppMasterDb MasterDb { get; }
 
-        private IAppMasterDb _masterDb;
-        public IAppMasterDb MasterDb => _masterDb ??= _dbResolver.Invoke(typeof(IAppMasterDb)) as IAppMasterDb;
+        public DbContext GetMasterDbContext() => MasterDb.GetMasterDbContext();
 
-        public AppDbContext<IAppMasterDb> GetMasterDbContext() => MasterDb.GetMasterDbContext();
-
-        public AppDbContext<IAppSlaveDb> GetDbContext() => SlaveDb.GetDbContext();
+        public DbContext GetSlaveDbContext() => SlaveDb.GetSlaveDbContext();
 
         public IQueryable<T> Queryable<T>(bool useMasterDb) where T : class, new()
         {
+            if (SlaveDb == null)
+            {
+                return MasterDb.Queryable<T>();
+            }
+
             return useMasterDb
                 ? MasterDb.Queryable<T>()
                 : SlaveDb.Queryable<T>();
@@ -52,7 +53,6 @@ namespace Kurisu.DataAccessor.Internal
 
         public async Task<int> RunSqlInterAsync(FormattableString strSql) => await MasterDb.RunSqlInterAsync(strSql);
 
-
         public async ValueTask SaveAsync(object entity) => await MasterDb.SaveAsync(entity);
 
 
@@ -64,11 +64,19 @@ namespace Kurisu.DataAccessor.Internal
         public async ValueTask SaveAsync<T>(IEnumerable<T> entities) where T : class, new() => await MasterDb.SaveAsync(entities);
 
 
-        public async ValueTask InsertAsync(object entity) => await MasterDb.InsertAsync(entity);
+        public async ValueTask InsertAsync(object entity)
+        {
+            await MasterDb.InsertAsync(entity);
+            await CommitToDbAsync();
+        }
 
         public async ValueTask<object> InsertReturnIdentityAsync(object entity) => await MasterDb.InsertReturnIdentityAsync(entity);
 
-        public async ValueTask InsertAsync<T>(T entity) where T : class, new() => await MasterDb.InsertAsync(entity);
+        public async ValueTask InsertAsync<T>(T entity) where T : class, new()
+        {
+            await MasterDb.InsertAsync(entity);
+            await CommitToDbAsync();
+        }
 
         public async Task InsertRangeAsync<T>(IEnumerable<T> entities) where T : class, new() => await MasterDb.InsertRangeAsync(entities);
 
@@ -97,7 +105,7 @@ namespace Kurisu.DataAccessor.Internal
         /// <returns></returns>
         private async Task<int> CommitToDbAsync()
         {
-            if (GetMasterDbContext().IsAutomaticSaveChanges)
+            if ((GetMasterDbContext() as IAppDbContext).IsAutomaticSaveChanges)
             {
                 return 0;
             }
@@ -108,15 +116,55 @@ namespace Kurisu.DataAccessor.Internal
 
         #region Read
 
-        public async Task<T> FirstOrDefaultAsync<T>() where T : class, new() => await SlaveDb.FirstOrDefaultAsync<T>();
+        public async Task<T> FirstOrDefaultAsync<T>() where T : class, new()
+        {
+            if (SlaveDb == null)
+            {
+                return await MasterDb.FirstOrDefaultAsync<T>();
+            }
 
-        public async ValueTask<T> FirstOrDefaultAsync<T>(params object[] keyValues) where T : class, new() => await SlaveDb.FirstOrDefaultAsync<T>(keyValues);
+            return await SlaveDb.FirstOrDefaultAsync<T>();
+        }
 
-        public async ValueTask<object> FirstOrDefaultAsync(Type type, params object[] keys) => await SlaveDb.FirstOrDefaultAsync(type, keys);
+        public async ValueTask<T> FirstOrDefaultAsync<T>(params object[] keyValues) where T : class, new()
+        {
+            if (SlaveDb == null)
+            {
+                return await MasterDb.FirstOrDefaultAsync<T>(keyValues);
+            }
 
-        public async Task<T> FirstOrDefaultAsync<T>(Expression<Func<T, bool>> predicate) where T : class, new() => await SlaveDb.FirstOrDefaultAsync(predicate);
+            return await SlaveDb.FirstOrDefaultAsync<T>(keyValues);
+        }
 
-        public async Task<List<T>> ToListAsync<T>(Expression<Func<T, bool>> predicate = null) where T : class, new() => await SlaveDb.ToListAsync(predicate);
+        public async ValueTask<object> FirstOrDefaultAsync(Type type, params object[] keys)
+        {
+            if (SlaveDb == null)
+            {
+                return await MasterDb.FirstOrDefaultAsync(type, keys);
+            }
+
+            return await SlaveDb.FirstOrDefaultAsync(type, keys);
+        }
+
+        public async Task<T> FirstOrDefaultAsync<T>(Expression<Func<T, bool>> predicate) where T : class, new()
+        {
+            if (SlaveDb == null)
+            {
+                return await MasterDb.FirstOrDefaultAsync(predicate);
+            }
+
+            return await SlaveDb.FirstOrDefaultAsync(predicate);
+        }
+
+        public async Task<List<T>> ToListAsync<T>(Expression<Func<T, bool>> predicate = null) where T : class, new()
+        {
+            if (SlaveDb == null)
+            {
+                return await MasterDb.ToListAsync(predicate);
+            }
+
+            return await SlaveDb.ToListAsync(predicate);
+        }
 
         #endregion
     }

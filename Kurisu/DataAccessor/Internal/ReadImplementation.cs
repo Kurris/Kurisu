@@ -10,12 +10,12 @@ namespace Kurisu.DataAccessor.Internal
 {
     internal class ReadImplementation : IAppSlaveDb
     {
-        internal ReadImplementation(AppDbContext<IAppSlaveDb> dbContext)
+        internal ReadImplementation(DbContext dbContext)
         {
             DbContext = dbContext;
         }
 
-        public AppDbContext<IAppSlaveDb> DbContext { get; }
+        public virtual DbContext DbContext { get; }
 
         public IQueryable<T> Queryable<T>() where T : class, new()
         {
@@ -23,7 +23,7 @@ namespace Kurisu.DataAccessor.Internal
         }
 
 
-        public AppDbContext<IAppSlaveDb> GetDbContext() => DbContext;
+        public DbContext GetSlaveDbContext() => DbContext;
 
         public async Task<T> FirstOrDefaultAsync<T>() where T : class, new()
         {

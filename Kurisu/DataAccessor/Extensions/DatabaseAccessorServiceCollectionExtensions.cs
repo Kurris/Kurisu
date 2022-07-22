@@ -92,7 +92,7 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <exception cref="NullReferenceException"></exception>
         private static void AddDbContext<TIDb>(this IServiceCollection services) where TIDb : IDbService
         {
-            services.AddDbContext<AppDbContext<TIDb>>((provider, options) =>
+            services.AddDbContext<DefaultAppDbContext<TIDb>>((provider, options) =>
             {
                 var dbSetting = provider.GetService<IOptions<DbSetting>>()?.Value ?? throw new ArgumentNullException(nameof(DbSetting) + " in " + nameof(AddDbContext));
 
@@ -130,7 +130,7 @@ namespace Microsoft.Extensions.DependencyInjection
 
                     if (dbType == typeof(IAppMasterDb))
                     {
-                        var masterDbContext = provider.GetService<AppDbContext<IAppMasterDb>>();
+                        var masterDbContext = provider.GetService<DefaultAppDbContext<IAppMasterDb>>();
                         implementation = new WriteImplementation(masterDbContext);
 
                         var container = provider.GetService<IDbContextContainer>();
@@ -138,9 +138,17 @@ namespace Microsoft.Extensions.DependencyInjection
                     }
                     else
                     {
-                        var slaveDbContext = provider.GetService<AppDbContext<IAppSlaveDb>>();
-                        slaveDbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTrackingWithIdentityResolution;
-                        implementation = new ReadImplementation(slaveDbContext);
+                        var dbSetting = provider.GetService<IOptions<DbSetting>>().Value;
+                        if (dbSetting.ReadConnectionStrings?.Any() == true)
+                        {
+                            var slaveDbContext = provider.GetService<DefaultAppDbContext<IAppSlaveDb>>();
+                            slaveDbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTrackingWithIdentityResolution;
+                            implementation = new ReadImplementation(slaveDbContext);
+                        }
+                        else
+                        {
+                            implementation = null;
+                        }
                     }
 
                     return implementation;
