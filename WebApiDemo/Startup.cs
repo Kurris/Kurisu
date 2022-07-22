@@ -1,3 +1,4 @@
+using Kurisu.Channel.Extensions;
 using Kurisu.Startup;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -14,6 +15,7 @@ namespace WebApiDemo
 
         public override void ConfigureServices(IServiceCollection services)
         {
+            services.AddKurisuChannel();
             base.ConfigureServices(services);
         }
 

@@ -1,7 +1,11 @@
 using System;
+using System.Threading.Tasks;
+using Kurisu;
+using Kurisu.Channel.Abstractions;
 using Kurisu.MVC;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection;
+using WebApiDemo.Channel.Messages;
 using WebApiDemo.Services.DI;
 
 namespace WebApiDemo.Controllers
@@ -14,23 +18,26 @@ namespace WebApiDemo.Controllers
     [Route("[controller]")]
     public class DependencyInjectionController : ControllerBase
     {
-        private readonly Func<string, IScopeDependency, object> _funcNamedService;
+        private readonly INamedResolver _namedResolver;
         private readonly IServiceProvider _serviceProvider;
         private readonly SingletonService2 _singletonService2;
+        private readonly IChannel _channel;
 
         /// <summary>
         /// 
         /// </summary>
-        /// <param name="funcNamedService"></param>
+        /// <param name="namedResolver"></param>
         /// <param name="serviceProvider"></param>
         /// <param name="singletonService2"></param>
-        public DependencyInjectionController(Func<string, IScopeDependency, object> funcNamedService
+        public DependencyInjectionController(INamedResolver namedResolver
             , IServiceProvider serviceProvider
-            , SingletonService2 singletonService2)
+            , SingletonService2 singletonService2
+            , IChannel channel)
         {
-            _funcNamedService = funcNamedService;
+            _namedResolver = namedResolver;
             _serviceProvider = serviceProvider;
             _singletonService2 = singletonService2;
+            _channel = channel;
         }
 
         /// <summary>
@@ -40,10 +47,10 @@ namespace WebApiDemo.Controllers
         [HttpGet("namedRegister")]
         public string NamedRegister()
         {
-            var ligyNamedService = _funcNamedService.Get<INamedService>("ligy");
+            var ligyNamedService = _namedResolver.GetService<INamedService>("ligy");
             var ligy = ligyNamedService.Hello();
 
-            var xiaoNamedService = _funcNamedService.Get<INamedService>("xiao");
+            var xiaoNamedService = _namedResolver.GetService<INamedService>("xiao");
             var xiao = xiaoNamedService.Hello();
 
             return ligy + " and " + xiao;
@@ -54,10 +61,20 @@ namespace WebApiDemo.Controllers
         /// </summary>
         /// <returns></returns>
         [HttpGet("singletonRegister")]
-        public string SingletonRegister()
+        public async Task<string> SingletonRegister()
         {
             _serviceProvider.GetService<ISingletonService>();
             _serviceProvider.GetService<ISingletonService>();
+            App.ServiceProvider.GetService<ISingletonService>();
+            await _channel.PublishAsync(new BobMessage
+            {
+                Name = "bob",
+                Age = 25,
+                Claims = new[]
+                {
+                    "杭州", "拱墅区"
+                }
+            });
             _singletonService2.Hello();
             return _serviceProvider.GetService<ISingletonService>().Hello();
         }
