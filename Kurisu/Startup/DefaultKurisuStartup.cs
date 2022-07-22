@@ -14,7 +14,6 @@ namespace Kurisu.Startup
     [SkipScan]
     public abstract class DefaultKurisuStartup : BaseAppPack
     {
-
         protected DefaultKurisuStartup(IConfiguration configuration)
         {
             App.Configuration = configuration;
@@ -46,6 +45,7 @@ namespace Kurisu.Startup
             services.AddKurisuObjectMapper(Assembly.GetExecutingAssembly());
 
             //依赖注入
+            services.AddNamedResolver();
             services.AddKurisuDependencyInjection();
 
             //注入数据访问
@@ -57,6 +57,7 @@ namespace Kurisu.Startup
 
         public override void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
+            App.ServiceProvider = app.ApplicationServices;
             app.UseKurisuAppPacks(env, app.ApplicationServices, true);
             app.UseRouting();
             app.UseKurisuAppPacks(env, app.ApplicationServices, false);
