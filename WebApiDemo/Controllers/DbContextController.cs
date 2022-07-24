@@ -1,9 +1,12 @@
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Kurisu.DataAccessor.Abstractions;
+using Kurisu.DataAccessor.Extensions;
 using Kurisu.DataAccessor.UnitOfWork.Attributes;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using WebApiDemo.Dto.Output;
 using WebApiDemo.Entities;
 
 namespace WebApiDemo.Controllers
@@ -32,19 +35,44 @@ namespace WebApiDemo.Controllers
         /// </summary>
         /// <returns></returns>
         [HttpGet("doSomething")]
-        public async Task<IEnumerable<Menu>> QueryMenus()
+        public async Task<IEnumerable<MenuOutput>> QueryMenus()
         {
-            await _dbService.Queryable<Menu>().ToListAsync();
-            await _dbService.Queryable<Menu>(true).ToListAsync();
+            //await _dbService.Queryable<Menu>().ToListAsync();
+            //await _dbService.Queryable<Menu>(true).ToListAsync();
 
-            await _dbService.FirstOrDefaultAsync<Menu>();
-            return await _dbService.ToListAsync<Menu>();
+            //await _dbService.FirstOrDefaultAsync<Menu>();
+            //return await _dbService.ToListAsync<Menu>();
+
+            //  var menu = await _dbService.FirstOrDefaultAsync<Menu>();
+
+            //var newMenu = new Menu()
+            //{
+            //    Code = "1",
+            //    DisplayName = "diyige caidan",
+            //    Icon = "icon1",
+            //    PCode = string.Empty,
+            //    Route = "route",
+            //    Visible = true,
+            //};
+            //await _dbService.InsertAsync(newMenu);
+
+            //return await _dbService.ToListAsync<Menu>(x => x.Id == 1 || x.Id == 2);
+
+            return await _dbService.Queryable<Menu>().Select<MenuOutput>()
+                .Where(x => x.Id == 1 || x.Id == 2).ToListAsync();
         }
 
         [HttpPost]
         public async Task AddMenu(Menu menu)
         {
             await _dbService.InsertAsync(menu);
+        }
+
+        [UnitOfWork]
+        [HttpPost("returnIdentity")]
+        public async Task<int> AddMenuAndReturnIdentity(Menu menu)
+        {
+            return await _dbService.InsertReturnIdentityAsync<int, Menu>(menu);
         }
     }
 }

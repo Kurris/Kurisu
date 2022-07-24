@@ -6,7 +6,7 @@ namespace Microsoft.Extensions.DependencyInjection
     /// 依赖注入类型
     /// </summary>
     [SkipScan]
-    internal enum RegisterType
+    public enum RegisterType
     {
         Transient,
         Scoped,

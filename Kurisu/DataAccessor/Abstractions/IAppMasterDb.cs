@@ -85,6 +85,29 @@ namespace Kurisu.DataAccessor.Abstractions
         /// <returns>返回受影响行<see cref="int"/></returns>
         ValueTask InsertAsync(object entity);
 
+        /// <summary>
+        /// 添加一个实体,返回主键
+        /// </summary>
+        /// <param name="entity"></param>
+        /// <returns></returns>
+        ValueTask<TKey> InsertReturnIdentityAsync<TKey>(object entity);
+
+
+        /// <summary>
+        /// 添加一个实体,返回主键
+        /// </summary>
+        /// <typeparam name="TKey"></typeparam>
+        /// <typeparam name="TEntity"></typeparam>
+        /// <param name="entity"></param>
+        /// <returns></returns>
+        ValueTask<TKey> InsertReturnIdentityAsync<TKey, TEntity>(TEntity entity) where TEntity : class, new();
+
+
+        /// <summary>
+        /// 添加一个实体,返回主键
+        /// </summary>
+        /// <param name="entity"></param>
+        /// <returns></returns>
         ValueTask<object> InsertReturnIdentityAsync(object entity);
 
         /// <summary>
@@ -134,8 +157,7 @@ namespace Kurisu.DataAccessor.Abstractions
         Task UpdateRangeAsync<T>(IEnumerable<T> entities, bool updateAll = false) where T : class, new();
 
         #endregion
-
-
+        
         #region delete
 
         /// <summary>
@@ -161,6 +183,14 @@ namespace Kurisu.DataAccessor.Abstractions
         /// <returns>返回受影响行<see cref="int"/></returns>
         Task DeleteRangeAsync<T>(IEnumerable<T> entities) where T : class, new();
 
+
+        /// <summary>
+        /// 删除一组实体
+        /// </summary>
+        /// <param name="entities"></param>
+        /// <returns></returns>
+        Task DeleteRangeAsync(IEnumerable<object> entities);
+
         /// <summary>
         /// 删除实体
         /// </summary>
@@ -170,5 +200,8 @@ namespace Kurisu.DataAccessor.Abstractions
         Task DeleteByIdAsync<T>(object keyValue) where T : class, new();
 
         #endregion
+
+
+        Task UseTransactionAsync(Action action);
     }
 }

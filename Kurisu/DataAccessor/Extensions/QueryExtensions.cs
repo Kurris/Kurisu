@@ -3,7 +3,9 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Threading;
 using System.Threading.Tasks;
+using Kurisu.DataAccessor.Abstractions;
 using Kurisu.DataAccessor.Dto;
+using Mapster;
 using Microsoft.EntityFrameworkCore;
 
 namespace Kurisu.DataAccessor.Extensions
@@ -21,7 +23,7 @@ namespace Kurisu.DataAccessor.Extensions
         /// <param name="pageSize">页数</param>
         /// <typeparam name="TEntity">实体类型</typeparam>
         /// <returns></returns>
-        public static Pagination<TEntity> ToPaged<TEntity>(this IQueryable<TEntity> entities
+        public static Pagination<TEntity> ToPage<TEntity>(this IQueryable<TEntity> entities
             , int pageIndex = 1
             , int pageSize = 20)
             where TEntity : class, new()
@@ -76,17 +78,14 @@ namespace Kurisu.DataAccessor.Extensions
         /// <param name="cancellationToken"></param>
         /// <typeparam name="TEntity"></typeparam>
         /// <returns></returns>
-        public static async Task<Pagination<TEntity>> ToPageAsync<TEntity>(this IQueryable<TEntity> queryable
-            , PageInput input
-            , CancellationToken cancellationToken = default)
-            where TEntity : class, new()
+        public static async Task<Pagination<TEntity>> ToPageAsync<TEntity>(this IQueryable<TEntity> queryable, PageInput input) where TEntity : class, new()
         {
-            return await queryable.ToPageAsync(input.PageIndex, input.PageSize, cancellationToken);
+            return await queryable.ToPageAsync(input.PageIndex, input.PageSize);
         }
 
 
         /// <summary>
-        /// 
+        /// Where查询
         /// </summary>
         /// <param name="queryable"></param>
         /// <param name="whenTodo"></param>
@@ -96,6 +95,83 @@ namespace Kurisu.DataAccessor.Extensions
         public static IQueryable<TEntity> WhereIf<TEntity>(this IQueryable<TEntity> queryable, bool whenTodo, Expression<Func<TEntity, bool>> predicate)
         {
             return whenTodo ? queryable.Where(predicate) : queryable;
+        }
+
+
+        /// <summary>
+        /// 动态排序
+        /// </summary>
+        /// <param name="queryable"></param>
+        /// <param name="sort"></param>
+        /// <param name="isAsc"></param>
+        /// <typeparam name="TEntity"></typeparam>
+        /// <returns></returns>
+        public static IQueryable<TEntity> Sort<TEntity>(this IQueryable<TEntity> queryable, string sort, bool isAsc = true) where TEntity : class, new()
+        {
+            var sortArr = sort.Split(',');
+
+            for (var i = 0; i < sortArr.Length; i++)
+            {
+                var sortColAndRuleArr = sortArr[i].Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries);
+                var sortField = sortColAndRuleArr.First();
+                var sortAsc = isAsc;
+
+                //排序列带上规则   "Id Asc"
+                if (sortColAndRuleArr.Length == 2)
+                {
+                    sortAsc = string.Equals(sortColAndRuleArr[1], "asc", StringComparison.OrdinalIgnoreCase);
+                }
+
+                var parameter = Expression.Parameter(typeof(TEntity), "type");
+                var property = typeof(TEntity).GetProperties().First(p => p.Name.Equals(sortField));
+                var propertyAccess = Expression.MakeMemberAccess(parameter, property);
+                var orderByExpression = Expression.Lambda(propertyAccess, parameter);
+
+                MethodCallExpression resultExpression;
+                if (i == 0)
+                {
+                    resultExpression = Expression.Call(
+                        typeof(Queryable), //调用的类型
+                        sortAsc ? "OrderBy" : "OrderByDescending", //方法名称
+                        new[] { typeof(TEntity), property.PropertyType }, queryable.Expression, Expression.Quote(orderByExpression));
+                }
+                else
+                {
+                    resultExpression = Expression.Call(
+                        typeof(Queryable),
+                        sortAsc ? "ThenBy" : "ThenByDescending",
+                        new[] { typeof(TEntity), property.PropertyType }, queryable.Expression, Expression.Quote(orderByExpression));
+                }
+
+                queryable = queryable.Provider.CreateQuery<TEntity>(resultExpression);
+            }
+
+            return queryable;
+        }
+
+
+        /// <summary>
+        /// select映射dto, 使用mapster ProjectToType
+        /// </summary>
+        /// <typeparam name="TDto"></typeparam>
+        /// <param name="queryable"></param>
+        /// <param name="config"></param>
+        /// <returns></returns>
+        public static IQueryable<TDto> Select<TDto>(this IQueryable queryable, TypeAdapterConfig config = null)
+        {
+            return queryable.ProjectToType<TDto>(config);
+        }
+
+        public static IQueryable<TEntity> Where<TEntity>(this IAppDbService appDbService, Expression<Func<TEntity, bool>> predicate, bool userMasterDb = false)
+            where TEntity : class, new()
+        {
+            return appDbService.Queryable<TEntity>(userMasterDb).Where(predicate);
+        }
+
+        public static IQueryable<TEntity> Where<TEntity>(this IAppSlaveDb appDbService, Expression<Func<TEntity, bool>> predicate)
+           where TEntity : class, new()
+        {
+            return appDbService.Queryable<TEntity>().Where(predicate);
         }
     }
 }

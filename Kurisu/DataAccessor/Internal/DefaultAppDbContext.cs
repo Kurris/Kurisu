@@ -22,7 +22,7 @@ namespace Kurisu.DataAccessor.Internal
         {
         }
 
-        public bool IsAutomaticSaveChanges { get; set; }
+        public bool IsAutomaticSaveChanges { get; set; } = true;
 
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)

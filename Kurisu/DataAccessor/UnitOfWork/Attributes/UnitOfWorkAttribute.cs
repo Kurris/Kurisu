@@ -14,7 +14,7 @@ namespace Kurisu.DataAccessor.UnitOfWork.Attributes
     {
         private readonly bool _isAutomaticSaveChanges;
 
-        public UnitOfWorkAttribute() : this(false)
+        public UnitOfWorkAttribute() : this(true)
         {
         }
 

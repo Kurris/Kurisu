@@ -15,7 +15,7 @@ namespace WebApiDemo.Interceptors
                 await proceed(invocation, proceedInfo).ConfigureAwait(false);
                 Console.WriteLine("after");
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 throw;
             }
@@ -29,7 +29,7 @@ namespace WebApiDemo.Interceptors
                 // Cannot simply return the the task, as any exceptions would not be caught below.
                 return await proceed(invocation, proceedInfo).ConfigureAwait(false);
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 throw;
             }

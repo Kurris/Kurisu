@@ -26,6 +26,7 @@ namespace WebApiDemo.Channel.Handlers
         public async Task InvokeAsync(BobMessage argument)
         {
             Console.WriteLine(argument.ToJson());
+            await Task.CompletedTask;
         }
     }
 }

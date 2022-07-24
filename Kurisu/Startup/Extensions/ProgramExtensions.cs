@@ -22,6 +22,12 @@ namespace Microsoft.Extensions.DependencyInjection
             await hostBuilder.RunKurisuAsync(typeof(TStartup), useGrpc);
         }
 
+
+        public static void RunKurisu<TStartup>(this IHostBuilder hostBuilder, bool useGrpc = false) where TStartup : DefaultKurisuStartup
+        {
+            hostBuilder.RunKurisu(typeof(TStartup), useGrpc);
+        }
+
         /// <summary>
         /// 运行kurisu framework
         /// </summary>
@@ -54,6 +60,23 @@ namespace Microsoft.Extensions.DependencyInjection
                 })
                 .Build()
                 .RunAsync();
+        }
+
+
+        public static void RunKurisu(this IHostBuilder hostBuilder, Type startup, bool useGrpc)
+        {
+            hostBuilder.ConfigureLogging(builder =>
+           {
+               builder.ClearProviders();
+               builder.AddSerilog();
+           })
+               .ConfigureWebHostDefaults(webBuilder =>
+               {
+                   webBuilder.UseSerilogDefault()
+                       .UseStartup(startup);
+               })
+               .Build()
+               .Run();
         }
     }
 }

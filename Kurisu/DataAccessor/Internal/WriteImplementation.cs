@@ -35,14 +35,17 @@ namespace Kurisu.DataAccessor.Internal
         public async Task<int> RunSqlAsync(string sql, params object[] args)
         {
             if (args.Any())
-                return await DbContext.Database.ExecuteSqlRawAsync(sql, args);
+                await DbContext.Database.ExecuteSqlRawAsync(sql, args);
 
-            return await DbContext.Database.ExecuteSqlRawAsync(sql);
+            await DbContext.Database.ExecuteSqlRawAsync(sql);
+
+            return await CommitToDbAsync();
         }
 
         public async Task<int> RunSqlInterAsync(FormattableString strSql)
         {
-            return await DbContext.Database.ExecuteSqlInterpolatedAsync(strSql);
+            await DbContext.Database.ExecuteSqlInterpolatedAsync(strSql);
+            return await CommitToDbAsync();
         }
 
         public async ValueTask SaveAsync(object entity)
@@ -59,9 +62,11 @@ namespace Kurisu.DataAccessor.Internal
                     await this.DbContext.AddAsync(entity);
                     break;
                 default:
-                    await UpdateAsync(entity, true);
+                    this.DbContext.Update(entity);
                     break;
             }
+
+            await CommitToDbAsync();
         }
 
         public async ValueTask SaveAsync<T>(T entity) where T : class, new()
@@ -78,9 +83,11 @@ namespace Kurisu.DataAccessor.Internal
                     await this.DbContext.AddAsync(entity);
                     break;
                 default:
-                    await UpdateAsync(entity, true);
+                    this.DbContext.Update(entity);
                     break;
             }
+
+            await CommitToDbAsync();
         }
 
         public async ValueTask SaveAsync(IEnumerable<object> entities)
@@ -99,10 +106,12 @@ namespace Kurisu.DataAccessor.Internal
                         await this.DbContext.AddAsync(entity);
                         break;
                     default:
-                        await UpdateAsync(entity, true);
+                        this.DbContext.Update(entity);
                         break;
                 }
             }
+
+            await CommitToDbAsync();
         }
 
         public async ValueTask SaveAsync<T>(IEnumerable<T> entities) where T : class, new()
@@ -121,10 +130,14 @@ namespace Kurisu.DataAccessor.Internal
                         await this.DbContext.AddAsync(entity);
                         break;
                     default:
-                        await UpdateAsync(entity, true);
+                        {
+                            this.DbContext.Update(entity);
+                        }
                         break;
                 }
             }
+
+            await CommitToDbAsync();
         }
 
         public async Task UpdateAsync(object entity, bool updateAll = false)
@@ -133,7 +146,7 @@ namespace Kurisu.DataAccessor.Internal
             if (!updateAll)
                 IgnoreNullAndDefaultValues(entity);
 
-            await Task.CompletedTask;
+            await CommitToDbAsync();
         }
 
         public async Task UpdateAsync<T>(T entity, bool updateAll = false) where T : class, new()
@@ -142,7 +155,7 @@ namespace Kurisu.DataAccessor.Internal
             if (!updateAll)
                 IgnoreNullAndDefaultValues(entity);
 
-            await Task.CompletedTask;
+            await CommitToDbAsync();
         }
 
         public async Task UpdateRangeAsync<T>(IEnumerable<T> entities, bool updateAll = false) where T : class, new()
@@ -156,15 +169,23 @@ namespace Kurisu.DataAccessor.Internal
                 }
             }
 
-            await Task.CompletedTask;
+            await CommitToDbAsync();
         }
 
-        public async Task DeleteAsync(object entity)
+
+        public async ValueTask<TKey> InsertReturnIdentityAsync<TKey>(object entity)
         {
-            DbContext.Remove(entity);
-            await Task.CompletedTask;
+            await DbContext.AddAsync(entity);
+            await DbContext.SaveChangesAsync();
+            return FindKeyValue<TKey>(entity);
         }
 
+        public async ValueTask<TKey> InsertReturnIdentityAsync<TKey, TEntity>(TEntity entity) where TEntity : class, new()
+        {
+            await DbContext.Set<TEntity>().AddAsync(entity);
+            await DbContext.SaveChangesAsync();
+            return FindKeyValue<TKey>(entity);
+        }
 
         public async ValueTask<object> InsertReturnIdentityAsync(object entity)
         {
@@ -176,33 +197,52 @@ namespace Kurisu.DataAccessor.Internal
         public async ValueTask InsertAsync(object entity)
         {
             await DbContext.AddAsync(entity);
+            await CommitToDbAsync();
         }
 
         public async ValueTask InsertAsync<T>(T entity) where T : class, new()
         {
             await DbContext.Set<T>().AddAsync(entity);
+            await CommitToDbAsync();
         }
 
         public async Task InsertRangeAsync(IEnumerable<object> entities)
         {
             await DbContext.AddRangeAsync(entities);
+            await CommitToDbAsync();
         }
 
         public async Task InsertRangeAsync<T>(IEnumerable<T> entities) where T : class, new()
         {
             await DbContext.Set<T>().AddRangeAsync(entities);
+            await CommitToDbAsync();
         }
+
+
+        public async Task DeleteAsync(object entity)
+        {
+            DbContext.Remove(entity);
+            await CommitToDbAsync();
+        }
+
 
         public async Task DeleteAsync<T>(T entity) where T : class, new()
         {
             DbContext.Set<T>().Remove(entity);
-            await Task.CompletedTask;
+            await CommitToDbAsync();
         }
 
         public async Task DeleteRangeAsync<T>(IEnumerable<T> entities) where T : class, new()
         {
             DbContext.Set<T>().RemoveRange(entities);
-            await Task.CompletedTask;
+            await CommitToDbAsync();
+        }
+
+
+        public async Task DeleteRangeAsync(IEnumerable<object> entities)
+        {
+            DbContext.RemoveRange(entities);
+            await CommitToDbAsync();
         }
 
 
@@ -213,6 +253,24 @@ namespace Kurisu.DataAccessor.Internal
 
             entity = await DbContext.Set<T>().FindAsync(keyValue);
             if (entity != null) await this.DeleteAsync(entity);
+
+            await CommitToDbAsync();
+        }
+
+
+
+        /// <summary>
+        /// 提交
+        /// </summary>
+        /// <returns></returns>
+        private async Task<int> CommitToDbAsync()
+        {
+            if ((DbContext as IAppDbContext).IsAutomaticSaveChanges)
+            {
+                return 0;
+            }
+
+            return await SaveChangesAsync();
         }
 
 
@@ -250,7 +308,7 @@ namespace Kurisu.DataAccessor.Internal
         {
             var key = GetEntityType(entity).FindPrimaryKey();
             var propertyInfo = key.Properties[0].PropertyInfo;
-            return (propertyInfo.Name, (TKey) propertyInfo.GetValue(entity));
+            return (propertyInfo.Name, (TKey)propertyInfo.GetValue(entity));
         }
 
         /// <summary>
@@ -265,7 +323,7 @@ namespace Kurisu.DataAccessor.Internal
         {
             var key = GetEntityType<TEntity>().FindPrimaryKey();
             var propInfo = key.Properties[0].PropertyInfo;
-            return (propInfo.Name, (TKey) propInfo.GetValue(t));
+            return (propInfo.Name, (TKey)propInfo.GetValue(t));
         }
 
         /// <summary>
@@ -314,7 +372,7 @@ namespace Kurisu.DataAccessor.Internal
             {
                 //如果已经跟踪的实体状态为dded，那么删除实体时，只需要设置为unchanged
                 trackEntity.State = trackEntity.State == EntityState.Added ? EntityState.Unchanged : entityState;
-                return (T) trackEntity.Entity;
+                return (T)trackEntity.Entity;
             }
 
             //返回创建的新实体和定义的跟踪状态
@@ -403,6 +461,24 @@ namespace Kurisu.DataAccessor.Internal
         private IEntityType GetEntityType(object obj)
         {
             return DbContext.Model.FindEntityType(obj.GetType());
+        }
+
+        public async Task UseTransactionAsync(Action action)
+        {
+            using (var trans = await DbContext.Database.BeginTransactionAsync())
+            {
+                try
+                {
+                    action.Invoke();
+                    await DbContext.SaveChangesAsync();
+                    await trans.CommitAsync();
+                }
+                catch (Exception)
+                {
+                    await trans.RollbackAsync();
+                    throw;
+                }
+            };
         }
     }
 }

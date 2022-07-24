@@ -42,7 +42,7 @@ namespace Kurisu.Startup
             services.AddKurisuConfiguration();
 
             //添加对象关系映射,扫描程序集
-            services.AddKurisuObjectMapper(Assembly.GetExecutingAssembly());
+            services.AddKurisuObjectMapper(Assembly.GetEntryAssembly());
 
             //依赖注入
             services.AddNamedResolver();
