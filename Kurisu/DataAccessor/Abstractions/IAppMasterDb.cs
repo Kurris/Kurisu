@@ -1,8 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using Kurisu.DataAccessor.Internal;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 
 namespace Kurisu.DataAccessor.Abstractions
 {
@@ -157,7 +157,7 @@ namespace Kurisu.DataAccessor.Abstractions
         Task UpdateRangeAsync<T>(IEnumerable<T> entities, bool updateAll = false) where T : class, new();
 
         #endregion
-        
+
         #region delete
 
         /// <summary>
@@ -202,6 +202,21 @@ namespace Kurisu.DataAccessor.Abstractions
         #endregion
 
 
-        Task UseTransactionAsync(Action action);
+        #region transaction
+
+        /// <summary>
+        /// 使用事务，并自动托管事务处理
+        /// </summary>
+        /// <param name="func"></param>
+        /// <returns></returns>
+        Task<int> UseTransactionAsync(Func<Task> func);
+
+        /// <summary>
+        /// 开启事务
+        /// </summary>
+        /// <returns></returns>
+        Task<IDbContextTransaction> BeginTransactionAsync();
+
+        #endregion
     }
 }

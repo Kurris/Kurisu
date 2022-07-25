@@ -5,6 +5,7 @@ using System.Linq.Expressions;
 using System.Threading.Tasks;
 using Kurisu.DataAccessor.Abstractions;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 
 namespace Kurisu.DataAccessor.Internal
 {
@@ -209,9 +210,14 @@ namespace Kurisu.DataAccessor.Internal
             return await _slaveDb.ToListAsync(predicate);
         }
 
-        public async Task UseTransactionAsync(Action action)
+        public async Task<int> UseTransactionAsync(Func<Task> func)
         {
-            await _masterDb.UseTransactionAsync(action);
+            return await _masterDb.UseTransactionAsync(func);
+        }
+
+        public async Task<IDbContextTransaction> BeginTransactionAsync()
+        {
+            return await _masterDb.BeginTransactionAsync();
         }
 
         #endregion

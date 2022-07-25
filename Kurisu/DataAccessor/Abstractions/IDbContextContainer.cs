@@ -18,20 +18,19 @@ namespace Kurisu.DataAccessor.Abstractions
         /// <summary>
         /// 是否自动提交
         /// </summary>
-        public bool IsAutomaticSaveChanges { get;  set; }
+        public bool IsAutomaticSaveChanges { get; set; }
 
         /// <summary>
-        /// 获取所有数据库上下文
+        /// 是否运行中
         /// </summary>
-        /// <returns></returns>
-        ConcurrentDictionary<Guid, DbContext> GetDbContexts();
+        public bool IsRunning { get; }
 
         /// <summary>
         /// 添加上下文到容器中
         /// </summary>
         /// <param name="dbContext"></param>
         /// <returns></returns>
-        void Add(DbContext dbContext);
+        void Manage(DbContext dbContext);
 
         /// <summary>
         /// 保存所有数据库上下文的更改

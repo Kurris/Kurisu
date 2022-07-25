@@ -70,7 +70,7 @@ namespace Kurisu.DataAccessor.Internal
         protected void GenerateDefaultValues()
         {
             var httpContext = this.GetService<IHttpContextAccessor>().HttpContext;
-            int sub = int.Parse((httpContext?.User.Identity as ClaimsIdentity)?.FindFirst("sub")?.Value ?? "0");
+            int sub = int.Parse((httpContext?.User.Identity as ClaimsIdentity)?.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
 
             var entities = this.ChangeTracker.Entries();
             foreach (var entity in entities)

@@ -50,6 +50,7 @@ namespace Kurisu.Startup
 
             //注入数据访问
             services.AddKurisuDatabaseAccessor();
+            services.AddKurisuUnitOfWork();
 
             //注入自定义pack
             services.AddKurisuAppPacks();

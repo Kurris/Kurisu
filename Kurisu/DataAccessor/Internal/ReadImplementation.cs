@@ -8,6 +8,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Kurisu.DataAccessor.Internal
 {
+    /// <summary>
+    /// 数据操作(读)
+    /// </summary>
     internal class ReadImplementation : IAppSlaveDb
     {
         internal ReadImplementation(DbContext dbContext)

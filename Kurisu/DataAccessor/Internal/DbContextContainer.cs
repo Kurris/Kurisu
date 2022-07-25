@@ -26,6 +26,15 @@ namespace Kurisu.DataAccessor.Internal
         /// </summary>
         private readonly ConcurrentDictionary<Guid, DbContext> _failedDbContexts;
 
+        /// <summary>
+        /// 是否自动提交
+        /// </summary>
+        private bool _isAutomaticSaveChanges;
+
+        /// <summary>
+        /// 是否在运行中
+        /// </summary>
+        public bool IsRunning { get; private set; }
 
         public DbContextContainer()
         {
@@ -33,6 +42,27 @@ namespace Kurisu.DataAccessor.Internal
             _failedDbContexts = new ConcurrentDictionary<Guid, DbContext>();
         }
 
+        /// <summary>
+        /// 上下文个数
+        /// </summary>
+        public int Count => _dbContexts.Count;
+
+        /// <summary>
+        /// 是否自动提交
+        /// </summary>
+        public bool IsAutomaticSaveChanges
+        {
+            get => _isAutomaticSaveChanges;
+            set
+            {
+                _isAutomaticSaveChanges = value;
+                var dbContexts = this._dbContexts.Select(x => x.Value);
+                foreach (var dbContext in dbContexts)
+                {
+                    (dbContext as IAppDbContext).IsAutomaticSaveChanges = value;
+                }
+            }
+        }
 
         /// <summary>
         /// 数据库上下文事务
@@ -41,22 +71,16 @@ namespace Kurisu.DataAccessor.Internal
 
 
         /// <summary>
-        /// 获取所有有效上下文
-        /// </summary>
-        /// <returns></returns>
-        public ConcurrentDictionary<Guid, DbContext> GetDbContexts() => this._dbContexts;
-
-
-        /// <summary>
         /// 添加上下文到容器中
         /// </summary>
         /// <param name="dbContext"></param>
-        public void Add(DbContext dbContext)
+        public void Manage(DbContext dbContext)
         {
             //非关系型数据库
             if (!dbContext.Database.IsRelational()) return;
             //排除只读
-            if (dbContext.ChangeTracker.QueryTrackingBehavior is QueryTrackingBehavior.NoTracking or QueryTrackingBehavior.NoTrackingWithIdentityResolution)
+            if (dbContext.ChangeTracker.QueryTrackingBehavior is QueryTrackingBehavior.NoTracking
+                or QueryTrackingBehavior.NoTrackingWithIdentityResolution)
                 return;
 
             var instanceId = dbContext.ContextId.InstanceId;
@@ -122,6 +146,8 @@ namespace Kurisu.DataAccessor.Internal
                 await ShareTransactionAsync(DbContextTransaction.GetDbTransaction());
             }
 
+            //开始运行
+            IsRunning = true;
             return this;
         }
 
@@ -179,24 +205,6 @@ namespace Kurisu.DataAccessor.Internal
             {
                 var db = kv.Value.Database;
                 await db.UseTransactionAsync(transaction);
-            }
-        }
-
-        public int Count => _dbContexts.Count;
-
-        private bool _isAutomaticSaveChanges;
-
-        public bool IsAutomaticSaveChanges
-        {
-            get => _isAutomaticSaveChanges;
-            set
-            {
-                _isAutomaticSaveChanges = value;
-                var dbContexts = GetDbContexts().Select(x => x.Value);
-                foreach (var dbContext in dbContexts)
-                {
-                    (dbContext as IAppDbContext).IsAutomaticSaveChanges = value;
-                }
             }
         }
     }

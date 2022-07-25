@@ -66,7 +66,7 @@ namespace Microsoft.Extensions.DependencyInjection
                 .AddJwtBearer(options =>
                 {
                     options.Authority = setting.Authority;
-                    options.RequireHttpsMetadata = true;
+                    options.RequireHttpsMetadata = setting.RequireHttpsMetadata;
 
                     options.TokenValidationParameters.ValidateIssuer = !string.IsNullOrEmpty(setting.Issuer);
                     options.TokenValidationParameters.ValidIssuer = setting.Issuer;

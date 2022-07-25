@@ -6,9 +6,13 @@ using Kurisu.DataAccessor.Abstractions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Storage;
 
 namespace Kurisu.DataAccessor.Internal
 {
+    /// <summary>
+    /// 数据操作(写)
+    /// </summary>
     internal sealed class WriteImplementation : ReadImplementation, IAppMasterDb
     {
         internal WriteImplementation(DbContext dbContext) : base(dbContext)
@@ -130,9 +134,9 @@ namespace Kurisu.DataAccessor.Internal
                         await this.DbContext.AddAsync(entity);
                         break;
                     default:
-                        {
-                            this.DbContext.Update(entity);
-                        }
+                    {
+                        this.DbContext.Update(entity);
+                    }
                         break;
                 }
             }
@@ -258,7 +262,6 @@ namespace Kurisu.DataAccessor.Internal
         }
 
 
-
         /// <summary>
         /// 提交
         /// </summary>
@@ -308,7 +311,7 @@ namespace Kurisu.DataAccessor.Internal
         {
             var key = GetEntityType(entity).FindPrimaryKey();
             var propertyInfo = key.Properties[0].PropertyInfo;
-            return (propertyInfo.Name, (TKey)propertyInfo.GetValue(entity));
+            return (propertyInfo.Name, (TKey) propertyInfo.GetValue(entity));
         }
 
         /// <summary>
@@ -323,7 +326,7 @@ namespace Kurisu.DataAccessor.Internal
         {
             var key = GetEntityType<TEntity>().FindPrimaryKey();
             var propInfo = key.Properties[0].PropertyInfo;
-            return (propInfo.Name, (TKey)propInfo.GetValue(t));
+            return (propInfo.Name, (TKey) propInfo.GetValue(t));
         }
 
         /// <summary>
@@ -372,7 +375,7 @@ namespace Kurisu.DataAccessor.Internal
             {
                 //如果已经跟踪的实体状态为dded，那么删除实体时，只需要设置为unchanged
                 trackEntity.State = trackEntity.State == EntityState.Added ? EntityState.Unchanged : entityState;
-                return (T)trackEntity.Entity;
+                return (T) trackEntity.Entity;
             }
 
             //返回创建的新实体和定义的跟踪状态
@@ -463,22 +466,29 @@ namespace Kurisu.DataAccessor.Internal
             return DbContext.Model.FindEntityType(obj.GetType());
         }
 
-        public async Task UseTransactionAsync(Action action)
+        public async Task<int> UseTransactionAsync(Func<Task> func)
         {
-            using (var trans = await DbContext.Database.BeginTransactionAsync())
+            using (var trans = await BeginTransactionAsync())
             {
                 try
                 {
-                    action.Invoke();
-                    await DbContext.SaveChangesAsync();
+                    await func.Invoke();
+                    var effectRow = await SaveChangesAsync();
                     await trans.CommitAsync();
+
+                    return effectRow;
                 }
                 catch (Exception)
                 {
                     await trans.RollbackAsync();
                     throw;
                 }
-            };
+            }
+        }
+
+        public async Task<IDbContextTransaction> BeginTransactionAsync()
+        {
+            return await DbContext.Database.BeginTransactionAsync();
         }
     }
 }
