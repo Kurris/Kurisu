@@ -1,9 +1,11 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Kurisu.DataAccessor.Abstractions;
 using Kurisu.DataAccessor.Extensions;
 using Kurisu.DataAccessor.UnitOfWork.Attributes;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using WebApiDemo.Dto.Output;
@@ -34,6 +36,7 @@ namespace WebApiDemo.Controllers
         /// 查询所有菜单
         /// </summary>
         /// <returns></returns>
+        [Authorize]
         [HttpGet("doSomething")]
         public async Task<IEnumerable<MenuOutput>> QueryMenus()
         {
@@ -55,9 +58,8 @@ namespace WebApiDemo.Controllers
             //    Visible = true,
             //};
             //await _dbService.InsertAsync(newMenu);
-
+            
             //return await _dbService.ToListAsync<Menu>(x => x.Id == 1 || x.Id == 2);
-
             return await _dbService.Queryable<Menu>().Select<MenuOutput>()
                 .Where(x => x.Id == 1 || x.Id == 2).ToListAsync();
         }
@@ -73,6 +75,26 @@ namespace WebApiDemo.Controllers
         public async Task<int> AddMenuAndReturnIdentity(Menu menu)
         {
             return await _dbService.InsertReturnIdentityAsync<int, Menu>(menu);
+        }
+
+        [Authorize]
+        [UnitOfWork]
+        [HttpPost("TestUseTransaction")]
+        public async Task TestUseTransaction()
+        {
+            await _dbService.UseTransactionAsync(async () =>
+            {
+                var newMenu = new Menu()
+                {
+                    Code = "1",
+                    DisplayName = "diyige caidan",
+                    Icon = "icon1",
+                    PCode = string.Empty,
+                    Route = "route",
+                    Visible = true,
+                };
+                await _dbService.InsertAsync(newMenu);
+            });
         }
     }
 }

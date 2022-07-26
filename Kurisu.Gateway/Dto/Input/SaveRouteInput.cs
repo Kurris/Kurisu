@@ -8,9 +8,14 @@ namespace Kurisu.Gateway.Dto.Input
         public int ProjectId { get; set; }
         public string DownstreamPathTemplate { get; set; }
         public string UpstreamPathTemplate { get; set; }
-        public List<string> UpstreamHttpMethodList { get; set; }
+
+        public List<string> UpstreamHttpMethodList { get; set; } = new()
+        {
+            "GET", "POST", "PUT", "DELETE", "OPTIONS"
+        };
+
         public string DownstreamScheme { get; set; }
-      
+
         public int Priority { get; set; } = 1;
         public int Timeout { get; set; }
 

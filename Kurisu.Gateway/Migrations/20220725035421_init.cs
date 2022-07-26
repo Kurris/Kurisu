@@ -86,8 +86,6 @@ namespace Kurisu.Gateway.Migrations
                         .Annotation("MySql:CharSet", "utf8mb4"),
                     UpstreamHttpMethod = table.Column<string>(type: "longtext", nullable: true)
                         .Annotation("MySql:CharSet", "utf8mb4"),
-                    DownstreamHttpMethod = table.Column<string>(type: "longtext", nullable: true)
-                        .Annotation("MySql:CharSet", "utf8mb4"),
                     DownstreamScheme = table.Column<string>(type: "longtext", nullable: true)
                         .Annotation("MySql:CharSet", "utf8mb4"),
                     Priority = table.Column<int>(type: "int", nullable: false),

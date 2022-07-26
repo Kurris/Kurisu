@@ -9,6 +9,16 @@ namespace Kurisu.Gateway
     {
         public static IServiceCollection AddKurisuOcelot(this IServiceCollection services)
         {
+            //swagger 不显示fileConfiguration接口
+            // var descriptor = ServiceDescriptor.Transient<IApiDescriptionProvider, DefaultApiDescriptionProvider>();
+            // var needToRemove = services.First(x => x.ServiceType == descriptor.ServiceType);
+            // services.Remove(needToRemove);
+            //
+            // services.AddTransient<DefaultApiDescriptionProvider>();
+            // services.TryAddEnumerable(
+            //     ServiceDescriptor.Transient<IApiDescriptionProvider, OcelotApiDescriptionProvider>()
+            // );
+
             services.AddOcelot();
             services.AddKurisuOptions<GatewaySetting>();
 

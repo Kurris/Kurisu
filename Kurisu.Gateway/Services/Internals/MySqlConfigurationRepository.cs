@@ -12,6 +12,9 @@ using Ocelot.Responses;
 
 namespace Kurisu.Gateway.Services.Internals
 {
+    /// <summary>
+    /// ocelot mysql配置源
+    /// </summary>
     public class MySqlConfigurationRepository : IFileConfigurationRepository
     {
         private readonly IOcelotCache<FileConfiguration> _cache;
@@ -65,15 +68,17 @@ namespace Kurisu.Gateway.Services.Internals
 
                     routeSettings.Add(routeSetting);
                 }
+
                 file.Routes = routeSettings;
             }
+
             return new OkResponse<FileConfiguration>(file);
         }
 
         public async Task<Response> Set(FileConfiguration fileConfiguration)
         {
             _cache.AddAndDelete(_gatewaySetting.CachePrefix + "Configuration", fileConfiguration, TimeSpan.FromSeconds(3600), "ocelot");
-            return await Task.FromResult((Response)new OkResponse());
+            return await Task.FromResult((Response) new OkResponse());
         }
     }
 }
