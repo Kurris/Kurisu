@@ -18,12 +18,17 @@ using Swashbuckle.AspNetCore.SwaggerGen;
 
 namespace Kurisu.Startup.AppPacks
 {
+    /// <summary>
+    /// swagger默认pack
+    /// </summary>
     public class DefaultSwaggerPack : BaseAppPack
     {
         public DefaultSwaggerPack()
         {
             Initialize();
         }
+
+        public override int Order => 1;
 
         private static List<OpenApiInfo> _apiInfos;
 
@@ -32,6 +37,8 @@ namespace Kurisu.Startup.AppPacks
         public override void ConfigureServices(IServiceCollection services)
         {
             var setting = services.AddKurisuOptions<SwaggerOAuthSetting>();
+
+            //eg:配置文件appsetting.json的key如果存在":"，那么解析将会失败
             var needFixeScopes = setting.Scopes.Where(x => x.Key.Contains("|")).ToDictionary(x => x.Key, x => x.Value);
             //移除 ｜ 相关key
             foreach (var scope in needFixeScopes)
@@ -39,7 +46,7 @@ namespace Kurisu.Startup.AppPacks
                 setting.Scopes.Remove(scope.Key);
             }
 
-            //修改正确的key
+            //修改正确的key，
             foreach (var scope in needFixeScopes)
             {
                 var key = scope.Key.Replace("|", ":");
@@ -48,13 +55,16 @@ namespace Kurisu.Startup.AppPacks
 
             services.AddSwaggerGen(c =>
             {
+                //没有分组的api
                 c.SwaggerDoc("v1", new OpenApiInfo
                 {
                     Version = "v1",
                     Title = "API文档",
                     Description = "当前为默认无分组API,各分组API接口说明(右上角切换)",
                 });
+
                 _apiInfos.ForEach(info => { c.SwaggerDoc(info.Title, info); });
+
                 //api definition 切换(右上角下拉切换)
                 c.DocInclusionPredicate((title, description) =>
                 {
@@ -67,6 +77,7 @@ namespace Kurisu.Startup.AppPacks
                         return title == apiInfo.Title;
                     }
 
+                    //没有分组的api
                     return title == "v1";
                 });
 
@@ -160,6 +171,9 @@ namespace Kurisu.Startup.AppPacks
         }
     }
 
+    /// <summary>
+    /// 处理identity.oauth2过滤
+    /// </summary>
     internal class SwaggerOAuthOperationFilter : IOperationFilter
     {
         private readonly SecurityRequirementsOperationFilter<AuthorizeAttribute> _filter;

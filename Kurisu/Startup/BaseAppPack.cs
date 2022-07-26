@@ -11,7 +11,10 @@ namespace Kurisu.Startup
     /// </summary>
     public abstract class BaseAppPack : IAppPack
     {
-        public int Order => 1;
+        /// <summary>
+        /// 启动顺序
+        /// </summary>
+        public virtual int Order => 1;
 
         /// <summary>
         /// 是否启用

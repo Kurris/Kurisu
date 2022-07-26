@@ -42,7 +42,7 @@ namespace Kurisu
         /// <summary>
         /// 自定义应用pack
         /// </summary>
-        public static IEnumerable<BaseAppPack> AppPacks
+        internal static IEnumerable<BaseAppPack> AppPacks
         {
             get
             {

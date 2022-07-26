@@ -4,9 +4,14 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Kurisu.Startup.AppPacks
 {
+    /// <summary>
+    /// cors默认pack
+    /// </summary>
     public class DefaultCorsPack : BaseAppPack
     {
         private readonly string _cors = "defaultCors";
+
+        public override int Order => 1;
 
         public override bool IsBeforeUseRouting => false;
 

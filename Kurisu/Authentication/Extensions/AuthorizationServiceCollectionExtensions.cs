@@ -76,6 +76,7 @@ namespace Microsoft.Extensions.DependencyInjection
 
                     options.TokenValidationParameters.ValidTypes = new[] {"at+jwt"};
 
+                    //person access token
                     if (setting.Pat.Enable)
                     {
                         options.ForwardDefaultSelector = context =>
