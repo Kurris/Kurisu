@@ -11,8 +11,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "test", "test", "{D1E2CE4D-D
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WebApiDemo", "WebApiDemo\WebApiDemo.csproj", "{D4F05AE0-88AB-47E1-BC9D-42D53D55BC57}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Kurisu.Gateway", "Kurisu.Gateway\Kurisu.Gateway.csproj", "{768FAFAF-559A-46FE-BF0F-D3329CE7480E}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -27,10 +25,6 @@ Global
 		{D4F05AE0-88AB-47E1-BC9D-42D53D55BC57}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{D4F05AE0-88AB-47E1-BC9D-42D53D55BC57}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{D4F05AE0-88AB-47E1-BC9D-42D53D55BC57}.Release|Any CPU.Build.0 = Release|Any CPU
-		{768FAFAF-559A-46FE-BF0F-D3329CE7480E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{768FAFAF-559A-46FE-BF0F-D3329CE7480E}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{768FAFAF-559A-46FE-BF0F-D3329CE7480E}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{768FAFAF-559A-46FE-BF0F-D3329CE7480E}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -38,7 +32,6 @@ Global
 	GlobalSection(NestedProjects) = preSolution
 		{CF451480-7453-4A37-AF43-766EC859470C} = {6273CD61-EECD-4A84-83C2-2CB430386B80}
 		{D4F05AE0-88AB-47E1-BC9D-42D53D55BC57} = {D1E2CE4D-D97A-4C04-BE47-3A2B4187784B}
-		{768FAFAF-559A-46FE-BF0F-D3329CE7480E} = {6273CD61-EECD-4A84-83C2-2CB430386B80}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {A5C47A14-B996-4828-919A-EB6F1E544959}
