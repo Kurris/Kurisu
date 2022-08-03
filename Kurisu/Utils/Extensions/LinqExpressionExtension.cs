@@ -9,17 +9,16 @@ namespace Kurisu.Utils.Extensions
     public static class LinqExpressionExtension
     {
         /// <summary>
-        /// 返回一个默认<see cref="true"/>的表达式
+        /// 返回一个默认表达式
         /// </summary>
         /// <typeparam name="T">类型</typeparam>
-        /// <returns><see cref="Expression{Func{T, bool}}"/></returns>
         public static Expression<Func<T, bool>> True<T>()
         {
             return x => true;
         }
 
         /// <summary>
-        /// 返回一个默认<see cref="false"/>的表达式
+        /// 返回一个默认表达式
         /// </summary>
         /// <typeparam name="T">类型</typeparam>
         public static Expression<Func<T, bool>> False<T>()
@@ -33,10 +32,9 @@ namespace Kurisu.Utils.Extensions
         /// <typeparam name="T">类型</typeparam>
         /// <param name="predicateCurrent">当前表达式</param>
         /// <param name="predicateAddition">并且的表达式</param>
-        /// <returns><see cref="Expression{Func{T, bool}}"/></returns>
         public static Expression<Func<T, bool>> And<T>(this Expression<Func<T, bool>> predicateCurrent, Expression<Func<T, bool>> predicateAddition) where T : class
         {
-            if (predicateCurrent == null) predicateCurrent = False<T>();
+            predicateCurrent ??= False<T>();
             return Combine(predicateCurrent, predicateAddition, Expression.AndAlso);
         }
 
@@ -46,10 +44,9 @@ namespace Kurisu.Utils.Extensions
         /// <typeparam name="T">类型</typeparam>
         /// <param name="predicateCurrent">当前表达式</param>
         /// <param name="predicateAddition">并且的表达式</param>
-        /// <returns><see cref="Expression{Func{T, bool}}"/></returns>
         public static Expression<Func<T, bool>> Or<T>(this Expression<Func<T, bool>> predicateCurrent, Expression<Func<T, bool>> predicateAddition) where T : class
         {
-            if (predicateCurrent == null) predicateCurrent = False<T>();
+            predicateCurrent ??= False<T>();
             return Combine(predicateCurrent, predicateAddition, Expression.OrElse);
         }
 
@@ -58,7 +55,6 @@ namespace Kurisu.Utils.Extensions
         /// </summary>
         /// <typeparam name="T">类型</typeparam>
         /// <param name="predicateCurrent">当前表达式</param>
-        /// <returns><see cref="Expression{Func{T, bool}}"/></returns>
         public static Expression<Func<T, bool>> Not<T>(this Expression<Func<T, bool>> predicateCurrent) where T : class
         {
             ExpressionReplace ex = GenExpressionReplace<T>(out var expressionPara);
@@ -75,7 +71,6 @@ namespace Kurisu.Utils.Extensions
         /// <param name="expressionFirst">第一个表达式</param>
         /// <param name="expressionSecond">第二个表达式</param>
         /// <param name="expressionMethod">合并方法</param>
-        /// <returns><see cref="Expression{Func{T, bool}}"/></returns>
         private static Expression<Func<T, bool>> Combine<T>(Expression<Func<T, bool>> expressionFirst, Expression<Func<T, bool>> expressionSecond, Func<Expression, Expression, Expression> expressionMethod)
         {
             ExpressionReplace ex = GenExpressionReplace<T>(out var expressionPara);
@@ -107,7 +102,7 @@ namespace Kurisu.Utils.Extensions
         /// <summary>
         /// 当前的表达式参数
         /// </summary>
-        public ParameterExpression ParameterExpression { get; private set; }
+        public ParameterExpression ParameterExpression { get; }
 
         /// <summary>
         /// Ctor
@@ -149,26 +144,26 @@ namespace Kurisu.Utils.Extensions
         /// <returns></returns>
         public static Expression<Func<T, bool>> GetOrExpression<T>(this IEnumerable<int> ids, Func<int, Expression<Func<T, bool>>> func) where T : class
         {
-            Expression<Func<T, bool>> exps = LinqExpressionExtension.False<T>();
+            Expression<Func<T, bool>> expressions = LinqExpressionExtension.False<T>();
             foreach (var id in ids)
             {
                 var exp = func.Invoke(id);
-                exps = exps.Or(exp);
+                expressions = expressions.Or(exp);
             }
 
-            return exps;
+            return expressions;
         }
 
         public static Expression<Func<T, bool>> GetOrExpression<T>(this IEnumerable<string> ids, Func<string, Expression<Func<T, bool>>> func) where T : class
         {
-            Expression<Func<T, bool>> exps = LinqExpressionExtension.False<T>();
+            Expression<Func<T, bool>> expressions = LinqExpressionExtension.False<T>();
             foreach (var id in ids)
             {
                 var exp = func.Invoke(id);
-                exps = exps.Or(exp);
+                expressions = expressions.Or(exp);
             }
 
-            return exps;
+            return expressions;
         }
 
         /// <summary>
@@ -180,14 +175,14 @@ namespace Kurisu.Utils.Extensions
         /// <returns></returns>
         public static Expression<Func<T, bool>> GetOrExpression<T>(this IEnumerable<T> ts, Func<T, Expression<Func<T, bool>>> func) where T : class
         {
-            Expression<Func<T, bool>> exps = LinqExpressionExtension.False<T>();
+            Expression<Func<T, bool>> expressions = LinqExpressionExtension.False<T>();
             foreach (var t in ts)
             {
                 var exp = func.Invoke(t);
-                exps = exps.Or(exp);
+                expressions = expressions.Or(exp);
             }
 
-            return exps;
+            return expressions;
         }
 
         /// <summary>
@@ -205,13 +200,13 @@ namespace Kurisu.Utils.Extensions
         /// </summary>
         /// <typeparam name="T">类型</typeparam>
         /// <param name="parameterExpression">实例名</param>
-        /// <param name="propertityName">属性名</param>
+        /// <param name="propertyName">属性名</param>
         /// <param name="value">属性值</param>
         /// <returns></returns>
-        public static Expression<Func<T, bool>> GetEnumEquals<T>(this ParameterExpression parameterExpression, string propertityName, object value) where T : class
+        public static Expression<Func<T, bool>> GetEnumEquals<T>(this ParameterExpression parameterExpression, string propertyName, object value) where T : class
         {
-            MemberExpression prop = Expression.Property(parameterExpression, propertityName);
-            MethodInfo eq = value.GetType().GetMethods().FirstOrDefault(x => x.Name == "Equals");
+            MemberExpression prop = Expression.Property(parameterExpression, propertyName);
+            MethodInfo eq = value.GetType().GetMethods().First(x => x.Name == "Equals");
             ConstantExpression constant = Expression.Constant(value, typeof(object));
             MethodCallExpression eqExp = Expression.Call(prop, eq, constant);
 
@@ -223,13 +218,13 @@ namespace Kurisu.Utils.Extensions
         /// </summary>
         /// <typeparam name="T">类型</typeparam>
         /// <param name="parameterExpression">实例名</param>
-        /// <param name="propertityName">属性名</param>
+        /// <param name="propertyName">属性名</param>
         /// <param name="value">属性值</param>
         /// <returns></returns>
-        public static Expression<Func<T, bool>> GetStringContains<T>(this ParameterExpression parameterExpression, string propertityName, string value) where T : class
+        public static Expression<Func<T, bool>> GetStringContains<T>(this ParameterExpression parameterExpression, string propertyName, string value) where T : class
         {
-            MemberExpression prop = Expression.Property(parameterExpression, propertityName);
-            MethodInfo eq = typeof(string).GetMethod("Contains", new Type[] {typeof(string)});
+            MemberExpression prop = Expression.Property(parameterExpression, propertyName);
+            MethodInfo eq = typeof(string).GetMethod("Contains", new[] {typeof(string)})!;
             ConstantExpression constant = Expression.Constant(value, typeof(string));
             MethodCallExpression containsExp = Expression.Call(prop, eq, constant);
 
@@ -241,25 +236,24 @@ namespace Kurisu.Utils.Extensions
         /// </summary>
         /// <typeparam name="T">类型</typeparam>
         /// <param name="parameterExpression">实例名</param>
-        /// <param name="propertityName">属性名</param>
+        /// <param name="propertyName">属性名</param>
         /// <param name="value">属性值</param>
         /// <returns></returns>
-        public static Expression<Func<T, bool>> GetGreaterThanOrEqual<T>(this ParameterExpression parameterExpression, string propertityName, object value) where T : class
+        public static Expression<Func<T, bool>> GetGreaterThanOrEqual<T>(this ParameterExpression parameterExpression, string propertyName, object value) where T : class
         {
-            return parameterExpression.GetYourDefine<T>(propertityName, value, Expression.GreaterThanOrEqual);
+            return parameterExpression.GetYourDefine<T>(propertyName, value, Expression.GreaterThanOrEqual);
         }
 
         /// <summary>
         /// 大于表达式
         /// </summary>
-        /// <typeparam name="T"><类型/typeparam>
         /// <param name="parameterExpression">实例名</param>
-        /// <param name="propertityName">属性名</param>
+        /// <param name="propertyName">属性名</param>
         /// <param name="value">属性值</param>
         /// <returns></returns>
-        public static Expression<Func<T, bool>> GetGreaterThan<T>(this ParameterExpression parameterExpression, string propertityName, object value) where T : class
+        public static Expression<Func<T, bool>> GetGreaterThan<T>(this ParameterExpression parameterExpression, string propertyName, object value) where T : class
         {
-            return parameterExpression.GetYourDefine<T>(propertityName, value, Expression.GreaterThan);
+            return parameterExpression.GetYourDefine<T>(propertyName, value, Expression.GreaterThan);
         }
 
         /// <summary>
@@ -267,17 +261,17 @@ namespace Kurisu.Utils.Extensions
         /// </summary>
         /// <typeparam name="T">类型</typeparam>
         /// <param name="parameterExpression">实例名</param>
-        /// <param name="propertityName">属性名</param>
+        /// <param name="propertyName">属性名</param>
         /// <param name="value">属性值</param>
         /// <returns></returns>
-        public static Expression<Func<T, bool>> GetLessThanOrEqual<T>(this ParameterExpression parameterExpression, string propertityName, object value) where T : class
+        public static Expression<Func<T, bool>> GetLessThanOrEqual<T>(this ParameterExpression parameterExpression, string propertyName, object value) where T : class
         {
-            return parameterExpression.GetYourDefine<T>(propertityName, value, Expression.LessThanOrEqual);
+            return parameterExpression.GetYourDefine<T>(propertyName, value, Expression.LessThanOrEqual);
         }
 
-        public static Expression<Func<T, bool>> GetEqual<T>(this ParameterExpression parameterExpression, string propertityName, object value) where T : class
+        public static Expression<Func<T, bool>> GetEqual<T>(this ParameterExpression parameterExpression, string propertyName, object value) where T : class
         {
-            return parameterExpression.GetYourDefine<T>(propertityName, value, Expression.Equal);
+            return parameterExpression.GetYourDefine<T>(propertyName, value, Expression.Equal);
         }
 
         /// <summary>
@@ -285,12 +279,12 @@ namespace Kurisu.Utils.Extensions
         /// </summary>
         /// <typeparam name="T">类型</typeparam>
         /// <param name="parameterExpression">实例名</param>
-        /// <param name="propertityName">属性名</param>
+        /// <param name="propertyName">属性名</param>
         /// <param name="value">属性值</param>
         /// <returns></returns>
-        public static Expression<Func<T, bool>> GetLessThan<T>(this ParameterExpression parameterExpression, string propertityName, object value) where T : class
+        public static Expression<Func<T, bool>> GetLessThan<T>(this ParameterExpression parameterExpression, string propertyName, object value) where T : class
         {
-            return parameterExpression.GetYourDefine<T>(propertityName, value, Expression.LessThan);
+            return parameterExpression.GetYourDefine<T>(propertyName, value, Expression.LessThan);
         }
 
 
@@ -299,13 +293,13 @@ namespace Kurisu.Utils.Extensions
         /// </summary>
         /// <typeparam name="T">类型</typeparam>
         /// <param name="parameterExpression">实例名</param>
-        /// <param name="propertityName">属性名</param>
+        /// <param name="propertyName">属性名</param>
         /// <param name="value">属性值</param>
         /// <param name="func">构建方法</param>
         /// <returns></returns>
-        public static Expression<Func<T, bool>> GetYourDefine<T>(this ParameterExpression parameterExpression, string propertityName, object value, Func<Expression, Expression, Expression> func) where T : class
+        public static Expression<Func<T, bool>> GetYourDefine<T>(this ParameterExpression parameterExpression, string propertyName, object value, Func<Expression, Expression, Expression> func) where T : class
         {
-            MemberExpression prop = Expression.Property(parameterExpression, propertityName);
+            MemberExpression prop = Expression.Property(parameterExpression, propertyName);
             ConstantExpression constant = Expression.Constant(value, value.GetType());
             return Expression.Lambda<Func<T, bool>>(func(prop, constant), parameterExpression);
         }

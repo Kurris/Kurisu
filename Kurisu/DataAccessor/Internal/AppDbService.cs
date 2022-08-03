@@ -4,6 +4,7 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
 using Kurisu.DataAccessor.Abstractions;
+using Kurisu.DataAccessor.Dto;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
 
@@ -12,10 +13,9 @@ namespace Kurisu.DataAccessor.Internal
     /// <summary>
     /// 数据库访问服务
     /// </summary>
-    internal class AppDbService : IAppDbService
+    public class AppDbService : IAppDbService
     {
         private readonly IAppSlaveDb _slaveDb;
-
         private readonly IAppMasterDb _masterDb;
 
         public AppDbService(IAppSlaveDb appSlaveDb, IAppMasterDb appMasterDb)
@@ -25,7 +25,6 @@ namespace Kurisu.DataAccessor.Internal
         }
 
         public DbContext GetMasterDbContext() => _masterDb.GetMasterDbContext();
-
         public DbContext GetSlaveDbContext() => _slaveDb.GetSlaveDbContext();
 
         public IQueryable<T> Queryable<T>(bool useMasterDb) where T : class, new()
@@ -44,6 +43,7 @@ namespace Kurisu.DataAccessor.Internal
 
         public IQueryable<T> Queryable<T>() where T : class, new()
         {
+            //默认从库
             return Queryable<T>(false);
         }
 
@@ -210,6 +210,38 @@ namespace Kurisu.DataAccessor.Internal
             return await _slaveDb.ToListAsync(predicate);
         }
 
+        public async Task<Pagination<T>> ToPageAsync<T>(PageInput input) where T : class, new()
+        {
+            if (_slaveDb == null)
+            {
+                return await _masterDb.ToPageAsync<T>(input);
+            }
+
+            return await _slaveDb.ToPageAsync<T>(input);
+        }
+
+        public async Task<List<T>> ToListAsync<T>(string sql, params object[] args) where T : class, new()
+        {
+            if (_slaveDb == null)
+            {
+                return await _masterDb.ToListAsync<T>(sql, args);
+            }
+
+            return await _slaveDb.ToListAsync<T>(sql, args);
+        }
+
+        public async Task<T> FirstOrDefaultAsync<T>(string sql, params object[] args) where T : class, new()
+        {
+            if (_slaveDb == null)
+            {
+                return await _masterDb.FirstOrDefaultAsync<T>(sql, args);
+            }
+
+            return await _slaveDb.FirstOrDefaultAsync<T>(sql, args);
+        }
+
+        #endregion
+
         public async Task<int> UseTransactionAsync(Func<Task> func)
         {
             return await _masterDb.UseTransactionAsync(func);
@@ -219,7 +251,5 @@ namespace Kurisu.DataAccessor.Internal
         {
             return await _masterDb.BeginTransactionAsync();
         }
-
-        #endregion
     }
 }

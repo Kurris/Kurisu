@@ -4,6 +4,8 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
 using Kurisu.DataAccessor.Abstractions;
+using Kurisu.DataAccessor.Dto;
+using Kurisu.DataAccessor.Extensions;
 using Microsoft.EntityFrameworkCore;
 
 namespace Kurisu.DataAccessor.Internal
@@ -11,9 +13,9 @@ namespace Kurisu.DataAccessor.Internal
     /// <summary>
     /// 数据操作(读)
     /// </summary>
-    internal class ReadImplementation : IAppSlaveDb
+    public class ReadImplementation : IAppSlaveDb
     {
-        internal ReadImplementation(DbContext dbContext)
+        public ReadImplementation(DbContext dbContext)
         {
             DbContext = dbContext;
         }
@@ -53,6 +55,21 @@ namespace Kurisu.DataAccessor.Internal
             return predicate == null
                 ? await DbContext.Set<T>().ToListAsync()
                 : await DbContext.Set<T>().Where(predicate).ToListAsync();
+        }
+
+        public async Task<Pagination<T>> ToPageAsync<T>(PageInput input) where T : class, new()
+        {
+            return await Queryable<T>().ToPageAsync(input);
+        }
+
+        public async Task<List<T>> ToListAsync<T>(string sql, params object[] args) where T : class, new()
+        {
+            return await DbContext.Set<T>().FromSqlRaw(sql, args).ToListAsync();
+        }
+
+        public async Task<T> FirstOrDefaultAsync<T>(string sql, params object[] args) where T : class, new()
+        {
+            return await DbContext.Set<T>().FromSqlRaw(sql, args).FirstOrDefaultAsync();
         }
     }
 }

@@ -133,14 +133,14 @@ namespace Kurisu.DataAccessor.Extensions
                     resultExpression = Expression.Call(
                         typeof(Queryable), //调用的类型
                         sortAsc ? "OrderBy" : "OrderByDescending", //方法名称
-                        new[] { typeof(TEntity), property.PropertyType }, queryable.Expression, Expression.Quote(orderByExpression));
+                        new[] {typeof(TEntity), property.PropertyType}, queryable.Expression, Expression.Quote(orderByExpression));
                 }
                 else
                 {
                     resultExpression = Expression.Call(
                         typeof(Queryable),
                         sortAsc ? "ThenBy" : "ThenByDescending",
-                        new[] { typeof(TEntity), property.PropertyType }, queryable.Expression, Expression.Quote(orderByExpression));
+                        new[] {typeof(TEntity), property.PropertyType}, queryable.Expression, Expression.Quote(orderByExpression));
                 }
 
                 queryable = queryable.Provider.CreateQuery<TEntity>(resultExpression);
@@ -168,8 +168,16 @@ namespace Kurisu.DataAccessor.Extensions
             return appDbService.Queryable<TEntity>(userMasterDb).Where(predicate);
         }
 
+
+        /// <summary>
+        /// 查询条件表达式
+        /// </summary>
+        /// <param name="appDbService"></param>
+        /// <param name="predicate"></param>
+        /// <typeparam name="TEntity"></typeparam>
+        /// <returns></returns>
         public static IQueryable<TEntity> Where<TEntity>(this IAppSlaveDb appDbService, Expression<Func<TEntity, bool>> predicate)
-           where TEntity : class, new()
+            where TEntity : class, new()
         {
             return appDbService.Queryable<TEntity>().Where(predicate);
         }

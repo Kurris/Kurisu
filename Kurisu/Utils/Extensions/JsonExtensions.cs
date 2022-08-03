@@ -42,7 +42,8 @@ namespace Kurisu.Utils.Extensions
             settings ??= new JsonSerializerSettings
             {
                 ReferenceLoopHandling = ReferenceLoopHandling.Ignore,
-                ContractResolver = new CamelCasePropertyNamesContractResolver()
+                ContractResolver = new CamelCasePropertyNamesContractResolver(),
+                DateFormatString = "yyyy-MM-dd HH:mm:ss"
             };
             return JsonConvert.SerializeObject(obj, settings);
         }

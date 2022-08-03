@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
+using Kurisu.DataAccessor.Dto;
 using Microsoft.EntityFrameworkCore;
 
 namespace Kurisu.DataAccessor.Abstractions
@@ -50,5 +51,31 @@ namespace Kurisu.DataAccessor.Abstractions
         /// </summary>
         /// <returns>总数<see cref="int"/> 当前页<see cref="IEnumerable{T}"/></returns>
         Task<List<T>> ToListAsync<T>(Expression<Func<T, bool>> predicate = null) where T : class, new();
+
+        /// <summary>
+        /// 查询分页
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <returns></returns>
+        Task<Pagination<T>> ToPageAsync<T>(PageInput input) where T : class, new();
+
+        /// <summary>
+        /// sql查询
+        /// </summary>
+        /// <param name="sql"></param>
+        /// <param name="args"></param>
+        /// <typeparam name="T"></typeparam>
+        /// <returns></returns>
+        Task<List<T>> ToListAsync<T>(string sql, params object[] args) where T : class, new();
+
+
+        /// <summary>
+        /// sql查询
+        /// </summary>
+        /// <param name="sql"></param>
+        /// <param name="args"></param>
+        /// <typeparam name="T"></typeparam>
+        /// <returns></returns>
+        Task<T> FirstOrDefaultAsync<T>(string sql, params object[] args) where T : class, new();
     }
 }

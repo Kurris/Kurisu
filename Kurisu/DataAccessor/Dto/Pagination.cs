@@ -6,17 +6,17 @@ namespace Kurisu.DataAccessor.Dto
     /// 分页参数
     /// </summary>
     /// <typeparam name="T">数据类型</typeparam>
-    public class Pagination<T> where T : class, new()
+    public class Pagination<T>
     {
         /// <summary>
         /// 页码
         /// </summary>
-        public int PageIndex { get; set; }
+        public int PageIndex { get; internal set; }
 
         /// <summary>
         /// 页容量
         /// </summary>
-        public int PageSize { get; set; }
+        public int PageSize { get; internal set; }
 
         /// <summary>
         /// 总条数
