@@ -2,11 +2,11 @@ using System;
 using System.Collections.Generic;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
-using Kurisu.DataAccessor.Abstractions.Operation;
 using Kurisu.DataAccessor.Dto;
+using Kurisu.DataAccessor.Functions.Default.Abstractions;
 using Microsoft.EntityFrameworkCore;
 
-namespace Kurisu.DataAccessor.ReadWriteSplit.Abstractions
+namespace Kurisu.DataAccessor.Functions.ReadWriteSplit.Abstractions
 {
     /// <summary>
     /// 从库接口,读操作

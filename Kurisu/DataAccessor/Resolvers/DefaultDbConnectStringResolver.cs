@@ -7,7 +7,7 @@ namespace Kurisu.DataAccessor.Resolvers
     /// <summary>
     /// 默认数据库连接字符串处理器
     /// </summary>
-    public class DefaultDbConnectStringResolver : IDefaultDbConnectStringResolver
+    public class DefaultDbConnectStringResolver : IDbConnectStringResolver
     {
         private readonly DbSetting _dbSetting;
 

@@ -1,9 +1,6 @@
 using System;
-using System.Linq.Expressions;
-using Kurisu.DataAccessor.Abstractions;
-using Kurisu.DataAccessor.Internal;
-using Kurisu.DataAccessor.UnitOfWork.Abstractions;
-using Kurisu.DataAccessor.UnitOfWork.Internal;
+using Kurisu.DataAccessor.Functions.UnitOfWork.Abstractions;
+using Kurisu.DataAccessor.Functions.UnitOfWork.Internal;
 
 // ReSharper disable once CheckNamespace
 namespace Microsoft.Extensions.DependencyInjection

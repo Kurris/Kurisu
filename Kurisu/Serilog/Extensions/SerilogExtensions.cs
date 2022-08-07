@@ -10,37 +10,6 @@ namespace Kurisu.Serilog.Extensions
         /// <summary>
         /// 添加默认日志拓展
         /// </summary>
-        /// <param name="hostBuilder"></param>
-        /// <param name="configAction"></param>
-        /// <returns>IWebHostBuilder</returns>
-        public static IWebHostBuilder UseSerilogDefault(this IWebHostBuilder hostBuilder, Action<LoggerConfiguration> configAction = default)
-        {
-            hostBuilder.UseSerilog((context, configuration) =>
-            {
-                // 加载配置文件
-                var config = configuration
-                    .ReadFrom.Configuration(context.Configuration)
-                    .Enrich.FromLogContext();
-
-                if (configAction != null) configAction.Invoke(config);
-                else
-                {
-                    // 判断是否有输出配置
-                    var hasWriteTo = context.Configuration["Serilog:WriteTo:0:Name"];
-                    if (hasWriteTo == null)
-                    {
-                        // {Properties:j}
-                        config.WriteTo.Console(outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] [{SourceContext}] {Message:lj}{NewLine}{Exception}");
-                    }
-                }
-            });
-
-            return hostBuilder;
-        }
-
-        /// <summary>
-        /// 添加默认日志拓展
-        /// </summary>
         /// <param name="builder"></param>
         /// <param name="configAction"></param>
         /// <returns></returns>

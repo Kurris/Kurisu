@@ -1,6 +1,6 @@
 ﻿using System.Reflection;
-using Kurisu.DataAccessor.ReadWriteSplit.Abstractions;
-using Kurisu.DataAccessor.UnitOfWork.Abstractions;
+using Kurisu.DataAccessor.Functions.ReadWriteSplit.Abstractions;
+using Kurisu.DataAccessor.Functions.UnitOfWork.Abstractions;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
@@ -51,8 +51,9 @@ namespace Kurisu.Startup
             services.AddKurisuDependencyInjection();
 
             //注入数据访问
-            services.AddKurisuDatabaseAccessor();
-            services.AddKurisuUnitOfWork(provider => provider.GetService<IAppMasterDb>().GetMasterDbContext() as IUnitOfWorkDbContext);
+            services.AddKurisuDatabaseAccessor().AddKurisuReadWriteSplit()
+                .AddKurisuUnitOfWork(provider => provider.GetService<IAppMasterDb>().GetMasterDbContext() as IUnitOfWorkDbContext);
+
 
             //注入自定义pack
             services.AddKurisuAppPacks();

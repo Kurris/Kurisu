@@ -9,7 +9,7 @@ namespace Kurisu.DataAccessor.Resolvers
     /// <summary>
     /// 默认查询过滤处理器
     /// </summary>
-    public class DefaultQueryFilterResolver : IDefaultQueryFilterResolver
+    public class DefaultQueryFilterResolver : IQueryFilterResolver
     {
         public void HandleQueryFilter(EntityTypeBuilder builder, Type entityType)
         {

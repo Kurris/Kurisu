@@ -7,7 +7,7 @@ using Kurisu.DataAccessor.Abstractions.Setting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 
-namespace Kurisu.DataAccessor.DbContexts
+namespace Kurisu.DataAccessor.Functions.Default.DbContexts
 {
     /// <summary>
     /// AppDbContext 程序默认DbContext
@@ -15,11 +15,11 @@ namespace Kurisu.DataAccessor.DbContexts
     public class DefaultAppDbContext : DbContext
     {
         private readonly IDefaultValuesOnSaveChangesResolver _defaultValuesOnSaveChangesResolver;
-        private readonly IDefaultQueryFilterResolver _queryFilterResolver;
+        private readonly IQueryFilterResolver _queryFilterResolver;
 
         public DefaultAppDbContext(DbContextOptions<DefaultAppDbContext> options
             , IDefaultValuesOnSaveChangesResolver defaultValuesOnSaveChangesResolver
-            , IDefaultQueryFilterResolver queryFilterResolver
+            , IQueryFilterResolver queryFilterResolver
             , IOptions<DbSetting> dbOptions) : base(options)
         {
             _defaultValuesOnSaveChangesResolver = defaultValuesOnSaveChangesResolver;

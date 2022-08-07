@@ -1,6 +1,6 @@
 using System.Linq;
 
-namespace Kurisu.DataAccessor.Abstractions.Operation
+namespace Kurisu.DataAccessor.Functions.Default.Abstractions
 {
     /// <summary>
     /// Db基础服务

@@ -1,13 +1,12 @@
 using System;
 using System.Threading.Tasks;
-using Kurisu.DataAccessor.Abstractions.Operation;
-using Kurisu.DataAccessor.UnitOfWork.Abstractions;
+using Kurisu.DataAccessor.Functions.UnitOfWork.Abstractions;
 using Kurisu.Startup;
 using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
-namespace Kurisu.DataAccessor.UnitOfWork.Attributes
+namespace Kurisu.DataAccessor.Functions.UnitOfWork.Attributes
 {
     /// <summary>
     /// 工作单元,局部事务

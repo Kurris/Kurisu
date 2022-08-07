@@ -1,7 +1,7 @@
 using System;
 using System.Threading.Tasks;
 
-namespace Kurisu.DataAccessor.UnitOfWork.Abstractions
+namespace Kurisu.DataAccessor.Functions.UnitOfWork.Abstractions
 {
     /// <summary>
     /// 工作单元数据库上下文容器

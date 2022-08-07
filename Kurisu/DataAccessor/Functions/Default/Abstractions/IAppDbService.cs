@@ -1,7 +1,7 @@
 using System.Linq;
-using Kurisu.DataAccessor.ReadWriteSplit.Abstractions;
+using Kurisu.DataAccessor.Functions.ReadWriteSplit.Abstractions;
 
-namespace Kurisu.DataAccessor.Abstractions.Operation
+namespace Kurisu.DataAccessor.Functions.Default.Abstractions
 {
     /// <summary>
     /// 读写分离数据访问服务

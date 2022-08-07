@@ -1,6 +1,6 @@
 using System;
 using System.Linq;
-using Kurisu.DataAccessor.ReadWriteSplit.Abstractions;
+using Kurisu.DataAccessor.Functions.ReadWriteSplit.Abstractions;
 using Microsoft.Extensions.Options;
 
 namespace Kurisu.DataAccessor.Resolvers

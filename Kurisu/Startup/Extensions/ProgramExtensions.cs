@@ -55,9 +55,10 @@ namespace Microsoft.Extensions.DependencyInjection
                 })
                 .ConfigureWebHostDefaults(webBuilder =>
                 {
-                    webBuilder.UseSerilogDefault()
+                    webBuilder
                         .UseStartup(startup);
                 })
+                .UseSerilogDefault()
                 .Build()
                 .RunAsync();
         }
@@ -72,9 +73,9 @@ namespace Microsoft.Extensions.DependencyInjection
            })
                .ConfigureWebHostDefaults(webBuilder =>
                {
-                   webBuilder.UseSerilogDefault()
-                       .UseStartup(startup);
+                   webBuilder.UseStartup(startup);
                })
+               .UseSerilogDefault()
                .Build()
                .Run();
         }

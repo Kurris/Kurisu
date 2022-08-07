@@ -2,6 +2,9 @@ using System;
 
 namespace Kurisu.MVC
 {
+    /// <summary>
+    /// 接口定义
+    /// </summary>
     [AttributeUsage(AttributeTargets.Class)]
     public class ApiDefinitionAttribute : Attribute
     {

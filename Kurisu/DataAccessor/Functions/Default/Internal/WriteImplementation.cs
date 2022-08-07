@@ -2,14 +2,14 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Kurisu.DataAccessor.ReadWriteSplit.Abstractions;
-using Kurisu.DataAccessor.UnitOfWork.Abstractions;
+using Kurisu.DataAccessor.Functions.ReadWriteSplit.Abstractions;
+using Kurisu.DataAccessor.Functions.UnitOfWork.Abstractions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Storage;
 
-namespace Kurisu.DataAccessor.Internal
+namespace Kurisu.DataAccessor.Functions.Default.Internal
 {
     /// <summary>
     /// 数据操作(写)
@@ -30,7 +30,7 @@ namespace Kurisu.DataAccessor.Internal
 
         public DbContext GetMasterDbContext() => DbContext;
 
-        public new IQueryable<T> Queryable<T>() where T : class, new()
+        public virtual new IQueryable<T> Queryable<T>() where T : class, new()
         {
             return DbContext.Set<T>().AsQueryable();
         }
@@ -69,10 +69,10 @@ namespace Kurisu.DataAccessor.Internal
                 case Guid:
                 case null:
                 case 0:
-                    await this.DbContext.AddAsync(entity);
+                    await DbContext.AddAsync(entity);
                     break;
                 default:
-                    this.DbContext.Update(entity);
+                    DbContext.Update(entity);
                     break;
             }
 
@@ -81,7 +81,7 @@ namespace Kurisu.DataAccessor.Internal
 
         public virtual async ValueTask SaveAsync<T>(T entity) where T : class, new()
         {
-            var (_, value) = this.FindKeyAndValue<object>(entity);
+            var (_, value) = FindKeyAndValue<object>(entity);
 
             switch (value)
             {
@@ -90,10 +90,10 @@ namespace Kurisu.DataAccessor.Internal
                 case Guid:
                 case null:
                 case 0:
-                    await this.DbContext.AddAsync(entity);
+                    await DbContext.AddAsync(entity);
                     break;
                 default:
-                    this.DbContext.Update(entity);
+                    DbContext.Update(entity);
                     break;
             }
 
@@ -104,7 +104,7 @@ namespace Kurisu.DataAccessor.Internal
         {
             foreach (var entity in entities)
             {
-                var (_, value) = this.FindKeyAndValue<object>(entity);
+                var (_, value) = FindKeyAndValue<object>(entity);
 
                 switch (value)
                 {
@@ -113,10 +113,10 @@ namespace Kurisu.DataAccessor.Internal
                     case Guid:
                     case null:
                     case 0:
-                        await this.DbContext.AddAsync(entity);
+                        await DbContext.AddAsync(entity);
                         break;
                     default:
-                        this.DbContext.Update(entity);
+                        DbContext.Update(entity);
                         break;
                 }
             }
@@ -128,7 +128,7 @@ namespace Kurisu.DataAccessor.Internal
         {
             foreach (var entity in entities)
             {
-                var (_, value) = this.FindKeyAndValue<object>(entity);
+                var (_, value) = FindKeyAndValue<object>(entity);
 
                 switch (value)
                 {
@@ -137,12 +137,12 @@ namespace Kurisu.DataAccessor.Internal
                     case Guid:
                     case null:
                     case 0:
-                        await this.DbContext.AddAsync(entity);
+                        await DbContext.AddAsync(entity);
                         break;
                     default:
-                    {
-                        this.DbContext.Update(entity);
-                    }
+                        {
+                            DbContext.Update(entity);
+                        }
                         break;
                 }
             }
@@ -152,7 +152,7 @@ namespace Kurisu.DataAccessor.Internal
 
         public virtual async Task UpdateAsync(object entity, bool updateAll = false)
         {
-            this.DbContext.Update(entity);
+            DbContext.Update(entity);
             if (!updateAll)
                 IgnoreNullAndDefaultValues(entity);
 
@@ -161,7 +161,7 @@ namespace Kurisu.DataAccessor.Internal
 
         public virtual async Task UpdateAsync<T>(T entity, bool updateAll = false) where T : class, new()
         {
-            this.DbContext.Update(entity);
+            DbContext.Update(entity);
             if (!updateAll)
                 IgnoreNullAndDefaultValues(entity);
 
@@ -170,7 +170,7 @@ namespace Kurisu.DataAccessor.Internal
 
         public virtual async Task UpdateRangeAsync<T>(IEnumerable<T> entities, bool updateAll = false) where T : class, new()
         {
-            this.DbContext.UpdateRange(entities);
+            DbContext.UpdateRange(entities);
             if (!updateAll)
             {
                 foreach (var entity in entities)
@@ -262,7 +262,7 @@ namespace Kurisu.DataAccessor.Internal
             if (entity != null) return;
 
             entity = await DbContext.Set<T>().FindAsync(keyValue);
-            if (entity != null) await this.DeleteAsync(entity);
+            if (entity != null) await DeleteAsync(entity);
 
             await CommitToDatabaseAsync();
         }
@@ -342,7 +342,7 @@ namespace Kurisu.DataAccessor.Internal
         {
             var key = GetEntityType(entity).FindPrimaryKey();
             var propertyInfo = key.Properties[0].PropertyInfo;
-            return (propertyInfo.Name, (TKey) propertyInfo.GetValue(entity));
+            return (propertyInfo.Name, (TKey)propertyInfo.GetValue(entity));
         }
 
         /// <summary>
@@ -357,7 +357,7 @@ namespace Kurisu.DataAccessor.Internal
         {
             var key = GetEntityType<TEntity>().FindPrimaryKey();
             var propInfo = key.Properties[0].PropertyInfo;
-            return (propInfo.Name, (TKey) propInfo.GetValue(t));
+            return (propInfo.Name, (TKey)propInfo.GetValue(t));
         }
 
         /// <summary>
@@ -406,7 +406,7 @@ namespace Kurisu.DataAccessor.Internal
             {
                 //如果已经跟踪的实体状态为dded，那么删除实体时，只需要设置为unchanged
                 trackEntity.State = trackEntity.State == EntityState.Added ? EntityState.Unchanged : entityState;
-                return (T) trackEntity.Entity;
+                return (T)trackEntity.Entity;
             }
 
             //返回创建的新实体和定义的跟踪状态
@@ -467,9 +467,9 @@ namespace Kurisu.DataAccessor.Internal
 
                 // 判断是否是无效的值，比如为 null，默认时间，以及空 Guid 值
                 var isInvalid = propertyValue == null
-                                || (propertyType == typeof(DateTime) && propertyValue.ToString() == new DateTime().ToString())
-                                || (propertyType == typeof(DateTimeOffset) && propertyValue.ToString() == new DateTimeOffset().ToString())
-                                || (propertyType == typeof(Guid) && propertyValue.ToString() == Guid.Empty.ToString());
+                                || propertyType == typeof(DateTime) && propertyValue.ToString() == new DateTime().ToString()
+                                || propertyType == typeof(DateTimeOffset) && propertyValue.ToString() == new DateTimeOffset().ToString()
+                                || propertyType == typeof(Guid) && propertyValue.ToString() == Guid.Empty.ToString();
 
                 if (isInvalid && entityProperty != null)
                     entityProperty.IsModified = false;

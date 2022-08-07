@@ -3,8 +3,8 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Threading;
 using System.Threading.Tasks;
-using Kurisu.DataAccessor.Abstractions.Operation;
 using Kurisu.DataAccessor.Dto;
+using Kurisu.DataAccessor.Functions.Default.Abstractions;
 using Mapster;
 using Microsoft.EntityFrameworkCore;
 

@@ -1,6 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 
-namespace Kurisu.DataAccessor.UnitOfWork.Abstractions
+namespace Kurisu.DataAccessor.Functions.UnitOfWork.Abstractions
 {
     /// <summary>
     /// UnitOfWork

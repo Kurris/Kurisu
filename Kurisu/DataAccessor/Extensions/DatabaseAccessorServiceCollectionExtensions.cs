@@ -1,16 +1,16 @@
 using System;
 using System.Linq;
 using Kurisu.DataAccessor;
-using Kurisu.DataAccessor.Abstractions.Operation;
 using Kurisu.DataAccessor.Abstractions.Setting;
-using Kurisu.DataAccessor.DbContexts;
+using Kurisu.DataAccessor.Functions.Default.Abstractions;
+using Kurisu.DataAccessor.Functions.Default.DbContexts;
+using Kurisu.DataAccessor.Functions.Default.Internal;
+using Kurisu.DataAccessor.Functions.ReadWriteSplit.Abstractions;
+using Kurisu.DataAccessor.Functions.ReadWriteSplit.DbContexts;
 using Kurisu.DataAccessor.Interceptors;
-using Kurisu.DataAccessor.Internal;
-using Kurisu.DataAccessor.ReadWriteSplit.Abstractions;
 using Kurisu.DataAccessor.Resolvers;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection.Extensions;
-using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 // ReSharper disable once CheckNamespace
@@ -32,17 +32,15 @@ namespace Microsoft.Extensions.DependencyInjection
             services.AddKurisuOptions<DbSetting>();
 
             services.TryAddSingleton<IDefaultValuesOnSaveChangesResolver, DefaultValuesOnSaveChangesResolver>();
-            services.TryAddSingleton<IDefaultDbConnectStringResolver, DefaultDbConnectStringResolver>();
-            services.TryAddSingleton<IDefaultQueryFilterResolver, DefaultQueryFilterResolver>();
+            services.TryAddSingleton<IDbConnectStringResolver, DefaultDbConnectStringResolver>();
+            services.TryAddSingleton<IQueryFilterResolver, DefaultQueryFilterResolver>();
 
             //dbContext
-            services.AddDbContext();
-
-            //主从库操作
+            services.AddKurisuContext<DefaultAppDbContext>();
+            //主库操作
             services.AddScoped(typeof(IAppMasterDb), provider => provider.GetService<Func<Type, IBaseDbService>>()?.Invoke(typeof(IAppMasterDb)));
-            services.AddScoped(typeof(IAppSlaveDb), provider => provider.GetService<Func<Type, IBaseDbService>>()?.Invoke(typeof(IAppSlaveDb)));
-
-            services.AddScoped<IAppDbService, AppDbService>();
+            //IAppDbService
+            services.AddScoped<IAppDbService, DefaultAppDbService>();
 
             return services;
         }
@@ -54,12 +52,12 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <param name="services"></param>
         /// <exception cref="ArgumentNullException"></exception>
         /// <exception cref="NullReferenceException"></exception>
-        private static void AddDbContext(this IServiceCollection services)
+        public static void AddKurisuContext<TDbContext>(this IServiceCollection services) where TDbContext : DbContext
         {
             services.AddDbContext<DefaultAppDbContext>((provider, dbContextOptionsBuilder) =>
             {
                 var dbSetting = provider.GetService<IOptions<DbSetting>>().Value;
-                var connectionString = provider.GetService<IDefaultDbConnectStringResolver>().GetConnectionString(null);
+                var connectionString = provider.GetService<IDbConnectStringResolver>().GetConnectionString(null);
 
                 dbContextOptionsBuilder.UseMySql(connectionString, MySqlServerVersion.LatestSupportedServerVersion, builder =>
                 {
@@ -79,38 +77,34 @@ namespace Microsoft.Extensions.DependencyInjection
                 dbContextOptionsBuilder.UseLoggerFactory(loggerFactory);
 #endif
             });
+        }
 
-            // //读写操作实现类
-            // services.AddScoped(provider =>
-            // {
-            //     return (Func<Type, IBaseDbService>) (dbType =>
-            //     {
-            //         //获取容器
-            //         IBaseDbService implementation;
-            //
-            //         if (dbType == typeof(IAppMasterDb))
-            //         {
-            //             var masterDbContext = provider.GetService<DefaultAppDbContext<IAppMasterDb>>();
-            //             implementation = new WriteImplementation(masterDbContext);
-            //         }
-            //         else
-            //         {
-            //             var dbSetting = provider.GetService<IOptions<DbSetting>>().Value;
-            //             if (dbSetting.ReadConnectionStrings?.Any() == true)
-            //             {
-            //                 var slaveDbContext = provider.GetService<DefaultAppDbContext<IAppSlaveDb>>();
-            //                 slaveDbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTrackingWithIdentityResolution;
-            //                 implementation = new ReadImplementation(slaveDbContext);
-            //             }
-            //             else
-            //             {
-            //                 implementation = null;
-            //             }
-            //         }
-            //
-            //         return implementation;
-            //     });
-            // });
+
+        public static void AA(this IServiceCollection services)
+        {
+            //读写操作实现类
+            services.AddScoped(provider =>
+            {
+                return (Func<Type, IBaseDbService>)(dbType =>
+                {
+                    //获取容器
+                    IBaseDbService dbService;
+
+                    if (dbType == typeof(IAppMasterDb))
+                    {
+                        var masterDbContext = provider.GetService<WriteAppDbContext>();
+                        dbService = new WriteImplementation(masterDbContext);
+                    }
+                    else
+                    {
+                        var slaveDbContext = provider.GetService<ReadAppDbContext>();
+                        slaveDbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTrackingWithIdentityResolution;
+                        dbService = new ReadImplementation(slaveDbContext);
+                    }
+
+                    return dbService;
+                });
+            });
         }
     }
 }

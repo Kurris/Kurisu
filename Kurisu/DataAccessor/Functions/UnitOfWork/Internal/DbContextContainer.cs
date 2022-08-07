@@ -3,12 +3,12 @@ using System.Collections.Concurrent;
 using System.Data.Common;
 using System.Linq;
 using System.Threading.Tasks;
-using Kurisu.DataAccessor.UnitOfWork.Abstractions;
+using Kurisu.DataAccessor.Functions.UnitOfWork.Abstractions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace Kurisu.DataAccessor.UnitOfWork.Internal
+namespace Kurisu.DataAccessor.Functions.UnitOfWork.Internal
 {
     /// <summary>
     /// 数据库上下文容器
@@ -55,7 +55,7 @@ namespace Kurisu.DataAccessor.UnitOfWork.Internal
             set
             {
                 _isAutomaticSaveChanges = value;
-                var dbContexts = this._dbContexts.Select(x => x.Value);
+                var dbContexts = _dbContexts.Select(x => x.Value);
                 foreach (var dbContext in dbContexts)
                 {
                     (dbContext as IUnitOfWorkDbContext).IsAutomaticSaveChanges = value;
@@ -88,7 +88,7 @@ namespace Kurisu.DataAccessor.UnitOfWork.Internal
             var instanceId = dbContext.ContextId.InstanceId;
 
             //已存在就不添加
-            if (!this._dbContexts.TryAdd(instanceId, dbContext))
+            if (!_dbContexts.TryAdd(instanceId, dbContext))
                 return;
 
             //保存失败后

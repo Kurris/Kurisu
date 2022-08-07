@@ -1,12 +1,11 @@
 using System;
-using Kurisu.DataAccessor.Abstractions.Operation;
 
 namespace Kurisu.DataAccessor.Abstractions.Setting
 {
     /// <summary>
     /// 数据库连接字符串处理器
     /// </summary>
-    public interface IDefaultDbConnectStringResolver
+    public interface IDbConnectStringResolver
     {
         /// <summary>
         /// 获取连接字符串

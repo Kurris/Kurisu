@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
 
-namespace Kurisu.DataAccessor.ReadWriteSplit.Abstractions
+namespace Kurisu.DataAccessor.Functions.ReadWriteSplit.Abstractions
 {
     /// <summary>
     /// 主库接口
