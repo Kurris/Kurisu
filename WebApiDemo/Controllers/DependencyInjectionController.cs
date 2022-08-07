@@ -21,7 +21,7 @@ namespace WebApiDemo.Controllers
         private readonly INamedResolver _namedResolver;
         private readonly IServiceProvider _serviceProvider;
         private readonly SingletonService2 _singletonService2;
-        private readonly IChannel _channel;
+        private readonly IChannelPublisher _channel;
 
         /// <summary>
         /// 
@@ -32,7 +32,7 @@ namespace WebApiDemo.Controllers
         public DependencyInjectionController(INamedResolver namedResolver
             , IServiceProvider serviceProvider
             , SingletonService2 singletonService2
-            , IChannel channel)
+            , IChannelPublisher channel)
         {
             _namedResolver = namedResolver;
             _serviceProvider = serviceProvider;

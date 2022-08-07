@@ -4,7 +4,7 @@ using Kurisu.DataAccessor.Entity;
 namespace WebApiDemo.Entities
 {
     [Table("menu")]
-    public class Menu : BaseEntity<int>
+    public class Menu : BaseEntity<int>, ISoftDeleted
     {
         public string Code { get; set; }
         public string PCode { get; set; }
@@ -12,5 +12,6 @@ namespace WebApiDemo.Entities
         public string Route { get; set; }
         public string Icon { get; set; }
         public bool Visible { get; set; }
+        public bool IsDeleted { get; set; }
     }
 }

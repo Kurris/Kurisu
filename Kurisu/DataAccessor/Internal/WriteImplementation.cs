@@ -2,7 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Kurisu.DataAccessor.Abstractions;
+using Kurisu.DataAccessor.ReadWriteSplit.Abstractions;
+using Kurisu.DataAccessor.UnitOfWork.Abstractions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Metadata;
@@ -13,14 +14,19 @@ namespace Kurisu.DataAccessor.Internal
     /// <summary>
     /// 数据操作(写)
     /// </summary>
+    // ReSharper disable once ClassWithVirtualMembersNeverInherited.Global
     public class WriteImplementation : ReadImplementation, IAppMasterDb
     {
+        /// <summary>
+        /// ctor  
+        /// </summary>
+        /// <param name="dbContext"></param>
         public WriteImplementation(DbContext dbContext) : base(dbContext)
         {
             DbContext = dbContext;
         }
 
-        public override DbContext DbContext { get; }
+        protected override DbContext DbContext { get; }
 
         public DbContext GetMasterDbContext() => DbContext;
 
@@ -43,13 +49,13 @@ namespace Kurisu.DataAccessor.Internal
 
             await DbContext.Database.ExecuteSqlRawAsync(sql);
 
-            return await CommitToDbAsync();
+            return await CommitToDatabaseAsync();
         }
 
         public virtual async Task<int> RunSqlInterAsync(FormattableString strSql)
         {
             await DbContext.Database.ExecuteSqlInterpolatedAsync(strSql);
-            return await CommitToDbAsync();
+            return await CommitToDatabaseAsync();
         }
 
         public virtual async ValueTask SaveAsync(object entity)
@@ -70,7 +76,7 @@ namespace Kurisu.DataAccessor.Internal
                     break;
             }
 
-            await CommitToDbAsync();
+            await CommitToDatabaseAsync();
         }
 
         public virtual async ValueTask SaveAsync<T>(T entity) where T : class, new()
@@ -91,7 +97,7 @@ namespace Kurisu.DataAccessor.Internal
                     break;
             }
 
-            await CommitToDbAsync();
+            await CommitToDatabaseAsync();
         }
 
         public virtual async ValueTask SaveAsync(IEnumerable<object> entities)
@@ -115,7 +121,7 @@ namespace Kurisu.DataAccessor.Internal
                 }
             }
 
-            await CommitToDbAsync();
+            await CommitToDatabaseAsync();
         }
 
         public virtual async ValueTask SaveAsync<T>(IEnumerable<T> entities) where T : class, new()
@@ -141,7 +147,7 @@ namespace Kurisu.DataAccessor.Internal
                 }
             }
 
-            await CommitToDbAsync();
+            await CommitToDatabaseAsync();
         }
 
         public virtual async Task UpdateAsync(object entity, bool updateAll = false)
@@ -150,7 +156,7 @@ namespace Kurisu.DataAccessor.Internal
             if (!updateAll)
                 IgnoreNullAndDefaultValues(entity);
 
-            await CommitToDbAsync();
+            await CommitToDatabaseAsync();
         }
 
         public virtual async Task UpdateAsync<T>(T entity, bool updateAll = false) where T : class, new()
@@ -159,7 +165,7 @@ namespace Kurisu.DataAccessor.Internal
             if (!updateAll)
                 IgnoreNullAndDefaultValues(entity);
 
-            await CommitToDbAsync();
+            await CommitToDatabaseAsync();
         }
 
         public virtual async Task UpdateRangeAsync<T>(IEnumerable<T> entities, bool updateAll = false) where T : class, new()
@@ -173,7 +179,7 @@ namespace Kurisu.DataAccessor.Internal
                 }
             }
 
-            await CommitToDbAsync();
+            await CommitToDatabaseAsync();
         }
 
 
@@ -201,52 +207,52 @@ namespace Kurisu.DataAccessor.Internal
         public virtual async ValueTask InsertAsync(object entity)
         {
             await DbContext.AddAsync(entity);
-            await CommitToDbAsync();
+            await CommitToDatabaseAsync();
         }
 
         public virtual async ValueTask InsertAsync<T>(T entity) where T : class, new()
         {
             await DbContext.Set<T>().AddAsync(entity);
-            await CommitToDbAsync();
+            await CommitToDatabaseAsync();
         }
 
         public virtual async Task InsertRangeAsync(IEnumerable<object> entities)
         {
             await DbContext.AddRangeAsync(entities);
-            await CommitToDbAsync();
+            await CommitToDatabaseAsync();
         }
 
         public virtual async Task InsertRangeAsync<T>(IEnumerable<T> entities) where T : class, new()
         {
             await DbContext.Set<T>().AddRangeAsync(entities);
-            await CommitToDbAsync();
+            await CommitToDatabaseAsync();
         }
 
 
         public virtual async Task DeleteAsync(object entity)
         {
             DbContext.Remove(entity);
-            await CommitToDbAsync();
+            await CommitToDatabaseAsync();
         }
 
 
         public virtual async Task DeleteAsync<T>(T entity) where T : class, new()
         {
             DbContext.Set<T>().Remove(entity);
-            await CommitToDbAsync();
+            await CommitToDatabaseAsync();
         }
 
         public virtual async Task DeleteRangeAsync<T>(IEnumerable<T> entities) where T : class, new()
         {
             DbContext.Set<T>().RemoveRange(entities);
-            await CommitToDbAsync();
+            await CommitToDatabaseAsync();
         }
 
 
         public virtual async Task DeleteRangeAsync(IEnumerable<object> entities)
         {
             DbContext.RemoveRange(entities);
-            await CommitToDbAsync();
+            await CommitToDatabaseAsync();
         }
 
 
@@ -258,7 +264,7 @@ namespace Kurisu.DataAccessor.Internal
             entity = await DbContext.Set<T>().FindAsync(keyValue);
             if (entity != null) await this.DeleteAsync(entity);
 
-            await CommitToDbAsync();
+            await CommitToDatabaseAsync();
         }
 
         public virtual async Task<int> UseTransactionAsync(Func<Task> func)
@@ -288,12 +294,12 @@ namespace Kurisu.DataAccessor.Internal
 
 
         /// <summary>
-        /// 提交
+        /// 提交写入数据库
         /// </summary>
         /// <returns></returns>
-        protected async Task<int> CommitToDbAsync()
+        protected virtual async Task<int> CommitToDatabaseAsync()
         {
-            if ((DbContext as IAppDbContext).IsAutomaticSaveChanges)
+            if ((DbContext as IUnitOfWorkDbContext)?.IsAutomaticSaveChanges == true)
             {
                 return 0;
             }
@@ -389,9 +395,9 @@ namespace Kurisu.DataAccessor.Internal
         /// <param name="entityState"></param>
         /// <typeparam name="T"></typeparam>
         /// <returns></returns>
-        protected T BuildEntity<T>(object keyValue, EntityState entityState) where T : class, new()
+        private T BuildEntity<T>(object keyValue, EntityState entityState) where T : class, new()
         {
-            var keyProperty = GetEntityType<T>().FindPrimaryKey().Properties.FirstOrDefault()?.PropertyInfo;
+            var keyProperty = GetEntityType<T>().FindPrimaryKey().Properties?[0]?.PropertyInfo;
             if (keyProperty == null) return default;
 
             var (isTrack, trackEntity) = GetTrackState<T>(keyValue);
@@ -486,7 +492,7 @@ namespace Kurisu.DataAccessor.Internal
         /// </summary>
         /// <param name="obj"></param>
         /// <returns></returns>
-        protected IEntityType GetEntityType(object obj)
+        private IEntityType GetEntityType(object obj)
         {
             return DbContext.Model.FindEntityType(obj.GetType());
         }

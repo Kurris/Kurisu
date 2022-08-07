@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Kurisu.DataAccessor.Abstractions;
+using Kurisu.DataAccessor.Abstractions.Operation;
 using Kurisu.DataAccessor.Dto;
 using Kurisu.DataAccessor.Extensions;
 using Kurisu.Test.Db.DI;

@@ -2,8 +2,10 @@ using System;
 using System.Linq;
 using Kurisu.DataAccessor;
 using Kurisu.DataAccessor.Abstractions;
+using Kurisu.DataAccessor.Abstractions.Operation;
 using Kurisu.DataAccessor.Interceptors;
 using Kurisu.DataAccessor.Internal;
+using Kurisu.DataAccessor.ReadWriteSplit.Abstractions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -16,7 +18,7 @@ namespace Kurisu.Test.Db.DI
     /// </summary>
     public class DbInjectHelper
     {
-        public static void InjectDbContext<TIDb>(IServiceCollection services) where TIDb : IDbService
+        public static void InjectDbContext<TIDb>(IServiceCollection services) where TIDb : IBaseDbService
         {
             services.AddDbContext<TestAppDbContext>((provider, options) =>
             {
@@ -34,10 +36,10 @@ namespace Kurisu.Test.Db.DI
             //读写操作实现类
             services.AddScoped(provider =>
             {
-                return (Func<Type, IDbService>) (dbType =>
+                return (Func<Type, IBaseDbService>) (dbType =>
                 {
                     //获取容器
-                    IDbService implementation;
+                    IBaseDbService implementation;
 
                     if (dbType == typeof(IAppMasterDb))
                     {

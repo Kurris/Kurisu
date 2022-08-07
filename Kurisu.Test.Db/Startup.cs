@@ -1,6 +1,7 @@
 using System;
-using Kurisu.DataAccessor.Abstractions;
+using Kurisu.DataAccessor.Abstractions.Operation;
 using Kurisu.DataAccessor.Internal;
+using Kurisu.DataAccessor.ReadWriteSplit.Abstractions;
 using Kurisu.Test.Db.DI;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -14,8 +15,8 @@ namespace Kurisu.Test.Db
             DbInjectHelper.InjectDbContext<IAppSlaveDb>(services);
 
             //主从库操作
-            services.AddScoped(typeof(IAppMasterDb), provider => provider.GetService<Func<Type, IDbService>>()?.Invoke(typeof(IAppMasterDb)));
-            services.AddScoped(typeof(IAppSlaveDb), provider => provider.GetService<Func<Type, IDbService>>()?.Invoke(typeof(IAppSlaveDb)));
+            services.AddScoped(typeof(IAppMasterDb), provider => provider.GetService<Func<Type, IBaseDbService>>()?.Invoke(typeof(IAppMasterDb)));
+            services.AddScoped(typeof(IAppSlaveDb), provider => provider.GetService<Func<Type, IBaseDbService>>()?.Invoke(typeof(IAppSlaveDb)));
 
             //读写分离操作
             services.AddScoped<IAppDbService, AppDbService>();

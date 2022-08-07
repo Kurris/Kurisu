@@ -16,7 +16,7 @@ namespace Kurisu.Channel.Extensions
         /// <returns></returns>
         public static IServiceCollection AddKurisuChannel(this IServiceCollection services)
         {
-            services.AddSingleton<IChannel, ChannelPublish>();
+            services.AddSingleton<IChannelPublisher, ChannelPublisher>();
             return services;
         }
     }

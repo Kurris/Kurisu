@@ -1,6 +1,7 @@
 using System;
 using System.Threading.Tasks;
-using Kurisu.DataAccessor.Abstractions;
+using Kurisu.DataAccessor.Abstractions.Operation;
+using Kurisu.DataAccessor.UnitOfWork.Abstractions;
 using Kurisu.Startup;
 using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.Extensions.DependencyInjection;
@@ -32,6 +33,16 @@ namespace Kurisu.DataAccessor.UnitOfWork.Attributes
             _isAutomaticSaveChanges = isAutomaticSaveChanges;
         }
 
+        /// <summary>
+        /// 当事务保存成功后,接受数据库的更改
+        /// </summary>
+        public bool AcceptAllChangesOnSuccess { get; set; } = true;
+
+        /// <summary>
+        /// 接口过滤器
+        /// </summary>
+        /// <param name="context"></param>
+        /// <param name="next"></param>
         public async Task OnActionExecutionAsync(ActionExecutingContext context, ActionExecutionDelegate next)
         {
             var dbContextContainer = context.HttpContext.RequestServices.GetService<IDbContextContainer>();
@@ -39,9 +50,8 @@ namespace Kurisu.DataAccessor.UnitOfWork.Attributes
             {
                 dbContextContainer.IsAutomaticSaveChanges = _isAutomaticSaveChanges;
 
-                //将masterDb的上下文放入container中管理
-                var dbService = context.HttpContext.RequestServices.GetService<IAppDbService>();
-                dbContextContainer.Manage(dbService.GetMasterDbContext());
+                var resolver = context.HttpContext.RequestServices.GetService(typeof(IUnitOfWorkDbContext)) as Func<IServiceProvider, IUnitOfWorkDbContext>;
+                dbContextContainer.Manage(resolver.Invoke(context.HttpContext.RequestServices));
 
                 //开启事务
                 await dbContextContainer.BeginTransactionAsync();
@@ -50,7 +60,7 @@ namespace Kurisu.DataAccessor.UnitOfWork.Attributes
                 var result = await next();
 
                 //提交事务
-                await dbContextContainer.CommitTransactionAsync(result.Exception);
+                await dbContextContainer.CommitTransactionAsync(AcceptAllChangesOnSuccess, result.Exception);
             }
             else
             {
@@ -59,7 +69,7 @@ namespace Kurisu.DataAccessor.UnitOfWork.Attributes
                     , nameof(IDbContextContainer)
                     , nameof(UnitOfWork)
                     , nameof(DefaultKurisuStartup.ConfigureServices)
-                    , nameof(DatabaseAccessorServiceCollectionExtensions.AddKurisuUnitOfWork));
+                    , nameof(UnitOfWorkServiceCollectionExtensions.AddKurisuUnitOfWork));
 
                 await next();
             }

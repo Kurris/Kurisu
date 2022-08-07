@@ -3,6 +3,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Kurisu.DataAccessor.Abstractions;
 using Kurisu.DataAccessor.Entity;
+using Kurisu.DataAccessor.UnitOfWork.Abstractions;
 using Microsoft.EntityFrameworkCore;
 using weather;
 
@@ -12,13 +13,14 @@ namespace Kurisu.Test.Db.DI
     /// AppDbContext 程序默认DbContext
     /// </summary>
     /// <typeparam name="TIDb"></typeparam>
-    public class TestAppDbContext : DbContext, IAppDbContext
+    public class TestAppDbContext : DbContext, IUnitOfWorkDbContext
     {
         public TestAppDbContext(DbContextOptions<TestAppDbContext> options) : base(options)
         {
         }
 
         public bool IsAutomaticSaveChanges { get; set; } = true;
+        public DbContext GetUnitOfWorkDbContext() => this;
 
 
         public DbSet<WeatherForecast> WeatherForecasts { get; set; }

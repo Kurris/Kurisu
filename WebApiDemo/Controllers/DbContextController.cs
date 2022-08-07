@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Kurisu.DataAccessor.Abstractions;
+using Kurisu.DataAccessor.Abstractions.Operation;
 using Kurisu.DataAccessor.Extensions;
 using Kurisu.DataAccessor.UnitOfWork.Attributes;
 using Microsoft.AspNetCore.Authorization;
@@ -36,7 +37,7 @@ namespace WebApiDemo.Controllers
         /// 查询所有菜单
         /// </summary>
         /// <returns></returns>
-        [Authorize]
+        // [Authorize]
         [HttpGet("doSomething")]
         public async Task<IEnumerable<MenuOutput>> QueryMenus()
         {
@@ -58,10 +59,13 @@ namespace WebApiDemo.Controllers
             //    Visible = true,
             //};
             //await _dbService.InsertAsync(newMenu);
-            
+
             //return await _dbService.ToListAsync<Menu>(x => x.Id == 1 || x.Id == 2);
-            return await _dbService.Queryable<Menu>().Select<MenuOutput>()
-                .Where(x => x.Id == 1 || x.Id == 2).ToListAsync();
+
+            await _dbService.Queryable<Menu>().IgnoreQueryFilters().ToListAsync();
+
+            return await _dbService.Queryable<Menu>()
+                .Select<MenuOutput>().ToListAsync();
         }
 
         [HttpPost]

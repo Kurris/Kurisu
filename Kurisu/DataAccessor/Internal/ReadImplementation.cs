@@ -3,9 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
-using Kurisu.DataAccessor.Abstractions;
 using Kurisu.DataAccessor.Dto;
 using Kurisu.DataAccessor.Extensions;
+using Kurisu.DataAccessor.ReadWriteSplit.Abstractions;
 using Microsoft.EntityFrameworkCore;
 
 namespace Kurisu.DataAccessor.Internal
@@ -20,7 +20,7 @@ namespace Kurisu.DataAccessor.Internal
             DbContext = dbContext;
         }
 
-        public virtual DbContext DbContext { get; }
+        protected virtual DbContext DbContext { get; }
 
         public IQueryable<T> Queryable<T>() where T : class, new()
         {

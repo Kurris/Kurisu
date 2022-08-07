@@ -1,12 +1,10 @@
 using System;
-using System.Collections.Concurrent;
 using System.Threading.Tasks;
-using Microsoft.EntityFrameworkCore;
 
-namespace Kurisu.DataAccessor.Abstractions
+namespace Kurisu.DataAccessor.UnitOfWork.Abstractions
 {
     /// <summary>
-    /// 数据库连接容器
+    /// 工作单元数据库上下文容器
     /// </summary>
     public interface IDbContextContainer
     {
@@ -22,21 +20,38 @@ namespace Kurisu.DataAccessor.Abstractions
 
         /// <summary>
         /// 是否运行中
+        /// <remarks>
+        /// 当前方法是否在UnitOfWork中执行
+        /// </remarks>
         /// </summary>
         public bool IsRunning { get; }
 
         /// <summary>
         /// 添加上下文到容器中
         /// </summary>
-        /// <param name="dbContext"></param>
+        /// <param name="unitOfWorkDbContext"></param>
         /// <returns></returns>
-        void Manage(DbContext dbContext);
+        void Manage(IUnitOfWorkDbContext unitOfWorkDbContext);
 
         /// <summary>
         /// 保存所有数据库上下文的更改
         /// </summary>
         /// <returns></returns>
         Task<int> SaveChangesAsync();
+
+        /// <summary>
+        /// 保存所有数据库上下文的更改
+        /// </summary>
+        /// <param name="acceptAllChangesOnSuccess"></param>
+        /// <returns></returns>
+        int SaveChanges(bool acceptAllChangesOnSuccess);
+
+
+        /// <summary>
+        /// 保存所有数据库上下文的更改
+        /// </summary>
+        /// <returns></returns>
+        int SaveChanges();
 
         /// <summary>
         /// 保存所有数据库上下文的更改
@@ -51,10 +66,25 @@ namespace Kurisu.DataAccessor.Abstractions
         /// <returns></returns>
         Task<IDbContextContainer> BeginTransactionAsync();
 
+
+        /// <summary>
+        /// 打开事务
+        /// </summary>
+        /// <returns></returns>
+        IDbContextContainer BeginTransaction();
+
         /// <summary>
         /// 提交事务
         /// </summary>
+        /// <param name="acceptAllChangesOnSuccess"></param>
         /// <param name="exception"></param>
-        Task CommitTransactionAsync(Exception exception = null);
+        Task CommitTransactionAsync(bool acceptAllChangesOnSuccess, Exception exception = null);
+
+        /// <summary>
+        /// 提交事务
+        /// </summary>
+        /// <param name="acceptAllChangesOnSuccess"></param>
+        /// <param name="exception"></param>
+        void CommitTransaction(bool acceptAllChangesOnSuccess, Exception exception = null);
     }
 }

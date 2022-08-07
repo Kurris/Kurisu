@@ -1,11 +1,11 @@
 using System.Linq;
 
-namespace Kurisu.DataAccessor.Abstractions
+namespace Kurisu.DataAccessor.Abstractions.Operation
 {
     /// <summary>
-    /// Db服务
+    /// Db基础服务
     /// </summary>
-    public interface IDbService
+    public interface IBaseDbService
     {
         /// <summary>
         /// 获取EF <see cref="IQueryable"/> 

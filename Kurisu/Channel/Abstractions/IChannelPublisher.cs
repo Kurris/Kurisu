@@ -2,7 +2,10 @@ using System.Threading.Tasks;
 
 namespace Kurisu.Channel.Abstractions
 {
-    public interface IChannel
+    /// <summary>
+    /// 管道数据推送器
+    /// </summary>
+    public interface IChannelPublisher
     {
         /// <summary>
         /// 消息发布到channel

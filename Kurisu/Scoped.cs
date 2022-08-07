@@ -1,6 +1,7 @@
 using System;
 using System.Threading.Tasks;
 using Kurisu.DataAccessor.Abstractions;
+using Kurisu.DataAccessor.Abstractions.Operation;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Kurisu

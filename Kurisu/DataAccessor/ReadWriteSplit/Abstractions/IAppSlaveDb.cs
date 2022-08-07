@@ -2,15 +2,16 @@ using System;
 using System.Collections.Generic;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
+using Kurisu.DataAccessor.Abstractions.Operation;
 using Kurisu.DataAccessor.Dto;
 using Microsoft.EntityFrameworkCore;
 
-namespace Kurisu.DataAccessor.Abstractions
+namespace Kurisu.DataAccessor.ReadWriteSplit.Abstractions
 {
     /// <summary>
     /// 从库接口,读操作
     /// </summary>
-    public interface IAppSlaveDb : IDbService
+    public interface IAppSlaveDb : IBaseDbService
     {
         DbContext GetSlaveDbContext();
 

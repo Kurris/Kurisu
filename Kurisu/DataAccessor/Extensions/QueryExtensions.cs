@@ -3,7 +3,7 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Threading;
 using System.Threading.Tasks;
-using Kurisu.DataAccessor.Abstractions;
+using Kurisu.DataAccessor.Abstractions.Operation;
 using Kurisu.DataAccessor.Dto;
 using Mapster;
 using Microsoft.EntityFrameworkCore;
@@ -75,7 +75,6 @@ namespace Kurisu.DataAccessor.Extensions
         /// </summary>
         /// <param name="queryable"></param>
         /// <param name="input"></param>
-        /// <param name="cancellationToken"></param>
         /// <typeparam name="TEntity"></typeparam>
         /// <returns></returns>
         public static async Task<Pagination<TEntity>> ToPageAsync<TEntity>(this IQueryable<TEntity> queryable, PageInput input) where TEntity : class, new()
@@ -162,24 +161,18 @@ namespace Kurisu.DataAccessor.Extensions
             return queryable.ProjectToType<TDto>(config);
         }
 
-        public static IQueryable<TEntity> Where<TEntity>(this IAppDbService appDbService, Expression<Func<TEntity, bool>> predicate, bool userMasterDb = false)
-            where TEntity : class, new()
-        {
-            return appDbService.Queryable<TEntity>(userMasterDb).Where(predicate);
-        }
-
-
         /// <summary>
         /// 查询条件表达式
         /// </summary>
         /// <param name="appDbService"></param>
         /// <param name="predicate"></param>
+        /// <param name="userMasterDb"></param>
         /// <typeparam name="TEntity"></typeparam>
         /// <returns></returns>
-        public static IQueryable<TEntity> Where<TEntity>(this IAppSlaveDb appDbService, Expression<Func<TEntity, bool>> predicate)
+        public static IQueryable<TEntity> Where<TEntity>(this IAppDbService appDbService, Expression<Func<TEntity, bool>> predicate, bool userMasterDb = false)
             where TEntity : class, new()
         {
-            return appDbService.Queryable<TEntity>().Where(predicate);
+            return appDbService.Queryable<TEntity>(userMasterDb).Where(predicate);
         }
     }
 }
