@@ -3,7 +3,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Kurisu.DataAccessor.Abstractions;
 using Kurisu.DataAccessor.Entity;
-using Kurisu.DataAccessor.UnitOfWork.Abstractions;
+using Kurisu.DataAccessor.Functions.UnitOfWork.Abstractions;
 using Microsoft.EntityFrameworkCore;
 using weather;
 

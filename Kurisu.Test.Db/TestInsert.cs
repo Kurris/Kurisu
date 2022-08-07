@@ -2,7 +2,7 @@ using System;
 using System.Linq;
 using System.Threading.Tasks;
 using Kurisu.DataAccessor.Abstractions;
-using Kurisu.DataAccessor.Abstractions.Operation;
+using Kurisu.DataAccessor.Functions.Default.Abstractions;
 using Kurisu.Test.Db.DI;
 using Microsoft.EntityFrameworkCore;
 using weather;

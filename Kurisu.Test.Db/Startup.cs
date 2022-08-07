@@ -1,7 +1,7 @@
 using System;
-using Kurisu.DataAccessor.Abstractions.Operation;
-using Kurisu.DataAccessor.Internal;
-using Kurisu.DataAccessor.ReadWriteSplit.Abstractions;
+using Kurisu.DataAccessor.Functions.Default.Abstractions;
+using Kurisu.DataAccessor.Functions.Default.Internal;
+using Kurisu.DataAccessor.Functions.ReadWriteSplit.Abstractions;
 using Kurisu.Test.Db.DI;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -19,7 +19,7 @@ namespace Kurisu.Test.Db
             services.AddScoped(typeof(IAppSlaveDb), provider => provider.GetService<Func<Type, IBaseDbService>>()?.Invoke(typeof(IAppSlaveDb)));
 
             //读写分离操作
-            services.AddScoped<IAppDbService, AppDbService>();
+            services.AddScoped<IAppDbService, DefaultAppDbService>();
         }
     }
 }
