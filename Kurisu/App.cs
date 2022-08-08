@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using Kurisu.Startup;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Kurisu
@@ -21,18 +20,12 @@ namespace Kurisu
         /// <summary>
         /// 服务提供器
         /// </summary>
-        public static IServiceProvider ServiceProvider { get; set; }
+        internal static IServiceProvider ServiceProvider { get; set; }
 
         /// <summary>
         /// 应用程序有效类型
         /// </summary>
         internal static IEnumerable<Type> ActiveTypes { get; private set; }
-
-        /// <summary>
-        /// 全局配置文件
-        /// </summary>
-        internal static IConfiguration Configuration { get; set; }
-
 
         /// <summary>
         /// 自定义应用pack

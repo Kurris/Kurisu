@@ -2,15 +2,21 @@
 using Kurisu.Startup.Abstractions;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Kurisu.Startup
 {
     /// <summary>
-    /// 基础Pack
+    /// appPack
     /// </summary>
     public abstract class BaseAppPack : IAppPack
     {
+        /// <summary>
+        /// 配置
+        /// </summary>
+        public IConfiguration Configuration { get; set; }
+
         /// <summary>
         /// 启动顺序
         /// </summary>

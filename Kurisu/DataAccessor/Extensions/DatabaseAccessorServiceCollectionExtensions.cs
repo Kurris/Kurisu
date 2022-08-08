@@ -1,5 +1,6 @@
 using System;
-using System.Linq;
+using Kurisu.Authentication.Abstractions;
+using Kurisu.Authentication.Internal;
 using Kurisu.DataAccessor;
 using Kurisu.DataAccessor.Abstractions.Setting;
 using Kurisu.DataAccessor.Functions.Default.Abstractions;
@@ -11,6 +12,7 @@ using Kurisu.DataAccessor.Interceptors;
 using Kurisu.DataAccessor.Resolvers;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 // ReSharper disable once CheckNamespace
@@ -25,20 +27,29 @@ namespace Microsoft.Extensions.DependencyInjection
         /// 添加EFCore支持
         /// </summary>
         /// <param name="services"></param>
+        /// <param name="options"></param>
         /// <exception cref="ArgumentNullException"></exception>
         /// <returns></returns>
-        public static IServiceCollection AddKurisuDatabaseAccessor(this IServiceCollection services)
+        public static IServiceCollection AddKurisuDatabaseAccessor(this IServiceCollection services, Action<DbSetting> options)
         {
-            services.AddKurisuOptions<DbSetting>();
+            if (options == null)
+                throw new ArgumentNullException(nameof(options));
 
-            services.TryAddSingleton<IDefaultValuesOnSaveChangesResolver, DefaultValuesOnSaveChangesResolver>();
-            services.TryAddSingleton<IDbConnectStringResolver, DefaultDbConnectStringResolver>();
-            services.TryAddSingleton<IQueryFilterResolver, DefaultQueryFilterResolver>();
+            services.Configure(options);
+
+            services.TryAddSingleton<ICurrentUserInfoResolver, DefaultCurrentUserInfoResolver>();
+            services.AddSingleton<IDefaultValuesOnSaveChangesResolver, DefaultValuesOnSaveChangesResolver>();
+            services.AddSingleton<IDbConnectStringResolver, DefaultDbConnectStringResolver>();
+            services.AddSingleton<IQueryFilterResolver, DefaultQueryFilterResolver>();
 
             //dbContext
             services.AddKurisuContext<DefaultAppDbContext>();
             //主库操作
-            services.AddScoped(typeof(IAppMasterDb), provider => provider.GetService<Func<Type, IBaseDbService>>()?.Invoke(typeof(IAppMasterDb)));
+            services.AddScoped(typeof(IAppMasterDb), provider =>
+            {
+                var masterDbContext = provider.GetService<DefaultAppDbContext>();
+                return new WriteImplementation(masterDbContext);
+            });
             //IAppDbService
             services.AddScoped<IAppDbService, DefaultAppDbService>();
 
@@ -54,7 +65,7 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <exception cref="NullReferenceException"></exception>
         public static void AddKurisuContext<TDbContext>(this IServiceCollection services) where TDbContext : DbContext
         {
-            services.AddDbContext<DefaultAppDbContext>((provider, dbContextOptionsBuilder) =>
+            services.AddDbContext<TDbContext>((provider, dbContextOptionsBuilder) =>
             {
                 var dbSetting = provider.GetService<IOptions<DbSetting>>().Value;
                 var connectionString = provider.GetService<IDbConnectStringResolver>().GetConnectionString(null);
@@ -76,34 +87,6 @@ namespace Microsoft.Extensions.DependencyInjection
                 var loggerFactory = provider.GetService<ILoggerFactory>();
                 dbContextOptionsBuilder.UseLoggerFactory(loggerFactory);
 #endif
-            });
-        }
-
-
-        public static void AA(this IServiceCollection services)
-        {
-            //读写操作实现类
-            services.AddScoped(provider =>
-            {
-                return (Func<Type, IBaseDbService>)(dbType =>
-                {
-                    //获取容器
-                    IBaseDbService dbService;
-
-                    if (dbType == typeof(IAppMasterDb))
-                    {
-                        var masterDbContext = provider.GetService<WriteAppDbContext>();
-                        dbService = new WriteImplementation(masterDbContext);
-                    }
-                    else
-                    {
-                        var slaveDbContext = provider.GetService<ReadAppDbContext>();
-                        slaveDbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTrackingWithIdentityResolution;
-                        dbService = new ReadImplementation(slaveDbContext);
-                    }
-
-                    return dbService;
-                });
             });
         }
     }

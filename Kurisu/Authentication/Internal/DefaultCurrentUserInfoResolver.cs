@@ -16,17 +16,19 @@ namespace Kurisu.Authentication.Internal
             _httpContextAccessor = httpContextAccessor;
         }
 
+        /// <summary>
+        /// 获取用户id
+        /// </summary>
+        /// <returns></returns>
         public int GetSubjectId()
         {
             var httpContext = _httpContextAccessor.HttpContext;
 
             var subject = (httpContext?.User.Identity as ClaimsIdentity)?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (int.TryParse(subject, out int sub))
-            {
-                return sub;
-            }
 
-            return 0;
+            return int.TryParse(subject, out int sub)
+                ? sub
+                : 0;
         }
     }
 }

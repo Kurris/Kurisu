@@ -17,7 +17,6 @@ namespace Kurisu.DataAccessor.Functions.Default.Internal
     {
         public ReadImplementation(DbContext dbContext)
         {
-            dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTrackingWithIdentityResolution;
             DbContext = dbContext;
         }
 

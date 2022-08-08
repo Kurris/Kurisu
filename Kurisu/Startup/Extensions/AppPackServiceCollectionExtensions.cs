@@ -3,6 +3,7 @@ using System.Linq;
 using Kurisu;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.Extensions.Configuration;
 
 // ReSharper disable once CheckNamespace
 namespace Microsoft.Extensions.DependencyInjection
@@ -13,11 +14,13 @@ namespace Microsoft.Extensions.DependencyInjection
         /// 添加自定义appPacks
         /// </summary>
         /// <param name="services"></param>
+        /// <param name="configuration"></param>
         /// <returns></returns>
-        public static IServiceCollection AddKurisuAppPacks(this IServiceCollection services)
+        public static IServiceCollection AddKurisuAppPacks(this IServiceCollection services, IConfiguration configuration)
         {
             foreach (var appPack in App.AppPacks)
             {
+                appPack.Configuration = configuration;
                 appPack.ConfigureServices(services);
             }
 

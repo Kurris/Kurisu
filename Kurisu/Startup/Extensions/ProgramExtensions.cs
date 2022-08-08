@@ -67,17 +67,14 @@ namespace Microsoft.Extensions.DependencyInjection
         public static void RunKurisu(this IHostBuilder hostBuilder, Type startup, bool useGrpc)
         {
             hostBuilder.ConfigureLogging(builder =>
-           {
-               builder.ClearProviders();
-               builder.AddSerilog();
-           })
-               .ConfigureWebHostDefaults(webBuilder =>
-               {
-                   webBuilder.UseStartup(startup);
-               })
-               .UseSerilogDefault()
-               .Build()
-               .Run();
+                {
+                    builder.ClearProviders();
+                    builder.AddSerilog();
+                })
+                .ConfigureWebHostDefaults(webBuilder => { webBuilder.UseStartup(startup); })
+                .UseSerilogDefault()
+                .Build()
+                .Run();
         }
     }
 }

@@ -44,6 +44,7 @@ namespace Microsoft.Extensions.DependencyInjection
             services.ServiceRegister();
 
             //注册命名服务
+            services.AddNamedResolver();
             services.NamedRegister();
 
             return services;
@@ -121,6 +122,7 @@ namespace Microsoft.Extensions.DependencyInjection
                             && !x.IsAbstract
                             && !x.IsInterface);
 
+            //仅注册自己
             foreach (var service in serviceTypes)
             {
                 RegisterService(services, typeof(ISingletonDependency), service);

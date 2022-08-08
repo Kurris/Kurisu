@@ -9,9 +9,8 @@ namespace Kurisu.DataAccessor.Functions.ReadWriteSplit.DbContexts
     {
         public ReadAppDbContext(DbContextOptions<DefaultAppDbContext> options
             , IDefaultValuesOnSaveChangesResolver defaultValuesOnSaveChangesResolver
-            , IQueryFilterResolver queryFilterResolver
-            , IOptions<DbSetting> dbOptions)
-            : base(options, defaultValuesOnSaveChangesResolver, queryFilterResolver, dbOptions)
+            , IQueryFilterResolver queryFilterResolver)
+            : base(options, defaultValuesOnSaveChangesResolver, queryFilterResolver)
         {
 
         }

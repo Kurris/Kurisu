@@ -1,5 +1,6 @@
 using Kurisu.UnifyResultAndValidation.Filters;
 using Kurisu.UnifyResultAndValidation;
+using Kurisu.UnifyResultAndValidation.Abstractions;
 
 // ReSharper disable once CheckNamespace
 namespace Microsoft.Extensions.DependencyInjection
@@ -7,14 +8,18 @@ namespace Microsoft.Extensions.DependencyInjection
     public static class UnifyServiceCollectionExtensions
     {
         /// <summary>
-        /// 统一格式处理，使用默认返回类<see cref="ApiResult{T}"/>包装结果
+        /// 统一格式处理，使用默认返回类<see cref="DefaultApiResult{T}"/>包装结果
         /// </summary>                        
-        /// <param name="services"></param>
+        /// <param name="services">服务容器</param>
         /// <returns></returns>
-        public static IServiceCollection AddKurisuUnify(this IServiceCollection services)
+        public static IServiceCollection AddKurisuUnifyResult(this IServiceCollection services)
         {
-            return services.AddMvcFilter<ValidateAndPackResultFilter>()
+            services.AddSingleton(typeof(IApiResult), typeof(DefaultApiResult<>));
+
+            services.AddMvcFilter<ValidateAndPackResultFilter>()
                 .AddMvcFilter<ExceptionPackFilter>();
+
+            return services;
         }
     }
 }

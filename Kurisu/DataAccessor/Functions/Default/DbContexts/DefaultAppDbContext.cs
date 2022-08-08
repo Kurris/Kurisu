@@ -5,7 +5,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using Kurisu.DataAccessor.Abstractions.Setting;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Options;
 
 namespace Kurisu.DataAccessor.Functions.Default.DbContexts
 {
@@ -19,8 +18,7 @@ namespace Kurisu.DataAccessor.Functions.Default.DbContexts
 
         public DefaultAppDbContext(DbContextOptions<DefaultAppDbContext> options
             , IDefaultValuesOnSaveChangesResolver defaultValuesOnSaveChangesResolver
-            , IQueryFilterResolver queryFilterResolver
-            , IOptions<DbSetting> dbOptions) : base(options)
+            , IQueryFilterResolver queryFilterResolver) : base(options)
         {
             _defaultValuesOnSaveChangesResolver = defaultValuesOnSaveChangesResolver;
             _queryFilterResolver = queryFilterResolver;
@@ -36,7 +34,7 @@ namespace Kurisu.DataAccessor.Functions.Default.DbContexts
                     continue;
 
                 var builder = modelBuilder.Entity(entityType);
-                _queryFilterResolver.HandleQueryFilter(builder, entityType);
+                _queryFilterResolver?.HandleQueryFilter(builder, entityType);
             }
 
             base.OnModelCreating(modelBuilder);

@@ -1,6 +1,5 @@
 using System;
 using System.Threading.Tasks;
-using Kurisu.DataAccessor.Abstractions;
 using Kurisu.DataAccessor.Functions.Default.Abstractions;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -69,7 +68,7 @@ namespace Kurisu
         /// </summary>
         /// <param name="func"></param>
         /// <exception cref="Exception"></exception>
-        public static async Task CreateUnitOfWorkAsync(Func<IAppDbService, Task> func)
+        public static async Task CreateTransactionAsync(Func<IAppDbService, Task> func)
         {
             await CreateAsync(async provider =>
             {

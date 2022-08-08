@@ -17,7 +17,6 @@ namespace Kurisu.ConfigurableOptions.Attributes
         {
         }
 
-
         /// <summary>
         /// 构造函数
         /// </summary>
@@ -26,7 +25,6 @@ namespace Kurisu.ConfigurableOptions.Attributes
         {
             Path = path;
         }
-
 
         /// <summary>
         /// 节点路径

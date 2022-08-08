@@ -201,7 +201,6 @@ namespace Kurisu.DataAccessor.Functions.ReadWriteSplit.Abstractions
 
         #endregion
 
-
         #region transaction
 
         /// <summary>

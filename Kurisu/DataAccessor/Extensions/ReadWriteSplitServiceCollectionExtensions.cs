@@ -1,11 +1,11 @@
-﻿using System;
-using Kurisu.DataAccessor.Abstractions.Setting;
+﻿using Kurisu.DataAccessor.Abstractions.Setting;
 using Kurisu.DataAccessor.Functions.Default.Abstractions;
+using Kurisu.DataAccessor.Functions.Default.Internal;
 using Kurisu.DataAccessor.Functions.ReadWriteSplit.Abstractions;
 using Kurisu.DataAccessor.Functions.ReadWriteSplit.DbContexts;
 using Kurisu.DataAccessor.Functions.ReadWriteSplit.Internal;
 using Kurisu.DataAccessor.Resolvers;
-using Microsoft.Extensions.DependencyInjection;
+using Microsoft.EntityFrameworkCore;
 
 // ReSharper disable once CheckNamespace
 namespace Microsoft.Extensions.DependencyInjection
@@ -26,7 +26,12 @@ namespace Microsoft.Extensions.DependencyInjection
             services.AddKurisuContext<ReadAppDbContext>();
             services.AddKurisuContext<WriteAppDbContext>();
 
-            services.AddScoped(typeof(IAppSlaveDb), provider => provider.GetService<Func<Type, IBaseDbService>>()?.Invoke(typeof(IAppSlaveDb)));
+            services.AddScoped(typeof(IAppSlaveDb), provider =>
+            {
+                var slaveDbContext = provider.GetService<ReadAppDbContext>();
+                slaveDbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTrackingWithIdentityResolution;
+                return new ReadImplementation(slaveDbContext);
+            });
 
             services.AddScoped<IAppDbService, ReadWriteSplitAppDbService>();
 

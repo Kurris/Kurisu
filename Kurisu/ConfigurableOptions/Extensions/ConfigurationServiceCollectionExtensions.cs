@@ -17,18 +17,31 @@ namespace Microsoft.Extensions.DependencyInjection
         /// 添加所有配置文件
         /// </summary>
         /// <param name="services"></param>
+        /// <param name="configuration"></param>
         /// <returns></returns>
-        public static IServiceCollection AddKurisuConfiguration(this IServiceCollection services)
+        public static IServiceCollection AddKurisuConfiguration(this IServiceCollection services, IConfiguration configuration)
         {
             var typesNeedToMapping = App.ActiveTypes.Where(x => x.IsDefined(typeof(ConfigurationAttribute)));
             if (!typesNeedToMapping.Any()) return services;
 
-            var configuration = App.Configuration;
-            var method = typeof(OptionsConfigurationServiceCollectionExtensions).GetRuntimeMethod("Configure",
+            //Configure
+            var configureMethod = typeof(OptionsConfigurationServiceCollectionExtensions).GetRuntimeMethod("Configure",
                 new[]
                 {
                     typeof(IServiceCollection), typeof(IConfiguration)
                 });
+
+            //Options
+            var addOptionsMethod = typeof(OptionsServiceCollectionExtensions)
+                .GetRuntimeMethods().First(x => x.Name.Equals("AddOptions") && x.IsGenericMethod);
+
+            var bind = typeof(OptionsBuilderConfigurationExtensions)
+                .GetMethods()
+                .Where(x => x.Name.Equals(nameof(OptionsBuilderConfigurationExtensions.Bind)))
+                .Where(x => x.IsGenericMethod)
+                .First(x => x.GetParameters().Length == 2 && x.GetParameters().Last().ParameterType == typeof(IConfiguration));
+
+            var validateDataAnnotations = typeof(OptionsBuilderDataAnnotationsExtensions).GetMethod(nameof(OptionsBuilderDataAnnotationsExtensions.ValidateDataAnnotations));
 
             foreach (var type in typesNeedToMapping)
             {
@@ -41,47 +54,16 @@ namespace Microsoft.Extensions.DependencyInjection
                     : configurationAttribute.Path;
 
                 var section = configuration.GetSection(path);
-                //绑定配置
-                method?.MakeGenericMethod(type).Invoke(null, new object[] {services, section});
+                //绑定配置  services.Configure<T>(section);
+                configureMethod?.MakeGenericMethod(type).Invoke(null, new object[] {services, section});
+
+                //绑定配置 services.AddOptions<T>().Bind(section).ValidateDataAnnotations()
+                var optionsBuilder = addOptionsMethod.MakeGenericMethod(type).Invoke(null, new object[] {services});
+                optionsBuilder = bind.MakeGenericMethod(type).Invoke(null, new[] {optionsBuilder, section});
+                validateDataAnnotations.MakeGenericMethod(type).Invoke(null, new[] {optionsBuilder});
             }
 
             return services;
-        }
-
-        /// <summary>
-        /// 添加配置选项,验证配置
-        /// </summary>
-        /// <param name="services">服务容器</param>
-        /// <typeparam name="TOptions">选项类型</typeparam>
-        /// <returns></returns>
-        public static TOptions AddKurisuOptions<TOptions>(this IServiceCollection services) where TOptions : class, new()
-        {
-            var optionsType = typeof(TOptions);
-
-            string path;
-            if (!optionsType.IsDefined(typeof(ConfigurationAttribute), false))
-            {
-                path = optionsType.Name;
-            }
-            else
-            {
-                //取ConfigurationAttribute
-                var configurationAttribute = optionsType.GetCustomAttribute<ConfigurationAttribute>();
-                //配置路径
-                path = string.IsNullOrEmpty(configurationAttribute.Path)
-                    ? optionsType.Name
-                    : configurationAttribute.Path;
-            }
-
-            var configuration = App.Configuration;
-            var section = configuration.GetSection(path);
-
-            //绑定配置
-            services.AddOptions<TOptions>()
-                .Bind(section)
-                .ValidateDataAnnotations(); //配置验证
-
-            return section.Get<TOptions>();
         }
     }
 }

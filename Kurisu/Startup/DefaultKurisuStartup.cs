@@ -18,7 +18,7 @@ namespace Kurisu.Startup
     {
         protected DefaultKurisuStartup(IConfiguration configuration)
         {
-            App.Configuration = configuration;
+            Configuration = configuration;
         }
 
         // ReSharper disable once UnassignedGetOnlyAutoProperty
@@ -38,30 +38,29 @@ namespace Kurisu.Startup
             });
 
             //格式统一
-            services.AddKurisuUnify();
+            services.AddKurisuUnifyResult();
 
             //映射配置文件 
-            services.AddKurisuConfiguration();
+            services.AddKurisuConfiguration(Configuration);
 
             //添加对象关系映射,扫描程序集
-            services.AddKurisuObjectMapper(Assembly.GetEntryAssembly());
+            services.AddKurisuObjectMapper(false, Assembly.GetEntryAssembly());
 
             //依赖注入
-            services.AddNamedResolver();
             services.AddKurisuDependencyInjection();
 
             //注入数据访问
-            services.AddKurisuDatabaseAccessor().AddKurisuReadWriteSplit()
+            services.AddKurisuDatabaseAccessor(null)
                 .AddKurisuUnitOfWork(provider => provider.GetService<IAppMasterDb>().GetMasterDbContext() as IUnitOfWorkDbContext);
 
-
             //注入自定义pack
-            services.AddKurisuAppPacks();
+            services.AddKurisuAppPacks(Configuration);
         }
 
         public override void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
             App.ServiceProvider = app.ApplicationServices;
+
             app.UseKurisuAppPacks(env, app.ApplicationServices, true);
             app.UseRouting();
             app.UseKurisuAppPacks(env, app.ApplicationServices, false);

@@ -6,7 +6,8 @@ namespace Kurisu.UnifyResultAndValidation
     /// 数据结果返回模型
     /// </summary>
     /// <typeparam name="T">数据类型</typeparam>
-    public class ApiResult<T> : IApiResult
+    // ReSharper disable once ClassWithVirtualMembersNeverInherited.Global
+    public class DefaultApiResult<T> : IApiResult
     {
         /// <summary>
         /// 数据结果返回模型
@@ -16,7 +17,7 @@ namespace Kurisu.UnifyResultAndValidation
         /// Data = Default(T)
         /// </code>
         /// </summary>
-        public ApiResult()
+        public DefaultApiResult()
         {
             this.Status = Status.Error;
         }
@@ -27,7 +28,7 @@ namespace Kurisu.UnifyResultAndValidation
         /// <param name="message">信息</param>
         /// <param name="data">数据</param>
         /// <param name="status">状态</param>
-        public ApiResult(string message, T data, Status status)
+        public DefaultApiResult(string message, T data, Status status)
         {
             this.Message = message;
             this.Data = data;
@@ -52,7 +53,7 @@ namespace Kurisu.UnifyResultAndValidation
 
         public virtual IApiResult GetDefaultSuccessApiResult<TResult>(TResult apiResult)
         {
-            return new ApiResult<TResult>
+            return new DefaultApiResult<TResult>
             {
                 Status = Status.Success,
                 Message = "操作成功",
@@ -62,7 +63,7 @@ namespace Kurisu.UnifyResultAndValidation
 
         public virtual IApiResult GetDefaultValidateApiResult<TResult>(TResult apiResult)
         {
-            return new ApiResult<TResult>
+            return new DefaultApiResult<TResult>
             {
                 Status = Status.ValidateError,
                 Message = "实体验证失败",
@@ -72,7 +73,7 @@ namespace Kurisu.UnifyResultAndValidation
 
         public virtual IApiResult GetDefaultForbiddenApiResult()
         {
-            return new ApiResult<object>
+            return new DefaultApiResult<object>
             {
                 Status = Status.Forbidden,
                 Message = "无权访问"
@@ -81,7 +82,7 @@ namespace Kurisu.UnifyResultAndValidation
 
         public virtual IApiResult GetDefaultErrorApiResult(string errorMessage)
         {
-            return new ApiResult<object>
+            return new DefaultApiResult<object>
             {
                 Message = errorMessage
             };

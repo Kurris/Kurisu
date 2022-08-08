@@ -15,14 +15,16 @@ namespace Microsoft.Extensions.DependencyInjection
         /// 添加对象关系映射
         /// </summary>
         /// <param name="services">服务容器</param>
+        /// <param name="compile">提前编译</param>
         /// <param name="assemblies">扫描程序集</param>
         /// <returns></returns>
-        public static IServiceCollection AddKurisuObjectMapper(this IServiceCollection services, params Assembly[] assemblies)
+        public static IServiceCollection AddKurisuObjectMapper(this IServiceCollection services, bool compile, params Assembly[] assemblies)
         {
             var globalSettings = TypeAdapterConfig.GlobalSettings;
 
             //扫描IRegister
-            if (assemblies != null && assemblies.Any()) globalSettings.Scan(assemblies);
+            if (assemblies != null && assemblies.Any())
+                globalSettings.Scan(assemblies);
 
             //名称匹配规则
             globalSettings.Default.NameMatchingStrategy(NameMatchingStrategy.Flexible);
@@ -32,7 +34,10 @@ namespace Microsoft.Extensions.DependencyInjection
             services.AddScoped<IMapper, ServiceMapper>();
 
             //提前编译会增加内容
-            //globalSettings.Compile();
+            if (compile)
+            {
+                globalSettings.Compile();
+            }
 
             return services;
         }

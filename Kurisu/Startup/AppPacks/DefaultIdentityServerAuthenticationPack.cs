@@ -1,5 +1,7 @@
+using Kurisu.Authentication;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Kurisu.Startup.AppPacks
@@ -10,12 +12,13 @@ namespace Kurisu.Startup.AppPacks
     public class DefaultIdentityServerAuthenticationPack : BaseAppPack
     {
         public override int Order => 2;
-        
+
         public override bool IsBeforeUseRouting => false;
 
         public override void ConfigureServices(IServiceCollection services)
         {
-            services.AddKurisuOAuth2Authentication();
+            var setting = Configuration.GetSection(nameof(IdentityServerSetting)).Get<IdentityServerSetting>();
+            services.AddKurisuOAuth2Authentication(setting);
         }
 
         public override void Configure(IApplicationBuilder app, IWebHostEnvironment env)

@@ -1,11 +1,9 @@
-﻿using Microsoft.Extensions.DependencyInjection;
-
-namespace Kurisu.UnifyResultAndValidation.Abstractions
+﻿namespace Kurisu.UnifyResultAndValidation.Abstractions
 {
     /// <summary>
     /// api返回值接口
     /// </summary>
-    public interface IApiResult : ISingletonDependency
+    public interface IApiResult
     {
         /// <summary>
         /// 获取默认成功结果

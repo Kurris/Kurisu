@@ -6,24 +6,28 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Kurisu.Startup.Abstractions
 {
+    /// <summary>
+    /// 定义appPack行为
+    /// </summary>
     public interface IAppPack : IOrderedFilter
     {
         /// <summary>
         /// 触发方法
         /// </summary>
+        /// <param name="serviceProvider">服务提供器</param>
         void Invoke(IServiceProvider serviceProvider);
 
         /// <summary>
-        /// 添加服务
+        /// 服务配置
         /// </summary>
-        /// <param name="services"></param>
+        /// <param name="services">服务容器</param>
         void ConfigureServices(IServiceCollection services);
 
         /// <summary>
-        /// 配置管道服务
+        /// 管道服务配置
         /// </summary>
-        /// <param name="app"></param>
-        /// <param name="env"></param>
+        /// <param name="app">管道</param>
+        /// <param name="env">环境</param>
         void Configure(IApplicationBuilder app, IWebHostEnvironment env);
     }
 }

@@ -5,6 +5,9 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Kurisu.DependencyInjection.Internal
 {
+    /// <summary>
+    /// 命名服务处理器
+    /// </summary>
     [SkipScan]
     public class NamedResolver : INamedResolver
     {
@@ -15,30 +18,56 @@ namespace Kurisu.DependencyInjection.Internal
             _serviceProvider = serviceProvider;
         }
 
-
         /// <summary>
-        /// 解析服务名称
+        /// 获取服务
         /// </summary>
-        /// <param name="type"></param>
+        /// <param name="type">服务类型</param>
+        /// <param name="serviceName">服务命名</param>
         /// <returns></returns>
-        private static string GetServiceName(Type type)
-        {
-            return type.IsDefined(typeof(RegisterAttribute)) ? type.GetCustomAttribute<RegisterAttribute>().Name : type.Name;
-        }
-
         public object GetService(Type type, string serviceName)
         {
             return _serviceProvider.GetServices(type).FirstOrDefault(x => GetServiceName(x.GetType()).Equals(serviceName));
         }
 
+        /// <summary>
+        /// 获取命名服务
+        /// </summary>
+        /// <param name="serviceName">服务命名</param>
+        /// <typeparam name="TService">服务类型</typeparam>
+        /// <returns></returns>
         public TService GetService<TService>(string serviceName) where TService : class
         {
-            return _serviceProvider.GetServices(typeof(TService)).FirstOrDefault(x => GetServiceName(x.GetType()).Equals(serviceName)) as TService;
+            var service = _serviceProvider.GetServices(typeof(TService))
+                .FirstOrDefault(x => GetServiceName(x.GetType()).Equals(serviceName));
+
+            return service as TService;
         }
 
+        /// <summary>
+        /// 指定服务生命周期,获取命名服务
+        /// </summary>
+        /// <param name="serviceName">服务命名</param>
+        /// <typeparam name="TLifeTime">生命周期</typeparam>
+        /// <typeparam name="TService">服务类型</typeparam>
+        /// <returns></returns>
         public TService GetService<TLifeTime, TService>(string serviceName) where TLifeTime : IDependency where TService : class
         {
-            return (_serviceProvider.GetService(typeof(Func<string, TLifeTime, object>)) as Func<string, TLifeTime, object>)?.Invoke(serviceName, default) as TService;
+            var func = _serviceProvider.GetService(typeof(Func<string, TLifeTime, object>)) as Func<string, TLifeTime, object>;
+            return func.Invoke(serviceName, default) as TService;
+        }
+
+
+        /// <summary>
+        /// 解析服务名称
+        /// </summary>
+        /// <param name="type">服务类型</param>
+        /// <returns></returns>
+        // ReSharper disable once SuggestBaseTypeForParameter
+        private static string GetServiceName(Type type)
+        {
+            return type.IsDefined(typeof(RegisterAttribute))
+                ? type.GetCustomAttribute<RegisterAttribute>().Name
+                : type.Name;
         }
     }
 }

@@ -10,21 +10,30 @@ namespace Microsoft.Extensions.DependencyInjection
     [AttributeUsage(AttributeTargets.Class, Inherited = false)]
     public class RegisterAttribute : Attribute
     {
-        public RegisterAttribute()
-        {
-        }
-
+        /// <summary>
+        /// 服务注册
+        /// </summary>
+        /// <param name="name">命名命名</param>
         public RegisterAttribute(string name)
         {
             this.Name = name;
         }
 
+        /// <summary>
+        /// 服务注册
+        /// </summary>
+        /// <param name="interceptors">代理器</param>
         public RegisterAttribute(params Type[] interceptors)
         {
             this.Interceptors = interceptors;
         }
 
 
+        /// <summary>
+        /// 服务注册
+        /// </summary>
+        /// <param name="name">命名命名</param>
+        /// <param name="interceptors">代理器</param>
         public RegisterAttribute(string name, params Type[] interceptors)
         {
             this.Name = name;
@@ -37,7 +46,7 @@ namespace Microsoft.Extensions.DependencyInjection
         public string Name { get; }
 
         /// <summary>
-        /// 拦截器
+        /// 代理器
         /// </summary>
         public Type[] Interceptors { get; }
     }

@@ -30,7 +30,7 @@ namespace Kurisu.DataAccessor.Functions.Default.Internal
 
         public DbContext GetMasterDbContext() => DbContext;
 
-        public virtual new IQueryable<T> Queryable<T>() where T : class, new()
+        public new virtual IQueryable<T> Queryable<T>() where T : class, new()
         {
             return DbContext.Set<T>().AsQueryable();
         }

@@ -36,7 +36,7 @@ namespace Kurisu.Startup.AppPacks
 
         public override void ConfigureServices(IServiceCollection services)
         {
-            var setting = services.AddKurisuOptions<SwaggerOAuthSetting>();
+            var setting = Configuration.GetSection(nameof(SwaggerOAuthSetting)).Get<SwaggerOAuthSetting>();
 
             //eg:配置文件appsetting.json的key如果存在":"，那么解析将会失败
             var needFixeScopes = setting.Scopes.Where(x => x.Key.Contains("|")).ToDictionary(x => x.Key, x => x.Value);
@@ -136,7 +136,7 @@ namespace Kurisu.Startup.AppPacks
                     _apiInfos.ForEach(info => { c.SwaggerEndpoint($"/swagger/{info.Title}/swagger.json", info.Title); });
 
                     //OAuth2.0 client 信息
-                    var setting = App.Configuration.GetSection(nameof(SwaggerOAuthSetting)).Get<SwaggerOAuthSetting>();
+                    var setting = Configuration.GetSection(nameof(SwaggerOAuthSetting)).Get<SwaggerOAuthSetting>();
                     c.OAuthClientId(setting.ClientId);
                     c.OAuthClientSecret(setting.ClientSecret);
                     c.OAuthUsePkce();

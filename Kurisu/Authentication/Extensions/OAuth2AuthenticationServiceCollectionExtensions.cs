@@ -16,11 +16,10 @@ namespace Microsoft.Extensions.DependencyInjection
         /// 添加 identit server 鉴权
         /// </summary>
         /// <param name="services"></param>
+        /// <param name="setting"></param>
         /// <returns></returns>
-        public static IServiceCollection AddKurisuOAuth2Authentication(this IServiceCollection services)
+        public static IServiceCollection AddKurisuOAuth2Authentication(this IServiceCollection services, IdentityServerSetting setting)
         {
-            var setting = services.AddKurisuOptions<IdentityServerSetting>();
-
             var builder = services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
                 .AddJwtBearer(options =>
                 {
