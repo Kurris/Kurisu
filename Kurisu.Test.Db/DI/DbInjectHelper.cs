@@ -18,12 +18,11 @@ namespace Kurisu.Test.Db.DI
     /// </summary>
     public class DbInjectHelper
     {
-        public static void InjectDbContext<TIDb>(IServiceCollection services) where TIDb : IBaseDbService
+        public static void InjectDbContext(IServiceCollection services)
         {
             services.AddDbContext<TestAppDbContext>((provider, options) =>
             {
-                options.AddInterceptors(provider.GetService<DefaultDbCommandInterceptor>());
-                options.UseInMemoryDatabase(Guid.NewGuid().ToString());
+                options.UseInMemoryDatabase(Guid.NewGuid().ToString()).AddInterceptors(provider.GetService<DefaultDbCommandInterceptor>());
                 //debug 启用日志
 #if DEBUG
                 options.EnableSensitiveDataLogging().EnableDetailedErrors();
@@ -34,36 +33,14 @@ namespace Kurisu.Test.Db.DI
             });
 
             //读写操作实现类
-            services.AddScoped(provider =>
+            services.AddScoped(typeof(IAppMasterDb), provider =>
             {
-                return (Func<Type, IBaseDbService>) (dbType =>
-                {
-                    //获取容器
-                    IBaseDbService implementation;
-
-                    if (dbType == typeof(IAppMasterDb))
-                    {
-                        var masterDbContext = provider.GetService<TestAppDbContext>();
-                        implementation = new WriteImplementation(masterDbContext);
-                    }
-                    else
-                    {
-                        var dbSetting = provider.GetService<IOptions<DbSetting>>().Value;
-                        if (dbSetting.ReadConnectionStrings?.Any() == true)
-                        {
-                            var slaveDbContext = provider.GetService<TestAppDbContext>();
-                            slaveDbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTrackingWithIdentityResolution;
-                            implementation = new ReadImplementation(slaveDbContext);
-                        }
-                        else
-                        {
-                            implementation = null;
-                        }
-                    }
-
-                    return implementation;
-                });
+                var masterDbContext = provider.GetService<TestAppDbContext>();
+                IBaseDbService implementation = new WriteImplementation(masterDbContext);
+                return implementation;
             });
+
+            services.AddScoped<IAppDbService, DefaultAppDbService>();
         }
     }
 }

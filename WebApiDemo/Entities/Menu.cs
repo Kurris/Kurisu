@@ -3,7 +3,7 @@ using Kurisu.DataAccessor.Entity;
 
 namespace WebApiDemo.Entities
 {
-    [Table("menu")]
+    [Table("menus")]
     public class Menu : BaseEntity<int>, ISoftDeleted
     {
         public string Code { get; set; }

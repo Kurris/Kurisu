@@ -1,8 +1,6 @@
-using System;
-using Kurisu.DataAccessor.Functions.Default.Abstractions;
-using Kurisu.DataAccessor.Functions.Default.Internal;
-using Kurisu.DataAccessor.Functions.ReadWriteSplit.Abstractions;
+using Kurisu.DataAccessor;
 using Kurisu.Test.Db.DI;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Kurisu.Test.Db
@@ -11,15 +9,25 @@ namespace Kurisu.Test.Db
     {
         public void ConfigureServices(IServiceCollection services)
         {
-            DbInjectHelper.InjectDbContext<IAppMasterDb>(services);
-            DbInjectHelper.InjectDbContext<IAppSlaveDb>(services);
+            services.AddHttpContextAccessor();
 
-            //主从库操作
-            services.AddScoped(typeof(IAppMasterDb), provider => provider.GetService<Func<Type, IBaseDbService>>()?.Invoke(typeof(IAppMasterDb)));
-            services.AddScoped(typeof(IAppSlaveDb), provider => provider.GetService<Func<Type, IBaseDbService>>()?.Invoke(typeof(IAppSlaveDb)));
+            var configuration = new ConfigurationBuilder()
+                .AddJsonFile("appsettings.json")
+                .AddJsonFile("appsettings.Development.json").Build();
+            services.AddKurisuConfiguration(configuration);
 
-            //读写分离操作
-            services.AddScoped<IAppDbService, DefaultAppDbService>();
+            // var dbSetting = configuration.GetSection(nameof(DbSetting)).Get<DbSetting>();
+            // services.AddKurisuDatabaseAccessor(options =>
+            // {
+            //     options.Timeout = dbSetting.Timeout;
+            //     options.Version = dbSetting.Version;
+            //     options.DefaultConnectionString = dbSetting.DefaultConnectionString;
+            //     options.ReadConnectionStrings = dbSetting.ReadConnectionStrings;
+            //     options.SlowSqlTime = dbSetting.SlowSqlTime;
+            //     options.MigrationsAssembly = dbSetting.MigrationsAssembly;
+            // });
+
+            DbInjectHelper.InjectDbContext(services);
         }
     }
 }

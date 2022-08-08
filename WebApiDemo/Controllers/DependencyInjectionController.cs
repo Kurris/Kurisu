@@ -65,7 +65,7 @@ namespace WebApiDemo.Controllers
         {
             _serviceProvider.GetService<ISingletonService>();
             _serviceProvider.GetService<ISingletonService>();
-            App.ServiceProvider.GetService<ISingletonService>();
+            // App.ServiceProvider.GetService<ISingletonService>();
             await _channel.PublishAsync(new BobMessage
             {
                 Name = "bob",
