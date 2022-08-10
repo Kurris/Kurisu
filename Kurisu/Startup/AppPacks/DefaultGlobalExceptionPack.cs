@@ -49,6 +49,8 @@ namespace Kurisu.Startup.AppPacks
                 context.Response.ContentType = "application/json";
                 context.Response.ContentLength = content.Length;
                 await context.Response.BodyWriter.WriteAsync(new ReadOnlyMemory<byte>(content));
+
+                throw;
             }
         }
     }

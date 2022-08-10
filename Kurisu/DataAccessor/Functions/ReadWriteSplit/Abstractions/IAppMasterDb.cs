@@ -126,6 +126,14 @@ namespace Kurisu.DataAccessor.Functions.ReadWriteSplit.Abstractions
         /// <returns>返回受影响行<see cref="int"/></returns>
         Task InsertRangeAsync<T>(IEnumerable<T> entities) where T : class, new();
 
+
+        /// <summary>
+        /// 添加一组实体
+        /// </summary>
+        /// <param name="entities"></param>
+        /// <returns></returns>
+        Task InsertRangeAsync(IEnumerable<object> entities);
+        
         #endregion
 
         #region update

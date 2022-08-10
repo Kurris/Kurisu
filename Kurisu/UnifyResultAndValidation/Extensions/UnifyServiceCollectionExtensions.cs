@@ -14,10 +14,10 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <returns></returns>
         public static IServiceCollection AddKurisuUnifyResult(this IServiceCollection services)
         {
-            services.AddSingleton(typeof(IApiResult), typeof(DefaultApiResult<>));
+            services.AddSingleton(typeof(IApiResult), typeof(DefaultApiResult<object>));
 
-            services.AddMvcFilter<ValidateAndPackResultFilter>()
-                .AddMvcFilter<ExceptionPackFilter>();
+            services.AddMvcFilter<ValidateAndPackResultFilter>();
+            // services.AddMvcFilter<ExceptionPackFilter>();
 
             return services;
         }

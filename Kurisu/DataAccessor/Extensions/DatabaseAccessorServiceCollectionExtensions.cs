@@ -7,7 +7,6 @@ using Kurisu.DataAccessor.Functions.Default.Abstractions;
 using Kurisu.DataAccessor.Functions.Default.DbContexts;
 using Kurisu.DataAccessor.Functions.Default.Internal;
 using Kurisu.DataAccessor.Functions.ReadWriteSplit.Abstractions;
-using Kurisu.DataAccessor.Functions.ReadWriteSplit.DbContexts;
 using Kurisu.DataAccessor.Interceptors;
 using Kurisu.DataAccessor.Resolvers;
 using Microsoft.EntityFrameworkCore;
@@ -27,33 +26,33 @@ namespace Microsoft.Extensions.DependencyInjection
         /// 添加EFCore支持
         /// </summary>
         /// <param name="services"></param>
-        /// <param name="options"></param>
         /// <exception cref="ArgumentNullException"></exception>
         /// <returns></returns>
-        public static IServiceCollection AddKurisuDatabaseAccessor(this IServiceCollection services, Action<DbSetting> options)
+        public static IKurisuDataAccessorBuilder AddKurisuDatabaseAccessor(this IServiceCollection services)
         {
-            if (options == null)
-                throw new ArgumentNullException(nameof(options));
-
-            services.Configure(options);
-
             services.TryAddSingleton<ICurrentUserInfoResolver, DefaultCurrentUserInfoResolver>();
-            services.AddSingleton<IDefaultValuesOnSaveChangesResolver, DefaultValuesOnSaveChangesResolver>();
+
             services.AddSingleton<IDbConnectStringResolver, DefaultDbConnectStringResolver>();
+            services.AddSingleton<IDefaultValuesOnSaveChangesResolver, DefaultValuesOnSaveChangesResolver>();
             services.AddSingleton<IQueryFilterResolver, DefaultQueryFilterResolver>();
 
-            //dbContext
-            services.AddKurisuContext<DefaultAppDbContext>();
+            //defualtDbContext
+            services.AddKurisuAppDbContext<DefaultAppDbContext<IAppMasterDb>>();
+
             //主库操作
             services.AddScoped(typeof(IAppMasterDb), provider =>
             {
-                var masterDbContext = provider.GetService<DefaultAppDbContext>();
+                var masterDbContext = provider.GetService<DefaultAppDbContext<IAppMasterDb>>();
                 return new WriteImplementation(masterDbContext);
             });
+
             //IAppDbService
             services.AddScoped<IAppDbService, DefaultAppDbService>();
 
-            return services;
+            return new KurisuDataAccessorBuilder
+            {
+                Services = services
+            };
         }
 
 
@@ -63,12 +62,12 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <param name="services"></param>
         /// <exception cref="ArgumentNullException"></exception>
         /// <exception cref="NullReferenceException"></exception>
-        public static void AddKurisuContext<TDbContext>(this IServiceCollection services) where TDbContext : DbContext
+        internal static void AddKurisuAppDbContext<TDbContext>(this IServiceCollection services) where TDbContext : DbContext
         {
             services.AddDbContext<TDbContext>((provider, dbContextOptionsBuilder) =>
             {
                 var dbSetting = provider.GetService<IOptions<DbSetting>>().Value;
-                var connectionString = provider.GetService<IDbConnectStringResolver>().GetConnectionString(null);
+                var connectionString = provider.GetService<IDbConnectStringResolver>().GetConnectionString(typeof(TDbContext));
 
                 dbContextOptionsBuilder.UseMySql(connectionString, MySqlServerVersion.LatestSupportedServerVersion, builder =>
                 {
@@ -86,6 +85,8 @@ namespace Microsoft.Extensions.DependencyInjection
 
                 var loggerFactory = provider.GetService<ILoggerFactory>();
                 dbContextOptionsBuilder.UseLoggerFactory(loggerFactory);
+
+                //Console.WriteLine("{0}:{1}", typeof(TDbContext), connectionString);
 #endif
             });
         }

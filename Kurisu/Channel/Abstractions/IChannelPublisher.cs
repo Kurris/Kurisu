@@ -1,10 +1,12 @@
 using System.Threading.Tasks;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Kurisu.Channel.Abstractions
 {
     /// <summary>
     /// 管道数据推送器
     /// </summary>
+    [SkipScan]
     public interface IChannelPublisher
     {
         /// <summary>

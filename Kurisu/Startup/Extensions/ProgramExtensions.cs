@@ -3,7 +3,6 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Serilog;
-using Kurisu.Serilog.Extensions;
 using System;
 using Kurisu.Startup;
 
@@ -53,12 +52,8 @@ namespace Microsoft.Extensions.DependencyInjection
                     builder.ClearProviders();
                     builder.AddSerilog();
                 })
-                .ConfigureWebHostDefaults(webBuilder =>
-                {
-                    webBuilder
-                        .UseStartup(startup);
-                })
-                .UseSerilogDefault()
+                .ConfigureWebHostDefaults(webBuilder => { webBuilder.UseStartup(startup); })
+                .UseSerilog((context, configuration) => configuration.ReadFrom.Configuration(context.Configuration))
                 .Build()
                 .RunAsync();
         }
@@ -72,7 +67,7 @@ namespace Microsoft.Extensions.DependencyInjection
                     builder.AddSerilog();
                 })
                 .ConfigureWebHostDefaults(webBuilder => { webBuilder.UseStartup(startup); })
-                .UseSerilogDefault()
+                .UseSerilog((context, configuration) => configuration.ReadFrom.Configuration(context.Configuration))
                 .Build()
                 .Run();
         }

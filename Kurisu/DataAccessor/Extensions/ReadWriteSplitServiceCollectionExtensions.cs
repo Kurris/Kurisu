@@ -1,8 +1,9 @@
-﻿using Kurisu.DataAccessor.Abstractions.Setting;
+﻿using Kurisu.DataAccessor;
+using Kurisu.DataAccessor.Abstractions.Setting;
 using Kurisu.DataAccessor.Functions.Default.Abstractions;
+using Kurisu.DataAccessor.Functions.Default.DbContexts;
 using Kurisu.DataAccessor.Functions.Default.Internal;
 using Kurisu.DataAccessor.Functions.ReadWriteSplit.Abstractions;
-using Kurisu.DataAccessor.Functions.ReadWriteSplit.DbContexts;
 using Kurisu.DataAccessor.Functions.ReadWriteSplit.Internal;
 using Kurisu.DataAccessor.Resolvers;
 using Microsoft.EntityFrameworkCore;
@@ -18,24 +19,30 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <summary>
         /// 启用读写分离
         /// </summary>
-        /// <param name="services"></param>
+        /// <param name="builder"></param>
         /// <returns></returns>
-        public static IServiceCollection AddKurisuReadWriteSplit(this IServiceCollection services)
+        public static IKurisuDataAccessorBuilder AddKurisuReadWriteSplit(this IKurisuDataAccessorBuilder builder)
         {
-            services.AddSingleton<IDbConnectStringResolver, DefaultReadWriteDbConnectStringResolver>();
-            services.AddKurisuContext<ReadAppDbContext>();
-            services.AddKurisuContext<WriteAppDbContext>();
+            //读写分离连接获取
+            builder.Services.AddSingleton<IDbConnectStringResolver, DefaultReadWriteDbConnectStringResolver>();
 
-            services.AddScoped(typeof(IAppSlaveDb), provider =>
+            //增加从库获取
+            builder.Services.AddKurisuAppDbContext<DefaultAppDbContext<IAppSlaveDb>>();
+
+            builder.Services.AddScoped(typeof(IAppSlaveDb), provider =>
             {
-                var slaveDbContext = provider.GetService<ReadAppDbContext>();
+                var slaveDbContext = provider.GetService<DefaultAppDbContext<IAppSlaveDb>>();
                 slaveDbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTrackingWithIdentityResolution;
                 return new ReadImplementation(slaveDbContext);
             });
 
-            services.AddScoped<IAppDbService, ReadWriteSplitAppDbService>();
+            //替换IAppDbService
+            builder.Services.AddScoped<IAppDbService, ReadWriteSplitAppDbService>();
 
-            return services;
+            //记录当前为读写分离
+            builder.Services.Configure<KurisuDataAccessorBuilderSetting>(x => { x.IsReadWriteSplit = true; });
+
+            return builder;
         }
     }
 }

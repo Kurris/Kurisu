@@ -1,5 +1,6 @@
 using System;
 using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore;
 
 namespace Kurisu.DataAccessor.Functions.UnitOfWork.Abstractions
 {
@@ -29,9 +30,9 @@ namespace Kurisu.DataAccessor.Functions.UnitOfWork.Abstractions
         /// <summary>
         /// 添加上下文到容器中
         /// </summary>
-        /// <param name="unitOfWorkDbContext"></param>
+        /// <param name="dbContext"></param>
         /// <returns></returns>
-        void Manage(IUnitOfWorkDbContext unitOfWorkDbContext);
+        void Manage(DbContext dbContext);
 
         /// <summary>
         /// 保存所有数据库上下文的更改

@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using Kurisu.DataAccessor.Functions.UnitOfWork.Abstractions;
 using Kurisu.Startup;
 using Microsoft.AspNetCore.Mvc.Filters;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
@@ -17,9 +18,9 @@ namespace Kurisu.DataAccessor.Functions.UnitOfWork.Attributes
         private readonly bool _isAutomaticSaveChanges;
 
         /// <summary>
-        /// 工作单元，自动提交
+        /// 工作单元,非自动提交
         /// </summary>
-        public UnitOfWorkAttribute() : this(true)
+        public UnitOfWorkAttribute() : this(false)
         {
         }
 
@@ -47,19 +48,27 @@ namespace Kurisu.DataAccessor.Functions.UnitOfWork.Attributes
             var dbContextContainer = context.HttpContext.RequestServices.GetService<IDbContextContainer>();
             if (dbContextContainer != null)
             {
-                dbContextContainer.IsAutomaticSaveChanges = _isAutomaticSaveChanges;
+                //is not
+                if (context.HttpContext.RequestServices.GetService(typeof(IUnitOfWorkDbContext)) is not Func<IServiceProvider, DbContext> unitOfWorkDbContextResolver)
+                {
+                    var logger = context.HttpContext.RequestServices.GetService<ILogger<UnitOfWorkAttribute>>();
+                    logger.LogWarning("启用{UnitOfWork}但是无法处理unitOfWorkDbContextResolver,结果 {Result}", nameof(UnitOfWork), null);
+                    await next();
+                }
+                else
+                {
+                    dbContextContainer.Manage(unitOfWorkDbContextResolver.Invoke(context.HttpContext.RequestServices));
+                    dbContextContainer.IsAutomaticSaveChanges = _isAutomaticSaveChanges;
 
-                var resolver = context.HttpContext.RequestServices.GetService(typeof(IUnitOfWorkDbContext)) as Func<IServiceProvider, IUnitOfWorkDbContext>;
-                dbContextContainer.Manage(resolver.Invoke(context.HttpContext.RequestServices));
+                    //开启事务
+                    await dbContextContainer.BeginTransactionAsync();
 
-                //开启事务
-                await dbContextContainer.BeginTransactionAsync();
+                    //获取结果
+                    var result = await next();
 
-                //获取结果
-                var result = await next();
-
-                //提交事务
-                await dbContextContainer.CommitTransactionAsync(AcceptAllChangesOnSuccess, result.Exception);
+                    //提交事务
+                    await dbContextContainer.CommitTransactionAsync(AcceptAllChangesOnSuccess, result.Exception);
+                }
             }
             else
             {

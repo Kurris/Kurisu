@@ -10,5 +10,11 @@ namespace Kurisu.Authentication.Abstractions
         /// </summary>
         /// <returns></returns>
         int GetSubjectId();
+
+        /// <summary>
+        /// 获取用户请求access_token
+        /// </summary>
+        /// <returns></returns>
+        string GetBearerToken();
     }
 }

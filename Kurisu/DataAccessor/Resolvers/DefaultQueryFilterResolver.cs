@@ -11,6 +11,11 @@ namespace Kurisu.DataAccessor.Resolvers
     /// </summary>
     public class DefaultQueryFilterResolver : IQueryFilterResolver
     {
+        /// <summary>
+        /// 处理查询过滤器
+        /// </summary>
+        /// <param name="builder">实体builder</param>
+        /// <param name="entityType">实体类型</param>
         public void HandleQueryFilter(EntityTypeBuilder builder, Type entityType)
         {
             //软删除过滤

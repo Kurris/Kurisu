@@ -1,9 +1,7 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
-using Kurisu.DataAccessor.Abstractions;
 using Kurisu.DataAccessor.Entity;
-using Kurisu.DataAccessor.Functions.UnitOfWork.Abstractions;
 using Microsoft.EntityFrameworkCore;
 using weather;
 
@@ -12,25 +10,14 @@ namespace Kurisu.Test.Db.DI
     /// <summary>
     /// AppDbContext 程序默认DbContext
     /// </summary>
-    /// <typeparam name="TIDb"></typeparam>
-    public class TestAppDbContext : DbContext, IUnitOfWorkDbContext
+    public class TestAppDbContext : DbContext
     {
         public TestAppDbContext(DbContextOptions<TestAppDbContext> options) : base(options)
         {
         }
 
-        public bool IsAutomaticSaveChanges { get; set; } = true;
-        public DbContext GetUnitOfWorkDbContext() => this;
-
-
         public DbSet<WeatherForecast> WeatherForecasts { get; set; }
 
-
-        public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
-        {
-            GenerateDefaultValues();
-            return base.SaveChangesAsync(cancellationToken);
-        }
 
         public override int SaveChanges(bool acceptAllChangesOnSuccess)
         {
@@ -38,11 +25,6 @@ namespace Kurisu.Test.Db.DI
             return base.SaveChanges(acceptAllChangesOnSuccess);
         }
 
-        public override int SaveChanges()
-        {
-            GenerateDefaultValues();
-            return base.SaveChanges();
-        }
 
         public override Task<int> SaveChangesAsync(bool acceptAllChangesOnSuccess, CancellationToken cancellationToken = new())
         {
@@ -74,5 +56,8 @@ namespace Kurisu.Test.Db.DI
                 }
             }
         }
+
+        public bool IsAutomaticSaveChanges { get; set; } = true;
+        public DbContext GetUnitOfWorkDbContext() => this;
     }
 }

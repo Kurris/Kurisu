@@ -11,13 +11,11 @@ namespace Kurisu.UnifyResultAndValidation.Filters
     /// </summary>
     public class ExceptionPackFilter : IAsyncExceptionFilter
     {
-        public async Task OnExceptionAsync(ExceptionContext context)
+        public Task OnExceptionAsync(ExceptionContext context)
         {
             var apiResult = context.HttpContext.RequestServices.GetService<IApiResult>();
             context.Result = new ObjectResult(apiResult.GetDefaultErrorApiResult(context.Exception.Message));
-
-            context.ExceptionHandled = true;
-            await Task.CompletedTask;
+            throw context.Exception;
         }
     }
 }

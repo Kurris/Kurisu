@@ -36,8 +36,7 @@ namespace Kurisu.Test.Db.DI
             services.AddScoped(typeof(IAppMasterDb), provider =>
             {
                 var masterDbContext = provider.GetService<TestAppDbContext>();
-                IBaseDbService implementation = new WriteImplementation(masterDbContext);
-                return implementation;
+                return new WriteImplementation(masterDbContext);
             });
 
             services.AddScoped<IAppDbService, DefaultAppDbService>();

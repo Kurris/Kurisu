@@ -105,6 +105,11 @@ namespace Kurisu.DataAccessor.Functions.Default.Internal
             await _masterDb.InsertRangeAsync(entities);
         }
 
+        public virtual async Task InsertRangeAsync(IEnumerable<object> entities)
+        {
+            await _masterDb.InsertRangeAsync(entities);
+        }
+
         public virtual async Task UpdateAsync(object entity, bool updateAll = false)
         {
             await _masterDb.UpdateAsync(entity, updateAll);

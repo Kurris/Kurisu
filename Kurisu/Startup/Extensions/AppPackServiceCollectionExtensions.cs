@@ -37,8 +37,10 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <returns></returns>
         public static IApplicationBuilder UseKurisuAppPacks(this IApplicationBuilder app, IWebHostEnvironment env, IServiceProvider serviceProvider, bool isBeforeUseRouting)
         {
+            var configuration = serviceProvider.GetService<IConfiguration>();
             foreach (var appPack in App.AppPacks.Where(x => x.IsBeforeUseRouting == isBeforeUseRouting))
             {
+                appPack.Configuration = configuration;
                 appPack.Invoke(serviceProvider);
                 appPack.Configure(app, env);
             }

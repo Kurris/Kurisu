@@ -1,5 +1,7 @@
+using System;
 using System.Threading.Tasks;
 using Kurisu.Channel.Abstractions;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 
 namespace Kurisu.Channel.Internal
 {

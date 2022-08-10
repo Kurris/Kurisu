@@ -36,10 +36,15 @@ namespace Kurisu.DataAccessor.Functions.UnitOfWork.Internal
         /// </summary>
         public bool IsRunning { get; private set; }
 
+
+        /// <summary>
+        /// ctor
+        /// </summary>
         public DbContextContainer()
         {
             _dbContexts = new ConcurrentDictionary<Guid, DbContext>();
         }
+
 
         /// <summary>
         /// 上下文个数
@@ -58,7 +63,8 @@ namespace Kurisu.DataAccessor.Functions.UnitOfWork.Internal
                 var dbContexts = _dbContexts.Select(x => x.Value);
                 foreach (var dbContext in dbContexts)
                 {
-                    (dbContext as IUnitOfWorkDbContext).IsAutomaticSaveChanges = value;
+                    // ReSharper disable once SuspiciousTypeConversion.Global
+                    ((IUnitOfWorkDbContext) dbContext).IsAutomaticSaveChanges = value;
                 }
             }
         }
@@ -72,11 +78,9 @@ namespace Kurisu.DataAccessor.Functions.UnitOfWork.Internal
         /// <summary>
         /// 添加上下文到容器中
         /// </summary>
-        /// <param name="unitOfWorkDbContext"></param>
-        public void Manage(IUnitOfWorkDbContext unitOfWorkDbContext)
+        /// <param name="dbContext"></param>
+        public void Manage(DbContext dbContext)
         {
-            var dbContext = unitOfWorkDbContext.GetUnitOfWorkDbContext();
-
             //非关系型数据库
             if (!dbContext.Database.IsRelational())
                 return;
@@ -230,7 +234,7 @@ namespace Kurisu.DataAccessor.Functions.UnitOfWork.Internal
                 try
                 {
                     //如果指定提交,则直接执行
-                    if (IsAutomaticSaveChanges)
+                    if (!IsAutomaticSaveChanges)
                     {
                         await SaveChangesAsync(acceptAllChangesOnSuccess);
                     }
@@ -266,8 +270,7 @@ namespace Kurisu.DataAccessor.Functions.UnitOfWork.Internal
                 //提交事务
                 try
                 {
-                    //如果指定提交,则直接执行
-                    if (IsAutomaticSaveChanges)
+                    if (!IsAutomaticSaveChanges)
                     {
                         SaveChanges(acceptAllChangesOnSuccess);
                     }

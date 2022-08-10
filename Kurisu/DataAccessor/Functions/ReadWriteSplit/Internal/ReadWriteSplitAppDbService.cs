@@ -7,7 +7,6 @@ using Kurisu.DataAccessor.Dto;
 using Kurisu.DataAccessor.Functions.Default.Internal;
 using Kurisu.DataAccessor.Functions.ReadWriteSplit.Abstractions;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Storage;
 
 namespace Kurisu.DataAccessor.Functions.ReadWriteSplit.Internal
 {
@@ -16,16 +15,15 @@ namespace Kurisu.DataAccessor.Functions.ReadWriteSplit.Internal
     /// </summary>
     public class ReadWriteSplitAppDbService : DefaultAppDbService
     {
-        private readonly IAppSlaveDb _slaveDb;
         private readonly IAppMasterDb _masterDb;
+        private readonly IAppSlaveDb _slaveDb;
 
-        public ReadWriteSplitAppDbService(IAppSlaveDb appSlaveDb, IAppMasterDb appMasterDb) : base(appMasterDb)
+        public ReadWriteSplitAppDbService(IAppMasterDb appMasterDb, IAppSlaveDb appSlaveDb) : base(appMasterDb)
         {
-            _slaveDb = appSlaveDb;
             _masterDb = appMasterDb;
+            _slaveDb = appSlaveDb;
         }
 
-        public override DbContext GetMasterDbContext() => _masterDb.GetMasterDbContext();
         public override DbContext GetSlaveDbContext() => _slaveDb.GetSlaveDbContext();
 
         public override IQueryable<T> Queryable<T>(bool useMasterDb) where T : class
@@ -40,124 +38,12 @@ namespace Kurisu.DataAccessor.Functions.ReadWriteSplit.Internal
                 : _slaveDb.Queryable<T>();
         }
 
-        #region Write
 
         public override IQueryable<T> Queryable<T>() where T : class
         {
             //默认从库
             return Queryable<T>(false);
         }
-
-        public override async Task<int> SaveChangesAsync() => await _masterDb.SaveChangesAsync();
-
-        public override async Task<int> RunSqlAsync(string sql, params object[] args)
-        {
-            return await _masterDb.RunSqlAsync(sql, args);
-        }
-
-
-        public override async Task<int> RunSqlInterAsync(FormattableString strSql)
-        {
-            return await _masterDb.RunSqlInterAsync(strSql);
-        }
-
-        public override async ValueTask SaveAsync(object entity)
-        {
-            await _masterDb.SaveAsync(entity);
-        }
-
-
-        public override async ValueTask SaveAsync<T>(T entity) where T : class
-        {
-            await _masterDb.SaveAsync(entity);
-        }
-
-        public override async ValueTask SaveAsync(IEnumerable<object> entities)
-        {
-            await _masterDb.SaveAsync(entities);
-        }
-
-
-        public override async ValueTask SaveAsync<T>(IEnumerable<T> entities) where T : class
-        {
-            await _masterDb.SaveAsync(entities);
-        }
-
-
-        public override async ValueTask InsertAsync(object entity)
-        {
-            await _masterDb.InsertAsync(entity);
-        }
-
-        public override async ValueTask<object> InsertReturnIdentityAsync(object entity)
-        {
-            return await _masterDb.InsertReturnIdentityAsync(entity);
-        }
-
-        public override async ValueTask<TKey> InsertReturnIdentityAsync<TKey>(object entity)
-        {
-            return await _masterDb.InsertReturnIdentityAsync<TKey>(entity);
-        }
-
-        public override async ValueTask<TKey> InsertReturnIdentityAsync<TKey, TEntity>(TEntity entity) where TEntity : class
-        {
-            return await _masterDb.InsertReturnIdentityAsync<TKey, TEntity>(entity);
-        }
-
-        public override async ValueTask InsertAsync<T>(T entity) where T : class
-        {
-            await _masterDb.InsertAsync(entity);
-        }
-
-        public override async Task InsertRangeAsync<T>(IEnumerable<T> entities) where T : class
-        {
-            await _masterDb.InsertRangeAsync(entities);
-        }
-
-        public override async Task UpdateAsync(object entity, bool updateAll = false)
-        {
-            await _masterDb.UpdateAsync(entity, updateAll);
-        }
-
-        public override async Task UpdateAsync<T>(T entity, bool updateAll = false) where T : class
-        {
-            await _masterDb.UpdateAsync(entity, updateAll);
-        }
-
-
-        public override async Task UpdateRangeAsync<T>(IEnumerable<T> entities, bool updateAll = false) where T : class
-        {
-            await _masterDb.UpdateRangeAsync(entities, updateAll);
-        }
-
-
-        public override async Task DeleteAsync(object entity)
-        {
-            await _masterDb.DeleteAsync(entity);
-        }
-
-        public override async Task DeleteAsync<T>(T entity) where T : class
-        {
-            await _masterDb.DeleteAsync(entity);
-        }
-
-        public override async Task DeleteRangeAsync<T>(IEnumerable<T> entities) where T : class
-        {
-            await _masterDb.DeleteRangeAsync(entities);
-        }
-
-        public override async Task DeleteRangeAsync(IEnumerable<object> entities)
-        {
-            await _masterDb.DeleteRangeAsync(entities);
-        }
-
-
-        public override async Task DeleteByIdAsync<T>(object keyValue) where T : class
-        {
-            await _masterDb.DeleteByIdAsync<T>(keyValue);
-        }
-
-        #endregion
 
         #region Read
 
@@ -242,15 +128,5 @@ namespace Kurisu.DataAccessor.Functions.ReadWriteSplit.Internal
         }
 
         #endregion
-
-        public override async Task<int> UseTransactionAsync(Func<Task> func)
-        {
-            return await _masterDb.UseTransactionAsync(func);
-        }
-
-        public override async Task<IDbContextTransaction> BeginTransactionAsync()
-        {
-            return await _masterDb.BeginTransactionAsync();
-        }
     }
 }

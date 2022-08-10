@@ -10,6 +10,7 @@ namespace Kurisu.Channel.Internal
     /// channel 上下文
     /// </summary>
     /// <typeparam name="TMessage"></typeparam>
+    [SkipScan]
     internal class ChannelContext<TMessage> where TMessage : IChannelMessage
     {
         internal static async Task PublishAsync(TMessage message)
@@ -35,7 +36,7 @@ namespace Kurisu.Channel.Internal
         });
 
 
-        /// <summary>                                                                                                                     x`
+        /// <summary>                                                                                                                
         /// 创建一个读取器
         /// </summary>
         /// <param name="channel"></param>
