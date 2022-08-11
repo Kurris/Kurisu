@@ -1,9 +1,11 @@
 using Kurisu.Channel.Extensions;
+using Kurisu.DataAccessor.Resolvers.Abstractions;
 using Kurisu.Startup;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using WebApiDemo.Entities;
 
 namespace WebApiDemo
 {
@@ -17,6 +19,7 @@ namespace WebApiDemo
         {
             services.AddKurisuChannel();
             base.ConfigureServices(services);
+            services.AddSingleton<IModelConfigurationSourceResolver, HereDefaultModelConfigurationSourceResolver>();
         }
 
         public override void Configure(IApplicationBuilder app, IWebHostEnvironment env)

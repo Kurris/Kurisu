@@ -11,11 +11,15 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "test", "test", "{D1E2CE4D-D
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WebApiDemo", "WebApiDemo\WebApiDemo.csproj", "{D4F05AE0-88AB-47E1-BC9D-42D53D55BC57}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Kurisu.Test.Db", "Kurisu.Test.Db\Kurisu.Test.Db.csproj", "{6D111A9B-9612-4E90-A26F-6FD32BCD4489}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Kurisu.Test.Framework.Db.Method", "Kurisu.Test.Framework.Db.Method\Kurisu.Test.Framework.Db.Method.csproj", "{6D111A9B-9612-4E90-A26F-6FD32BCD4489}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Kurisu.Test.Framework.Configurations", "Kurisu.Test.Framework.Configurations\Kurisu.Test.Framework.Configurations.csproj", "{A1F974B2-A586-4023-9476-6E84062E66E8}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Kurisu.Test.Framework.CurrentUserResolver", "Kurisu.Test.Framework.CurrentUserResolver\Kurisu.Test.Framework.CurrentUserResolver.csproj", "{D4B73BFE-7BC1-428D-8E0F-6A2F3BE2BE9C}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Kurisu.Test.Framework.Db.StartupDefault", "Kurisu.Test.Framework.Db.StartupDefault\Kurisu.Test.Framework.Db.StartupDefault.csproj", "{E333097E-E317-4214-8CB0-00176478002B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Kurisu.Test.Framework.Db.StartupReadWriteSplit", "Kurisu.Test.Framework.Db.StartupReadWriteSplit\Kurisu.Test.Framework.Db.StartupReadWriteSplit.csproj", "{F22E39D0-FFF8-449B-88F0-1BBA1A808BFB}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -43,6 +47,14 @@ Global
 		{D4B73BFE-7BC1-428D-8E0F-6A2F3BE2BE9C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{D4B73BFE-7BC1-428D-8E0F-6A2F3BE2BE9C}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{D4B73BFE-7BC1-428D-8E0F-6A2F3BE2BE9C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E333097E-E317-4214-8CB0-00176478002B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E333097E-E317-4214-8CB0-00176478002B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E333097E-E317-4214-8CB0-00176478002B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E333097E-E317-4214-8CB0-00176478002B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F22E39D0-FFF8-449B-88F0-1BBA1A808BFB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F22E39D0-FFF8-449B-88F0-1BBA1A808BFB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F22E39D0-FFF8-449B-88F0-1BBA1A808BFB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F22E39D0-FFF8-449B-88F0-1BBA1A808BFB}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -53,6 +65,8 @@ Global
 		{6D111A9B-9612-4E90-A26F-6FD32BCD4489} = {D1E2CE4D-D97A-4C04-BE47-3A2B4187784B}
 		{A1F974B2-A586-4023-9476-6E84062E66E8} = {D1E2CE4D-D97A-4C04-BE47-3A2B4187784B}
 		{D4B73BFE-7BC1-428D-8E0F-6A2F3BE2BE9C} = {D1E2CE4D-D97A-4C04-BE47-3A2B4187784B}
+		{E333097E-E317-4214-8CB0-00176478002B} = {D1E2CE4D-D97A-4C04-BE47-3A2B4187784B}
+		{F22E39D0-FFF8-449B-88F0-1BBA1A808BFB} = {D1E2CE4D-D97A-4C04-BE47-3A2B4187784B}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {A5C47A14-B996-4828-919A-EB6F1E544959}

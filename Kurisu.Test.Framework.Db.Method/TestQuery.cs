@@ -6,12 +6,12 @@ using Kurisu.DataAccessor.Abstractions;
 using Kurisu.DataAccessor.Dto;
 using Kurisu.DataAccessor.Extensions;
 using Kurisu.DataAccessor.Functions.Default.Abstractions;
-using Kurisu.Test.Db.DI;
+using Kurisu.Test.Framework.Db.Method.DI;
 using Microsoft.EntityFrameworkCore;
 using weather;
 using Xunit;
 
-namespace Kurisu.Test.Db
+namespace Kurisu.Test.Framework.Db.Method
 {
     [Trait("db", "query")]
     public class TestQuery

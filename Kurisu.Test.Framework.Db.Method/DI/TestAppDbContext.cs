@@ -5,7 +5,7 @@ using Kurisu.DataAccessor.Entity;
 using Microsoft.EntityFrameworkCore;
 using weather;
 
-namespace Kurisu.Test.Db.DI
+namespace Kurisu.Test.Framework.Db.Method.DI
 {
     /// <summary>
     /// AppDbContext 程序默认DbContext

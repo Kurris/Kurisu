@@ -11,7 +11,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
-namespace Kurisu.Test.Db.DI
+namespace Kurisu.Test.Framework.Db.Method.DI
 {
     /// <summary>
     /// db 注入帮助类

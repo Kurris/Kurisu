@@ -3,12 +3,12 @@ using System.Linq;
 using System.Threading.Tasks;
 using Kurisu.DataAccessor.Abstractions;
 using Kurisu.DataAccessor.Functions.Default.Abstractions;
-using Kurisu.Test.Db.DI;
+using Kurisu.Test.Framework.Db.Method.DI;
 using Microsoft.EntityFrameworkCore;
 using weather;
 using Xunit;
 
-namespace Kurisu.Test.Db
+namespace Kurisu.Test.Framework.Db.Method
 {
     [Trait("db", "delete")]
     public class TestDelete

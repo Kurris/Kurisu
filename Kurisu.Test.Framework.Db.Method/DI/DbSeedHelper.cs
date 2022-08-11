@@ -5,7 +5,7 @@ using Kurisu.DataAccessor.Functions.ReadWriteSplit.Abstractions;
 using Kurisu.Utils.Extensions;
 using weather;
 
-namespace Kurisu.Test.Db.DI
+namespace Kurisu.Test.Framework.Db.Method.DI
 {
     public class DbSeedHelper
     {

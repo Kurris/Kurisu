@@ -1,5 +1,4 @@
 ﻿using Kurisu.DataAccessor;
-using Kurisu.DataAccessor.Abstractions.Setting;
 using Kurisu.DataAccessor.Functions.Default.DbContexts;
 using Kurisu.DataAccessor.Functions.ReadWriteSplit.Abstractions;
 using Microsoft.EntityFrameworkCore;
@@ -24,18 +23,7 @@ namespace WebApiDemo
             var mysqlVersion = MySqlServerVersion.LatestSupportedServerVersion;
             dbBuilder.UseMySql(connectionString, mysqlVersion, options => { options.MigrationsAssembly("WebApiDemo"); });
 
-            return new DefaultAppDbContext(dbBuilder.Options, null, null);
-        }
-    }
-
-
-    public class DefaultAppDbContext : DefaultAppDbContext<IAppMasterDb>
-    {
-        public DefaultAppDbContext(DbContextOptions<DefaultAppDbContext<IAppMasterDb>> options
-            , IDefaultValuesOnSaveChangesResolver defaultValuesOnSaveChangesResolver
-            , IQueryFilterResolver queryFilterResolver)
-            : base(options, defaultValuesOnSaveChangesResolver, queryFilterResolver)
-        {
+            return new DefaultAppDbContext(dbBuilder.Options, null, null, null);
         }
     }
 }

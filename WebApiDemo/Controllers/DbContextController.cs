@@ -7,6 +7,7 @@ using Kurisu.DataAccessor.Abstractions;
 using Kurisu.DataAccessor.Extensions;
 using Kurisu.DataAccessor.Functions.Default.Abstractions;
 using Kurisu.DataAccessor.Functions.UnitOfWork.Attributes;
+using Kurisu.UnifyResultAndValidation;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -33,12 +34,18 @@ namespace WebApiDemo.Controllers
             _dbService = dbService;
         }
 
+        [HttpGet("throw")]
+        public void Throw()
+        {
+            throw new UserFriendlyException("异常不会在console显示");
+        }
+
 
         /// <summary>
         /// 查询所有菜单
         /// </summary>
         /// <returns></returns>
-        // [Authorize]
+        [Authorize]
         [HttpGet("doSomething")]
         public async Task<IEnumerable<MenuOutput>> QueryMenus()
         {
