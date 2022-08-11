@@ -1,5 +1,5 @@
 using System;
-using Kurisu.DataAccessor.Abstractions.Setting;
+using Kurisu.DataAccessor.Resolvers.Abstractions;
 using Microsoft.Extensions.Options;
 
 namespace Kurisu.DataAccessor.Resolvers

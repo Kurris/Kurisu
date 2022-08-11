@@ -1,4 +1,5 @@
 using Kurisu.UnifyResultAndValidation.Abstractions;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Kurisu.UnifyResultAndValidation
 {
@@ -6,6 +7,7 @@ namespace Kurisu.UnifyResultAndValidation
     /// 数据结果返回模型
     /// </summary>
     /// <typeparam name="T">数据类型</typeparam>
+    [SkipScan]
     // ReSharper disable once ClassWithVirtualMembersNeverInherited.Global
     public class DefaultApiResult<T> : IApiResult
     {

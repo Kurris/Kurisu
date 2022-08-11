@@ -1,8 +1,11 @@
-﻿namespace Kurisu.UnifyResultAndValidation.Abstractions
+﻿using Microsoft.Extensions.DependencyInjection;
+
+namespace Kurisu.UnifyResultAndValidation.Abstractions
 {
     /// <summary>
     /// api返回值接口
     /// </summary>
+    [SkipScan]
     public interface IApiResult
     {
         /// <summary>

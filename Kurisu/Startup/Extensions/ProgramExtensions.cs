@@ -9,6 +9,10 @@ using Kurisu.Startup;
 // ReSharper disable once CheckNamespace
 namespace Microsoft.Extensions.DependencyInjection
 {
+    /// <summary>
+    /// 程序启动扩展
+    /// </summary>
+    [SkipScan]
     public static class ProgramExtensions
     {
         /// <summary>

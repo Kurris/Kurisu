@@ -7,6 +7,7 @@ namespace Kurisu.Channel.Extensions
     /// <summary>
     /// channel扩展类
     /// </summary>
+    [SkipScan]
     public static class ChannelServiceCollectionExtensions
     {
         /// <summary>

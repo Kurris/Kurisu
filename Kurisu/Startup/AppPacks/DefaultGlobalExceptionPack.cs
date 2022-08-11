@@ -11,6 +11,9 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Kurisu.Startup.AppPacks
 {
+    /// <summary>
+    /// 默认全局异常中间件启动pack
+    /// </summary>
     public class DefaultGlobalExceptionPack : BaseAppPack
     {
         public override int Order => 0;
@@ -22,6 +25,9 @@ namespace Kurisu.Startup.AppPacks
         }
     }
 
+    /// <summary>
+    /// 全局异常中间件
+    /// </summary>
     public class GlobalExceptionMiddleware : BaseMiddleware
     {
         private readonly RequestDelegate _next;
@@ -50,6 +56,7 @@ namespace Kurisu.Startup.AppPacks
                 context.Response.ContentLength = content.Length;
                 await context.Response.BodyWriter.WriteAsync(new ReadOnlyMemory<byte>(content));
 
+                //异常堆栈显示console
                 throw;
             }
         }

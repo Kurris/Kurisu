@@ -4,7 +4,10 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Kurisu.DataAccessor.Abstractions.Setting;
+using Kurisu.DataAccessor.Entity;
 using Kurisu.DataAccessor.Functions.Default.Abstractions;
+using Kurisu.DataAccessor.Functions.ReadWriteSplit.Abstractions;
+using Kurisu.DataAccessor.Resolvers.Abstractions;
 using Microsoft.EntityFrameworkCore;
 
 namespace Kurisu.DataAccessor.Functions.Default.DbContexts
@@ -16,19 +19,25 @@ namespace Kurisu.DataAccessor.Functions.Default.DbContexts
     {
         private readonly IDefaultValuesOnSaveChangesResolver _defaultValuesOnSaveChangesResolver;
         private readonly IQueryFilterResolver _queryFilterResolver;
+        private readonly IModelConfigurationSourceResolver _modelConfigurationSourceResolver;
 
         public DefaultAppDbContext(DbContextOptions<DefaultAppDbContext<TDbService>> options
             , IDefaultValuesOnSaveChangesResolver defaultValuesOnSaveChangesResolver
-            , IQueryFilterResolver queryFilterResolver) : base(options)
+            , IQueryFilterResolver queryFilterResolver
+            , IModelConfigurationSourceResolver modelConfigurationSourceResolver) : base(options)
         {
             _defaultValuesOnSaveChangesResolver = defaultValuesOnSaveChangesResolver;
             _queryFilterResolver = queryFilterResolver;
+            _modelConfigurationSourceResolver = modelConfigurationSourceResolver;
         }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             //定义TableAttribute,并且非继承
-            var entityTypes = App.ActiveTypes.Where(x => x.IsDefined(typeof(TableAttribute), false));
+            var entityTypes = App.ActiveTypes.Where(x => x.IsDefined(typeof(TableAttribute), false)
+                                                         && x.BaseType != null
+                                                         && x.BaseType.IsGenericType
+                                                         && x.BaseType.GetGenericTypeDefinition() == typeof(BaseEntity<>));
 
             foreach (var entityType in entityTypes)
             {
@@ -38,6 +47,13 @@ namespace Kurisu.DataAccessor.Functions.Default.DbContexts
 
                 var builder = modelBuilder.Entity(entityType);
                 _queryFilterResolver?.HandleQueryFilter(builder, entityType);
+            }
+
+            //加载模型配置
+            var assembly = _modelConfigurationSourceResolver?.GetSourceAssembly();
+            if (assembly != null)
+            {
+                modelBuilder.ApplyConfigurationsFromAssembly(assembly);
             }
 
             base.OnModelCreating(modelBuilder);
@@ -59,9 +75,24 @@ namespace Kurisu.DataAccessor.Functions.Default.DbContexts
         /// <summary>
         /// 生成默认值
         /// </summary>
+        // ReSharper disable once VirtualMemberNeverOverridden.Global
         protected virtual void GenerateDefaultValues()
         {
             _defaultValuesOnSaveChangesResolver.OnSaveChanges(this);
+        }
+    }
+
+    /// <summary>
+    /// 程序默认数据库上下文
+    /// </summary>
+    public class DefaultAppDbContext : DefaultAppDbContext<IAppMasterDb>
+    {
+        public DefaultAppDbContext(DbContextOptions<DefaultAppDbContext<IAppMasterDb>> options
+            , IDefaultValuesOnSaveChangesResolver defaultValuesOnSaveChangesResolver
+            , IQueryFilterResolver queryFilterResolver
+            , IModelConfigurationSourceResolver modelConfigurationSourceResolver)
+            : base(options, defaultValuesOnSaveChangesResolver, queryFilterResolver, modelConfigurationSourceResolver)
+        {
         }
     }
 }

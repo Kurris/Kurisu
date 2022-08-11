@@ -11,6 +11,7 @@ namespace Kurisu.UnifyResultAndValidation.Filters
     /// <summary>
     /// 实体验证和包装返回值过滤器
     /// </summary>
+    [SkipScan]
     public class ValidateAndPackResultFilter : IAsyncActionFilter, IAsyncResultFilter
     {
         public async Task OnActionExecutionAsync(ActionExecutingContext context, ActionExecutionDelegate next)

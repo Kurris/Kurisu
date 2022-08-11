@@ -3,6 +3,10 @@ using Kurisu.DependencyInjection.Internal;
 // ReSharper disable once CheckNamespace
 namespace Microsoft.Extensions.DependencyInjection
 {
+    /// <summary>
+    /// 命名服务处理扩展
+    /// </summary>
+    [SkipScan]
     internal static class NamedResolverServiceCollectionExtensions
     {
         /// <summary>

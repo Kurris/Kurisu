@@ -37,6 +37,10 @@ namespace Kurisu.Authentication.Internal
                 : 0;
         }
 
+        /// <summary>
+        /// 获取用户请求token
+        /// </summary>
+        /// <returns></returns>
         public virtual string GetBearerToken()
         {
             var bearerToken = HttpContext.Request.Headers["Authorization"].FirstOrDefault();

@@ -9,6 +9,7 @@ namespace Microsoft.Extensions.DependencyInjection
     /// <summary>
     /// 对象关系映射扩展类
     /// </summary>
+    [SkipScan]
     public static class ObjectMapperServiceCollectionExtensions
     {
         /// <summary>

@@ -1,11 +1,11 @@
 ﻿using Kurisu.DataAccessor;
-using Kurisu.DataAccessor.Abstractions.Setting;
 using Kurisu.DataAccessor.Functions.Default.Abstractions;
 using Kurisu.DataAccessor.Functions.Default.DbContexts;
 using Kurisu.DataAccessor.Functions.Default.Internal;
 using Kurisu.DataAccessor.Functions.ReadWriteSplit.Abstractions;
 using Kurisu.DataAccessor.Functions.ReadWriteSplit.Internal;
 using Kurisu.DataAccessor.Resolvers;
+using Kurisu.DataAccessor.Resolvers.Abstractions;
 using Microsoft.EntityFrameworkCore;
 
 // ReSharper disable once CheckNamespace
@@ -14,6 +14,7 @@ namespace Microsoft.Extensions.DependencyInjection
     /// <summary>
     /// 数据库访问读写分离功能扩展类
     /// </summary>
+    [SkipScan]
     public static class ReadWriteSplitServiceCollectionExtensions
     {
         /// <summary>

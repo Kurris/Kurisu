@@ -8,6 +8,10 @@ using Microsoft.Extensions.Configuration;
 // ReSharper disable once CheckNamespace
 namespace Microsoft.Extensions.DependencyInjection
 {
+    /// <summary>
+    /// 程序自定义包扩展
+    /// </summary>
+    [SkipScan]
     public static class AppPackServiceCollectionExtensions
     {
         /// <summary>

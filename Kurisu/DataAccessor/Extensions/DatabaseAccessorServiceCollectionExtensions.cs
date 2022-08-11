@@ -9,6 +9,7 @@ using Kurisu.DataAccessor.Functions.Default.Internal;
 using Kurisu.DataAccessor.Functions.ReadWriteSplit.Abstractions;
 using Kurisu.DataAccessor.Interceptors;
 using Kurisu.DataAccessor.Resolvers;
+using Kurisu.DataAccessor.Resolvers.Abstractions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
@@ -20,6 +21,7 @@ namespace Microsoft.Extensions.DependencyInjection
     /// <summary>
     /// 数据库访问扩展
     /// </summary>
+    [SkipScan]
     public static class DatabaseAccessorServiceCollectionExtensions
     {
         /// <summary>
@@ -35,6 +37,7 @@ namespace Microsoft.Extensions.DependencyInjection
             services.AddSingleton<IDbConnectStringResolver, DefaultDbConnectStringResolver>();
             services.AddSingleton<IDefaultValuesOnSaveChangesResolver, DefaultValuesOnSaveChangesResolver>();
             services.AddSingleton<IQueryFilterResolver, DefaultQueryFilterResolver>();
+            services.AddSingleton<IModelConfigurationSourceResolver, DefaultModelConfigurationSourceResolver>();
 
             //defualtDbContext
             services.AddKurisuAppDbContext<DefaultAppDbContext<IAppMasterDb>>();

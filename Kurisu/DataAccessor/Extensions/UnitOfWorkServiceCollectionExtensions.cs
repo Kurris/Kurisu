@@ -1,6 +1,5 @@
 using System;
 using Kurisu.DataAccessor;
-using Kurisu.DataAccessor.Functions.Default.DbContexts;
 using Kurisu.DataAccessor.Functions.ReadWriteSplit.Abstractions;
 using Kurisu.DataAccessor.Functions.UnitOfWork.Abstractions;
 using Kurisu.DataAccessor.Functions.UnitOfWork.DbContexts;
@@ -10,6 +9,10 @@ using Microsoft.EntityFrameworkCore;
 // ReSharper disable once CheckNamespace
 namespace Microsoft.Extensions.DependencyInjection
 {
+    /// <summary>
+    /// 数据库工作单元扩展
+    /// </summary>
+    [SkipScan]
     public static class UnitOfWorkServiceCollectionExtensions
     {
         /// <summary>

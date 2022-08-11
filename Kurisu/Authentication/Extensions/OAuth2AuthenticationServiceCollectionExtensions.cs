@@ -10,6 +10,7 @@ namespace Microsoft.Extensions.DependencyInjection
     /// <summary>
     /// 授权扩展
     /// </summary>
+    [SkipScan]
     public static class OAuth2AuthenticationServiceCollectionExtensions
     {
         /// <summary>
