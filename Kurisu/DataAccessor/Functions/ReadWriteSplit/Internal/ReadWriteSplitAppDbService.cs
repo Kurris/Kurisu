@@ -15,27 +15,25 @@ namespace Kurisu.DataAccessor.Functions.ReadWriteSplit.Internal
     /// </summary>
     public class ReadWriteSplitAppDbService : DefaultAppDbService
     {
-        private readonly IAppMasterDb _masterDb;
-        private readonly IAppSlaveDb _slaveDb;
+        protected readonly IAppSlaveDb SlaveDb;
 
         public ReadWriteSplitAppDbService(IAppMasterDb appMasterDb, IAppSlaveDb appSlaveDb) : base(appMasterDb)
         {
-            _masterDb = appMasterDb;
-            _slaveDb = appSlaveDb;
+            SlaveDb = appSlaveDb;
         }
 
-        public override DbContext GetSlaveDbContext() => _slaveDb.GetSlaveDbContext();
+        public override DbContext GetSlaveDbContext() => SlaveDb.GetSlaveDbContext();
 
         public override IQueryable<T> Queryable<T>(bool useMasterDb) where T : class
         {
-            if (_slaveDb == null)
+            if (SlaveDb == null)
             {
-                return _masterDb.Queryable<T>();
+                return MasterDb.Queryable<T>();
             }
 
             return useMasterDb
-                ? _masterDb.Queryable<T>()
-                : _slaveDb.Queryable<T>();
+                ? MasterDb.Queryable<T>()
+                : SlaveDb.Queryable<T>();
         }
 
 
@@ -49,82 +47,82 @@ namespace Kurisu.DataAccessor.Functions.ReadWriteSplit.Internal
 
         public override async Task<T> FirstOrDefaultAsync<T>() where T : class
         {
-            if (_slaveDb == null)
+            if (SlaveDb == null)
             {
-                return await _masterDb.FirstOrDefaultAsync<T>();
+                return await MasterDb.FirstOrDefaultAsync<T>();
             }
 
-            return await _slaveDb.FirstOrDefaultAsync<T>();
+            return await SlaveDb.FirstOrDefaultAsync<T>();
         }
 
         public override async ValueTask<T> FirstOrDefaultAsync<T>(params object[] keyValues) where T : class
         {
-            if (_slaveDb == null)
+            if (SlaveDb == null)
             {
-                return await _masterDb.FirstOrDefaultAsync<T>(keyValues);
+                return await MasterDb.FirstOrDefaultAsync<T>(keyValues);
             }
 
-            return await _slaveDb.FirstOrDefaultAsync<T>(keyValues);
+            return await SlaveDb.FirstOrDefaultAsync<T>(keyValues);
         }
 
         public override async ValueTask<object> FirstOrDefaultAsync(Type type, params object[] keys)
         {
-            if (_slaveDb == null)
+            if (SlaveDb == null)
             {
-                return await _masterDb.FirstOrDefaultAsync(type, keys);
+                return await MasterDb.FirstOrDefaultAsync(type, keys);
             }
 
-            return await _slaveDb.FirstOrDefaultAsync(type, keys);
+            return await SlaveDb.FirstOrDefaultAsync(type, keys);
         }
 
         public override async Task<T> FirstOrDefaultAsync<T>(Expression<Func<T, bool>> predicate) where T : class
         {
-            if (_slaveDb == null)
+            if (SlaveDb == null)
             {
-                return await _masterDb.FirstOrDefaultAsync(predicate);
+                return await MasterDb.FirstOrDefaultAsync(predicate);
             }
 
-            return await _slaveDb.FirstOrDefaultAsync(predicate);
+            return await SlaveDb.FirstOrDefaultAsync(predicate);
         }
 
         public override async Task<List<T>> ToListAsync<T>(Expression<Func<T, bool>> predicate = null) where T : class
         {
-            if (_slaveDb == null)
+            if (SlaveDb == null)
             {
-                return await _masterDb.ToListAsync(predicate);
+                return await MasterDb.ToListAsync(predicate);
             }
 
-            return await _slaveDb.ToListAsync(predicate);
+            return await SlaveDb.ToListAsync(predicate);
         }
 
         public override async Task<Pagination<T>> ToPageAsync<T>(PageInput input) where T : class
         {
-            if (_slaveDb == null)
+            if (SlaveDb == null)
             {
-                return await _masterDb.ToPageAsync<T>(input);
+                return await MasterDb.ToPageAsync<T>(input);
             }
 
-            return await _slaveDb.ToPageAsync<T>(input);
+            return await SlaveDb.ToPageAsync<T>(input);
         }
 
         public override async Task<List<T>> ToListAsync<T>(string sql, params object[] args) where T : class
         {
-            if (_slaveDb == null)
+            if (SlaveDb == null)
             {
-                return await _masterDb.ToListAsync<T>(sql, args);
+                return await MasterDb.ToListAsync<T>(sql, args);
             }
 
-            return await _slaveDb.ToListAsync<T>(sql, args);
+            return await SlaveDb.ToListAsync<T>(sql, args);
         }
 
         public override async Task<T> FirstOrDefaultAsync<T>(string sql, params object[] args) where T : class
         {
-            if (_slaveDb == null)
+            if (SlaveDb == null)
             {
-                return await _masterDb.FirstOrDefaultAsync<T>(sql, args);
+                return await MasterDb.FirstOrDefaultAsync<T>(sql, args);
             }
 
-            return await _slaveDb.FirstOrDefaultAsync<T>(sql, args);
+            return await SlaveDb.FirstOrDefaultAsync<T>(sql, args);
         }
 
         #endregion
