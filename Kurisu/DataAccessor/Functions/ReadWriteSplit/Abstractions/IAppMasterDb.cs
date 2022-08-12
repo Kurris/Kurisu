@@ -22,7 +22,7 @@ namespace Kurisu.DataAccessor.Functions.ReadWriteSplit.Abstractions
         /// </summary>
         /// <returns></returns>
         Task<int> SaveChangesAsync();
-
+        
         #region sql
 
         /// <summary>
@@ -133,7 +133,7 @@ namespace Kurisu.DataAccessor.Functions.ReadWriteSplit.Abstractions
         /// <param name="entities"></param>
         /// <returns></returns>
         Task InsertRangeAsync(IEnumerable<object> entities);
-        
+
         #endregion
 
         #region update

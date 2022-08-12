@@ -1,6 +1,6 @@
 using System.Reflection;
 
-namespace Kurisu.DataAccessor.Resolvers.Abstractions
+namespace Kurisu.DataAccessor.Functions.Default.Abstractions
 {
     /// <summary>
     /// 模型配置来源处理器

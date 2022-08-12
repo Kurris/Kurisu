@@ -2,7 +2,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
-namespace Kurisu.DataAccessor.Resolvers.Abstractions
+namespace Kurisu.DataAccessor.Functions.Default.Abstractions
 {
     /// <summary>
     /// 默认查询过滤处理器

@@ -1,8 +1,8 @@
 using System;
-using Kurisu.DataAccessor.Resolvers.Abstractions;
+using Kurisu.DataAccessor.Functions.Default.Abstractions;
 using Microsoft.Extensions.Options;
 
-namespace Kurisu.DataAccessor.Resolvers
+namespace Kurisu.DataAccessor.Functions.Default.Resolvers
 {
     /// <summary>
     /// 默认数据库连接字符串处理器
@@ -13,10 +13,14 @@ namespace Kurisu.DataAccessor.Resolvers
 
         public DefaultDbConnectStringResolver(IOptions<DbSetting> options)
         {
-            _dbSetting = options?.Value;
+            _dbSetting = options.Value;
         }
 
-
+        /// <summary>
+        /// 获取数据库连接字符串
+        /// </summary>
+        /// <param name="dbType"></param>
+        /// <returns></returns>
         public virtual string GetConnectionString(Type dbType) => _dbSetting.DefaultConnectionString;
     }
 }

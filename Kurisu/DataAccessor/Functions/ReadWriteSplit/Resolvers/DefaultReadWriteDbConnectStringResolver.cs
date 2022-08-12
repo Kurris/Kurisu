@@ -1,10 +1,11 @@
 using System;
 using System.Linq;
 using Kurisu.DataAccessor.Functions.Default.DbContexts;
+using Kurisu.DataAccessor.Functions.Default.Resolvers;
 using Kurisu.DataAccessor.Functions.ReadWriteSplit.Abstractions;
 using Microsoft.Extensions.Options;
 
-namespace Kurisu.DataAccessor.Resolvers
+namespace Kurisu.DataAccessor.Functions.ReadWriteSplit.Resolvers
 {
     /// <summary>
     /// 默认数据库读写分离连接字符串处理器

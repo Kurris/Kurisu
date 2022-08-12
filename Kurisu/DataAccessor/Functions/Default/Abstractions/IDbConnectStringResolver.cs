@@ -1,6 +1,6 @@
 using System;
 
-namespace Kurisu.DataAccessor.Resolvers.Abstractions
+namespace Kurisu.DataAccessor.Functions.Default.Abstractions
 {
     /// <summary>
     /// 数据库连接字符串处理器

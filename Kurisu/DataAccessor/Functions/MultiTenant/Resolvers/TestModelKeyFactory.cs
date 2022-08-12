@@ -1,7 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 
-namespace Kurisu.DataAccessor.Resolvers
+namespace Kurisu.DataAccessor.Functions.MultiTenant.Resolvers
 {
     public class TestModelKeyFactory<TDbContext> : ModelCacheKeyFactory where TDbContext : DbContext
     {

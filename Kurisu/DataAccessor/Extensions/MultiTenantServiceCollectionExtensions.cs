@@ -1,9 +1,9 @@
+using Kurisu.DataAccessor.Functions.Default.Abstractions;
 using Kurisu.DataAccessor.Functions.Default.Internal;
 using Kurisu.DataAccessor.Functions.MultiTenant.DbContexts;
+using Kurisu.DataAccessor.Functions.MultiTenant.Resolvers;
 using Kurisu.DataAccessor.Functions.ReadWriteSplit.Abstractions;
 using Kurisu.DataAccessor.Functions.UnitOfWork.Internal;
-using Kurisu.DataAccessor.Resolvers;
-using Kurisu.DataAccessor.Resolvers.Abstractions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 

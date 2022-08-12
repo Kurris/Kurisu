@@ -6,7 +6,6 @@ using System.Threading.Tasks;
 using Kurisu.DataAccessor.Entity;
 using Kurisu.DataAccessor.Functions.Default.Abstractions;
 using Kurisu.DataAccessor.Functions.ReadWriteSplit.Abstractions;
-using Kurisu.DataAccessor.Resolvers.Abstractions;
 using Microsoft.EntityFrameworkCore;
 
 namespace Kurisu.DataAccessor.Functions.Default.DbContexts
@@ -14,7 +13,7 @@ namespace Kurisu.DataAccessor.Functions.Default.DbContexts
     /// <summary>
     /// AppDbContext 程序默认DbContext
     /// </summary>
-    public class DefaultAppDbContext<TDbService> : DbContext where TDbService : IBaseDbService
+    public class DefaultAppDbContext<TDbService> : DbContext, ISoftDeleted where TDbService : IBaseDbService
     {
         private readonly IDefaultValuesOnSaveChangesResolver _defaultValuesOnSaveChangesResolver;
         private readonly IQueryFilterResolver _queryFilterResolver;
@@ -30,6 +29,8 @@ namespace Kurisu.DataAccessor.Functions.Default.DbContexts
             _queryFilterResolver = queryFilterResolver;
             _modelConfigurationSourceResolver = modelConfigurationSourceResolver;
         }
+
+        public bool IsDeleted { get; set; } = true;
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

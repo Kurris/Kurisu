@@ -2,10 +2,11 @@ using System;
 using System.Linq;
 using System.Linq.Expressions;
 using Kurisu.DataAccessor.Entity;
+using Kurisu.DataAccessor.Functions.Default.Resolvers;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
-namespace Kurisu.DataAccessor.Resolvers
+namespace Kurisu.DataAccessor.Functions.MultiTenant.Resolvers
 {
     /// <summary>
     /// 多租户查询过滤处理器

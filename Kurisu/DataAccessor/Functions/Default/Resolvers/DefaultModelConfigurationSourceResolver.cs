@@ -1,7 +1,7 @@
 using System.Reflection;
-using Kurisu.DataAccessor.Resolvers.Abstractions;
+using Kurisu.DataAccessor.Functions.Default.Abstractions;
 
-namespace Kurisu.DataAccessor.Resolvers
+namespace Kurisu.DataAccessor.Functions.Default.Resolvers
 {
     /// <summary>
     /// 默认模型配置所在程序集来源处理器(no-op)
