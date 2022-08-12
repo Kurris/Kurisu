@@ -123,21 +123,21 @@ namespace Kurisu.DataAccessor.Extensions
 
                 var parameter = Expression.Parameter(typeof(TEntity), "type");
                 var property = typeof(TEntity).GetProperties().First(p => p.Name.Equals(sortField));
-                var propertyAccess = Expression.MakeMemberAccess(parameter, property);
-                var orderByExpression = Expression.Lambda(propertyAccess, parameter);
+                var member = Expression.MakeMemberAccess(parameter, property);
+                var orderByExpression = Expression.Lambda(member, parameter);
 
                 MethodCallExpression resultExpression;
                 if (i == 0)
                 {
                     resultExpression = Expression.Call(
-                        typeof(Queryable), //调用的类型
+                        queryable.ElementType,
                         sortAsc ? "OrderBy" : "OrderByDescending", //方法名称
                         new[] {typeof(TEntity), property.PropertyType}, queryable.Expression, Expression.Quote(orderByExpression));
                 }
                 else
                 {
                     resultExpression = Expression.Call(
-                        typeof(Queryable),
+                        queryable.ElementType,
                         sortAsc ? "ThenBy" : "ThenByDescending",
                         new[] {typeof(TEntity), property.PropertyType}, queryable.Expression, Expression.Quote(orderByExpression));
                 }

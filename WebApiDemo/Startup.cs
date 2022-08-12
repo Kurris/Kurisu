@@ -1,4 +1,5 @@
 using Kurisu.Channel.Extensions;
+using Kurisu.DataAccessor.Extensions;
 using Kurisu.DataAccessor.Resolvers.Abstractions;
 using Kurisu.Startup;
 using Microsoft.AspNetCore.Builder;
@@ -20,6 +21,12 @@ namespace WebApiDemo
             services.AddKurisuChannel();
             base.ConfigureServices(services);
             services.AddSingleton<IModelConfigurationSourceResolver, HereDefaultModelConfigurationSourceResolver>();
+
+            //注入数据访问
+            services.AddKurisuDatabaseAccessor()
+                .AddKurisuUnitOfWork()
+                .AddKurisuReadWriteSplit()
+                .EnableMultiTenantDiscriminator();
         }
 
         public override void Configure(IApplicationBuilder app, IWebHostEnvironment env)

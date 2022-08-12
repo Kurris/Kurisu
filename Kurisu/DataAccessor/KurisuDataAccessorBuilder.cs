@@ -1,3 +1,5 @@
+using System;
+using System.Collections.Generic;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Kurisu.DataAccessor
@@ -13,8 +15,8 @@ namespace Kurisu.DataAccessor
         public IServiceCollection Services { get; set; }
 
         /// <summary>
-        /// 是否为读写分离
+        /// 配置处理
         /// </summary>
-        public bool IsReadWriteSplit { get; set; }
+        public List<Action<KurisuDataAccessorBuilderSetting>> ConfigurationBuilders { get; set; } = new();
     }
 }

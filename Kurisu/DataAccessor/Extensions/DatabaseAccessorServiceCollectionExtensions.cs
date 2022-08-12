@@ -2,7 +2,6 @@ using System;
 using Kurisu.Authentication.Abstractions;
 using Kurisu.Authentication.Internal;
 using Kurisu.DataAccessor;
-using Kurisu.DataAccessor.Abstractions.Setting;
 using Kurisu.DataAccessor.Functions.Default.Abstractions;
 using Kurisu.DataAccessor.Functions.Default.DbContexts;
 using Kurisu.DataAccessor.Functions.Default.Internal;

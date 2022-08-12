@@ -1,6 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 
-namespace Kurisu.DataAccessor.Abstractions.Setting
+namespace Kurisu.DataAccessor.Resolvers.Abstractions
 {
     /// <summary>
     /// DbContext保存时触发默认值生成处理器

@@ -53,8 +53,7 @@ namespace Kurisu.Test.Framework.Db.StartupReadWriteSplit
             var slaveDbString = resolver.GetConnectionString(typeof(DefaultAppDbContext<IAppSlaveDb>));
             Assert.Contains(slaveDbString, new List<string>()
             {
-                "server=isawesome.cn;port=32001;userid=root;password=zxc111;database=demo;Charset=utf8mb4;",
-                "server=isawesome.cn;port=32002;userid=root;password=zxc111;database=demo;Charset=utf8mb4;"
+                "server=isawesome.cn;port=32001;userid=root;password=zxc111;database=demo;Charset=utf8mb4;"
             });
         }
 

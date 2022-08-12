@@ -1,9 +1,5 @@
-using System;
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
 using System.Threading.Tasks;
-using Kurisu.DataAccessor.Abstractions;
 using Kurisu.DataAccessor.Extensions;
 using Kurisu.DataAccessor.Functions.Default.Abstractions;
 using Kurisu.DataAccessor.Functions.UnitOfWork.Attributes;
@@ -74,7 +70,7 @@ namespace WebApiDemo.Controllers
         {
             await _dbService.UseTransactionAsync(async () =>
             {
-                var newMenu = new Menu()
+                var newMenu = new Menu
                 {
                     Code = "1",
                     DisplayName = "diyige caidan",

@@ -8,7 +8,7 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 namespace WebApiDemo.Entities
 {
     [Table("menus")]
-    public class Menu : BaseEntity<int>, ISoftDeleted
+    public class Menu : BaseEntity<int>, ISoftDeleted, ITenantId
     {
         public string Code { get; set; }
         public string PCode { get; set; }
@@ -17,6 +17,8 @@ namespace WebApiDemo.Entities
         public string Icon { get; set; }
         public bool Visible { get; set; }
         public bool IsDeleted { get; set; }
+
+        public int TenantId { get; set; }
     }
 
     public class BlogEntityTypeConfiguration : IEntityTypeConfiguration<Menu>

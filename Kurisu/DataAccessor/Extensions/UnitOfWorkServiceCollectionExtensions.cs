@@ -39,6 +39,10 @@ namespace Microsoft.Extensions.DependencyInjection
             unitOfWorkDbContextResolver ??= provider => provider.GetService<IAppMasterDb>().GetMasterDbContext();
             builder.Services.AddScoped(typeof(IUnitOfWorkDbContext), _ => unitOfWorkDbContextResolver);
 
+            //配置开启工作单元
+            builder.ConfigurationBuilders.Add(x => x.IsEnableUnitOfWork = true);
+            builder.Services.Configure<KurisuDataAccessorBuilderSetting>(x => { builder.ConfigurationBuilders.ForEach(action => action(x)); });
+
             return builder;
         }
     }

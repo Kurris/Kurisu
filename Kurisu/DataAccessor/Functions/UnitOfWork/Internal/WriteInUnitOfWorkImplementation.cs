@@ -124,8 +124,7 @@ namespace Kurisu.DataAccessor.Functions.UnitOfWork.Internal
             //是否unitofwork
             if (DbContext.GetType().IsAssignableTo(typeof(IUnitOfWorkDbContext)))
             {
-                // 由工作单元管理
-                // ReSharper disable once SuspiciousTypeConversion.Global
+                // 不归工作单元管理
                 if (((IUnitOfWorkDbContext) DbContext).IsAutomaticSaveChanges)
                 {
                     return await SaveChangesAsync();

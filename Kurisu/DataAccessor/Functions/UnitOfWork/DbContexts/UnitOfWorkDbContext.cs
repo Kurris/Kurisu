@@ -1,4 +1,3 @@
-using Kurisu.DataAccessor.Abstractions.Setting;
 using Kurisu.DataAccessor.Functions.Default.DbContexts;
 using Kurisu.DataAccessor.Functions.ReadWriteSplit.Abstractions;
 using Kurisu.DataAccessor.Functions.UnitOfWork.Abstractions;

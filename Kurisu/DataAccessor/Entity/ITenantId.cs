@@ -1,14 +1,13 @@
 namespace Kurisu.DataAccessor.Entity
 {
     /// <summary>
-    /// 租户
+    /// 租户Id
     /// </summary>
-    /// <typeparam name="TKey">TenantId类型</typeparam>
-    public interface ITenantId<TKey>
+    public interface ITenantId
     {
         /// <summary>
         /// 租户id
         /// </summary>
-        public TKey TenantId { get; set; }
+        public int TenantId { get; set; }
     }
 }

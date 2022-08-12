@@ -3,11 +3,21 @@ namespace Kurisu.DataAccessor
     /// <summary>
     /// 数据访问builder 配置
     /// </summary>
-    internal class KurisuDataAccessorBuilderSetting
+    public class KurisuDataAccessorBuilderSetting
     {
         /// <summary>
-        /// 读写分离
+        /// 是否开启读写分离
         /// </summary>
-        public bool IsReadWriteSplit { get; set; }
+        public bool IsEnableReadWriteSplit { get; set; }
+
+        /// <summary>
+        /// 是否开启工作单元
+        /// </summary>
+        public bool IsEnableUnitOfWork { get; set; }
+
+        /// <summary>
+        /// 是否开启多租户
+        /// </summary>
+        public bool IsEnableMultiTenant { get; set; }
     }
 }

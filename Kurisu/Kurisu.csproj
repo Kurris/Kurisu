@@ -35,4 +35,8 @@
         <FrameworkReference Include="Microsoft.AspNetCore.App" />
     </ItemGroup>
 
+    <ItemGroup>
+      <Folder Include="DataAccessor\Functions\MultiTenant\Internal" />
+    </ItemGroup>
+
 </Project>

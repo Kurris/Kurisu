@@ -1,4 +1,6 @@
-﻿using Microsoft.AspNetCore.Builder;
+﻿using Kurisu.Authentication.Abstractions;
+using Kurisu.Authentication.Internal;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -24,6 +26,7 @@ namespace Kurisu.Startup
         public virtual void ConfigureServices(IServiceCollection services)
         {
             services.AddHttpContextAccessor();
+            services.AddSingleton<ICurrentTenantInfoResolver, DefaultCurrentTenantInfoResolver>();
             //映射配置文件 
             services.AddKurisuConfiguration(Configuration);
 
@@ -38,11 +41,6 @@ namespace Kurisu.Startup
 
             //依赖注入
             services.AddKurisuDependencyInjection();
-
-            //注入数据访问
-            services.AddKurisuDatabaseAccessor()
-                .AddKurisuUnitOfWork()
-                .AddKurisuReadWriteSplit();
 
             //格式统一
             services.AddKurisuUnifyResult();

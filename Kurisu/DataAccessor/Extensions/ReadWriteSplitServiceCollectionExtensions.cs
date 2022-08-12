@@ -40,8 +40,9 @@ namespace Microsoft.Extensions.DependencyInjection
             //替换IAppDbService
             builder.Services.AddScoped<IAppDbService, ReadWriteSplitAppDbService>();
 
-            //记录当前为读写分离
-            builder.Services.Configure<KurisuDataAccessorBuilderSetting>(x => { x.IsReadWriteSplit = true; });
+            //配置开启读写分离
+            builder.ConfigurationBuilders.Add(x => x.IsEnableReadWriteSplit = true);
+            builder.Services.Configure<KurisuDataAccessorBuilderSetting>(x => { builder.ConfigurationBuilders.ForEach(action => action(x)); });
 
             return builder;
         }

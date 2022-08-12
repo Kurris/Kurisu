@@ -1,5 +1,4 @@
 using System;
-using System.Linq;
 using Kurisu.Authentication;
 using Kurisu.DataAccessor;
 using Microsoft.Extensions.DependencyInjection;
@@ -26,7 +25,7 @@ namespace Kurisu.Test.Framework.Configurations
             var dbSetting = dbOptions.Value;
 
             Assert.NotNull(dbSetting);
-            Assert.Equal(2, dbSetting.ReadConnectionStrings.Count());
+            Assert.Single(dbSetting.ReadConnectionStrings);
             Assert.NotEmpty(dbSetting.DefaultConnectionString);
         }
 

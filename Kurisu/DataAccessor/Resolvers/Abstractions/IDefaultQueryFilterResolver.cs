@@ -1,7 +1,8 @@
 using System;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
-namespace Kurisu.DataAccessor.Abstractions.Setting
+namespace Kurisu.DataAccessor.Resolvers.Abstractions
 {
     /// <summary>
     /// 默认查询过滤处理器
@@ -11,8 +12,9 @@ namespace Kurisu.DataAccessor.Abstractions.Setting
         /// <summary>
         /// 处理软删除实体
         /// </summary>
-        /// <param name="builder"></param>
-        /// <param name="entityType"></param>
-        void HandleQueryFilter(EntityTypeBuilder builder, Type entityType);
+        /// <param name="dbContext">上下文</param>
+        /// <param name="entityType">实体类型</param>
+        /// <param name="builder">实体构建器</param>
+        void HandleQueryFilter(DbContext dbContext, Type entityType, EntityTypeBuilder builder);
     }
 }

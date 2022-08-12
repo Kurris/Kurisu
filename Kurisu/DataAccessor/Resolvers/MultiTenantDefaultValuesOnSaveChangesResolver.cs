@@ -2,36 +2,34 @@ using System;
 using System.Linq;
 using Kurisu.Authentication.Abstractions;
 using Kurisu.DataAccessor.Entity;
-using Kurisu.DataAccessor.Resolvers.Abstractions;
 using Microsoft.EntityFrameworkCore;
 
 namespace Kurisu.DataAccessor.Resolvers
 {
     /// <summary>
-    /// DbContext保存时触发默认值生成处理器
+    /// 多租户数据库上下文保存处理器
     /// </summary>
-    // ReSharper disable once ClassWithVirtualMembersNeverInherited.Global
-    public class DefaultValuesOnSaveChangesResolver : IDefaultValuesOnSaveChangesResolver
+    public class MultiTenantDefaultValuesOnSaveChangesResolver : DefaultValuesOnSaveChangesResolver
     {
         private readonly ICurrentUserInfoResolver _currentUserInfoResolver;
+        private readonly ICurrentTenantInfoResolver _currentTenantInfoResolver;
 
-        public DefaultValuesOnSaveChangesResolver(ICurrentUserInfoResolver currentUserInfoResolver)
+        public MultiTenantDefaultValuesOnSaveChangesResolver(ICurrentUserInfoResolver currentUserInfoResolver
+            , ICurrentTenantInfoResolver currentTenantInfoResolver) : base(currentUserInfoResolver)
         {
             _currentUserInfoResolver = currentUserInfoResolver;
+            _currentTenantInfoResolver = currentTenantInfoResolver;
         }
 
-        protected static readonly string SoftDeletedPropertyName;
+        protected static readonly string TenantProperty;
 
-        static DefaultValuesOnSaveChangesResolver()
+        static MultiTenantDefaultValuesOnSaveChangesResolver()
         {
-            SoftDeletedPropertyName = typeof(ISoftDeleted).GetProperties().First().Name;
+            //SoftDeletedPropertyName = typeof(ISoftDeleted).GetProperties().First().Name;
+            TenantProperty = typeof(ITenantId).GetProperties().First().Name;
         }
 
-        /// <summary>
-        /// 保存修改时
-        /// </summary>
-        /// <param name="dbContext"></param>
-        public virtual void OnSaveChanges(DbContext dbContext)
+        public override void OnSaveChanges(DbContext dbContext)
         {
             var sub = _currentUserInfoResolver.GetSubjectId();
 
@@ -49,6 +47,11 @@ namespace Kurisu.DataAccessor.Resolvers
                         break;
                     case EntityState.Added:
                     {
+                        if (entry.Entity.GetType().IsAssignableTo(typeof(ITenantId)))
+                        {
+                            entry.CurrentValues[TenantProperty] = _currentTenantInfoResolver.GetTenantId();
+                        }
+
                         entry.CurrentValues[nameof(BaseEntity<object>.Creator)] = sub;
                         entry.CurrentValues[nameof(BaseEntity<object>.CreateTime)] = DateTime.Now;
                     }

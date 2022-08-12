@@ -3,7 +3,6 @@ using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using Kurisu.DataAccessor.Abstractions.Setting;
 using Kurisu.DataAccessor.Entity;
 using Kurisu.DataAccessor.Functions.Default.Abstractions;
 using Kurisu.DataAccessor.Functions.ReadWriteSplit.Abstractions;
@@ -20,6 +19,7 @@ namespace Kurisu.DataAccessor.Functions.Default.DbContexts
         private readonly IDefaultValuesOnSaveChangesResolver _defaultValuesOnSaveChangesResolver;
         private readonly IQueryFilterResolver _queryFilterResolver;
         private readonly IModelConfigurationSourceResolver _modelConfigurationSourceResolver;
+
 
         public DefaultAppDbContext(DbContextOptions<DefaultAppDbContext<TDbService>> options
             , IDefaultValuesOnSaveChangesResolver defaultValuesOnSaveChangesResolver
@@ -46,7 +46,7 @@ namespace Kurisu.DataAccessor.Functions.Default.DbContexts
                     continue;
 
                 var builder = modelBuilder.Entity(entityType);
-                _queryFilterResolver?.HandleQueryFilter(builder, entityType);
+                _queryFilterResolver?.HandleQueryFilter(this, entityType, builder);
             }
 
             //加载模型配置

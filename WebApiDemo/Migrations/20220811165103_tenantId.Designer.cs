@@ -3,14 +3,16 @@ using System;
 using Kurisu.DataAccessor.Functions.Default.DbContexts;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace WebApiDemo.Migrations
 {
     [DbContext(typeof(DefaultAppDbContext))]
-    partial class DefaultAppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20220811165103_tenantId")]
+    partial class tenantId
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

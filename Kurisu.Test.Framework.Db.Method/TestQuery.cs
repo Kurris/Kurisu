@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Kurisu.DataAccessor.Abstractions;
 using Kurisu.DataAccessor.Dto;
 using Kurisu.DataAccessor.Extensions;
 using Kurisu.DataAccessor.Functions.Default.Abstractions;
