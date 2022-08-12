@@ -1,6 +1,6 @@
 using Kurisu.Channel.Extensions;
 using Kurisu.DataAccessor.Extensions;
-using Kurisu.DataAccessor.Resolvers.Abstractions;
+using Kurisu.DataAccessor.Functions.Default.Abstractions;
 using Kurisu.Startup;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;

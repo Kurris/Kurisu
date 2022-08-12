@@ -1,7 +1,7 @@
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Reflection;
 using Kurisu.DataAccessor.Entity;
-using Kurisu.DataAccessor.Resolvers;
+using Kurisu.DataAccessor.Functions.Default.Resolvers;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 

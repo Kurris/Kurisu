@@ -1,5 +1,8 @@
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Kurisu;
+using Kurisu.DataAccessor.Entity;
 using Kurisu.DataAccessor.Extensions;
 using Kurisu.DataAccessor.Functions.Default.Abstractions;
 using Kurisu.DataAccessor.Functions.UnitOfWork.Attributes;
@@ -7,6 +10,7 @@ using Kurisu.UnifyResultAndValidation;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using WebApiDemo.Dto.Output;
 using WebApiDemo.Entities;
 
@@ -36,6 +40,22 @@ namespace WebApiDemo.Controllers
             throw new UserFriendlyException("异常不会在console显示");
         }
 
+        /// <summary>
+        /// 删除第一个菜单
+        /// </summary>
+        /// <returns></returns>
+        [Authorize]
+        [HttpDelete]
+        public async Task DeleteMenu()
+        {
+            var menu = await _dbService.FirstOrDefaultAsync<Menu>();
+            if (menu != null)
+            {
+                await _dbService.DeleteAsync(menu);
+                await _dbService.SaveChangesAsync();
+            }
+        }
+
 
         /// <summary>
         /// 查询所有菜单
@@ -45,6 +65,20 @@ namespace WebApiDemo.Controllers
         [HttpGet("doSomething")]
         public async Task<IEnumerable<MenuOutput>> QueryMenus()
         {
+            Console.WriteLine((_dbService.GetMasterDbContext() as ISoftDeleted).IsDeleted);
+
+            var dbService = Scoped.Create(provider =>
+            {
+                var dbService = provider.GetService<IAppDbService>();
+                (dbService.GetMasterDbContext() as ISoftDeleted).IsDeleted = false;
+                Console.WriteLine((provider.GetService<IAppDbService>().GetMasterDbContext() as ISoftDeleted).IsDeleted);
+                return dbService;
+            });
+
+            Console.WriteLine(dbService.Equals(_dbService));
+
+            Console.WriteLine((_dbService.GetMasterDbContext() as ISoftDeleted).IsDeleted);
+
             return await _dbService.Queryable<Menu>().Select<MenuOutput>().ToListAsync();
         }
 

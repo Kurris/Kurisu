@@ -2,9 +2,8 @@ using System;
 using Kurisu.DataAccessor.Functions.Default.Abstractions;
 using Kurisu.DataAccessor.Functions.Default.DbContexts;
 using Kurisu.DataAccessor.Functions.Default.Internal;
+using Kurisu.DataAccessor.Functions.Default.Resolvers;
 using Kurisu.DataAccessor.Functions.ReadWriteSplit.Abstractions;
-using Kurisu.DataAccessor.Resolvers;
-using Kurisu.DataAccessor.Resolvers.Abstractions;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
