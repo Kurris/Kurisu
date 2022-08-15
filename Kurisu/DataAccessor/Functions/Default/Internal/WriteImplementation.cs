@@ -7,6 +7,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Storage;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Kurisu.DataAccessor.Functions.Default.Internal
 {
@@ -14,6 +15,7 @@ namespace Kurisu.DataAccessor.Functions.Default.Internal
     /// 数据操作(写)
     /// </summary>
     // ReSharper disable once ClassWithVirtualMembersNeverInherited.Global
+    [SkipScan]
     public class WriteImplementation : ReadImplementation, IAppMasterDb
     {
         /// <summary>

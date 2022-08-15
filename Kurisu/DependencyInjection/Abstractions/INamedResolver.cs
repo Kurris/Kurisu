@@ -31,6 +31,6 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <typeparam name="TLifeTime">生命周期</typeparam>
         /// <typeparam name="TService">服务类型</typeparam>
         /// <returns></returns>
-        TService GetService<TLifeTime, TService>(string serviceName) where TLifeTime : IDependency where TService : class;
+        TService GetService<TLifeTime, TService>(string serviceName) where TLifeTime : IDependency where TService : class, IDependency;
     }
 }

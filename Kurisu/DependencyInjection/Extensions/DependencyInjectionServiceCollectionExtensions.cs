@@ -20,7 +20,6 @@ namespace Microsoft.Extensions.DependencyInjection
         /// </summary>
         private static readonly ConcurrentDictionary<string, Type> TypeNamedCollection;
 
-
         /// <summary>
         /// 静态初始化
         /// </summary>
@@ -116,7 +115,7 @@ namespace Microsoft.Extensions.DependencyInjection
         private static void InterceptorRegister(this IServiceCollection services)
         {
             var serviceTypes = App.ActiveTypes
-                .Where(x => x.IsAssignableTo(typeof(IAsyncInterceptor))
+                .Where(x => (x.IsAssignableTo(typeof(IAsyncInterceptor)) || x.IsAssignableTo(typeof(IInterceptor)))
                             && x.IsClass
                             && x.IsPublic
                             && !x.IsAbstract
@@ -136,54 +135,32 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <exception cref="ArgumentOutOfRangeException"></exception>
         private static void NamedRegister(this IServiceCollection services)
         {
-            RegisterNamedService<ITransientDependency>(services);
-            RegisterNamedService<IScopeDependency>(services);
-            RegisterNamedService<ISingletonDependency>(services);
-
-            static void RegisterNamedService<TLifeTimeType>(IServiceCollection services) where TLifeTimeType : IDependency
+            var dic = new Dictionary<Type, Type>
             {
-                var registerType = GetRegisterType(typeof(TLifeTimeType));
-                switch (registerType)
+                [typeof(ITransientDependency)] = typeof(Func<string, ITransientDependency, object>),
+                [typeof(IScopeDependency)] = typeof(Func<string, IScopeDependency, object>),
+                [typeof(ISingletonDependency)] = typeof(Func<string, ISingletonDependency, object>),
+            };
+
+            foreach (var entry in dic)
+            {
+                var registerType = GetRegisterType(entry.Key);
+                var life = registerType.ToString();
+                var addFactory = typeof(ServiceCollectionServiceExtensions).GetMethod("Add" + life, new[] {typeof(IServiceCollection), typeof(Type), typeof(Func<IServiceProvider, object>)});
+
+                addFactory.Invoke(null, new object[]
                 {
-                    case RegisterType.Transient:
-                        services.AddTransient(provider =>
+                    services, entry.Value, (Func<IServiceProvider, object>) (provider =>
+                    {
+                        return (Func<string, IDependency, object>) ((named, _) =>
                         {
-                            return (Func<string, ITransientDependency, object>) ((named, _) =>
-                            {
-                                var isRegister = TypeNamedCollection.TryGetValue(named, out var service);
-                                return isRegister
-                                    ? provider.GetService(service)
-                                    : null;
-                            });
+                            var isRegister = TypeNamedCollection.TryGetValue(named, out var service);
+                            return isRegister
+                                ? provider.GetService(service)
+                                : null;
                         });
-                        break;
-                    case RegisterType.Scoped:
-                        services.AddScoped(provider =>
-                        {
-                            return (Func<string, IScopeDependency, object>) ((named, _) =>
-                            {
-                                var isRegister = TypeNamedCollection.TryGetValue(named, out var service);
-                                return isRegister
-                                    ? provider.GetService(service)
-                                    : null;
-                            });
-                        });
-                        break;
-                    case RegisterType.Singleton:
-                        services.AddSingleton(provider =>
-                        {
-                            return (Func<string, ISingletonDependency, object>) ((named, _) =>
-                            {
-                                var isRegister = TypeNamedCollection.TryGetValue(named, out var service);
-                                return isRegister
-                                    ? provider.GetService(service)
-                                    : null;
-                            });
-                        });
-                        break;
-                    default:
-                        throw new ArgumentOutOfRangeException();
-                }
+                    })
+                });
             }
         }
 
@@ -225,107 +202,51 @@ namespace Microsoft.Extensions.DependencyInjection
         private static void Register(IServiceCollection services, Type lifeTimeType, Type service, Type @interface = null, Type[] interceptors = null)
         {
             if (service.IsGenericType)
-            {
-                service = service.MakeGenericType(typeof(object));
-            }
+                service = service.Assembly.GetType(service.Namespace! + "." + service.Name);
+
+            if (@interface != null && @interface.IsGenericType)
+                @interface = @interface.Assembly.GetType(@interface.Namespace! + "." + @interface.Name);
 
             var registerType = GetRegisterType(lifeTimeType);
-            switch (registerType)
+            var life = registerType.ToString();
+
+            var addSelf = typeof(ServiceCollectionServiceExtensions).GetMethod("Add" + life, new[] {typeof(IServiceCollection), typeof(Type)});
+            var addSelfWithInterface = typeof(ServiceCollectionServiceExtensions).GetMethod("Add" + life, new[] {typeof(IServiceCollection), typeof(Type), typeof(Type)});
+            var addFactory = typeof(ServiceCollectionServiceExtensions).GetMethod("Add" + life, new[] {typeof(IServiceCollection), typeof(Type), typeof(Func<IServiceProvider, object>)});
+
+            if (@interface == null)
+                addSelf.Invoke(null, new object[] {services, service});
+            else
             {
-                case RegisterType.Transient:
-                    if (@interface == null)
-                        services.AddTransient(service);
-                    else
+                if (interceptors?.Any() == true)
+                {
+                    addFactory.Invoke(null, new object[]
                     {
-                        if (interceptors?.Any() == true)
+                        services, @interface, (Func<IServiceProvider, object>) (provider =>
                         {
-                            services.AddTransient(@interface, provider =>
+                            var currService = provider.GetService(service);
+                            var currInterceptors = interceptors.Select(x =>
                             {
-                                var currService = provider.GetService(service);
-                                var currInterceptors = interceptors.Select(x =>
+                                var i = provider.GetService(x);
+                                return i switch
                                 {
-                                    var i = provider.GetService(x);
-                                    return i switch
-                                    {
-                                        IAsyncInterceptor asyncInterceptor => asyncInterceptor.ToInterceptor(),
-                                        IInterceptor interceptor => interceptor,
-                                        _ => null
-                                    };
-                                }).Where(x => x != null).ToArray();
-                                return new ProxyGenerator().CreateInterfaceProxyWithTargetInterface(@interface, currService, currInterceptors);
-                            });
-                        }
-                        else
-                        {
-                            services.AddTransient(@interface, service);
-                        }
-                    }
-
-                    break;
-                case RegisterType.Scoped:
-                    if (@interface == null)
-                        services.AddScoped(service);
-                    else
-                    {
-                        if (interceptors?.Any() == true)
-                        {
-                            services.AddScoped(@interface, provider =>
-                            {
-                                var currService = provider.GetService(service);
-                                var currInterceptors = interceptors.Select(x =>
-                                {
-                                    var i = provider.GetService(x);
-                                    return i switch
-                                    {
-                                        IAsyncInterceptor asyncInterceptor => asyncInterceptor.ToInterceptor(),
-                                        IInterceptor interceptor => interceptor,
-                                        _ => null
-                                    };
-                                }).Where(x => x != null).ToArray();
-                                return new ProxyGenerator().CreateInterfaceProxyWithTargetInterface(@interface, currService, currInterceptors);
-                            });
-                        }
-                        else
-                        {
-                            services.AddScoped(@interface, service);
-                        }
-                    }
-
-                    break;
-                case RegisterType.Singleton:
-                    if (@interface == null)
-                        services.AddSingleton(service);
-                    else
-                    {
-                        if (interceptors?.Any() == true)
-                        {
-                            services.AddSingleton(@interface, provider =>
-                            {
-                                var currService = provider.GetService(service);
-                                var currInterceptors = interceptors.Select(x =>
-                                {
-                                    var i = provider.GetService(x);
-                                    return i switch
-                                    {
-                                        IAsyncInterceptor asyncInterceptor => asyncInterceptor.ToInterceptor(),
-                                        IInterceptor interceptor => interceptor,
-                                        _ => null
-                                    };
-                                }).Where(x => x != null).ToArray();
-                                return new ProxyGenerator().CreateInterfaceProxyWithTargetInterface(@interface, currService, currInterceptors);
-                            });
-                        }
-                        else
-                        {
-                            services.AddSingleton(@interface, service);
-                        }
-                    }
-
-                    break;
-                default:
-                    throw new ArgumentOutOfRangeException();
+                                    IAsyncInterceptor asyncInterceptor => asyncInterceptor.ToInterceptor(),
+                                    IInterceptor interceptor => interceptor,
+                                    _ => null
+                                };
+                            }).Where(x => x != null).ToArray();
+                            return new ProxyGenerator().CreateInterfaceProxyWithTargetInterface(@interface, currService, currInterceptors);
+                        })
+                    });
+                }
+                else
+                {
+                    addSelfWithInterface.Invoke(null, new object[] {services, @interface, service});
+                }
             }
         }
+
+
         /*========================================= help methods ====================================================*/
 
         /// <summary>
@@ -335,14 +256,14 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <returns></returns>
         /// <exception cref="ArgumentNullException"></exception>
         /// <exception cref="InvalidCastException"></exception>
-        private static RegisterType GetRegisterType(Type lifeTimeType)
+        private static ServiceLifetime GetRegisterType(Type lifeTimeType)
         {
             //判断注册方式
             return lifeTimeType.Name switch
             {
-                nameof(ITransientDependency) => RegisterType.Transient,
-                nameof(ISingletonDependency) => RegisterType.Singleton,
-                nameof(IScopeDependency) => RegisterType.Scoped,
+                nameof(ITransientDependency) => ServiceLifetime.Transient,
+                nameof(ISingletonDependency) => ServiceLifetime.Singleton,
+                nameof(IScopeDependency) => ServiceLifetime.Scoped,
                 _ => throw new InvalidCastException($"非法生命周期类型{lifeTimeType.Name}")
             };
         }

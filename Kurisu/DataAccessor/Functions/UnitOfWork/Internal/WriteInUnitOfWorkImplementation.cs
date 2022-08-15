@@ -7,6 +7,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Kurisu.DataAccessor.Functions.UnitOfWork.Internal
 {
+    /// <summary>
+    /// 工作单元,写实现
+    /// </summary>
     public class WriteInUnitOfWorkImplementation : WriteImplementation
     {
         public WriteInUnitOfWorkImplementation(DbContext dbContext) : base(dbContext)

@@ -47,7 +47,7 @@ namespace Kurisu.DataAccessor.Functions.UnitOfWork.Internal
 
 
         /// <summary>
-        /// 上下文个数
+        /// 数据库上下文个数
         /// </summary>
         public int Count => _dbContexts.Count;
 
@@ -192,6 +192,10 @@ namespace Kurisu.DataAccessor.Functions.UnitOfWork.Internal
             return this;
         }
 
+        /// <summary>
+        /// 开启事务
+        /// </summary>
+        /// <returns></returns>
         public IDbContextContainer BeginTransaction()
         {
             if (!_dbContexts.Any()) return this;

@@ -56,7 +56,7 @@ namespace Kurisu.Channel.Internal
                     // 并行执行（非等待）
                     async void Action()
                     {
-                        var handler = App.ServiceProvider.GetService<IChannelHandler<TMessage>>();
+                        var handler = InternalApp.ApplicationServices.GetService<IChannelHandler<TMessage>>();
                         if (handler != null)
                         {
                             await handler.InvokeAsync(message);

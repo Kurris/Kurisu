@@ -50,7 +50,7 @@ namespace Kurisu.DependencyInjection.Internal
         /// <typeparam name="TLifeTime">生命周期</typeparam>
         /// <typeparam name="TService">服务类型</typeparam>
         /// <returns></returns>
-        public TService GetService<TLifeTime, TService>(string serviceName) where TLifeTime : IDependency where TService : class
+        public TService GetService<TLifeTime, TService>(string serviceName) where TLifeTime : IDependency where TService : class, IDependency
         {
             var func = _serviceProvider.GetService(typeof(Func<string, TLifeTime, object>)) as Func<string, TLifeTime, object>;
             return func.Invoke(serviceName, default) as TService;

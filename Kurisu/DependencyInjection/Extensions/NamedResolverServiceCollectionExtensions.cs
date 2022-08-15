@@ -16,8 +16,7 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <returns></returns>
         internal static IServiceCollection AddNamedResolver(this IServiceCollection services)
         {
-            services.AddTransient<INamedResolver, NamedResolver>();
-
+            services.AddScoped<INamedResolver, NamedResolver>();
             return services;
         }
     }

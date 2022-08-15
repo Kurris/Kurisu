@@ -19,9 +19,8 @@ namespace Microsoft.Extensions.DependencyInjection
         /// 添加工作单元
         /// </summary>
         /// <param name="builder">数据访问builder</param>
-        /// <param name="unitOfWorkDbContextResolver">工作单元db上下文对象获取处理</param>
         /// <returns></returns>
-        public static IKurisuDataAccessorBuilder AddKurisuUnitOfWork(this IKurisuDataAccessorBuilder builder, Func<IServiceProvider, DbContext> unitOfWorkDbContextResolver = null)
+        public static IKurisuDataAccessorBuilder AddKurisuUnitOfWork(this IKurisuDataAccessorBuilder builder)
         {
             //注册局部工作单元容器
             builder.Services.AddScoped<IDbContextContainer, DbContextContainer>();
@@ -32,12 +31,11 @@ namespace Microsoft.Extensions.DependencyInjection
             builder.Services.AddScoped<IAppMasterDb>(provider =>
             {
                 var masterDbContext = provider.GetService<UnitOfWorkDbContext>();
+                //加入到上下文管理容器中
+                var container = provider.GetService<IDbContextContainer>();
+                container.Manage(masterDbContext);
                 return new WriteInUnitOfWorkImplementation(masterDbContext);
             });
-
-            //工作单元DbContext获取
-            unitOfWorkDbContextResolver ??= provider => provider.GetService<IAppMasterDb>().GetMasterDbContext();
-            builder.Services.AddScoped(typeof(IUnitOfWorkDbContext), _ => unitOfWorkDbContextResolver);
 
             //配置开启工作单元
             builder.ConfigurationBuilders.Add(x => x.IsEnableUnitOfWork = true);

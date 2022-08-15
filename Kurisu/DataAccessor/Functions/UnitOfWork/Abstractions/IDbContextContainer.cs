@@ -10,7 +10,7 @@ namespace Kurisu.DataAccessor.Functions.UnitOfWork.Abstractions
     public interface IDbContextContainer
     {
         /// <summary>
-        /// DbContext数据
+        /// 数据库上下文个数
         /// </summary>
         public int Count { get; }
 

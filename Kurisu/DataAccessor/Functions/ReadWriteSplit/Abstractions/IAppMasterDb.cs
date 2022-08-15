@@ -22,7 +22,7 @@ namespace Kurisu.DataAccessor.Functions.ReadWriteSplit.Abstractions
         /// </summary>
         /// <returns></returns>
         Task<int> SaveChangesAsync();
-        
+
         #region sql
 
         /// <summary>

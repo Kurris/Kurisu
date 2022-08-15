@@ -13,7 +13,7 @@ namespace Kurisu.DataAccessor.Functions.Default.DbContexts
     /// <summary>
     /// AppDbContext 程序默认DbContext
     /// </summary>
-    public class DefaultAppDbContext<TDbService> : DbContext, ISoftDeleted where TDbService : IBaseDbService
+    public class DefaultAppDbContext<TDbService> : DbContext, IDbContextSoftDeleted where TDbService : IBaseDbService
     {
         private readonly IDefaultValuesOnSaveChangesResolver _defaultValuesOnSaveChangesResolver;
         private readonly IQueryFilterResolver _queryFilterResolver;
@@ -30,7 +30,10 @@ namespace Kurisu.DataAccessor.Functions.Default.DbContexts
             _modelConfigurationSourceResolver = modelConfigurationSourceResolver;
         }
 
-        public bool IsDeleted { get; set; } = true;
+        /// <summary>
+        /// 是否开启软删除
+        /// </summary>
+        public bool IsEnableSoftDeleted { get; set; } = true;
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

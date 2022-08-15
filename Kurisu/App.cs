@@ -1,8 +1,10 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using Kurisu.Startup;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Kurisu
@@ -18,9 +20,61 @@ namespace Kurisu
         }
 
         /// <summary>
+        /// 请求上下文
+        /// </summary>
+        public static HttpContext HttpContext => InternalApp.ApplicationServices.GetService<IHttpContextAccessor>()?.HttpContext;
+
+        /// <summary>
         /// 服务提供器
         /// </summary>
-        internal static IServiceProvider ServiceProvider { get; set; }
+        /// <remarks>
+        /// 默认从请求作用域中获取,如果当前不存在<see cref="HttpContext"/>,则从根服务中创建新的作用域,该作用域在请求结束后释放
+        /// </remarks>
+        /// <returns></returns>
+        public static IServiceProvider GetServiceProvider(bool fromRootService = false)
+        {
+            var httpContext = HttpContext;
+
+            if (!fromRootService)
+            {
+                if (httpContext?.RequestServices != null)
+                    return httpContext.RequestServices;
+            }
+
+            //根服务创建的作用域,需要自定义管理
+            var scope = InternalApp.ApplicationServices.CreateScope();
+            AddDisposableObject(scope);
+            return scope.ServiceProvider;
+        }
+
+
+        /// <summary>
+        /// 可释放的对象
+        /// </summary>
+        private static readonly ConcurrentBag<IDisposable> Disposables = new();
+
+        /// <summary>
+        /// 添加可释放的对象
+        /// </summary>
+        /// <param name="disposable"></param>
+        public static void AddDisposableObject(IDisposable disposable)
+        {
+            Disposables.Add(disposable);
+        }
+
+        /// <summary>
+        /// 释放对象
+        /// </summary>
+        public static void Disposes()
+        {
+            foreach (var disposable in Disposables)
+            {
+                disposable.Dispose();
+            }
+
+            Disposables.Clear();
+        }
+
 
         /// <summary>
         /// 应用程序有效类型

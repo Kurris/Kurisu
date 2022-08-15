@@ -13,6 +13,10 @@ namespace Kurisu.DataAccessor.Functions.ReadWriteSplit.Abstractions
     /// </summary>
     public interface IAppSlaveDb : IBaseDbService
     {
+        /// <summary>
+        /// 获取从库上下文
+        /// </summary>
+        /// <returns></returns>
         DbContext GetSlaveDbContext();
 
         /// <summary>

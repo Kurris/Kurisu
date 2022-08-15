@@ -4,6 +4,7 @@ using System.Linq.Expressions;
 using System.Threading;
 using System.Threading.Tasks;
 using Kurisu.DataAccessor.Dto;
+using Kurisu.DataAccessor.Entity;
 using Kurisu.DataAccessor.Functions.Default.Abstractions;
 using Mapster;
 using Microsoft.EntityFrameworkCore;
@@ -173,6 +174,22 @@ namespace Kurisu.DataAccessor.Extensions
             where TEntity : class, new()
         {
             return appDbService.Queryable<TEntity>(userMasterDb).Where(predicate);
+        }
+
+        /// <summary>
+        /// 使用软删除
+        /// </summary>
+        /// <param name="queryable"></param>
+        /// <typeparam name="TEntity"></typeparam>
+        /// <returns></returns>
+        public static IQueryable<TEntity> UseSoftDeleted<TEntity>(this IQueryable<TEntity> queryable) where TEntity : ISoftDeleted, new()
+        {
+            return queryable.Where(x => !x.IsDeleted);
+        }
+
+        public static IQueryable<TEntity> WithTenant<TEntity>(this IQueryable<TEntity> queryable, int tenantId) where TEntity : ITenantId, new()
+        {
+            return queryable.Where(x => x.TenantId == tenantId);
         }
     }
 }

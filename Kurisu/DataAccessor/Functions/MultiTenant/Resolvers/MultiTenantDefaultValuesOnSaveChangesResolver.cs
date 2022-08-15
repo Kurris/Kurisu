@@ -12,13 +12,11 @@ namespace Kurisu.DataAccessor.Functions.MultiTenant.Resolvers
     /// </summary>
     public class MultiTenantDefaultValuesOnSaveChangesResolver : DefaultValuesOnSaveChangesResolver
     {
-        private readonly ICurrentUserInfoResolver _currentUserInfoResolver;
         private readonly ICurrentTenantInfoResolver _currentTenantInfoResolver;
 
         public MultiTenantDefaultValuesOnSaveChangesResolver(ICurrentUserInfoResolver currentUserInfoResolver
             , ICurrentTenantInfoResolver currentTenantInfoResolver) : base(currentUserInfoResolver)
         {
-            _currentUserInfoResolver = currentUserInfoResolver;
             _currentTenantInfoResolver = currentTenantInfoResolver;
         }
 
@@ -26,7 +24,6 @@ namespace Kurisu.DataAccessor.Functions.MultiTenant.Resolvers
 
         static MultiTenantDefaultValuesOnSaveChangesResolver()
         {
-            //SoftDeletedPropertyName = typeof(ISoftDeleted).GetProperties().First().Name;
             TenantProperty = typeof(ITenantId).GetProperties().First().Name;
         }
 

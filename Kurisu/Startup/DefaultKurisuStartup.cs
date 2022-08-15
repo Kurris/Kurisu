@@ -51,12 +51,23 @@ namespace Kurisu.Startup
 
         public virtual void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
-            App.ServiceProvider = app.ApplicationServices;
+            //根服务提供器
+            InternalApp.ApplicationServices = app.ApplicationServices;
 
-            app.UseKurisuAppPacks(env, app.ApplicationServices, true);
-            app.UseRouting();
-            app.UseKurisuAppPacks(env, app.ApplicationServices, false);
-            app.UseEndpoints(endpoints => { endpoints.MapControllers(); });
+            //处理请求中产生的自定义范围对象
+            app.Use(async (_, next) =>
+            {
+                await next();
+                App.Disposes();
+            });
+
+            using (var scope = InternalApp.ApplicationServices.CreateScope())
+            {
+                app.UseKurisuAppPacks(env, scope.ServiceProvider, true);
+                app.UseRouting();
+                app.UseKurisuAppPacks(env, scope.ServiceProvider, false);
+                app.UseEndpoints(endpoints => { endpoints.MapControllers(); });
+            }
         }
     }
 }

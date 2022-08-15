@@ -6,6 +6,7 @@ using Kurisu.DataAccessor.Entity;
 using Kurisu.DataAccessor.Functions.Default.Abstractions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
+using ISoftDeleted = Kurisu.DataAccessor.Entity.ISoftDeleted;
 
 namespace Kurisu.DataAccessor.Functions.Default.Resolvers
 {
@@ -23,7 +24,7 @@ namespace Kurisu.DataAccessor.Functions.Default.Resolvers
         }
 
         protected static readonly string SoftDeletedPropertyName;
-        private static Func<ISoftDeleted, bool> _func;
+        private static Func<IDbContextSoftDeleted, bool> _softDeletedCheckFunc;
 
         static DefaultValuesOnSaveChangesResolver()
         {
@@ -78,27 +79,33 @@ namespace Kurisu.DataAccessor.Functions.Default.Resolvers
         /// <param name="entry"></param>
         protected virtual void OnDeleted(DbContext dbContext, EntityEntry entry)
         {
-            if (_func == null)
+            if (_softDeletedCheckFunc == null)
             {
-                var parameter = Expression.Parameter(typeof(ISoftDeleted));
-                var softDeletedMemberExpression = Expression.Property(Expression.Constant(dbContext), SoftDeletedPropertyName);
+                var parameter = Expression.Parameter(typeof(IDbContextSoftDeleted));
+                var softDeletedMemberExpression = Expression.Property(Expression.Constant(dbContext), typeof(IDbContextSoftDeleted).GetProperties().First());
                 var binaryExpression = Expression.Equal(softDeletedMemberExpression, Expression.Constant(true));
 
-                var lambda = Expression.Lambda<Func<ISoftDeleted, bool>>(binaryExpression, parameter);
-                _func = lambda.Compile();
+                var lambda = Expression.Lambda<Func<IDbContextSoftDeleted, bool>>(binaryExpression, parameter);
+                _softDeletedCheckFunc = lambda.Compile();
             }
 
-            if (entry.Entity.GetType().IsAssignableTo(typeof(ISoftDeleted)) && _func(dbContext as ISoftDeleted))
+            if (entry.Entity.GetType().IsAssignableTo(typeof(ISoftDeleted)) && _softDeletedCheckFunc(dbContext as IDbContextSoftDeleted))
             {
-                entry.State = EntityState.Unchanged;
-                entry.Property(SoftDeletedPropertyName).IsModified = true;
-                entry.CurrentValues[SoftDeletedPropertyName] = true;
+                //实体值主动设置为true,则物理删除
+                if (!Convert.ToBoolean(entry.CurrentValues[SoftDeletedPropertyName]))
+                {
+                    //重置实体状态
+                    entry.State = EntityState.Unchanged;
 
-                entry.Property(nameof(BaseEntity<object>.Updater)).IsModified = true;
-                entry.CurrentValues[nameof(BaseEntity<object>.Updater)] = _sub;
+                    entry.Property(SoftDeletedPropertyName).IsModified = true;
+                    entry.CurrentValues[SoftDeletedPropertyName] = true;
 
-                entry.Property(nameof(BaseEntity<object>.UpdateTime)).IsModified = true;
-                entry.CurrentValues[nameof(BaseEntity<object>.UpdateTime)] = DateTime.Now;
+                    entry.Property(nameof(BaseEntity<object>.Updater)).IsModified = true;
+                    entry.CurrentValues[nameof(BaseEntity<object>.Updater)] = _sub;
+
+                    entry.Property(nameof(BaseEntity<object>.UpdateTime)).IsModified = true;
+                    entry.CurrentValues[nameof(BaseEntity<object>.UpdateTime)] = DateTime.Now;
+                }
             }
         }
     }

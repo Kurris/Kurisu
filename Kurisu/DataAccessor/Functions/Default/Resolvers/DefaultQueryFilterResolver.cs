@@ -4,6 +4,7 @@ using Kurisu.DataAccessor.Entity;
 using Kurisu.DataAccessor.Functions.Default.Abstractions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using ISoftDeleted = Kurisu.DataAccessor.Entity.ISoftDeleted;
 
 namespace Kurisu.DataAccessor.Functions.Default.Resolvers
 {
