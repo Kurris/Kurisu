@@ -3,7 +3,7 @@
     <PropertyGroup>
         <TargetFramework>net5.0</TargetFramework>
         <LangVersion>9</LangVersion>
-        <PackageVersion>0.1.0</PackageVersion>
+        <PackageVersion>0.1.1</PackageVersion>
         <Description>see more : https://github.com/Kurris/Kurisu</Description>
         <Copyright>Kurisu Copyright</Copyright>
         <RepositoryUrl>https://github.com/Kurris/Kurisu</RepositoryUrl>
