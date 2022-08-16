@@ -5,6 +5,7 @@ using System.Linq;
 using System.Reflection;
 using Kurisu.Authentication;
 using Kurisu.MVC;
+using Kurisu.Utils.Extensions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -37,6 +38,11 @@ namespace Kurisu.Startup.AppPacks
         public override void ConfigureServices(IServiceCollection services)
         {
             var setting = Configuration.GetSection(nameof(SwaggerOAuthSetting)).Get<SwaggerOAuthSetting>();
+            if (setting == null)
+            {
+                var swaggerOAuthSetting = new Dictionary<string, string>() {[nameof(SwaggerOAuthSetting)] = new SwaggerOAuthSetting().ToJson()};
+                throw new NullReferenceException(nameof(SwaggerOAuthSetting) + ":\r\n" + swaggerOAuthSetting);
+            }
 
             //eg:配置文件appsetting.json的key如果存在":"，那么解析将会失败
             var needFixeScopes = setting.Scopes.Where(x => x.Key.Contains("|")).ToDictionary(x => x.Key, x => x.Value);

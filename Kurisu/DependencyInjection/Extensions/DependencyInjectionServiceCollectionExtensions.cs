@@ -119,7 +119,8 @@ namespace Microsoft.Extensions.DependencyInjection
                             && x.IsClass
                             && x.IsPublic
                             && !x.IsAbstract
-                            && !x.IsInterface);
+                            && !x.IsInterface
+                            && !x.FullName.StartsWith("Castle.DynamicProxy", StringComparison.OrdinalIgnoreCase));
 
             //仅注册自己
             foreach (var service in serviceTypes)
