@@ -1,4 +1,5 @@
 using System;
+using Kurisu.DataAccessor.Functions.Default.Abstractions;
 using Kurisu.Test.Framework.DI.Dependencies.Abstractions;
 using Kurisu.Test.Framework.DI.Dtos;
 using Microsoft.Extensions.DependencyInjection;
@@ -13,16 +14,19 @@ namespace Kurisu.Test.Framework.DI
         private readonly ITestScopeWithInterceptor _scopeWithInterceptor;
         private readonly IGenericsGet<Cat> _catGenericsGet;
         private readonly IGenericsGet<Dog> _dogGenericsGet;
+        private readonly IAppDbService _appDbService;
 
         public TestDependencies(IServiceProvider serviceProvider
             , ITestScopeWithInterceptor scopeWithInterceptor
             , IGenericsGet<Cat> catGenericsGet
-            , IGenericsGet<Dog> dogGenericsGet)
+            , IGenericsGet<Dog> dogGenericsGet
+            , IAppDbService appDbService)
         {
             _serviceProvider = serviceProvider;
             _scopeWithInterceptor = scopeWithInterceptor;
             _catGenericsGet = catGenericsGet;
             _dogGenericsGet = dogGenericsGet;
+            _appDbService = appDbService;
         }
 
         [Fact]
@@ -34,6 +38,17 @@ namespace Kurisu.Test.Framework.DI
 
             Assert.Equal(str1, str2);
             Assert.Equal(str2, str3);
+        }
+
+
+        [Fact]
+        public void T()
+        {
+            var arr = new[] {0, 1, 2, 3, 4};
+
+            var userName = "ligy";
+            var code = Math.Abs(userName.GetHashCode() % 5);
+            Assert.Contains(code, arr);
         }
 
 
@@ -53,5 +68,6 @@ namespace Kurisu.Test.Framework.DI
             var dogSay = _dogGenericsGet.Say();
             Assert.Equal("wan", dogSay);
         }
+
     }
 }
