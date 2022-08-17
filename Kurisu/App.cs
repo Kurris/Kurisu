@@ -6,6 +6,7 @@ using System.Reflection;
 using Kurisu.Startup;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 
 namespace Kurisu
 {
@@ -18,6 +19,12 @@ namespace Kurisu
         {
             Initialize();
         }
+
+
+        /// <summary>
+        /// 框架应用程序启动日志
+        /// </summary>
+        internal static ILogger<App> Logger => InternalApp.ApplicationServices.GetService<ILogger<App>>();
 
         /// <summary>
         /// 请求上下文

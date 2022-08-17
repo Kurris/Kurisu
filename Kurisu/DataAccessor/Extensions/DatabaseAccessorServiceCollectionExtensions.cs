@@ -87,7 +87,7 @@ namespace Microsoft.Extensions.DependencyInjection
                 var loggerFactory = provider.GetService<ILoggerFactory>();
                 dbContextOptionsBuilder.UseLoggerFactory(loggerFactory);
 
-                //Console.WriteLine("{0}:{1}", typeof(TDbContext), connectionString);
+                //ConsoleDemo.WriteLine("{0}:{1}", typeof(TDbContext), connectionString);
 #endif
             });
         }

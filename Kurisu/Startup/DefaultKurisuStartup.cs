@@ -26,7 +26,10 @@ namespace Kurisu.Startup
         public virtual void ConfigureServices(IServiceCollection services)
         {
             services.AddHttpContextAccessor();
+
+            services.AddSingleton<ICurrentUserInfoResolver, DefaultCurrentUserInfoResolver>();
             services.AddSingleton<ICurrentTenantInfoResolver, DefaultCurrentTenantInfoResolver>();
+
             //映射配置文件 
             services.AddKurisuConfiguration(Configuration);
 
@@ -66,8 +69,9 @@ namespace Kurisu.Startup
                 app.UseKurisuAppPacks(env, scope.ServiceProvider, true);
                 app.UseRouting();
                 app.UseKurisuAppPacks(env, scope.ServiceProvider, false);
-                app.UseEndpoints(endpoints => { endpoints.MapControllers(); });
             }
+
+            app.UseEndpoints(endpoints => { endpoints.MapControllers(); });
         }
     }
 }

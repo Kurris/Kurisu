@@ -3,7 +3,7 @@ using System;
 namespace Kurisu
 {
     /// <summary>
-    /// App副本
+    /// App内部
     /// </summary>
     internal class InternalApp
     {
