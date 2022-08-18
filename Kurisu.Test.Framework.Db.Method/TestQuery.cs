@@ -6,8 +6,8 @@ using Kurisu.DataAccessor.Dto;
 using Kurisu.DataAccessor.Extensions;
 using Kurisu.DataAccessor.Functions.Default.Abstractions;
 using Kurisu.Test.Framework.Db.Method.DI;
+using Kurisu.Test.Framework.Db.Method.Entities;
 using Microsoft.EntityFrameworkCore;
-using weather;
 using Xunit;
 
 namespace Kurisu.Test.Framework.Db.Method

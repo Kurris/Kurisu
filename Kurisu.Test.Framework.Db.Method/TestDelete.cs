@@ -3,8 +3,8 @@ using System.Linq;
 using System.Threading.Tasks;
 using Kurisu.DataAccessor.Functions.Default.Abstractions;
 using Kurisu.Test.Framework.Db.Method.DI;
+using Kurisu.Test.Framework.Db.Method.Entities;
 using Microsoft.EntityFrameworkCore;
-using weather;
 using Xunit;
 
 namespace Kurisu.Test.Framework.Db.Method

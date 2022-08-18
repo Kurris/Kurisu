@@ -2,8 +2,8 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 using Kurisu.DataAccessor.Entity;
+using Kurisu.Test.Framework.Db.Method.Entities;
 using Microsoft.EntityFrameworkCore;
-using weather;
 
 namespace Kurisu.Test.Framework.Db.Method.DI
 {

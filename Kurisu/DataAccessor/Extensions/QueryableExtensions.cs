@@ -3,18 +3,21 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Threading;
 using System.Threading.Tasks;
+using Kurisu.Authentication.Abstractions;
 using Kurisu.DataAccessor.Dto;
 using Kurisu.DataAccessor.Entity;
 using Kurisu.DataAccessor.Functions.Default.Abstractions;
+using Kurisu.Scope;
 using Mapster;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Kurisu.DataAccessor.Extensions
 {
     /// <summary>
     /// 查询扩展类
     /// </summary>
-    public static class QueryExtensions
+    public static class QueryableExtensions
     {
         /// <summary>
         /// 获取分页数据
@@ -187,6 +190,26 @@ namespace Kurisu.DataAccessor.Extensions
             return queryable.Where(x => !x.IsDeleted);
         }
 
+        /// <summary>
+        /// 根据租户查询
+        /// </summary>
+        /// <param name="queryable"></param>
+        /// <typeparam name="TEntity"></typeparam>
+        /// <returns></returns>
+        public static IQueryable<TEntity> WithTenant<TEntity>(this IQueryable<TEntity> queryable) where TEntity : ITenantId, new()
+        {
+            var tenantId = Scoped.Template.Value.Create(x => x.GetService<ICurrentTenantInfoResolver>().GetTenantId());
+            return queryable.Where(x => x.TenantId == tenantId);
+        }
+
+
+        /// <summary>
+        /// 根据租户查询
+        /// </summary>
+        /// <param name="queryable"></param>
+        /// <param name="tenantId"></param>
+        /// <typeparam name="TEntity"></typeparam>
+        /// <returns></returns>
         public static IQueryable<TEntity> WithTenant<TEntity>(this IQueryable<TEntity> queryable, int tenantId) where TEntity : ITenantId, new()
         {
             return queryable.Where(x => x.TenantId == tenantId);

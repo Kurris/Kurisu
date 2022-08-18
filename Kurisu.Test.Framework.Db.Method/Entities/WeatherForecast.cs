@@ -1,7 +1,7 @@
 using System;
 using Kurisu.DataAccessor.Entity;
 
-namespace weather
+namespace Kurisu.Test.Framework.Db.Method.Entities
 {
     public class WeatherForecast : BaseEntity<int>, ISoftDeleted
     {

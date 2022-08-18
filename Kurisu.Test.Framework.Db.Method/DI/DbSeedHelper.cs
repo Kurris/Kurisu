@@ -2,8 +2,8 @@ using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
 using Kurisu.DataAccessor.Functions.ReadWriteSplit.Abstractions;
+using Kurisu.Test.Framework.Db.Method.Entities;
 using Kurisu.Utils.Extensions;
-using weather;
 
 namespace Kurisu.Test.Framework.Db.Method.DI
 {
