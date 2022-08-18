@@ -6,7 +6,6 @@ using Kurisu.DataAccessor.Entity;
 using Kurisu.DataAccessor.Functions.Default.Abstractions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
-using ISoftDeleted = Kurisu.DataAccessor.Entity.ISoftDeleted;
 
 namespace Kurisu.DataAccessor.Functions.Default.Resolvers
 {
@@ -24,7 +23,7 @@ namespace Kurisu.DataAccessor.Functions.Default.Resolvers
         }
 
         protected static readonly string SoftDeletedPropertyName;
-        private static Func<IDbContextSoftDeleted, bool> _softDeletedCheckFunc;
+        private static Func<IDbContextSoftDeleted, bool> _dbContextSoftDeletedCheckHandler;
 
         static DefaultValuesOnSaveChangesResolver()
         {
@@ -57,7 +56,7 @@ namespace Kurisu.DataAccessor.Functions.Default.Resolvers
         /// <param name="entry"></param>
         protected virtual void OnAdded(DbContext dbContext, EntityEntry entry)
         {
-            entry.CurrentValues[nameof(BaseEntity<object>.Creator)] = _sub;
+            entry.CurrentValues[nameof(BaseEntity<object>.CreatedBy)] = _sub;
             entry.CurrentValues[nameof(BaseEntity<object>.CreateTime)] = DateTime.Now;
         }
 
@@ -68,8 +67,8 @@ namespace Kurisu.DataAccessor.Functions.Default.Resolvers
         /// <param name="entry"></param>
         protected virtual void OnModified(DbContext dbContext, EntityEntry entry)
         {
-            entry.CurrentValues[nameof(BaseEntity<object>.Updater)] = _sub;
-            entry.CurrentValues[nameof(BaseEntity<object>.UpdateTime)] = DateTime.Now;
+            entry.CurrentValues[nameof(BaseEntity<object>.ModifiedBy)] = _sub;
+            entry.CurrentValues[nameof(BaseEntity<object>.ModifiedTime)] = DateTime.Now;
         }
 
         /// <summary>
@@ -79,18 +78,20 @@ namespace Kurisu.DataAccessor.Functions.Default.Resolvers
         /// <param name="entry"></param>
         protected virtual void OnDeleted(DbContext dbContext, EntityEntry entry)
         {
-            if (_softDeletedCheckFunc == null)
+            if (_dbContextSoftDeletedCheckHandler == null)
             {
                 var parameter = Expression.Parameter(typeof(IDbContextSoftDeleted));
                 var softDeletedMemberExpression = Expression.Property(Expression.Constant(dbContext), typeof(IDbContextSoftDeleted).GetProperties().First());
                 var binaryExpression = Expression.Equal(softDeletedMemberExpression, Expression.Constant(true));
 
                 var lambda = Expression.Lambda<Func<IDbContextSoftDeleted, bool>>(binaryExpression, parameter);
-                _softDeletedCheckFunc = lambda.Compile();
+                _dbContextSoftDeletedCheckHandler = lambda.Compile();
             }
 
-            if (entry.Entity.GetType().IsAssignableTo(typeof(ISoftDeleted)) && _softDeletedCheckFunc(dbContext as IDbContextSoftDeleted))
+            //实体继承ISoftDeleted并且当前DbContext开启软删除
+            if (entry.Entity.GetType().IsAssignableTo(typeof(ISoftDeleted)) && _dbContextSoftDeletedCheckHandler(dbContext as IDbContextSoftDeleted))
             {
+                //只有在实体 IsSoftDeleted = false 时进行删除时才会软删除
                 //实体值主动设置为true,则物理删除
                 if (!Convert.ToBoolean(entry.CurrentValues[SoftDeletedPropertyName]))
                 {
@@ -100,11 +101,11 @@ namespace Kurisu.DataAccessor.Functions.Default.Resolvers
                     entry.Property(SoftDeletedPropertyName).IsModified = true;
                     entry.CurrentValues[SoftDeletedPropertyName] = true;
 
-                    entry.Property(nameof(BaseEntity<object>.Updater)).IsModified = true;
-                    entry.CurrentValues[nameof(BaseEntity<object>.Updater)] = _sub;
+                    entry.Property(nameof(BaseEntity<object>.ModifiedBy)).IsModified = true;
+                    entry.CurrentValues[nameof(BaseEntity<object>.ModifiedBy)] = _sub;
 
-                    entry.Property(nameof(BaseEntity<object>.UpdateTime)).IsModified = true;
-                    entry.CurrentValues[nameof(BaseEntity<object>.UpdateTime)] = DateTime.Now;
+                    entry.Property(nameof(BaseEntity<object>.ModifiedTime)).IsModified = true;
+                    entry.CurrentValues[nameof(BaseEntity<object>.ModifiedTime)] = DateTime.Now;
                 }
             }
         }

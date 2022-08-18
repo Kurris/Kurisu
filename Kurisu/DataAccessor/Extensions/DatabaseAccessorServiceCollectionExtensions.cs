@@ -91,5 +91,19 @@ namespace Microsoft.Extensions.DependencyInjection
 #endif
             });
         }
+
+
+        /// <summary>
+        /// 关闭软删除功能
+        /// </summary>
+        /// <param name="builder"></param>
+        /// <returns></returns>
+        public static IKurisuDataAccessorBuilder DisableSoftDeleted(this IKurisuDataAccessorBuilder builder)
+        {
+            builder.ConfigurationBuilders.Add(x => x.IsEnableSoftDeleted = false);
+            builder.Services.Configure<KurisuDataAccessorBuilderSetting>(x => { builder.ConfigurationBuilders.ForEach(action => action(x)); });
+
+            return builder;
+        }
     }
 }

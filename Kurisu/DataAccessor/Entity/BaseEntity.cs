@@ -21,7 +21,7 @@ namespace Kurisu.DataAccessor.Entity
         /// </summary>
         [Required(ErrorMessage = "创建人不能为空")]
         [Range(0, int.MaxValue)]
-        public int Creator { get; set; }
+        public int CreatedBy { get; set; }
 
         /// <summary>
         /// 创建时间
@@ -31,14 +31,14 @@ namespace Kurisu.DataAccessor.Entity
         public DateTime CreateTime { get; set; }
 
         /// <summary>
-        /// 更新人
+        /// 修改人
         /// </summary>
-        public int? Updater { get; set; }
+        public int? ModifiedBy{ get; set; }
 
         /// <summary>
-        /// 更新时间
+        /// 修改时间
         /// </summary>
         [Column(TypeName = "datetime(3)")]
-        public DateTime? UpdateTime { get; set; }
+        public DateTime? ModifiedTime { get; set; }
     }
 }

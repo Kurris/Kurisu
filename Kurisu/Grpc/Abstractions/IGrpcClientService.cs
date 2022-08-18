@@ -10,12 +10,14 @@ namespace Kurisu.Grpc.Abstractions
     /// <typeparam name="TClient">Grpc客户端类型</typeparam>
     // ReSharper disable once UnusedTypeParameter
     // ReSharper disable once TypeParameterCanBeVariant
-    public interface IGrpcClientService<TGrpcModule, TClient> : ISingletonDependency where TClient : ClientBase where TGrpcModule : IGrpcModule
+    public interface IGrpcClientService<TGrpcModule, TClient> : ISingletonDependency
+        where TClient : ClientBase
+        where TGrpcModule : IGrpcModule
     {
         /// <summary>
         /// 创建Grpc客户端
         /// </summary>
-        /// <returns></returns>
+        /// <returns>客户端</returns>
         TClient Create();
     }
 }

@@ -6,6 +6,11 @@ namespace Kurisu.DataAccessor
     public class KurisuDataAccessorBuilderSetting
     {
         /// <summary>
+        /// 是否开启软删除(默认:true)
+        /// </summary>
+        public bool IsEnableSoftDeleted { get; set; } = true;
+
+        /// <summary>
         /// 是否开启读写分离
         /// </summary>
         public bool IsEnableReadWriteSplit { get; set; }

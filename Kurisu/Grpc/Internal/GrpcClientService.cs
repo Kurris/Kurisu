@@ -1,9 +1,7 @@
 using System;
-using System.Threading.Tasks;
 using Grpc.Core;
 using Grpc.Net.Client;
 using Grpc.Net.Client.Configuration;
-using Kurisu.Authentication.Abstractions;
 using Kurisu.Grpc.Abstractions;
 using Microsoft.Extensions.Options;
 
@@ -14,20 +12,31 @@ namespace Kurisu.Grpc.Internal
     /// </summary>
     /// <typeparam name="TGrpcModule">Grpc远程模块</typeparam>
     /// <typeparam name="TClient">Grpc客户端类型</typeparam>
-    public class GrpcClientService<TGrpcModule, TClient> : IGrpcClientService<TGrpcModule, TClient> where TClient : ClientBase where TGrpcModule : IGrpcModule
+    public class GrpcClientService<TGrpcModule, TClient> : IGrpcClientService<TGrpcModule, TClient>
+        where TClient : ClientBase
+        where TGrpcModule : IGrpcModule
     {
         private TClient _client;
 
-        private readonly TGrpcModule _grpcModule;
-        private readonly GrpcSetting _grpcSetting;
-
-        public GrpcClientService(IOptions<GrpcSetting> options, TGrpcModule grpcModule)
-        {
-            _grpcModule = grpcModule;
-            _grpcSetting = options.Value;
-        }
+        private readonly string _host;
 
         private readonly object _lock = new();
+
+        /// <summary>
+        /// ctor singleton by IOC
+        /// </summary>
+        /// <param name="options"></param>
+        /// <param name="grpcModule"></param>
+        public GrpcClientService(IOptions<GrpcSetting> options, TGrpcModule grpcModule)
+        {
+            var grpcSetting = options.Value;
+
+            if (!grpcSetting.ServiceRoutes.TryGetValue(grpcModule.Key, out _host))
+            {
+                _host = "unknow";
+            }
+        }
+
 
         /// <summary>
         /// 创建Grpc客户端
@@ -39,24 +48,11 @@ namespace Kurisu.Grpc.Internal
             {
                 lock (_lock)
                 {
-                    // ReSharper disable once ConvertIfStatementToNullCoalescingAssignment
-                    if (_client == null)
-                    {
-                        _client = Activator.CreateInstance(typeof(TClient), CreateAuthenticatedChannel(GetHost())) as TClient;
-                    }
+                    _client ??= Activator.CreateInstance(typeof(TClient), CreateAuthenticatedChannel(_host)) as TClient;
                 }
             }
 
             return _client;
-        }
-
-        /// <summary>
-        /// 获取配置host
-        /// </summary>
-        /// <returns></returns>
-        private string GetHost()
-        {
-            return _grpcSetting.ServiceRoutes.TryGetValue(_grpcModule.Key, out var value) ? value : string.Empty;
         }
 
         /// <summary>
@@ -68,8 +64,6 @@ namespace Kurisu.Grpc.Internal
         {
             return GrpcChannel.ForAddress(address, new GrpcChannelOptions
             {
-                // UnsafeUseInsecureChannelCallCredentials = true,
-                // Credentials = ChannelCredentials.Create(ChannelCredentials.SecureSsl, credentials),
                 ServiceConfig = new ServiceConfig
                 {
                     MethodConfigs =

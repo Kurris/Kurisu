@@ -7,6 +7,7 @@ using Kurisu.DataAccessor.Entity;
 using Kurisu.DataAccessor.Functions.Default.Abstractions;
 using Kurisu.DataAccessor.Functions.ReadWriteSplit.Abstractions;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 
 namespace Kurisu.DataAccessor.Functions.Default.DbContexts
 {
@@ -21,6 +22,7 @@ namespace Kurisu.DataAccessor.Functions.Default.DbContexts
 
 
         public DefaultAppDbContext(DbContextOptions<DefaultAppDbContext<TDbService>> options
+            , IOptions<KurisuDataAccessorBuilderSetting> builderOptions
             , IDefaultValuesOnSaveChangesResolver defaultValuesOnSaveChangesResolver
             , IQueryFilterResolver queryFilterResolver
             , IModelConfigurationSourceResolver modelConfigurationSourceResolver) : base(options)
@@ -28,12 +30,14 @@ namespace Kurisu.DataAccessor.Functions.Default.DbContexts
             _defaultValuesOnSaveChangesResolver = defaultValuesOnSaveChangesResolver;
             _queryFilterResolver = queryFilterResolver;
             _modelConfigurationSourceResolver = modelConfigurationSourceResolver;
+
+            this.IsEnableSoftDeleted = builderOptions.Value.IsEnableSoftDeleted;
         }
 
         /// <summary>
-        /// 是否开启软删除
+        /// 是否开启软删除(默认:true)
         /// </summary>
-        public bool IsEnableSoftDeleted { get; set; } = true;
+        public bool IsEnableSoftDeleted { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -92,10 +96,11 @@ namespace Kurisu.DataAccessor.Functions.Default.DbContexts
     public class DefaultAppDbContext : DefaultAppDbContext<IAppMasterDb>
     {
         public DefaultAppDbContext(DbContextOptions<DefaultAppDbContext<IAppMasterDb>> options
+            , IOptions<KurisuDataAccessorBuilderSetting> builderOptions
             , IDefaultValuesOnSaveChangesResolver defaultValuesOnSaveChangesResolver
             , IQueryFilterResolver queryFilterResolver
             , IModelConfigurationSourceResolver modelConfigurationSourceResolver)
-            : base(options, defaultValuesOnSaveChangesResolver, queryFilterResolver, modelConfigurationSourceResolver)
+            : base(options, builderOptions, defaultValuesOnSaveChangesResolver, queryFilterResolver, modelConfigurationSourceResolver)
         {
         }
     }

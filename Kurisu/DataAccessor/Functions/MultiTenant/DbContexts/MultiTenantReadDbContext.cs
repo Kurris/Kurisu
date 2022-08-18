@@ -4,6 +4,7 @@ using Kurisu.DataAccessor.Functions.Default.Abstractions;
 using Kurisu.DataAccessor.Functions.Default.DbContexts;
 using Kurisu.DataAccessor.Functions.ReadWriteSplit.Abstractions;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 
 namespace Kurisu.DataAccessor.Functions.MultiTenant.DbContexts
 {
@@ -13,11 +14,12 @@ namespace Kurisu.DataAccessor.Functions.MultiTenant.DbContexts
     public class MultiTenantReadDbContext : DefaultAppDbContext<IAppSlaveDb>, ITenantId
     {
         public MultiTenantReadDbContext(DbContextOptions<DefaultAppDbContext<IAppSlaveDb>> options
+            , IOptions<KurisuDataAccessorBuilderSetting> builderOptions
             , IDefaultValuesOnSaveChangesResolver defaultValuesOnSaveChangesResolver
             , IQueryFilterResolver queryFilterResolver
             , IModelConfigurationSourceResolver modelConfigurationSourceResolver
             , ICurrentTenantInfoResolver currentTenantInfoResolver)
-            : base(options, defaultValuesOnSaveChangesResolver, queryFilterResolver, modelConfigurationSourceResolver)
+            : base(options, builderOptions, defaultValuesOnSaveChangesResolver, queryFilterResolver, modelConfigurationSourceResolver)
         {
             TenantId = currentTenantInfoResolver.GetTenantId();
         }

@@ -46,11 +46,11 @@ namespace Kurisu.Test.Framework.Db.Method.DI
                 switch (entity.State)
                 {
                     case EntityState.Modified:
-                        entity.Property(nameof(BaseEntity<object>.Updater)).CurrentValue = sub;
-                        entity.Property(nameof(BaseEntity<object>.UpdateTime)).CurrentValue = DateTime.Now;
+                        entity.Property(nameof(BaseEntity<object>.ModifiedBy)).CurrentValue = sub;
+                        entity.Property(nameof(BaseEntity<object>.ModifiedTime)).CurrentValue = DateTime.Now;
                         break;
                     case EntityState.Added:
-                        entity.Property(nameof(BaseEntity<object>.Creator)).CurrentValue = sub;
+                        entity.Property(nameof(BaseEntity<object>.CreatedBy)).CurrentValue = sub;
                         entity.Property(nameof(BaseEntity<object>.CreateTime)).CurrentValue = DateTime.Now;
                         break;
                 }

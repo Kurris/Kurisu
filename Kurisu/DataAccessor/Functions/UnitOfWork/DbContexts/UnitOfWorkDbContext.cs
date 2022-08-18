@@ -3,6 +3,7 @@ using Kurisu.DataAccessor.Functions.Default.DbContexts;
 using Kurisu.DataAccessor.Functions.ReadWriteSplit.Abstractions;
 using Kurisu.DataAccessor.Functions.UnitOfWork.Abstractions;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 
 namespace Kurisu.DataAccessor.Functions.UnitOfWork.DbContexts
 {
@@ -12,10 +13,11 @@ namespace Kurisu.DataAccessor.Functions.UnitOfWork.DbContexts
     public class UnitOfWorkDbContext : DefaultAppDbContext<IAppMasterDb>, IUnitOfWorkDbContext
     {
         public UnitOfWorkDbContext(DbContextOptions<DefaultAppDbContext<IAppMasterDb>> options
+            , IOptions<KurisuDataAccessorBuilderSetting> builderOptions
             , IDefaultValuesOnSaveChangesResolver defaultValuesOnSaveChangesResolver
             , IQueryFilterResolver queryFilterResolver
             , IModelConfigurationSourceResolver modelConfigurationSourceResolver)
-            : base(options, defaultValuesOnSaveChangesResolver, queryFilterResolver, modelConfigurationSourceResolver)
+            : base(options, builderOptions, defaultValuesOnSaveChangesResolver, queryFilterResolver, modelConfigurationSourceResolver)
         {
         }
 
