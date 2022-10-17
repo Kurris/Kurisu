@@ -11,15 +11,15 @@ namespace Kurisu.MVC
         /// <summary>
         /// 定义api标题组
         /// </summary>
-        /// <param name="title"></param>
-        public ApiDefinitionAttribute(string title)
+        /// <param name="group"></param>
+        public ApiDefinitionAttribute(string group)
         {
-            Title = title;
+            Group = group;
         }
 
         /// <summary>
-        /// api 标题组
+        /// api分组
         /// </summary>
-        public string Title { get; }
+        public string Group { get; }
     }
 }
