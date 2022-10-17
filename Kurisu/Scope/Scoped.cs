@@ -10,13 +10,13 @@ namespace Kurisu.Scope
     public sealed class Scoped
     {
         /// <summary>
-        /// 临时作用域
+        /// 临时作用域,使用完立即释放
         /// </summary>
-        public static Lazy<IScope> Template { get; set; } = new(() => new TemplateScope());
+        public static Lazy<IScope> Template { get; } = new(() => new TemplateScope());
 
         /// <summary>
-        /// 请求作用域
+        /// 请求作用域,在当前请求后释放
         /// </summary>
-        public static Lazy<IScope> Request { get; set; } = new(() => new RequestScope());
+        public static Lazy<IScope> Request { get; } = new(() => new RequestScope());
     }
 }

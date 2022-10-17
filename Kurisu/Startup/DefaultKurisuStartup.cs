@@ -1,6 +1,4 @@
-﻿using Kurisu.Authentication.Abstractions;
-using Kurisu.Authentication.Internal;
-using Microsoft.AspNetCore.Builder;
+﻿using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -26,9 +24,6 @@ namespace Kurisu.Startup
         public virtual void ConfigureServices(IServiceCollection services)
         {
             services.AddHttpContextAccessor();
-
-            services.AddSingleton<ICurrentUserInfoResolver, DefaultCurrentUserInfoResolver>();
-            services.AddSingleton<ICurrentTenantInfoResolver, DefaultCurrentTenantInfoResolver>();
 
             //映射配置文件 
             services.AddKurisuConfiguration(Configuration);

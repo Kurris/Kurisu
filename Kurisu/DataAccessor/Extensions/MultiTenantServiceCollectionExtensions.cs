@@ -1,3 +1,5 @@
+using Kurisu.Authentication.Abstractions;
+using Kurisu.Authentication.Internal;
 using Kurisu.DataAccessor.Functions.Default.Abstractions;
 using Kurisu.DataAccessor.Functions.Default.Internal;
 using Kurisu.DataAccessor.Functions.MultiTenant.DbContexts;
@@ -6,6 +8,7 @@ using Kurisu.DataAccessor.Functions.ReadWriteSplit.Abstractions;
 using Kurisu.DataAccessor.Functions.UnitOfWork.Internal;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace Kurisu.DataAccessor.Extensions
 {
@@ -21,6 +24,8 @@ namespace Kurisu.DataAccessor.Extensions
         /// <param name="builder"></param>
         public static void EnableMultiTenantDiscriminator(this IKurisuDataAccessorBuilder builder)
         {
+            builder.Services.TryAddSingleton<ICurrentTenantInfoResolver, DefaultCurrentTenantInfoResolver>();
+
             //替换数据上下文保存
             builder.Services.AddSingleton<IDefaultValuesOnSaveChangesResolver, MultiTenantDefaultValuesOnSaveChangesResolver>();
 
