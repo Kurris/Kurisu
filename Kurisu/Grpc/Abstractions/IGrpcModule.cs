@@ -3,12 +3,15 @@ using Microsoft.Extensions.DependencyInjection;
 namespace Kurisu.Grpc.Abstractions
 {
     /// <summary>
-    /// Grpc被调用模块
+    /// Grpc模块
     /// </summary>
     public interface IGrpcModule : ISingletonDependency
     {
         /// <summary>
         /// 配置key
+        /// <remarks>
+        /// GrpcSetting.ServiceRoutes的key值
+        /// </remarks>
         /// </summary>
         public string Key { get; set; }
 

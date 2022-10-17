@@ -11,8 +11,8 @@ namespace Kurisu.Grpc.Abstractions
     // ReSharper disable once UnusedTypeParameter
     // ReSharper disable once TypeParameterCanBeVariant
     public interface IGrpcClientService<TGrpcModule, TClient> : ISingletonDependency
-        where TClient : ClientBase
         where TGrpcModule : IGrpcModule
+        where TClient : ClientBase
     {
         /// <summary>
         /// 创建Grpc客户端

@@ -34,10 +34,14 @@ namespace Kurisu.Grpc.Abstractions
                         App.Logger.LogInformation("发现并映射一个{Grpc}###{Name}", "Grpc服务", grpcImplement.FullName);
                     }
                 }
+                else
+                {
+                    App.Logger.LogWarning("映射Grpc服务失败:{Reason}", "找不到扩展方法Grpc.AspNetCore.Server.GrpcEndpointRouteBuilderExtensions");
+                }
             }
             catch (Exception e)
             {
-                App.Logger.LogInformation("映射{Grpc}失败:{Reason}", "Grpc服务", e.Message);
+                App.Logger.LogInformation("映射Grpc服务失败:{Reason}", e.Message);
             }
         }
     }

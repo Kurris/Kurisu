@@ -16,10 +16,17 @@ namespace Kurisu.Grpc.Internal
         where TClient : ClientBase
         where TGrpcModule : IGrpcModule
     {
+        /// <summary>
+        /// Grpc客户端
+        /// </summary>
         private TClient _client;
 
+        /// <summary>
+        /// Grpc服务ip地址
+        /// </summary>
         private readonly string _host;
 
+        //lock
         private readonly object _lock = new();
 
         /// <summary>
@@ -29,8 +36,9 @@ namespace Kurisu.Grpc.Internal
         /// <param name="grpcModule"></param>
         public GrpcClientService(IOptions<GrpcSetting> options, TGrpcModule grpcModule)
         {
-            var grpcSetting = options.Value;
+            if (options.Value == null) throw new ArgumentNullException(nameof(options));
 
+            var grpcSetting = options.Value;
             if (!grpcSetting.ServiceRoutes.TryGetValue(grpcModule.Key, out _host))
             {
                 _host = "unknow";
@@ -44,10 +52,12 @@ namespace Kurisu.Grpc.Internal
         /// <returns></returns>
         public TClient Create()
         {
+            //双if + lock
             if (_client == null)
             {
                 lock (_lock)
                 {
+                    //new XXXClient(GrpcChannel.ForAddress("IP地址"));
                     _client ??= Activator.CreateInstance(typeof(TClient), CreateAuthenticatedChannel(_host)) as TClient;
                 }
             }
@@ -71,13 +81,17 @@ namespace Kurisu.Grpc.Internal
                         new MethodConfig
                         {
                             Names = {MethodName.Default},
-                            RetryPolicy = new RetryPolicy
+                            RetryPolicy = new RetryPolicy //重试
                             {
                                 MaxAttempts = 5,
                                 InitialBackoff = TimeSpan.FromSeconds(1),
                                 MaxBackoff = TimeSpan.FromSeconds(5),
                                 BackoffMultiplier = 1.5,
-                                RetryableStatusCodes = {StatusCode.Unavailable, StatusCode.Internal}
+                                RetryableStatusCodes =
+                                {
+                                    StatusCode.Unavailable,
+                                    StatusCode.Internal
+                                }
                             }
                         }
                     }
