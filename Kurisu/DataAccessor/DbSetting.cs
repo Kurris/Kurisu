@@ -30,7 +30,9 @@ namespace Kurisu.DataAccessor
 
         /// <summary>
         /// sql查询超时时间
+        /// <remarks>
         /// 默认30秒
+        /// </remarks>
         /// </summary>
         public int Timeout { get; set; } = TimeSpan.FromSeconds(30).Seconds;
 

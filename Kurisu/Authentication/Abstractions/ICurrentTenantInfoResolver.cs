@@ -6,7 +6,10 @@ namespace Kurisu.Authentication.Abstractions
     public interface ICurrentTenantInfoResolver
     {
         /// <summary>
-        /// 租户id header请求key
+        /// clasims: tenant; header: X-Requested-TenantId
+        /// <remarks>
+        /// 默认:tenant
+        /// </remarks>
         /// </summary>
         string TenantKey { get; }
 

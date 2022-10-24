@@ -16,9 +16,9 @@ namespace Kurisu.DataAccessor.Functions.UnitOfWork.Attributes
         private readonly bool _isAutomaticSaveChanges;
 
         /// <summary>
-        /// 工作单元,非自动提交
+        /// 工作单元,自动提交
         /// </summary>
-        public UnitOfWorkAttribute() : this(false)
+        public UnitOfWorkAttribute() : this(true)
         {
         }
 
@@ -44,36 +44,24 @@ namespace Kurisu.DataAccessor.Functions.UnitOfWork.Attributes
         public async Task OnActionExecutionAsync(ActionExecutingContext context, ActionExecutionDelegate next)
         {
             var dbContextContainer = context.HttpContext.RequestServices.GetService<IDbContextContainer>();
-            if (dbContextContainer != null)
+            //检查上下文个数,开启事务管理
+            if (dbContextContainer.Count > 0)
             {
-                //检查上下文个数,开启事务管理
-                if (dbContextContainer.Count > 0)
-                {
-                    dbContextContainer.IsAutomaticSaveChanges = _isAutomaticSaveChanges;
+                dbContextContainer.IsAutomaticSaveChanges = _isAutomaticSaveChanges;
 
-                    //开启事务
-                    await dbContextContainer.BeginTransactionAsync();
+                //开启事务
+                await dbContextContainer.BeginTransactionAsync();
 
-                    //获取结果
-                    var result = await next();
+                //执行scope并获取结果
+                var result = await next();
 
-                    //提交事务
-                    await dbContextContainer.CommitTransactionAsync(AcceptAllChangesOnSuccess, result.Exception);
-                }
-                else
-                {
-                    var logger = context.HttpContext.RequestServices.GetService<ILogger<UnitOfWorkAttribute>>();
-                    logger.LogWarning("使用{UnitOfWork}请确保已经使用数据库访问,UnitOfWork:false", nameof(UnitOfWork));
-
-                    await next();
-                }
+                //提交事务
+                await dbContextContainer.CommitTransactionAsync(AcceptAllChangesOnSuccess, result.Exception);
             }
             else
             {
                 var logger = context.HttpContext.RequestServices.GetService<ILogger<UnitOfWorkAttribute>>();
-                logger.LogWarning("确保您已经注册{Method},{Service}:Null,UnitOfWork:false"
-                    , nameof(UnitOfWorkServiceCollectionExtensions.AddKurisuUnitOfWork)
-                    , nameof(IDbContextContainer));
+                logger.LogInformation("数据库上下文管理数为 0 ");
 
                 await next();
             }

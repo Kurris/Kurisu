@@ -82,6 +82,7 @@ namespace Kurisu.DataAccessor.Functions.Default.Resolvers
             {
                 var parameter = Expression.Parameter(typeof(IDbContextSoftDeleted));
                 var softDeletedMemberExpression = Expression.Property(Expression.Constant(dbContext), typeof(IDbContextSoftDeleted).GetProperties().First());
+                //expression : p => p.IsEnableSoftDeleted == true
                 var binaryExpression = Expression.Equal(softDeletedMemberExpression, Expression.Constant(true));
 
                 var lambda = Expression.Lambda<Func<IDbContextSoftDeleted, bool>>(binaryExpression, parameter);

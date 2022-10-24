@@ -24,9 +24,9 @@ namespace Microsoft.Extensions.DependencyInjection
         {
             //注册局部工作单元容器
             builder.Services.AddScoped<IDbContextContainer, DbContextContainer>();
-
             builder.Services.AddKurisuAppDbContext<UnitOfWorkDbContext>();
 
+            //无需处理从库操作
             //替换主实现
             builder.Services.AddScoped<IAppMasterDb>(provider =>
             {

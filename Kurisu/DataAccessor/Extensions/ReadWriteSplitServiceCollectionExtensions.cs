@@ -23,15 +23,15 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <returns></returns>
         public static IKurisuDataAccessorBuilder AddKurisuReadWriteSplit(this IKurisuDataAccessorBuilder builder)
         {
-            //读写分离连接获取
+            //替换读写分离连接
             builder.Services.AddSingleton<IDbConnectStringResolver, DefaultReadWriteDbConnectStringResolver>();
 
-            //增加从库获取
+            //增加从库
             builder.Services.AddKurisuAppDbContext<DefaultAppDbContext<IAppSlaveDb>>();
-
             builder.Services.AddScoped(typeof(IAppSlaveDb), provider =>
             {
                 var slaveDbContext = provider.GetService<DefaultAppDbContext<IAppSlaveDb>>();
+                //取消EF跟踪行为
                 slaveDbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTrackingWithIdentityResolution;
                 return new ReadImplementation(slaveDbContext);
             });
@@ -41,7 +41,10 @@ namespace Microsoft.Extensions.DependencyInjection
 
             //配置开启读写分离
             builder.ConfigurationBuilders.Add(x => x.IsEnableReadWriteSplit = true);
-            builder.Services.Configure<KurisuDataAccessorBuilderSetting>(x => { builder.ConfigurationBuilders.ForEach(action => action(x)); });
+            builder.Services.Configure<KurisuDataAccessorBuilderSetting>(x =>
+            {
+                builder.ConfigurationBuilders.ForEach(action => action(x));
+            });
 
             return builder;
         }

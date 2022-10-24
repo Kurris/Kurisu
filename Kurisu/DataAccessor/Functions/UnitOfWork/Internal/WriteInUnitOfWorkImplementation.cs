@@ -127,14 +127,14 @@ namespace Kurisu.DataAccessor.Functions.UnitOfWork.Internal
             //是否unitofwork
             if (DbContext.GetType().IsAssignableTo(typeof(IUnitOfWorkDbContext)))
             {
-                // 不归工作单元管理
+                // 自动提交
                 if (((IUnitOfWorkDbContext) DbContext).IsAutomaticSaveChanges)
                 {
-                    return await SaveChangesAsync();
+                    return 0;
                 }
             }
 
-            return 0;
+            return await base.SaveChangesAsync();
         }
     }
 }

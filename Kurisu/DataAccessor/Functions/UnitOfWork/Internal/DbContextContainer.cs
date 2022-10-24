@@ -238,7 +238,7 @@ namespace Kurisu.DataAccessor.Functions.UnitOfWork.Internal
                 try
                 {
                     //如果指定提交,则直接执行
-                    if (!IsAutomaticSaveChanges)
+                    if (IsAutomaticSaveChanges)
                     {
                         await SaveChangesAsync(acceptAllChangesOnSuccess);
                     }
@@ -274,7 +274,7 @@ namespace Kurisu.DataAccessor.Functions.UnitOfWork.Internal
                 //提交事务
                 try
                 {
-                    if (!IsAutomaticSaveChanges)
+                    if (IsAutomaticSaveChanges)
                     {
                         SaveChanges(acceptAllChangesOnSuccess);
                     }

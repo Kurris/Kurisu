@@ -7,6 +7,9 @@ namespace Kurisu.DataAccessor.Dto
 {
     /// <summary>
     /// 分页入参数
+    /// <remarks>
+    /// 默认:第1页,20行
+    /// </remarks>
     /// </summary>
     [SkipScan]
     public class PageInput

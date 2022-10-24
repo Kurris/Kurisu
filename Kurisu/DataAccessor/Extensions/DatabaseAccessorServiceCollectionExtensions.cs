@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using Kurisu.Authentication.Abstractions;
 using Kurisu.Authentication.Internal;
 using Kurisu.DataAccessor;
@@ -32,9 +33,13 @@ namespace Microsoft.Extensions.DependencyInjection
         {
             services.TryAddSingleton<ICurrentUserInfoResolver, DefaultCurrentUserInfoResolver>();
 
+            //数据库连接获取
             services.AddSingleton<IDbConnectStringResolver, DefaultDbConnectStringResolver>();
+            //实体保存
             services.AddSingleton<IDefaultValuesOnSaveChangesResolver, DefaultValuesOnSaveChangesResolver>();
+            //查询过滤
             services.AddSingleton<IQueryFilterResolver, DefaultQueryFilterResolver>();
+            //模型配置来源
             services.AddSingleton<IModelConfigurationSourceResolver, DefaultModelConfigurationSourceResolver>();
 
             //defualtDbContext
@@ -50,9 +55,18 @@ namespace Microsoft.Extensions.DependencyInjection
             //IAppDbService
             services.AddScoped<IAppDbService, DefaultAppDbService>();
 
+            // ReSharper disable once ConvertToLocalFunction
+            Action<KurisuDataAccessorBuilderSetting> setOpenSoftDeleted = setting => { setting.IsEnableSoftDeleted = true; };
+            services.Configure(setOpenSoftDeleted);
+
             return new KurisuDataAccessorBuilder
             {
-                Services = services
+                Services = services,
+                ConfigurationBuilders = new List<Action<KurisuDataAccessorBuilderSetting>>
+                {
+                    //开启软删除
+                    setOpenSoftDeleted
+                }
             };
         }
 
@@ -80,7 +94,7 @@ namespace Microsoft.Extensions.DependencyInjection
                     }
                 }).AddInterceptors(provider.GetService<DefaultDbCommandInterceptor>());
 
-                //debug 启用日志
+                //debug 启用日志 , 这里的配置会被serilog覆盖
 #if DEBUG
                 dbContextOptionsBuilder.EnableSensitiveDataLogging().EnableDetailedErrors();
 

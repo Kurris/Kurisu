@@ -11,17 +11,17 @@ namespace Kurisu.DataAccessor.Dto
         /// <summary>
         /// 页码
         /// </summary>
-        public int PageIndex { get; internal set; }
+        public int PageIndex { get; internal init; }
 
         /// <summary>
         /// 页容量
         /// </summary>
-        public int PageSize { get; internal set; }
+        public int PageSize { get; internal init; }
 
         /// <summary>
         /// 总条数
         /// </summary>
-        public int Total { get; set; }
+        public int Total { get; internal init; }
 
         /// <summary>
         /// 总页数
@@ -54,7 +54,7 @@ namespace Kurisu.DataAccessor.Dto
         /// <summary>
         /// 当前页集合
         /// </summary>
-        public List<T> Data { get; set; }
+        public List<T> Data { get; internal init; }
     }
 
     /// <summary>

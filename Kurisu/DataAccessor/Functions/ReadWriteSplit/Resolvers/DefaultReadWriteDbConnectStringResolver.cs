@@ -34,6 +34,7 @@ namespace Kurisu.DataAccessor.Functions.ReadWriteSplit.Resolvers
 
             var connectionString = string.Empty;
 
+            //从库
             if (dbType == typeof(DefaultAppDbContext<IAppSlaveDb>))
             {
                 if (_dbSetting.ReadConnectionStrings?.Any() == true)

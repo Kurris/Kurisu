@@ -17,6 +17,6 @@ namespace Kurisu.DataAccessor
         /// <summary>
         /// 配置处理
         /// </summary>
-        public List<Action<KurisuDataAccessorBuilderSetting>> ConfigurationBuilders { get; set; } = new();
+        public List<Action<KurisuDataAccessorBuilderSetting>> ConfigurationBuilders { get; set; }
     }
 }

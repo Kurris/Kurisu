@@ -47,7 +47,7 @@ namespace Kurisu.DataAccessor.Functions.MultiTenant.Resolvers
             if (entityType.IsAssignableTo(typeof(ISoftDeleted)))
             {
                 var left = lambda.Body;
-                var right = GetSoftDeletedExpression(entityType, parameter).Body;
+                var right = base.GetSoftDeletedExpression(entityType, parameter).Body;
 
                 lambda = Expression.Lambda(Expression.AndAlso(left, right), parameter);
             }

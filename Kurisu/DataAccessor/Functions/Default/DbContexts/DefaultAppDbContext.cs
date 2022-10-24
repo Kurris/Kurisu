@@ -54,11 +54,12 @@ namespace Kurisu.DataAccessor.Functions.Default.DbContexts
                     continue;
 
                 var builder = modelBuilder.Entity(entityType);
-                _queryFilterResolver?.HandleQueryFilter(this, entityType, builder);
+                //查询过滤
+                _queryFilterResolver.HandleQueryFilter(this, entityType, builder);
             }
 
             //加载模型配置
-            var assembly = _modelConfigurationSourceResolver?.GetSourceAssembly();
+            var assembly = _modelConfigurationSourceResolver.GetSourceAssembly();
             if (assembly != null)
             {
                 modelBuilder.ApplyConfigurationsFromAssembly(assembly);
@@ -73,7 +74,7 @@ namespace Kurisu.DataAccessor.Functions.Default.DbContexts
             return base.SaveChanges(acceptAllChangesOnSuccess);
         }
 
-        public override Task<int> SaveChangesAsync(bool acceptAllChangesOnSuccess, CancellationToken cancellationToken = new CancellationToken())
+        public override Task<int> SaveChangesAsync(bool acceptAllChangesOnSuccess, CancellationToken cancellationToken = new())
         {
             GenerateDefaultValues();
             return base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
