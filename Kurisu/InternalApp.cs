@@ -8,7 +8,7 @@ namespace Kurisu
     internal class InternalApp
     {
         /// <summary>
-        /// 根服务提供器
+        /// 根服务提供器,对应dotnetcore在ConfigureServices中生成的IServiceProvider
         /// </summary>
         internal static IServiceProvider ApplicationServices { get; set; }
     }

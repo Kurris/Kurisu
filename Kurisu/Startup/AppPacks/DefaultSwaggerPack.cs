@@ -80,7 +80,7 @@ namespace Kurisu.Startup.AppPacks
                     var apiInfo = method.DeclaringType?.GetCustomAttribute<ApiDefinitionAttribute>();
                     if (apiInfo != null)
                     {
-                        return title == apiInfo.Title;
+                        return title == apiInfo.Group;
                     }
 
                     //没有分组的api
@@ -165,11 +165,11 @@ namespace Kurisu.Startup.AppPacks
             {
                 var appInfo = controller.GetCustomAttribute<ApiDefinitionAttribute>();
 
-                if (_apiInfos.All(x => x.Title != appInfo.Title))
+                if (_apiInfos.All(x => x.Title != appInfo.Group))
                 {
                     _apiInfos.Add(new OpenApiInfo
                     {
-                        Title = appInfo.Title,
+                        Title = appInfo.Group,
                         Version = "v1"
                     });
                 }

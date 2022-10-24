@@ -23,6 +23,7 @@ namespace Kurisu.Startup
 
         public virtual void ConfigureServices(IServiceCollection services)
         {
+            //IHttpContextAccessor -> HttpContent
             services.AddHttpContextAccessor();
 
             //映射配置文件 
@@ -30,6 +31,7 @@ namespace Kurisu.Startup
 
             //处理api响应时,循环序列化问题
             //返回json为驼峰命名
+            //时间格式
             services.AddControllers().AddNewtonsoftJson(options =>
             {
                 options.SerializerSettings.ReferenceLoopHandling = ReferenceLoopHandling.Ignore;
@@ -49,13 +51,16 @@ namespace Kurisu.Startup
 
         public virtual void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
-            //根服务提供器
+            //根服务提供器,应用程序唯一
             InternalApp.ApplicationServices = app.ApplicationServices;
 
             //处理请求中产生的自定义范围对象
             app.Use(async (_, next) =>
             {
+                //管道执行
                 await next();
+
+                //释放当前请求作用域申请的IServiceProvide
                 App.Disposes();
             });
 

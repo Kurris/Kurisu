@@ -1,4 +1,3 @@
-using System.Security.Claims;
 using Kurisu.Authentication.Abstractions;
 using Microsoft.AspNetCore.Http;
 
