@@ -63,12 +63,15 @@ namespace Kurisu.ConfigurableOptions.Generations
                         ["Microsoft.EntityFrameworkCore.Database.Command"] = "Information"
                     }
                 },
-                WriteTo = new Dictionary<string, object>()
+                WriteTo = new List<object>
                 {
-                    ["Name"] = "Console",
-                    ["Args"] = new
+                    new
                     {
-                        outputTemplate = "[{Timestamp:HH:mm:ss} {Level:u3}] [{SourceContext}] {Message:lj}{NewLine}{Exception}"
+                        Name = "Console",
+                        Args = new
+                        {
+                            outputTemplate = "[{Timestamp:HH:mm:ss} {Level:u3}] [{SourceContext}] {Message:lj}{NewLine}{Exception}"
+                        }
                     }
                 }
             });

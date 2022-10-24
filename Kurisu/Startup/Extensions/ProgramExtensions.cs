@@ -4,7 +4,6 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Serilog;
 using System;
-using Kurisu;
 using Kurisu.Grpc;
 using Kurisu.Startup;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
@@ -76,7 +75,6 @@ namespace Microsoft.Extensions.DependencyInjection
         /// </summary>
         /// <param name="hostBuilder"></param>
         /// <param name="startup"></param>
-        /// <param name="useGrpc"></param>
         // ReSharper disable once MemberCanBePrivate.Global
         public static void RunKurisu(this IHostBuilder hostBuilder, Type startup)
         {
