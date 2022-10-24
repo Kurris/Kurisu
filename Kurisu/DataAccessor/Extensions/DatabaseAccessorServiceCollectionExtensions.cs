@@ -31,6 +31,7 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <returns></returns>
         public static IKurisuDataAccessorBuilder AddKurisuDatabaseAccessor(this IServiceCollection services)
         {
+            services.AddHttpContextAccessor();
             services.TryAddSingleton<ICurrentUserInfoResolver, DefaultCurrentUserInfoResolver>();
 
             //数据库连接获取

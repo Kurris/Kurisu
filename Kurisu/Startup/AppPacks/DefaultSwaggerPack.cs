@@ -5,7 +5,6 @@ using System.Linq;
 using System.Reflection;
 using Kurisu.Authentication;
 using Kurisu.MVC;
-using Kurisu.Utils.Extensions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -24,14 +23,14 @@ namespace Kurisu.Startup.AppPacks
     /// </summary>
     public class DefaultSwaggerPack : BaseAppPack
     {
+        private static List<OpenApiInfo> _apiInfos;
+
         public DefaultSwaggerPack()
         {
             Initialize();
         }
 
         public override int Order => 1;
-
-        private static List<OpenApiInfo> _apiInfos;
 
         public override bool IsBeforeUseRouting => true;
 
@@ -40,8 +39,7 @@ namespace Kurisu.Startup.AppPacks
             var setting = Configuration.GetSection(nameof(SwaggerOAuthSetting)).Get<SwaggerOAuthSetting>();
             if (setting == null)
             {
-                var swaggerOAuthSetting = new Dictionary<string, string>() {[nameof(SwaggerOAuthSetting)] = new SwaggerOAuthSetting().ToJson()};
-                throw new NullReferenceException(nameof(SwaggerOAuthSetting) + ":\r\n" + swaggerOAuthSetting);
+                throw new NullReferenceException(nameof(SwaggerOAuthSetting));
             }
 
             //eg:配置文件appsetting.json的key如果存在":"，那么解析将会失败
@@ -72,7 +70,7 @@ namespace Kurisu.Startup.AppPacks
                 _apiInfos.ForEach(info => { c.SwaggerDoc(info.Title, info); });
 
                 //api definition 切换(右上角下拉切换)
-                c.DocInclusionPredicate((title, description) =>
+                c.DocInclusionPredicate((group, description) =>
                 {
                     if (!description.TryGetMethodInfo(out MethodInfo method))
                         return false;
@@ -80,15 +78,17 @@ namespace Kurisu.Startup.AppPacks
                     var apiInfo = method.DeclaringType?.GetCustomAttribute<ApiDefinitionAttribute>();
                     if (apiInfo != null)
                     {
-                        return title == apiInfo.Group;
+                        return group == apiInfo.Group;
                     }
 
                     //没有分组的api
-                    return title == "v1";
+                    return group == "v1";
                 });
 
                 //加载xml注释文件
-                Directory.GetFiles(AppDomain.CurrentDomain.BaseDirectory, "*.xml").ToList().ForEach(file => c.IncludeXmlComments(file));
+                Directory.GetFiles(AppDomain.CurrentDomain.BaseDirectory, "*.xml")
+                    .ToList()
+                    .ForEach(file => c.IncludeXmlComments(file));
 
                 c.OperationFilter<AddResponseHeadersFilter>();
                 c.OperationFilter<AppendAuthorizeToSummaryOperationFilter>();

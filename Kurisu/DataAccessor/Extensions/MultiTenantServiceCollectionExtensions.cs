@@ -24,6 +24,7 @@ namespace Kurisu.DataAccessor.Extensions
         /// <param name="builder"></param>
         public static void EnableMultiTenantDiscriminator(this IKurisuDataAccessorBuilder builder)
         {
+            builder.Services.AddHttpContextAccessor();
             builder.Services.TryAddSingleton<ICurrentTenantInfoResolver, DefaultCurrentTenantInfoResolver>();
 
             //替换数据上下文保存

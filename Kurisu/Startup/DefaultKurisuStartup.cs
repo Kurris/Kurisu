@@ -23,9 +23,6 @@ namespace Kurisu.Startup
 
         public virtual void ConfigureServices(IServiceCollection services)
         {
-            //IHttpContextAccessor -> HttpContent
-            services.AddHttpContextAccessor();
-
             //映射配置文件 
             services.AddKurisuConfiguration(Configuration);
 

@@ -20,7 +20,7 @@ namespace Kurisu.Startup
         /// <summary>
         /// 启动顺序
         /// </summary>
-        public virtual int Order => 1;
+        public virtual int Order => 0;
 
         /// <summary>
         /// 是否启用
