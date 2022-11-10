@@ -22,7 +22,7 @@ namespace Kurisu.DataAccessor.Functions.Default.Internal
         {
             MasterDb = appMasterDb;
         }
-
+        
         public virtual DbContext GetMasterDbContext() => MasterDb.GetMasterDbContext();
         public virtual DbContext GetSlaveDbContext() => null;
 

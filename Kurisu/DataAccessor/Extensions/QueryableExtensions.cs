@@ -10,9 +10,9 @@ using Kurisu.DataAccessor.Functions.Default.Abstractions;
 using Kurisu.Scope;
 using Mapster;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
 
-namespace Kurisu.DataAccessor.Extensions
+// ReSharper disable once CheckNamespace
+namespace Microsoft.Extensions.DependencyInjection
 {
     /// <summary>
     /// 查询扩展类

@@ -1,7 +1,5 @@
 using System;
 using System.Collections.Generic;
-using Kurisu.Authentication.Abstractions;
-using Kurisu.Authentication.Internal;
 using Kurisu.DataAccessor;
 using Kurisu.DataAccessor.Functions.Default.Abstractions;
 using Kurisu.DataAccessor.Functions.Default.DbContexts;
@@ -10,7 +8,6 @@ using Kurisu.DataAccessor.Functions.Default.Resolvers;
 using Kurisu.DataAccessor.Functions.ReadWriteSplit.Abstractions;
 using Kurisu.DataAccessor.Interceptors;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
@@ -32,7 +29,7 @@ namespace Microsoft.Extensions.DependencyInjection
         public static IKurisuDataAccessorBuilder AddKurisuDatabaseAccessor(this IServiceCollection services)
         {
             services.AddHttpContextAccessor();
-            services.TryAddSingleton<ICurrentUserInfoResolver, DefaultCurrentUserInfoResolver>();
+            services.AddKurisuUserInfo();
 
             //数据库连接获取
             services.AddSingleton<IDbConnectStringResolver, DefaultDbConnectStringResolver>();

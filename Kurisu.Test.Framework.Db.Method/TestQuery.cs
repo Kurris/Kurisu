@@ -3,11 +3,11 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Kurisu.DataAccessor.Dto;
-using Kurisu.DataAccessor.Extensions;
 using Kurisu.DataAccessor.Functions.Default.Abstractions;
 using Kurisu.Test.Framework.Db.Method.DI;
 using Kurisu.Test.Framework.Db.Method.Entities;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
 namespace Kurisu.Test.Framework.Db.Method

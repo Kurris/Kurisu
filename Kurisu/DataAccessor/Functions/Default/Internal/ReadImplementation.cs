@@ -4,9 +4,9 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
 using Kurisu.DataAccessor.Dto;
-using Kurisu.DataAccessor.Extensions;
 using Kurisu.DataAccessor.Functions.ReadWriteSplit.Abstractions;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Kurisu.DataAccessor.Functions.Default.Internal
 {

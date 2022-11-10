@@ -1,5 +1,4 @@
-using Kurisu.Authentication.Abstractions;
-using Kurisu.Authentication.Internal;
+using Kurisu.DataAccessor;
 using Kurisu.DataAccessor.Functions.Default.Abstractions;
 using Kurisu.DataAccessor.Functions.Default.Internal;
 using Kurisu.DataAccessor.Functions.MultiTenant.DbContexts;
@@ -7,10 +6,9 @@ using Kurisu.DataAccessor.Functions.MultiTenant.Resolvers;
 using Kurisu.DataAccessor.Functions.ReadWriteSplit.Abstractions;
 using Kurisu.DataAccessor.Functions.UnitOfWork.Internal;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.DependencyInjection.Extensions;
 
-namespace Kurisu.DataAccessor.Extensions
+// ReSharper disable once CheckNamespace
+namespace Microsoft.Extensions.DependencyInjection
 {
     /// <summary>
     /// 数据库访问启用多租户扩展
@@ -25,7 +23,7 @@ namespace Kurisu.DataAccessor.Extensions
         public static void EnableMultiTenantDiscriminator(this IKurisuDataAccessorBuilder builder)
         {
             builder.Services.AddHttpContextAccessor();
-            builder.Services.TryAddSingleton<ICurrentTenantInfoResolver, DefaultCurrentTenantInfoResolver>();
+            builder.Services.AddKurisuTenantInfo();
 
             //替换数据上下文保存
             builder.Services.AddSingleton<IDefaultValuesOnSaveChangesResolver, MultiTenantDefaultValuesOnSaveChangesResolver>();
