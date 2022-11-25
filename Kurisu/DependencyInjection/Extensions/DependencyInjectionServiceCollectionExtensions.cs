@@ -209,40 +209,32 @@ namespace Microsoft.Extensions.DependencyInjection
                 @interface = @interface.Assembly.GetType(@interface.Namespace! + "." + @interface.Name);
 
             var registerType = GetRegisterType(lifeTimeType);
-            var life = registerType.ToString();
-
-            var addSelf = typeof(ServiceCollectionServiceExtensions).GetMethod("Add" + life, new[] {typeof(IServiceCollection), typeof(Type)});
-            var addSelfWithInterface = typeof(ServiceCollectionServiceExtensions).GetMethod("Add" + life, new[] {typeof(IServiceCollection), typeof(Type), typeof(Type)});
-            var addFactory = typeof(ServiceCollectionServiceExtensions).GetMethod("Add" + life, new[] {typeof(IServiceCollection), typeof(Type), typeof(Func<IServiceProvider, object>)});
 
             if (@interface == null)
-                addSelf.Invoke(null, new object[] {services, service});
+                services.Add(ServiceDescriptor.Describe(service, service, registerType));
             else
             {
                 if (interceptors?.Any() == true)
                 {
-                    addFactory.Invoke(null, new object[]
+                    services.Add(ServiceDescriptor.Describe(@interface, (Func<IServiceProvider, object>) (provider =>
                     {
-                        services, @interface, (Func<IServiceProvider, object>) (provider =>
+                        var currService = provider.GetService(service);
+                        var currInterceptors = interceptors.Select(x =>
                         {
-                            var currService = provider.GetService(service);
-                            var currInterceptors = interceptors.Select(x =>
+                            var i = provider.GetService(x);
+                            return i switch
                             {
-                                var i = provider.GetService(x);
-                                return i switch
-                                {
-                                    IAsyncInterceptor asyncInterceptor => asyncInterceptor.ToInterceptor(),
-                                    IInterceptor interceptor => interceptor,
-                                    _ => null
-                                };
-                            }).Where(x => x != null).ToArray();
-                            return new ProxyGenerator().CreateInterfaceProxyWithTargetInterface(@interface, currService, currInterceptors);
-                        })
-                    });
+                                IAsyncInterceptor asyncInterceptor => asyncInterceptor.ToInterceptor(),
+                                IInterceptor interceptor => interceptor,
+                                _ => null
+                            };
+                        }).Where(x => x != null).ToArray();
+                        return new ProxyGenerator().CreateInterfaceProxyWithTargetInterface(@interface, currService, currInterceptors);
+                    }), registerType));
                 }
                 else
                 {
-                    addSelfWithInterface.Invoke(null, new object[] {services, @interface, service});
+                    services.Add(ServiceDescriptor.Describe(@interface, service, registerType));
                 }
             }
         }
