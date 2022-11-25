@@ -1,9 +1,9 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <TargetFramework>net5.0</TargetFramework>
+        <TargetFramework>net6.0</TargetFramework>
         <LangVersion>9</LangVersion>
-        <PackageVersion>0.2.2</PackageVersion>
+        <PackageVersion>0.3.0</PackageVersion>
         <Description>see more : https://github.com/Kurris/Kurisu</Description>
         <Copyright>Kurisu Copyright</Copyright>
         <RepositoryUrl>https://github.com/Kurris/Kurisu</RepositoryUrl>
