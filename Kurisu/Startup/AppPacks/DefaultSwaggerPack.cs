@@ -72,7 +72,7 @@ namespace Kurisu.Startup.AppPacks
                 //api definition 切换(右上角下拉切换)
                 c.DocInclusionPredicate((group, description) =>
                 {
-                    if (!description.TryGetMethodInfo(out MethodInfo method))
+                    if (!description.TryGetMethodInfo(out var method))
                         return false;
 
                     var apiInfo = method.DeclaringType?.GetCustomAttribute<ApiDefinitionAttribute>();
@@ -114,7 +114,7 @@ namespace Kurisu.Startup.AppPacks
                     });
                 }
 
-                //Bearer Token 
+                //Bearer Token
                 c.AddSecurityDefinition("oauth2", new OpenApiSecurityScheme
                 {
                     Description = "请输入带有Bearer的Token，形如 “Bearer {Token}” ",
@@ -133,6 +133,7 @@ namespace Kurisu.Startup.AppPacks
 
         public override void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
+            // ReSharper disable once InvertIf
             if (env.IsDevelopment())
             {
                 app.UseSwagger();
@@ -191,9 +192,6 @@ namespace Kurisu.Startup.AppPacks
                 , "identity.oauth2");
         }
 
-        public void Apply(OpenApiOperation operation, OperationFilterContext context)
-        {
-            _filter.Apply(operation, context);
-        }
+        public void Apply(OpenApiOperation operation, OperationFilterContext context) => _filter.Apply(operation, context);
     }
 }

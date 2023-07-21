@@ -7,7 +7,7 @@ using Microsoft.Extensions.DependencyInjection;
 namespace Kurisu.Startup.AppPacks
 {
     /// <summary>
-    /// identityserver4默认pack
+    /// identity server4默认pack
     /// </summary>
     public class DefaultIdentityServerAuthenticationPack : BaseAppPack
     {

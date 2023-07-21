@@ -14,7 +14,7 @@ namespace Microsoft.Extensions.DependencyInjection
     public static class OAuth2AuthenticationServiceCollectionExtensions
     {
         /// <summary>
-        /// 添加 identit server 鉴权
+        /// 添加 identity server 鉴权
         /// </summary>
         /// <param name="services"></param>
         /// <param name="setting"></param>
@@ -40,8 +40,8 @@ namespace Microsoft.Extensions.DependencyInjection
                     {
                         options.ForwardDefaultSelector = context =>
                         {
-                            (string scheme, string token) = GetBearerValueTuple(context);
-                            return scheme.Equals(JwtBearerDefaults.AuthenticationScheme, StringComparison.OrdinalIgnoreCase) && !token.Contains(".") ? "token" : null;
+                            var (scheme, token) = GetBearerValueTuple(context);
+                            return scheme.Equals(JwtBearerDefaults.AuthenticationScheme, StringComparison.OrdinalIgnoreCase) && !token.Contains('.') ? "token" : null;
                         };
                     }
                 });
@@ -70,14 +70,14 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <returns></returns>
         private static (string scheme, string token) GetBearerValueTuple(HttpContext context)
         {
-            string authorizationValue = context.Request.Headers["Authorization"].FirstOrDefault();
+            var authorizationValue = context.Request.Headers["Authorization"].FirstOrDefault();
 
             if (string.IsNullOrEmpty(authorizationValue))
             {
                 return (string.Empty, string.Empty);
             }
 
-            string[] bearerValues = authorizationValue.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+            var bearerValues = authorizationValue.Split(' ', StringSplitOptions.RemoveEmptyEntries);
             if (bearerValues.Length != 2)
                 return (string.Empty, string.Empty);
 
