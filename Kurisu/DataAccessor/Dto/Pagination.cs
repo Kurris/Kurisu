@@ -1,66 +1,65 @@
 using System.Collections.Generic;
 
-namespace Kurisu.DataAccessor.Dto
+namespace Kurisu.DataAccessor.Dto;
+
+/// <summary>
+/// 分页参数
+/// </summary>
+/// <typeparam name="T">数据类型</typeparam>
+public class Pagination<T>
 {
     /// <summary>
-    /// 分页参数
+    /// 页码
     /// </summary>
-    /// <typeparam name="T">数据类型</typeparam>
-    public class Pagination<T>
+    public int PageIndex { get; internal init; }
+
+    /// <summary>
+    /// 页容量
+    /// </summary>
+    public int PageSize { get; internal init; }
+
+    /// <summary>
+    /// 总条数
+    /// </summary>
+    public int Total { get; internal init; }
+
+    /// <summary>
+    /// 总页数
+    /// </summary>
+    public int TotalPages
     {
-        /// <summary>
-        /// 页码
-        /// </summary>
-        public int PageIndex { get; internal init; }
-
-        /// <summary>
-        /// 页容量
-        /// </summary>
-        public int PageSize { get; internal init; }
-
-        /// <summary>
-        /// 总条数
-        /// </summary>
-        public int Total { get; internal init; }
-
-        /// <summary>
-        /// 总页数
-        /// </summary>
-        public int TotalPages
+        get
         {
-            get
+            if (Total > 0)
             {
-                if (Total > 0)
-                {
-                    return Total % PageSize == 0
-                        ? Total / PageSize
-                        : Total / PageSize + 1;
-                }
-
-                return 0;
+                return Total % PageSize == 0
+                    ? Total / PageSize
+                    : Total / PageSize + 1;
             }
+
+            return 0;
         }
-
-        /// <summary>
-        /// 是否有上一页
-        /// </summary>
-        public bool HasPrevPages => PageIndex - 1 > 0;
-
-        /// <summary>
-        /// 是否有下一页
-        /// </summary>
-        public bool HasNextPages => PageIndex < TotalPages;
-
-        /// <summary>
-        /// 当前页集合
-        /// </summary>
-        public List<T> Data { get; internal init; }
     }
 
     /// <summary>
-    /// 分页参数
+    /// 是否有上一页
     /// </summary>
-    public class Pagination : Pagination<object>
-    {
-    }
+    public bool HasPrevious => PageIndex - 1 > 0;
+
+    /// <summary>
+    /// 是否有下一页
+    /// </summary>
+    public bool HasNext => PageIndex < TotalPages;
+
+    /// <summary>
+    /// 内容
+    /// </summary>
+    public List<T> Data { get; internal init; }
+}
+
+/// <summary>
+/// 分页参数
+/// </summary>
+public class Pagination : Pagination<object>
+{
 }

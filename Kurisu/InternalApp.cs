@@ -1,15 +1,15 @@
 using System;
+// ReSharper disable ClassNeverInstantiated.Global
 
-namespace Kurisu
+namespace Kurisu;
+
+/// <summary>
+/// App内部
+/// </summary>
+internal class InternalApp
 {
     /// <summary>
-    /// App内部
+    /// 根服务提供器,对应dotnetcore在ConfigureServices中配置完成后生成的IServiceProvider
     /// </summary>
-    internal class InternalApp
-    {
-        /// <summary>
-        /// 根服务提供器,对应dotnetcore在ConfigureServices中生成的IServiceProvider
-        /// </summary>
-        internal static IServiceProvider ApplicationServices { get; set; }
-    }
+    internal static IServiceProvider ApplicationServices { get; set; }
 }

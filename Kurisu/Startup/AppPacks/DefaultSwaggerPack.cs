@@ -5,7 +5,7 @@ using System.Linq;
 using System.Reflection;
 using Kurisu.Authentication;
 using Kurisu.MVC;
-using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
@@ -16,125 +16,128 @@ using Microsoft.OpenApi.Models;
 using Swashbuckle.AspNetCore.Filters;
 using Swashbuckle.AspNetCore.SwaggerGen;
 
-namespace Kurisu.Startup.AppPacks
-{
-    /// <summary>
-    /// swagger默认pack
-    /// </summary>
-    public class DefaultSwaggerPack : BaseAppPack
-    {
-        private static List<OpenApiInfo> _apiInfos;
+// ReSharper disable ClassNeverInstantiated.Global
 
-        public DefaultSwaggerPack()
+namespace Kurisu.Startup.AppPacks;
+
+/// <summary>
+/// swagger默认pack
+/// </summary>
+public class DefaultSwaggerPack : BaseAppPack
+{
+    private static List<OpenApiInfo> _apiInfos;
+
+    public DefaultSwaggerPack()
+    {
+        Initialize();
+    }
+
+    public override int Order => 1;
+
+    public override bool IsBeforeUseRouting => true;
+
+    public override void ConfigureServices(IServiceCollection services)
+    {
+        var setting = Configuration.GetSection(nameof(SwaggerOAuthSetting)).Get<SwaggerOAuthSetting>();
+        if (setting == null)
+            return;
+
+        //eg:配置文件appsetting.json的key如果存在":"，那么解析将会失败
+        var needFixeScopes = setting.Scopes
+            .Where(x => x.Key.Contains('|'))
+            .ToDictionary(x => x.Key, x => x.Value);
+
+        //移除｜相关key
+        foreach (var scope in needFixeScopes)
+            setting.Scopes.Remove(scope.Key);
+
+        //修改正确的key，
+        foreach (var (s, value) in needFixeScopes)
         {
-            Initialize();
+            var key = s.Replace("|", ":");
+            setting.Scopes.TryAdd(key, value);
         }
 
-        public override int Order => 1;
-
-        public override bool IsBeforeUseRouting => true;
-
-        public override void ConfigureServices(IServiceCollection services)
+        services.AddSwaggerGen(c =>
         {
-            var setting = Configuration.GetSection(nameof(SwaggerOAuthSetting)).Get<SwaggerOAuthSetting>();
-            if (setting == null)
+            //没有分组的api
+            c.SwaggerDoc("v1", new OpenApiInfo
             {
-                throw new NullReferenceException(nameof(SwaggerOAuthSetting));
-            }
+                Version = "v1",
+                Title = "API文档",
+                Description = "当前为默认无分组API,各分组API接口说明(右上角切换)",
+            });
 
-            //eg:配置文件appsetting.json的key如果存在":"，那么解析将会失败
-            var needFixeScopes = setting.Scopes.Where(x => x.Key.Contains("|")).ToDictionary(x => x.Key, x => x.Value);
-            //移除 ｜ 相关key
-            foreach (var scope in needFixeScopes)
-            {
-                setting.Scopes.Remove(scope.Key);
-            }
+            _apiInfos.ForEach(info => { c.SwaggerDoc(info.Title, info); });
 
-            //修改正确的key，
-            foreach (var scope in needFixeScopes)
+            //api definition 切换(右上角下拉切换)
+            c.DocInclusionPredicate((group, description) =>
             {
-                var key = scope.Key.Replace("|", ":");
-                setting.Scopes.TryAdd(key, scope.Value);
-            }
+                if (!description.TryGetMethodInfo(out var method))
+                    return false;
 
-            services.AddSwaggerGen(c =>
-            {
-                //没有分组的api
-                c.SwaggerDoc("v1", new OpenApiInfo
+                var apiInfo = method.DeclaringType?.GetCustomAttribute<ApiDefinitionAttribute>();
+                if (apiInfo != null)
                 {
-                    Version = "v1",
-                    Title = "API文档",
-                    Description = "当前为默认无分组API,各分组API接口说明(右上角切换)",
-                });
-
-                _apiInfos.ForEach(info => { c.SwaggerDoc(info.Title, info); });
-
-                //api definition 切换(右上角下拉切换)
-                c.DocInclusionPredicate((group, description) =>
-                {
-                    if (!description.TryGetMethodInfo(out var method))
-                        return false;
-
-                    var apiInfo = method.DeclaringType?.GetCustomAttribute<ApiDefinitionAttribute>();
-                    if (apiInfo != null)
-                    {
-                        return group == apiInfo.Group;
-                    }
-
-                    //没有分组的api
-                    return group == "v1";
-                });
-
-                //加载xml注释文件
-                Directory.GetFiles(AppDomain.CurrentDomain.BaseDirectory, "*.xml")
-                    .ToList()
-                    .ForEach(file => c.IncludeXmlComments(file));
-
-                c.OperationFilter<AddResponseHeadersFilter>();
-                c.OperationFilter<AppendAuthorizeToSummaryOperationFilter>();
-                c.OperationFilter<SecurityRequirementsOperationFilter>();
-
-                //OAuth2.0 Token 获取
-                if (setting.Enable)
-                {
-                    c.OperationFilter<SwaggerOAuthOperationFilter>();
-                    c.AddSecurityDefinition("identity.oauth2", new OpenApiSecurityScheme
-                    {
-                        Type = SecuritySchemeType.OAuth2,
-                        In = ParameterLocation.Header,
-                        Flows = new OpenApiOAuthFlows
-                        {
-                            AuthorizationCode = new OpenApiOAuthFlow
-                            {
-                                AuthorizationUrl = new Uri($"{setting.Authority}/connect/authorize"),
-                                TokenUrl = new Uri($"{setting.Authority}/connect/token"),
-                                Scopes = setting.Scopes,
-                            }
-                        }
-                    });
+                    return group == apiInfo.Group;
                 }
 
-                //Bearer Token
+                //没有分组的api
+                return group == "v1";
+            });
+
+            //加载xml注释文件
+            Directory.GetFiles(AppDomain.CurrentDomain.BaseDirectory, "*.xml")
+                .ToList()
+                .ForEach(file => c.IncludeXmlComments(file));
+
+            c.OperationFilter<AddResponseHeadersFilter>();
+            c.OperationFilter<AppendAuthorizeToSummaryOperationFilter>();
+
+            //OAuth2.0 Token 获取
+            if (setting.Enable)
+            {
+                c.OperationFilter<SecurityRequirementsOperationFilter>();
                 c.AddSecurityDefinition("oauth2", new OpenApiSecurityScheme
                 {
-                    Description = "请输入带有Bearer的Token，形如 “Bearer {Token}” ",
-                    Name = "Authorization",
+                    Type = SecuritySchemeType.OAuth2,
                     In = ParameterLocation.Header,
-                    Type = SecuritySchemeType.ApiKey
+                    Flows = new OpenApiOAuthFlows
+                    {
+                        AuthorizationCode = new OpenApiOAuthFlow
+                        {
+                            AuthorizationUrl = new Uri($"{setting.Authority}/connect/authorize"),
+                            TokenUrl = new Uri($"{setting.Authority}/connect/token"),
+                            Scopes = setting.Scopes,
+                        }
+                    }
                 });
+            }
 
-                // c.CustomOperationIds(apiDesc =>
-                // {
-                //     var controllerAction = apiDesc.ActionDescriptor as ControllerActionDescriptor;
-                //     return controllerAction.ControllerName + "-" + controllerAction.ActionName;
-                // });
+            //Bearer Token
+            c.AddSecurityDefinition(JwtBearerDefaults.AuthenticationScheme, new OpenApiSecurityScheme
+            {
+                Description = "请输入带有Bearer的Token,如“Bearer {Token}” ",
+                Name = "Authorization",
+                In = ParameterLocation.Header,
+                Type = SecuritySchemeType.ApiKey
             });
-        }
 
-        public override void Configure(IApplicationBuilder app, IWebHostEnvironment env)
+            // c.CustomOperationIds(apiDesc =>
+            // {
+            //     var controllerAction = apiDesc.ActionDescriptor as ControllerActionDescriptor;
+            //     return controllerAction.ControllerName + "-" + controllerAction.ActionName;
+            // });
+        });
+    }
+
+    public override void Configure(IApplicationBuilder app, IWebHostEnvironment env)
+    {
+        if (env.IsDevelopment())
         {
-            // ReSharper disable once InvertIf
-            if (env.IsDevelopment())
+            //OAuth2.0 client 信息
+            var setting = Configuration.GetSection(nameof(SwaggerOAuthSetting)).Get<SwaggerOAuthSetting>();
+            if (setting != null)
             {
                 app.UseSwagger();
                 app.UseSwaggerUI(c =>
@@ -142,56 +145,38 @@ namespace Kurisu.Startup.AppPacks
                     c.SwaggerEndpoint("/swagger/v1/swagger.json", "API文档");
                     _apiInfos.ForEach(info => { c.SwaggerEndpoint($"/swagger/{info.Title}/swagger.json", info.Title); });
 
-                    //OAuth2.0 client 信息
-                    var setting = Configuration.GetSection(nameof(SwaggerOAuthSetting)).Get<SwaggerOAuthSetting>();
                     c.OAuthClientId(setting.ClientId);
                     c.OAuthClientSecret(setting.ClientSecret);
                     c.OAuthUsePkce();
                 });
             }
         }
-
-        /// <summary>
-        /// 初始化api info
-        /// </summary>
-        private static void Initialize()
-        {
-            var assembly = Assembly.GetEntryAssembly();
-            var controllers = assembly.GetTypes().Where(x => x.IsAssignableTo(typeof(ControllerBase))
-                                                             && x.IsDefined(typeof(ApiDefinitionAttribute)));
-
-            _apiInfos = new List<OpenApiInfo>(controllers.Count());
-
-            foreach (var controller in controllers)
-            {
-                var appInfo = controller.GetCustomAttribute<ApiDefinitionAttribute>();
-
-                if (_apiInfos.All(x => x.Title != appInfo.Group))
-                {
-                    _apiInfos.Add(new OpenApiInfo
-                    {
-                        Title = appInfo.Group,
-                        Version = "v1"
-                    });
-                }
-            }
-        }
     }
 
     /// <summary>
-    /// 处理identity.oauth2过滤
+    /// 初始化api info
     /// </summary>
-    internal class SwaggerOAuthOperationFilter : IOperationFilter
+    private static void Initialize()
     {
-        private readonly SecurityRequirementsOperationFilter<AuthorizeAttribute> _filter;
+        var assembly = Assembly.GetEntryAssembly()!;
+        var controllers = assembly.GetTypes().Where(x =>
+            x.IsAssignableTo(typeof(ControllerBase))
+            && x.IsDefined(typeof(ApiDefinitionAttribute))).ToArray();
 
-        public SwaggerOAuthOperationFilter()
+        _apiInfos = new List<OpenApiInfo>(controllers.Length);
+
+        foreach (var controller in controllers)
         {
-            _filter = new SecurityRequirementsOperationFilter<AuthorizeAttribute>(attributes => from a in attributes where !string.IsNullOrEmpty(a.Policy) select a.Policy
-                , true
-                , "identity.oauth2");
-        }
+            var appInfo = controller.GetCustomAttribute<ApiDefinitionAttribute>()!;
 
-        public void Apply(OpenApiOperation operation, OperationFilterContext context) => _filter.Apply(operation, context);
+            if (_apiInfos.All(x => x.Title != appInfo.Group))
+            {
+                _apiInfos.Add(new OpenApiInfo
+                {
+                    Title = appInfo.Group,
+                    Version = "v1"
+                });
+            }
+        }
     }
 }

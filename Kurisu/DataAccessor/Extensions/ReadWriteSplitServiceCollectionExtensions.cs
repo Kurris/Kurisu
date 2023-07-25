@@ -8,45 +8,44 @@ using Kurisu.DataAccessor.Functions.ReadWriteSplit.Resolvers;
 using Microsoft.EntityFrameworkCore;
 
 // ReSharper disable once CheckNamespace
-namespace Microsoft.Extensions.DependencyInjection
+namespace Microsoft.Extensions.DependencyInjection;
+
+/// <summary>
+/// 数据库访问读写分离功能扩展类
+/// </summary>
+[SkipScan]
+public static class ReadWriteSplitServiceCollectionExtensions
 {
     /// <summary>
-    /// 数据库访问读写分离功能扩展类
+    /// 启用读写分离
     /// </summary>
-    [SkipScan]
-    public static class ReadWriteSplitServiceCollectionExtensions
+    /// <param name="builder"></param>
+    /// <returns></returns>
+    public static IKurisuDataAccessorBuilder AddKurisuReadWriteSplit(this IKurisuDataAccessorBuilder builder)
     {
-        /// <summary>
-        /// 启用读写分离
-        /// </summary>
-        /// <param name="builder"></param>
-        /// <returns></returns>
-        public static IKurisuDataAccessorBuilder AddKurisuReadWriteSplit(this IKurisuDataAccessorBuilder builder)
+        //替换读写分离连接
+        builder.Services.AddSingleton<IDbConnectStringResolver, DefaultReadWriteDbConnectStringResolver>();
+
+        //增加从库
+        builder.Services.AddKurisuAppDbContext<DefaultAppDbContext<IAppSlaveDb>>();
+        builder.Services.AddScoped(typeof(IAppSlaveDb), provider =>
         {
-            //替换读写分离连接
-            builder.Services.AddSingleton<IDbConnectStringResolver, DefaultReadWriteDbConnectStringResolver>();
+            var slaveDbContext = provider.GetRequiredService<DefaultAppDbContext<IAppSlaveDb>>();
+            //取消EF跟踪行为
+            slaveDbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
+            return new ReadImplementation(slaveDbContext);
+        });
 
-            //增加从库
-            builder.Services.AddKurisuAppDbContext<DefaultAppDbContext<IAppSlaveDb>>();
-            builder.Services.AddScoped(typeof(IAppSlaveDb), provider =>
-            {
-                var slaveDbContext = provider.GetService<DefaultAppDbContext<IAppSlaveDb>>();
-                //取消EF跟踪行为
-                slaveDbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTrackingWithIdentityResolution;
-                return new ReadImplementation(slaveDbContext);
-            });
+        //替换IAppDbService
+        builder.Services.AddScoped<IAppDbService, ReadWriteSplitAppDbService>();
 
-            //替换IAppDbService
-            builder.Services.AddScoped<IAppDbService, ReadWriteSplitAppDbService>();
+        //配置开启读写分离
+        builder.ConfigurationBuilders.Add(x => x.IsEnableReadWriteSplit = true);
+        builder.Services.Configure<KurisuDataAccessorBuilderSetting>(x =>
+        {
+            builder.ConfigurationBuilders.ForEach(action => action(x));
+        });
 
-            //配置开启读写分离
-            builder.ConfigurationBuilders.Add(x => x.IsEnableReadWriteSplit = true);
-            builder.Services.Configure<KurisuDataAccessorBuilderSetting>(x =>
-            {
-                builder.ConfigurationBuilders.ForEach(action => action(x));
-            });
-
-            return builder;
-        }
+        return builder;
     }
 }

@@ -1,23 +1,24 @@
 using Grpc.Core;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace Kurisu.Grpc.Abstractions
+namespace Kurisu.Grpc.Abstractions;
+
+/// <summary>
+/// Grpc客户端服务
+/// </summary>
+/// <typeparam name="TModule">Grpc模块</typeparam>
+/// <typeparam name="TClient">Grpc客户端类型</typeparam>
+/// <remarks>
+/// Grpc.Net.Client;Google.Protobuf;Grpc.Tools
+/// </remarks>
+// ReSharper disable once UnusedTypeParameter
+// ReSharper disable once TypeParameterCanBeVariant
+public interface IGrpcClientService<TModule, TClient> : ISingletonDependency
+    where TModule : IGrpcModule
+    where TClient : ClientBase
 {
     /// <summary>
-    /// Grpc客户端服务
+    /// Grpc客户端
     /// </summary>
-    /// <typeparam name="TGrpcModule">Grpc远程模块</typeparam>
-    /// <typeparam name="TClient">Grpc客户端类型</typeparam>
-    // ReSharper disable once UnusedTypeParameter
-    // ReSharper disable once TypeParameterCanBeVariant
-    public interface IGrpcClientService<TGrpcModule, TClient> : ISingletonDependency
-        where TGrpcModule : IGrpcModule
-        where TClient : ClientBase
-    {
-        /// <summary>
-        /// 创建Grpc客户端
-        /// </summary>
-        /// <returns>客户端</returns>
-        TClient Create();
-    }
+    TClient Instance { get; }
 }

@@ -2,21 +2,20 @@ using System;
 using System.Collections.Generic;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace Kurisu.DataAccessor
+namespace Kurisu.DataAccessor;
+
+/// <summary>
+/// 数据访问builder
+/// </summary>
+internal class KurisuDataAccessorBuilder : IKurisuDataAccessorBuilder
 {
     /// <summary>
-    /// 数据访问builder
+    /// 服务容器
     /// </summary>
-    internal class KurisuDataAccessorBuilder : IKurisuDataAccessorBuilder
-    {
-        /// <summary>
-        /// 服务容器
-        /// </summary>
-        public IServiceCollection Services { get; set; }
+    public IServiceCollection Services { get; set; }
 
-        /// <summary>
-        /// 配置处理
-        /// </summary>
-        public List<Action<KurisuDataAccessorBuilderSetting>> ConfigurationBuilders { get; set; }
-    }
+    /// <summary>
+    /// 配置处理
+    /// </summary>
+    public List<Action<KurisuDataAccessorBuilderSetting>> ConfigurationBuilders { get; set; }
 }

@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Linq.Expressions;
 using Kurisu.DataAccessor.Entity;
 using Kurisu.DataAccessor.Functions.Default.Abstractions;
@@ -6,47 +7,45 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using ISoftDeleted = Kurisu.DataAccessor.Entity.ISoftDeleted;
 
-namespace Kurisu.DataAccessor.Functions.Default.Resolvers
+namespace Kurisu.DataAccessor.Functions.Default.Resolvers;
+
+/// <summary>
+/// 默认查询过滤处理器
+/// </summary>
+public class DefaultQueryFilterResolver : IQueryFilterResolver
 {
     /// <summary>
-    /// 默认查询过滤处理器
+    /// 处理查询过滤器
     /// </summary>
-    public class DefaultQueryFilterResolver : IQueryFilterResolver
+    /// <param name="dbContext"></param>
+    /// <param name="entityType">实体类型</param>
+    /// <param name="builder">实体builder</param>
+    public virtual void HandleQueryFilter(DbContext dbContext, Type entityType, EntityTypeBuilder builder)
     {
-        /// <summary>
-        /// 处理查询过滤器
-        /// </summary>
-        /// <param name="dbContext"></param>
-        /// <param name="entityType">实体类型</param>
-        /// <param name="builder">实体builder</param>
-        public virtual void HandleQueryFilter(DbContext dbContext, Type entityType, EntityTypeBuilder builder)
+        //软删除过滤
+        if (entityType.IsAssignableTo(typeof(ISoftDeleted)))
         {
-            //软删除过滤
-            if (entityType.IsAssignableTo(typeof(ISoftDeleted)))
-            {
-                builder.HasQueryFilter(GetSoftDeletedExpression(entityType));
-            }
+            //dbContext如果不开启软删除不影响此处的条件
+            builder.HasQueryFilter(GetSoftDeletedExpression(entityType));
         }
+    }
 
-        /// <summary>
-        /// 获取软删除表达式
-        /// </summary>
-        /// <param name="entityType"></param>
-        /// <param name="p"></param>
-        /// <returns></returns>
-        protected virtual LambdaExpression GetSoftDeletedExpression(Type entityType, ParameterExpression p = null)
-        {
-            var softDeletedProperty = typeof(ISoftDeleted).GetProperties()[0];
+    /// <summary>
+    /// 获取软删除表达式
+    /// </summary>
+    /// <param name="entityType"></param>
+    /// <param name="p"></param>
+    /// <returns></returns>
+    protected virtual LambdaExpression GetSoftDeletedExpression(Type entityType, ParameterExpression p = null)
+    {
+        var parameter = p ?? Expression.Parameter(entityType);
 
-            var parameter = p ?? Expression.Parameter(entityType);
+        var property = Expression.Property(parameter, nameof(ISoftDeleted.IsDeleted));
+        var constant = Expression.Constant(false, typeof(bool));
 
-            var property = Expression.Property(parameter, softDeletedProperty.Name);
-            var constant = Expression.Constant(false, typeof(bool));
+        var binary = Expression.Equal(property, constant);
+        var lambda = Expression.Lambda(binary, parameter);
 
-            var binary = Expression.Equal(property, constant);
-            var lambda = Expression.Lambda(binary, parameter);
-
-            return lambda;
-        }
+        return lambda;
     }
 }

@@ -1,10 +1,9 @@
-namespace Kurisu.Test.Framework.DI.Dtos
+namespace Kurisu.Test.Framework.DI.Dtos;
+
+public class Dog : Animal
 {
-    public class Dog : Animal
+    public override string Say()
     {
-        public override string Say()
-        {
-            return "wan";
-        }
+        return "wan";
     }
 }

@@ -2,31 +2,32 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 
-namespace Kurisu.Startup
+namespace Kurisu.Startup;
+
+/// <summary>
+/// 启动Host
+/// </summary>
+public static class KurisuHost
 {
     /// <summary>
-    /// 启动Host
+    /// 启动
     /// </summary>
-    public class KurisuHost
+    /// <param name="useSerilog"></param>
+    /// <param name="args">参数</param>
+    /// <typeparam name="TStartup">>启动Startup类型</typeparam>
+    public static void Run<TStartup>(bool useSerilog, string[] args) where TStartup : DefaultKurisuStartup
     {
-        /// <summary>
-        /// 启动
-        /// </summary>
-        /// <param name="args">参数</param>
-        /// <typeparam name="TStartup">>启动Startup类型</typeparam>
-        public static void Run<TStartup>(string[] args) where TStartup : DefaultKurisuStartup
-        {
-            Host.CreateDefaultBuilder(args).RunKurisu<TStartup>();
-        }
+        Host.CreateDefaultBuilder(args).RunKurisu<TStartup>(useSerilog);
+    }
 
-        /// <summary>
-        /// 启动
-        /// </summary>
-        /// <param name="args">参数</param>
-        /// <typeparam name="TStartup">启动Startup类型</typeparam>
-        public static async Task RunAsync<TStartup>(string[] args) where TStartup : DefaultKurisuStartup
-        {
-            await Host.CreateDefaultBuilder(args).RunKurisuAsync<TStartup>();
-        }
+    /// <summary>
+    /// 启动
+    /// </summary>
+    /// <param name="useSerilog"></param>
+    /// <param name="args">参数</param>
+    /// <typeparam name="TStartup">启动Startup类型</typeparam>
+    public static async Task RunAsync<TStartup>(bool useSerilog, string[] args) where TStartup : DefaultKurisuStartup
+    {
+        await Host.CreateDefaultBuilder(args).RunKurisuAsync<TStartup>(useSerilog);
     }
 }

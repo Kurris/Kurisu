@@ -1,22 +1,21 @@
-namespace Kurisu.Authentication.Abstractions
+namespace Kurisu.Authentication.Abstractions;
+
+/// <summary>
+/// 租户信息获取处理器
+/// </summary>
+public interface ICurrentTenantInfoResolver
 {
     /// <summary>
-    /// 租户信息获取处理器
+    /// Claims:tenant; header:X-Requested-TenantId
+    /// <remarks>
+    /// 默认:tenant
+    /// </remarks>
     /// </summary>
-    public interface ICurrentTenantInfoResolver
-    {
-        /// <summary>
-        /// clasims: tenant; header: X-Requested-TenantId
-        /// <remarks>
-        /// 默认:tenant
-        /// </remarks>
-        /// </summary>
-        string TenantKey { get; }
+    string TenantKey { get; }
 
-        /// <summary>
-        /// 获取租户id
-        /// </summary>
-        /// <returns></returns>
-        int GetTenantId();
-    }
+    /// <summary>
+    /// 获取租户id
+    /// </summary>
+    /// <returns></returns>
+    int GetTenantId();
 }

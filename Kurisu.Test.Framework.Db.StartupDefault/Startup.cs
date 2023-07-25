@@ -1,20 +1,19 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace Kurisu.Test.Framework.Db.StartupDefault
-{
-    public class Startup
-    {
-        public void ConfigureServices(IServiceCollection services)
-        {
-            services.AddHttpContextAccessor();
-            var configuration = new ConfigurationBuilder()
-                .AddJsonFile("appsettings.json")
-                .AddJsonFile("appsettings.Development.json").Build();
-            
-            services.AddKurisuConfiguration(configuration);
+namespace Kurisu.Test.Framework.Db.StartupDefault;
 
-            services.AddKurisuDatabaseAccessor();
-        }
+public class Startup
+{
+    public void ConfigureServices(IServiceCollection services)
+    {
+        services.AddHttpContextAccessor();
+        var configuration = new ConfigurationBuilder()
+            .AddJsonFile("appsettings.json")
+            .AddJsonFile("appsettings.Development.json").Build();
+            
+        services.AddKurisuConfiguration(configuration);
+
+        services.AddKurisuDatabaseAccessor();
     }
 }

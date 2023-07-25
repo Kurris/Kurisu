@@ -1,17 +1,16 @@
 using System;
 
-namespace Kurisu.DataAccessor.Functions.Default.Abstractions
+namespace Kurisu.DataAccessor.Functions.Default.Abstractions;
+
+/// <summary>
+/// 数据库连接字符串处理器
+/// </summary>
+public interface IDbConnectStringResolver
 {
     /// <summary>
-    /// 数据库连接字符串处理器
+    /// 获取连接字符串
     /// </summary>
-    public interface IDbConnectStringResolver
-    {
-        /// <summary>
-        /// 获取连接字符串
-        /// </summary>
-        /// <param name="dbType">数据库类型</param>
-        /// <returns></returns>
-        string GetConnectionString(Type dbType);
-    }
+    /// <param name="dbType">数据库类型</param>
+    /// <returns></returns>
+    string GetConnectionString(Type dbType);
 }

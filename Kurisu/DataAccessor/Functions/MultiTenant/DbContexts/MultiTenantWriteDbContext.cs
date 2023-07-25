@@ -6,27 +6,26 @@ using Kurisu.DataAccessor.Functions.ReadWriteSplit.Abstractions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 
-namespace Kurisu.DataAccessor.Functions.MultiTenant.DbContexts
-{
-    /// <summary>
-    /// 多租户,写
-    /// </summary>
-    public class MultiTenantWriteDbContext : DefaultAppDbContext<IAppMasterDb>, ITenantId
-    {
-        public MultiTenantWriteDbContext(DbContextOptions<DefaultAppDbContext<IAppMasterDb>> options
-            , IOptions<KurisuDataAccessorBuilderSetting> builderOptions
-            , IDefaultValuesOnSaveChangesResolver defaultValuesOnSaveChangesResolver
-            , IQueryFilterResolver queryFilterResolver
-            , IModelConfigurationSourceResolver modelConfigurationSourceResolver
-            , ICurrentTenantInfoResolver currentTenantInfoResolver)
-            : base(options, builderOptions, defaultValuesOnSaveChangesResolver, queryFilterResolver, modelConfigurationSourceResolver)
-        {
-            TenantId = currentTenantInfoResolver.GetTenantId();
-        }
+namespace Kurisu.DataAccessor.Functions.MultiTenant.DbContexts;
 
-        /// <summary>
-        /// 租户id值
-        /// </summary>
-        public int TenantId { get; set; }
+/// <summary>
+/// 多租户,写
+/// </summary>
+public class MultiTenantWriteDbContext : DefaultAppDbContext<IAppMasterDb>, ITenantId
+{
+    public MultiTenantWriteDbContext(DbContextOptions<DefaultAppDbContext<IAppMasterDb>> options
+        , IOptions<KurisuDataAccessorBuilderSetting> builderOptions
+        , IDefaultValuesOnSaveChangesResolver defaultValuesOnSaveChangesResolver
+        , IQueryFilterResolver queryFilterResolver
+        , IModelConfigurationSourceResolver modelConfigurationSourceResolver
+        , ICurrentTenantInfoResolver currentTenantInfoResolver)
+        : base(options, builderOptions, defaultValuesOnSaveChangesResolver, queryFilterResolver, modelConfigurationSourceResolver)
+    {
+        TenantId = currentTenantInfoResolver.GetTenantId();
     }
+
+    /// <summary>
+    /// 租户id值
+    /// </summary>
+    public int TenantId { get; set; }
 }

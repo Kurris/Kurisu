@@ -10,75 +10,89 @@ using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.Extensions.Configuration;
 
 // ReSharper disable once CheckNamespace
-namespace Microsoft.Extensions.DependencyInjection
+namespace Microsoft.Extensions.DependencyInjection;
+
+/// <summary>
+/// 程序启动扩展
+/// </summary>
+[SkipScan]
+public static class ProgramExtensions
 {
     /// <summary>
-    /// 程序启动扩展
+    /// 运行kurisu framework
     /// </summary>
-    [SkipScan]
-    public static class ProgramExtensions
+    /// <param name="hostBuilder"></param>
+    /// <param name="useSerilog"></param>
+    public static async Task RunKurisuAsync<TStartup>(this IHostBuilder hostBuilder, bool useSerilog) where TStartup : DefaultKurisuStartup
     {
-        /// <summary>
-        /// 运行kurisu framework
-        /// </summary>
-        /// <param name="hostBuilder"></param>
-        public static async Task RunKurisuAsync<TStartup>(this IHostBuilder hostBuilder) where TStartup : DefaultKurisuStartup
-        {
-            await hostBuilder.RunKurisuAsync(typeof(TStartup));
-        }
+        await hostBuilder.RunKurisuAsync(typeof(TStartup), useSerilog);
+    }
 
-        /// <summary>
-        /// 运行kurisu framework
-        /// </summary>
-        /// <param name="hostBuilder"></param>
-        /// <typeparam name="TStartup"></typeparam>
-        public static void RunKurisu<TStartup>(this IHostBuilder hostBuilder) where TStartup : DefaultKurisuStartup
-        {
-            hostBuilder.RunKurisu(typeof(TStartup));
-        }
+    /// <summary>
+    /// 运行kurisu framework
+    /// </summary>
+    /// <param name="hostBuilder"></param>
+    /// <param name="useSerilog"></param>
+    /// <typeparam name="TStartup"></typeparam>
+    public static void RunKurisu<TStartup>(this IHostBuilder hostBuilder, bool useSerilog) where TStartup : DefaultKurisuStartup
+    {
+        hostBuilder.RunKurisu(typeof(TStartup), useSerilog);
+    }
 
-        /// <summary>
-        /// 运行kurisu framework
-        /// </summary>
-        /// <param name="hostBuilder"></param>
-        /// <param name="startup"></param>
-        /// <returns></returns>
-        // ReSharper disable once MemberCanBePrivate.Global
-        public static async Task RunKurisuAsync(this IHostBuilder hostBuilder, Type startup)
-        {
-            await hostBuilder.ConfigureLogging(builder =>
+    /// <summary>
+    /// 运行kurisu framework
+    /// </summary>
+    /// <param name="hostBuilder"></param>
+    /// <param name="startup"></param>
+    /// <param name="useSerilog"></param>
+    // ReSharper disable once MemberCanBePrivate.Global
+    public static void RunKurisu(this IHostBuilder hostBuilder, Type startup, bool useSerilog)
+    {
+        RunKurisuAsync(hostBuilder, startup, useSerilog).GetAwaiter().GetResult();
+    }
+
+
+    /// <summary>
+    /// 运行kurisu framework
+    /// </summary>
+    /// <param name="hostBuilder"></param>
+    /// <param name="startup"></param>
+    /// <param name="useSerilog"></param>
+    /// <returns></returns>
+    // ReSharper disable once MemberCanBePrivate.Global
+    public static async Task RunKurisuAsync(this IHostBuilder hostBuilder, Type startup, bool useSerilog)
+    {
+        var host = hostBuilder.ConfigureLogging(builder =>
+            {
+                if (useSerilog)
                 {
                     builder.ClearProviders();
                     builder.AddSerilog();
-                })
-                .ConfigureWebHostDefaults((webBuilder) =>
+                }
+            })
+            .ConfigureWebHost(builder =>
+            {
+                builder.ConfigureKestrel((context, options) =>
                 {
-                    webBuilder.ConfigureKestrel((context, options) =>
+                    if (Environment.OSVersion.Platform == PlatformID.Unix)
                     {
                         var grpcSetting = context.Configuration.GetSection(nameof(GrpcSetting)).Get<GrpcSetting>();
-
-                        if (grpcSetting.Enable)
+                        if (grpcSetting?.Enable == true)
                         {
                             options.ListenAnyIP(grpcSetting.HttpPort, listenOptions => listenOptions.Protocols = HttpProtocols.Http1);
                             options.ListenAnyIP(grpcSetting.GrpcPort, listenOptions => listenOptions.Protocols = HttpProtocols.Http2);
                         }
-                    });
-                    webBuilder.UseStartup(startup);
-                })
-                .UseSerilog((context, configuration) => configuration.ReadFrom.Configuration(context.Configuration))
-                .Build()
-                .RunAsync();
+                    }
+                });
+            })
+            .ConfigureWebHostDefaults(webBuilder => { webBuilder.UseStartup(startup); });
+
+        if (useSerilog)
+        {
+            host.UseSerilog((context, configuration) => configuration.ReadFrom.Configuration(context.Configuration));
         }
 
-        /// <summary>
-        /// 运行kurisu framework
-        /// </summary>
-        /// <param name="hostBuilder"></param>
-        /// <param name="startup"></param>
-        // ReSharper disable once MemberCanBePrivate.Global
-        public static void RunKurisu(this IHostBuilder hostBuilder, Type startup)
-        {
-            RunKurisuAsync(hostBuilder, startup).GetAwaiter().GetResult();
-        }
+        await host.Build()
+            .RunAsync();
     }
 }

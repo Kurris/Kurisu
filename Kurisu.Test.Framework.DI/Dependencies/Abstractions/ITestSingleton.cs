@@ -1,9 +1,8 @@
 using Microsoft.Extensions.DependencyInjection;
 
-namespace Kurisu.Test.Framework.DI.Dependencies.Abstractions
+namespace Kurisu.Test.Framework.DI.Dependencies.Abstractions;
+
+public interface ITestSingleton : ISingletonDependency
 {
-    public interface ITestSingleton : ISingletonDependency
-    {
-        string Get();
-    }
+    string Get();
 }

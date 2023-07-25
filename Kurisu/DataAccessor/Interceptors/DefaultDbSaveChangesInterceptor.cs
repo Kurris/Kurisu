@@ -1,11 +1,11 @@
 using Microsoft.EntityFrameworkCore.Diagnostics;
 
-namespace Kurisu.DataAccessor.Interceptors
+namespace Kurisu.DataAccessor.Interceptors;
+
+/// <summary>
+/// 上下文保存拦截器
+/// </summary>
+public abstract class DefaultDbSaveChangesInterceptor : SaveChangesInterceptor
 {
-    /// <summary>
-    /// 上下文保存拦截器
-    /// </summary>
-    public abstract class DefaultDbSaveChangesInterceptor : SaveChangesInterceptor
-    {
-    }
+
 }

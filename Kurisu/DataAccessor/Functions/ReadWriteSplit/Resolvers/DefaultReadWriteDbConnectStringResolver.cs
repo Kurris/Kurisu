@@ -5,54 +5,53 @@ using Kurisu.DataAccessor.Functions.Default.Resolvers;
 using Kurisu.DataAccessor.Functions.ReadWriteSplit.Abstractions;
 using Microsoft.Extensions.Options;
 
-namespace Kurisu.DataAccessor.Functions.ReadWriteSplit.Resolvers
+namespace Kurisu.DataAccessor.Functions.ReadWriteSplit.Resolvers;
+
+/// <summary>
+/// 默认数据库读写分离连接字符串处理器
+/// </summary>
+public class DefaultReadWriteDbConnectStringResolver : DefaultDbConnectStringResolver
 {
+    private readonly DbSetting _dbSetting;
+
     /// <summary>
-    /// 默认数据库读写分离连接字符串处理器
+    /// ctor
     /// </summary>
-    public class DefaultReadWriteDbConnectStringResolver : DefaultDbConnectStringResolver
+    /// <param name="options"></param>
+    public DefaultReadWriteDbConnectStringResolver(IOptions<DbSetting> options) : base(options)
     {
-        private readonly DbSetting _dbSetting;
+        _dbSetting = options.Value;
+    }
 
-        /// <summary>
-        /// ctor
-        /// </summary>
-        /// <param name="options"></param>
-        public DefaultReadWriteDbConnectStringResolver(IOptions<DbSetting> options) : base(options)
+    /// <summary>
+    /// 获取连接字符串
+    /// </summary>
+    /// <param name="dbType"></param>
+    /// <returns></returns>
+    public override string GetConnectionString(Type dbType)
+    {
+        if (dbType == null) throw new ArgumentNullException(nameof(dbType));
+
+        var connectionString = string.Empty;
+
+        //从库
+        if (dbType == typeof(DefaultAppDbContext<IAppSlaveDb>))
         {
-            _dbSetting = options.Value;
-        }
-
-        /// <summary>
-        /// 获取连接字符串
-        /// </summary>
-        /// <param name="dbType"></param>
-        /// <returns></returns>
-        public override string GetConnectionString(Type dbType)
-        {
-            if (dbType == null) throw new ArgumentNullException(nameof(dbType));
-
-            var connectionString = string.Empty;
-
-            //从库
-            if (dbType == typeof(DefaultAppDbContext<IAppSlaveDb>))
+            if (_dbSetting.ReadConnectionStrings?.Any() == true)
             {
-                if (_dbSetting.ReadConnectionStrings?.Any() == true)
-                {
-                    var index = new Random().Next(0, _dbSetting.ReadConnectionStrings.Count());
-                    connectionString = _dbSetting.ReadConnectionStrings.ElementAt(index);
-                }
-
-                //如果读库连接不存在，则使用默认连接
-                if (string.IsNullOrEmpty(connectionString))
-                    connectionString = _dbSetting.DefaultConnectionString;
+                var index = new Random().Next(0, _dbSetting.ReadConnectionStrings.Count());
+                connectionString = _dbSetting.ReadConnectionStrings.ElementAt(index);
             }
-            else
-            {
+
+            //如果读库连接不存在，则使用默认连接
+            if (string.IsNullOrEmpty(connectionString))
                 connectionString = _dbSetting.DefaultConnectionString;
-            }
-
-            return connectionString;
         }
+        else
+        {
+            connectionString = _dbSetting.DefaultConnectionString;
+        }
+
+        return connectionString;
     }
 }

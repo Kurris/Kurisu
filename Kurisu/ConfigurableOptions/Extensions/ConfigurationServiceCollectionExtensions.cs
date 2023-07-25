@@ -5,65 +5,61 @@ using Kurisu.ConfigurableOptions.Attributes;
 using Microsoft.Extensions.Configuration;
 
 // ReSharper disable once CheckNamespace
-namespace Microsoft.Extensions.DependencyInjection
+namespace Microsoft.Extensions.DependencyInjection;
+
+/// <summary>
+/// 配置文件扩展类
+/// </summary>
+[SkipScan]
+public static class ConfigurationServiceCollectionExtensions
 {
     /// <summary>
-    /// 配置文件扩展类
+    /// 添加所有配置文件
     /// </summary>
-    [SkipScan]
-    public static class ConfigurationServiceCollectionExtensions
+    /// <param name="services"></param>
+    /// <param name="configuration"></param>
+    /// <returns></returns>
+    public static IServiceCollection AddKurisuConfiguration(this IServiceCollection services, IConfiguration configuration)
     {
-        /// <summary>
-        /// 添加所有配置文件
-        /// </summary>
-        /// <param name="services"></param>
-        /// <param name="configuration"></param>
-        /// <returns></returns>
-        public static IServiceCollection AddKurisuConfiguration(this IServiceCollection services, IConfiguration configuration)
+        var typesNeedToMapping = App.ActiveTypes.Where(x => x.IsDefined(typeof(ConfigurationAttribute))).ToArray();
+        if (!typesNeedToMapping.Any()) return services;
+
+        //Configure
+        var configureMethod = typeof(OptionsConfigurationServiceCollectionExtensions).GetRuntimeMethod(nameof(OptionsConfigurationServiceCollectionExtensions.Configure),
+            new[] {typeof(IServiceCollection), typeof(IConfiguration)})!;
+        //ValidateDataAnnotations
+        var validateDataAnnotationsMethod = typeof(OptionsBuilderDataAnnotationsExtensions).GetMethod(nameof(OptionsBuilderDataAnnotationsExtensions.ValidateDataAnnotations))!;
+
+        //Options
+        var addOptionsMethod = typeof(OptionsServiceCollectionExtensions)
+            .GetRuntimeMethods().First(x => x.Name.Equals(nameof(OptionsServiceCollectionExtensions.AddOptions)) && x.IsGenericMethod);
+
+        var bind = typeof(OptionsBuilderConfigurationExtensions)
+            .GetMethods()
+            .Where(x => x.Name.Equals(nameof(OptionsBuilderConfigurationExtensions.Bind)))
+            .Where(x => x.IsGenericMethod)
+            .First(x => x.GetParameters().Length == 2 && x.GetParameters().Last().ParameterType == typeof(IConfiguration));
+
+
+        foreach (var type in typesNeedToMapping)
         {
-            var typesNeedToMapping = App.ActiveTypes.Where(x => x.IsDefined(typeof(ConfigurationAttribute)));
-            if (!typesNeedToMapping.Any()) return services;
+            var configurationAttribute = type.GetCustomAttribute<ConfigurationAttribute>()!;
 
-            //Configure
-            var configureMethod = typeof(OptionsConfigurationServiceCollectionExtensions).GetRuntimeMethod("Configure",
-                new[]
-                {
-                    typeof(IServiceCollection), typeof(IConfiguration)
-                });
+            //配置路径
+            var path = string.IsNullOrEmpty(configurationAttribute.Path)
+                ? type.Name
+                : configurationAttribute.Path;
 
-            //Options
-            var addOptionsMethod = typeof(OptionsServiceCollectionExtensions)
-                .GetRuntimeMethods().First(x => x.Name.Equals("AddOptions") && x.IsGenericMethod);
+            var section = configuration.GetSection(path);
+            //绑定配置  services.Configure<T>(section);
+            configureMethod.MakeGenericMethod(type).Invoke(null, new object[] {services, section});
 
-            var bind = typeof(OptionsBuilderConfigurationExtensions)
-                .GetMethods()
-                .Where(x => x.Name.Equals(nameof(OptionsBuilderConfigurationExtensions.Bind)))
-                .Where(x => x.IsGenericMethod)
-                .First(x => x.GetParameters().Length == 2 && x.GetParameters().Last().ParameterType == typeof(IConfiguration));
-
-            var validateDataAnnotations = typeof(OptionsBuilderDataAnnotationsExtensions).GetMethod(nameof(OptionsBuilderDataAnnotationsExtensions.ValidateDataAnnotations));
-
-            foreach (var type in typesNeedToMapping)
-            {
-                //取ConfigurationAttribute
-                var configurationAttribute = type.GetCustomAttribute<ConfigurationAttribute>();
-
-                //配置路径
-                var path = string.IsNullOrEmpty(configurationAttribute.Path)
-                    ? type.Name
-                    : configurationAttribute.Path;
-
-                var section = configuration.GetSection(path);
-                //绑定配置  services.Configure<T>(section);
-                configureMethod?.MakeGenericMethod(type).Invoke(null, new object[] {services, section});
-
-                //绑定配置 services.AddOptions<T>().Bind(section).ValidateDataAnnotations()
-                var optionsBuilder = addOptionsMethod.MakeGenericMethod(type).Invoke(null, new object[] {services});
-                optionsBuilder = bind.MakeGenericMethod(type).Invoke(null, new[] {optionsBuilder, section});
-                validateDataAnnotations.MakeGenericMethod(type).Invoke(null, new[] {optionsBuilder});
-            }
-
-            return services;
+            //绑定配置 services.AddOptions<T>().Bind(section).ValidateDataAnnotations()
+            var optionsBuilder = addOptionsMethod.MakeGenericMethod(type).Invoke(null, new object[] {services});
+            optionsBuilder = bind.MakeGenericMethod(type).Invoke(null, new[] {optionsBuilder, section});
+            validateDataAnnotationsMethod.MakeGenericMethod(type).Invoke(null, new[] {optionsBuilder});
         }
+
+        return services;
     }
 }

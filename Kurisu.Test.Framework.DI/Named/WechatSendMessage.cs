@@ -1,14 +1,13 @@
 using Kurisu.Test.Framework.DI.Named.Abstractions;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace Kurisu.Test.Framework.DI.Named
+namespace Kurisu.Test.Framework.DI.Named;
+
+[Register("wechat")]
+public class WechatSendMessage : ISendMessage
 {
-    [Register("wechat")]
-    public class WechatSendMessage : ISendMessage
+    public string Send()
     {
-        public string Send()
-        {
-            return "wechat";
-        }
+        return "wechat";
     }
 }

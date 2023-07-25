@@ -1,20 +1,19 @@
 using System;
 using Kurisu.Test.Framework.DI.Dependencies.Abstractions;
 
-namespace Kurisu.Test.Framework.DI.Dependencies
+namespace Kurisu.Test.Framework.DI.Dependencies;
+
+public class TestSingleton : ITestSingleton
 {
-    public class TestSingleton : ITestSingleton
+    public TestSingleton()
     {
-        public TestSingleton()
-        {
-            Guid = Guid.NewGuid();
-        }
+        Guid = Guid.NewGuid();
+    }
 
-        public Guid Guid { get; }
+    public Guid Guid { get; }
 
-        public string Get()
-        {
-            return Guid.ToString();
-        }
+    public string Get()
+    {
+        return Guid.ToString();
     }
 }

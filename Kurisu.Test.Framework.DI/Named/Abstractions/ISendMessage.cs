@@ -1,9 +1,8 @@
 using Microsoft.Extensions.DependencyInjection;
 
-namespace Kurisu.Test.Framework.DI.Named.Abstractions
+namespace Kurisu.Test.Framework.DI.Named.Abstractions;
+
+public interface ISendMessage : ISingletonDependency
 {
-    public interface ISendMessage : ISingletonDependency
-    {
-        string Send();
-    }
+    string Send();
 }

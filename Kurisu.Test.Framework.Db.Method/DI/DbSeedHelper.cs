@@ -5,32 +5,31 @@ using Kurisu.DataAccessor.Functions.ReadWriteSplit.Abstractions;
 using Kurisu.Test.Framework.Db.Method.Entities;
 using Kurisu.Utils.Extensions;
 
-namespace Kurisu.Test.Framework.Db.Method.DI
+namespace Kurisu.Test.Framework.Db.Method.DI;
+
+public class DbSeedHelper
 {
-    public class DbSeedHelper
+    public static readonly string[] Summaries =
     {
-        public static readonly string[] Summaries =
-        {
-            "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
-        };
+        "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
+    };
 
-        public static async Task InitializeAsync(IAppMasterDb dbService)
-        {
-            // var rng = new Random();
-            // var weatherForecasts = Enumerable.Range(1, 100).Select(index => new WeatherForecast
-            // {
-            //     Date = DateTime.Now.AddDays(index),
-            //     TemperatureC = rng.Next(-20, 55),
-            //     Summary = Summaries[rng.Next(Summaries.Length)]
-            // });
+    public static async Task InitializeAsync(IAppMasterDb dbService)
+    {
+        // var rng = new Random();
+        // var weatherForecasts = Enumerable.Range(1, 100).Select(index => new WeatherForecast
+        // {
+        //     Date = DateTime.Now.AddDays(index),
+        //     TemperatureC = rng.Next(-20, 55),
+        //     Summary = Summaries[rng.Next(Summaries.Length)]
+        // });
 
-            var json = await File.ReadAllTextAsync("./WeatherForecast.json");
-            var weatherForecasts = json.ToObject<List<WeatherForecast>>();
-            var dbContext = dbService.GetMasterDbContext() as TestAppDbContext;
-            await dbContext.Database.EnsureDeletedAsync();
-            await dbContext.Database.EnsureCreatedAsync();
-            dbContext.WeatherForecasts.AddRange(weatherForecasts);
-            await dbContext.SaveChangesAsync();
-        }
+        var json = await File.ReadAllTextAsync("./WeatherForecast.json");
+        var weatherForecasts = json.ToObject<List<WeatherForecast>>();
+        var dbContext = dbService.GetMasterDbContext() as TestAppDbContext;
+        await dbContext.Database.EnsureDeletedAsync();
+        await dbContext.Database.EnsureCreatedAsync();
+        dbContext.WeatherForecasts.AddRange(weatherForecasts);
+        await dbContext.SaveChangesAsync();
     }
 }

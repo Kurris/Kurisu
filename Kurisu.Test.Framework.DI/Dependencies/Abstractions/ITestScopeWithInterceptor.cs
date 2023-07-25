@@ -1,7 +1,6 @@
-namespace Kurisu.Test.Framework.DI.Dependencies.Abstractions
+namespace Kurisu.Test.Framework.DI.Dependencies.Abstractions;
+
+public interface ITestScopeWithInterceptor
 {
-    public interface ITestScopeWithInterceptor
-    {
-        string Get();
-    }
+    string Get();
 }

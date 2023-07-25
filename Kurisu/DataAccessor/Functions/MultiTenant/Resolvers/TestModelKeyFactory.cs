@@ -1,39 +1,38 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 
-namespace Kurisu.DataAccessor.Functions.MultiTenant.Resolvers
-{
-    public class TestModelKeyFactory<TDbContext> : ModelCacheKeyFactory where TDbContext : DbContext
-    {
-        public TestModelKeyFactory(ModelCacheKeyFactoryDependencies dependencies) : base(dependencies)
-        {
-        }
+namespace Kurisu.DataAccessor.Functions.MultiTenant.Resolvers;
 
-        public override object Create(DbContext context)
-        {
-            return new TestModelKey<TDbContext>(context as TDbContext);
-        }
+public class TestModelKeyFactory<TDbContext> : ModelCacheKeyFactory where TDbContext : DbContext
+{
+    public TestModelKeyFactory(ModelCacheKeyFactoryDependencies dependencies) : base(dependencies)
+    {
     }
 
-
-    public class TestModelKey<TDbContext> : ModelCacheKey where TDbContext : DbContext
+    public override object Create(DbContext context)
     {
-        private readonly TDbContext _context;
+        return new TestModelKey<TDbContext>(context as TDbContext);
+    }
+}
 
-        public TestModelKey(TDbContext context) : base(context)
-        {
-            _context = context;
-        }
 
-        protected override bool Equals(ModelCacheKey other)
-        {
-            return base.Equals(other);
-        }
+public class TestModelKey<TDbContext> : ModelCacheKey where TDbContext : DbContext
+{
+    private readonly TDbContext _context;
 
-        public override int GetHashCode()
-        {
-            var hashCode = base.GetHashCode();
-            return hashCode;
-        }
+    public TestModelKey(TDbContext context) : base(context)
+    {
+        _context = context;
+    }
+
+    protected override bool Equals(ModelCacheKey other)
+    {
+        return base.Equals(other);
+    }
+
+    public override int GetHashCode()
+    {
+        var hashCode = base.GetHashCode();
+        return hashCode;
     }
 }
