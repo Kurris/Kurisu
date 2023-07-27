@@ -18,6 +18,8 @@ public class Startup : DefaultKurisuStartup
             options.Interceptors.Add<ServiceLoggerInterceptor>();
             options.EnableDetailedErrors = true;
         });
+
+        services.AddKurisuDatabaseAccessor();
     }
 
     public override void Configure(IApplicationBuilder app, IWebHostEnvironment env)

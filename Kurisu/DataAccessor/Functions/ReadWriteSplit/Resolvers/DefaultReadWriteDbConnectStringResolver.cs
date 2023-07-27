@@ -1,8 +1,8 @@
 using System;
 using System.Linq;
+using Kurisu.DataAccessor.Functions.Default.Abstractions;
 using Kurisu.DataAccessor.Functions.Default.DbContexts;
 using Kurisu.DataAccessor.Functions.Default.Resolvers;
-using Kurisu.DataAccessor.Functions.ReadWriteSplit.Abstractions;
 using Microsoft.Extensions.Options;
 
 namespace Kurisu.DataAccessor.Functions.ReadWriteSplit.Resolvers;
@@ -35,7 +35,7 @@ public class DefaultReadWriteDbConnectStringResolver : DefaultDbConnectStringRes
         var connectionString = string.Empty;
 
         //从库
-        if (dbType == typeof(DefaultAppDbContext<IAppSlaveDb>))
+        if (dbType == typeof(DefaultAppDbContext<IDbRead>))
         {
             if (_dbSetting.ReadConnectionStrings?.Any() == true)
             {

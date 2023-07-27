@@ -14,7 +14,7 @@ namespace Kurisu.DataAccessor.Functions.UnitOfWork.Internal;
 /// 数据库上下文容器
 /// </summary>
 [SkipScan]
-public sealed class DbContextContainer : IDbContextContainer
+internal sealed class DbContextContainer : IDbContextContainer
 {
     /// <summary>
     /// 有效上下文

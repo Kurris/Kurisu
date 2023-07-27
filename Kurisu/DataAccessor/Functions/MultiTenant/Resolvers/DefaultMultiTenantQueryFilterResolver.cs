@@ -1,5 +1,4 @@
 using System;
-using System.Linq;
 using System.Linq.Expressions;
 using Kurisu.DataAccessor.Entity;
 using Kurisu.DataAccessor.Functions.Default.Resolvers;
@@ -16,14 +15,16 @@ public class DefaultMultiTenantQueryFilterResolver : DefaultQueryFilterResolver
 {
     public override void HandleQueryFilter(DbContext dbContext, Type entityType, EntityTypeBuilder builder)
     {
-        base.HandleQueryFilter(dbContext, entityType, builder);
-
-        if (entityType.IsAssignableTo(typeof(ITenantId)))
+        //非所有实体都继承ITenantId
+        if (entityType.IsAssignableTo(typeof(ITenantId)) && dbContext.GetType().IsAssignableTo(typeof(ITenantId)))
         {
             builder.HasQueryFilter(GetMultiTenantExpression(dbContext, entityType));
         }
+        else
+        {
+            base.HandleQueryFilter(dbContext, entityType, builder);
+        }
     }
-
 
     /// <summary>
     /// 获取多租户查询表达式(兼容软删除)
@@ -34,16 +35,15 @@ public class DefaultMultiTenantQueryFilterResolver : DefaultQueryFilterResolver
     /// <returns></returns>
     protected virtual LambdaExpression GetMultiTenantExpression(DbContext dbContext, Type entityType, ParameterExpression p = null)
     {
-        var tenantProperty = typeof(ITenantId).GetProperties()[0];
-
         var parameter = p ?? Expression.Parameter(entityType);
-        var property = Expression.Property(parameter, tenantProperty.Name);
+        var property = Expression.Property(parameter, nameof(ITenantId.TenantId));
 
         //HasQueryFilter可使用DbContext实例
-        var tenant = Expression.Property(Expression.Constant(dbContext), typeof(ITenantId).GetProperties().First());
+        var tenant = Expression.Property(Expression.Constant(dbContext), nameof(ITenantId.TenantId));
         var binaryExpression = Expression.Equal(property, tenant);
         var lambda = Expression.Lambda(binaryExpression, parameter);
 
+        //处理父类的软删除
         if (entityType.IsAssignableTo(typeof(ISoftDeleted)))
         {
             var left = lambda.Body;

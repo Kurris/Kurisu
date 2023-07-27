@@ -17,5 +17,5 @@ internal class KurisuDataAccessorBuilder : IKurisuDataAccessorBuilder
     /// <summary>
     /// 配置处理
     /// </summary>
-    public List<Action<KurisuDataAccessorBuilderSetting>> ConfigurationBuilders { get; set; }
+    public List<Action<KurisuDataAccessorSettingBuilder>> ConfigurationBuilders { get; set; }
 }

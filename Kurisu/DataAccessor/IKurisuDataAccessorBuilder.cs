@@ -18,5 +18,5 @@ public interface IKurisuDataAccessorBuilder
     /// <summary>
     /// 配置处理
     /// </summary>
-    List<Action<KurisuDataAccessorBuilderSetting>> ConfigurationBuilders { get; set; }
+    List<Action<KurisuDataAccessorSettingBuilder>> ConfigurationBuilders { get; set; }
 }

@@ -3,7 +3,6 @@ using Kurisu.DataAccessor.Functions.Default.Abstractions;
 using Kurisu.DataAccessor.Functions.Default.DbContexts;
 using Kurisu.DataAccessor.Functions.Default.Internal;
 using Kurisu.DataAccessor.Functions.Default.Resolvers;
-using Kurisu.DataAccessor.Functions.ReadWriteSplit.Abstractions;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
@@ -22,7 +21,7 @@ public class TestDefault
     [Fact]
     public void GetSlaveDb_Return_Null()
     {
-        var slaveDb = _serviceProvider.GetService<IAppSlaveDb>();
+        var slaveDb = _serviceProvider.GetService<IDbRead>();
         Assert.Null(slaveDb);
     }
 
@@ -52,18 +51,18 @@ public class TestDefault
     [Fact]
     public void GetDbContext_Return_DefaultDbContextWithIAppMasterDb()
     {
-        var masterDb = _serviceProvider.GetService<IAppMasterDb>();
+        var masterDb = _serviceProvider.GetService<IDbWrite>();
 
-        var type = masterDb.GetMasterDbContext().GetType();
+        var type = masterDb.GetDbContext().GetType();
 
-        Assert.Equal(typeof(DefaultAppDbContext<IAppMasterDb>), type);
+        Assert.Equal(typeof(DefaultAppDbContext<IDbWrite>), type);
     }
 
 
     [Fact]
     public void GetIAppMasterDb_Return_WriteImplementation()
     {
-        var masterDb = _serviceProvider.GetService<IAppMasterDb>();
+        var masterDb = _serviceProvider.GetService<IDbWrite>();
 
         var type = masterDb.GetType();
 
@@ -74,7 +73,7 @@ public class TestDefault
     [Fact]
     public void GetIAppDbService_Return_DefaultAppDbService()
     {
-        var dbService = _serviceProvider.GetService<IAppDbService>();
+        var dbService = _serviceProvider.GetService<IDbService>();
 
         var type = dbService.GetType();
 

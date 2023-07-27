@@ -5,9 +5,9 @@ using Kurisu.DataAccessor.Functions.Default.Abstractions;
 using Kurisu.DataAccessor.Functions.Default.DbContexts;
 using Kurisu.DataAccessor.Functions.Default.Internal;
 using Kurisu.DataAccessor.Functions.Default.Resolvers;
-using Kurisu.DataAccessor.Functions.ReadWriteSplit.Abstractions;
 using Kurisu.DataAccessor.Interceptors;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
@@ -40,30 +40,21 @@ public static class DatabaseAccessorServiceCollectionExtensions
         services.AddSingleton<IModelConfigurationSourceResolver, DefaultModelConfigurationSourceResolver>();
 
         //defaultDbContext
-        services.AddKurisuAppDbContext<DefaultAppDbContext<IAppMasterDb>>();
+        services.AddKurisuAppDbContext<DefaultAppDbContext<IDbWrite>>();
 
         //主库操作
-        services.AddScoped(typeof(IAppMasterDb), provider =>
+        services.AddScoped(typeof(IDbWrite), provider =>
         {
-            var masterDbContext = provider.GetService<DefaultAppDbContext<IAppMasterDb>>();
-            return new WriteImplementation(masterDbContext);
+            var dbWrite = provider.GetService<DefaultAppDbContext<IDbWrite>>();
+            return new WriteImplementation(dbWrite);
         });
 
-        //IAppDbService
-        services.AddScoped<IAppDbService, DefaultAppDbService>();
-
-        // ReSharper disable once ConvertToLocalFunction
-        Action<KurisuDataAccessorBuilderSetting> setOpenSoftDeleted = setting => { setting.IsEnableSoftDeleted = true; };
-        services.Configure(setOpenSoftDeleted);
+        //IDbService
+        services.AddScoped<IDbService, DefaultAppDbService>();
 
         return new KurisuDataAccessorBuilder
         {
-            Services = services,
-            ConfigurationBuilders = new List<Action<KurisuDataAccessorBuilderSetting>>
-            {
-                //开启软删除
-                setOpenSoftDeleted
-            }
+            Services = services
         };
     }
 
@@ -89,7 +80,9 @@ public static class DatabaseAccessorServiceCollectionExtensions
 
                 if (!string.IsNullOrEmpty(dbSetting.MigrationsAssembly))
                     builder.MigrationsAssembly(dbSetting.MigrationsAssembly);
-            }).AddInterceptors(provider.GetService<DefaultDbCommandInterceptor>());
+            })
+            .ReplaceService<IModelCacheKeyFactory, CustomModelCacheKeyFactory>()
+            .AddInterceptors(provider.GetService<DefaultDbCommandInterceptor>());
 
             //debug 启用日志 , 这里的配置会被serilog覆盖
 #if DEBUG
@@ -101,19 +94,5 @@ public static class DatabaseAccessorServiceCollectionExtensions
             //ConsoleDemo.WriteLine("{0}:{1}", typeof(TDbContext), connectionString);
 #endif
         });
-    }
-
-
-    /// <summary>
-    /// 关闭软删除功能
-    /// </summary>
-    /// <param name="builder"></param>
-    /// <returns></returns>
-    public static IKurisuDataAccessorBuilder DisableSoftDeleted(this IKurisuDataAccessorBuilder builder)
-    {
-        builder.ConfigurationBuilders.Add(x => x.IsEnableSoftDeleted = false);
-        builder.Services.Configure<KurisuDataAccessorBuilderSetting>(x => { builder.ConfigurationBuilders.ForEach(action => action(x)); });
-
-        return builder;
     }
 }

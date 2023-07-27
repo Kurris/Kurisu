@@ -173,10 +173,10 @@ public static class QueryableExtensions
     /// <param name="userMasterDb"></param>
     /// <typeparam name="TEntity"></typeparam>
     /// <returns></returns>
-    public static IQueryable<TEntity> Where<TEntity>(this IAppDbService appDbService, Expression<Func<TEntity, bool>> predicate, bool userMasterDb = false)
+    public static IQueryable<TEntity> Where<TEntity>(this IDbService appDbService, Expression<Func<TEntity, bool>> predicate, bool userMasterDb = false)
         where TEntity : class, new()
     {
-        return appDbService.Queryable<TEntity>(userMasterDb).Where(predicate);
+        return appDbService.AsQueryable<TEntity>(userMasterDb).Where(predicate);
     }
 
     /// <summary>

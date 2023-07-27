@@ -2,10 +2,10 @@
 using Kurisu.DataAccessor.Functions.Default.Abstractions;
 using Kurisu.DataAccessor.Functions.Default.DbContexts;
 using Kurisu.DataAccessor.Functions.Default.Internal;
-using Kurisu.DataAccessor.Functions.ReadWriteSplit.Abstractions;
 using Kurisu.DataAccessor.Functions.ReadWriteSplit.Internal;
 using Kurisu.DataAccessor.Functions.ReadWriteSplit.Resolvers;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 
 // ReSharper disable once CheckNamespace
 namespace Microsoft.Extensions.DependencyInjection;
@@ -24,24 +24,26 @@ public static class ReadWriteSplitServiceCollectionExtensions
     public static IKurisuDataAccessorBuilder AddKurisuReadWriteSplit(this IKurisuDataAccessorBuilder builder)
     {
         //替换读写分离连接
-        builder.Services.AddSingleton<IDbConnectStringResolver, DefaultReadWriteDbConnectStringResolver>();
+        //builder.Services.AddSingleton<IDbConnectStringResolver, DefaultReadWriteDbConnectStringResolver>();
+        builder.Services.Replace(ServiceDescriptor.Singleton(typeof(IDbConnectStringResolver), typeof(DefaultReadWriteDbConnectStringResolver)));
 
         //增加从库
-        builder.Services.AddKurisuAppDbContext<DefaultAppDbContext<IAppSlaveDb>>();
-        builder.Services.AddScoped(typeof(IAppSlaveDb), provider =>
+        builder.Services.AddKurisuAppDbContext<DefaultAppDbContext<IDbRead>>();
+        builder.Services.AddScoped(typeof(IDbRead), provider =>
         {
-            var slaveDbContext = provider.GetRequiredService<DefaultAppDbContext<IAppSlaveDb>>();
+            var slaveDbContext = provider.GetRequiredService<DefaultAppDbContext<IDbRead>>();
             //取消EF跟踪行为
             slaveDbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
             return new ReadImplementation(slaveDbContext);
         });
 
         //替换IAppDbService
-        builder.Services.AddScoped<IAppDbService, ReadWriteSplitAppDbService>();
+        //builder.Services.AddScoped<IAppDbService, ReadWriteSplitAppDbService>();
+        builder.Services.Replace(ServiceDescriptor.Scoped(typeof(IDbService), typeof(ReadWriteSplitAppDbService)));
 
         //配置开启读写分离
         builder.ConfigurationBuilders.Add(x => x.IsEnableReadWriteSplit = true);
-        builder.Services.Configure<KurisuDataAccessorBuilderSetting>(x =>
+        builder.Services.Configure<KurisuDataAccessorSettingBuilder>(x =>
         {
             builder.ConfigurationBuilders.ForEach(action => action(x));
         });

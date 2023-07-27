@@ -2,7 +2,6 @@ using Kurisu.Authentication.Abstractions;
 using Kurisu.DataAccessor.Entity;
 using Kurisu.DataAccessor.Functions.Default.Abstractions;
 using Kurisu.DataAccessor.Functions.Default.DbContexts;
-using Kurisu.DataAccessor.Functions.ReadWriteSplit.Abstractions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 
@@ -11,15 +10,16 @@ namespace Kurisu.DataAccessor.Functions.MultiTenant.DbContexts;
 /// <summary>
 /// 多租户,写
 /// </summary>
-public class MultiTenantWriteDbContext : DefaultAppDbContext<IAppMasterDb>, ITenantId
+public class MultiTenantWriteDbContext : DefaultAppDbContext<IDbWrite>, ITenantId
 {
-    public MultiTenantWriteDbContext(DbContextOptions<DefaultAppDbContext<IAppMasterDb>> options
-        , IOptions<KurisuDataAccessorBuilderSetting> builderOptions
+    public MultiTenantWriteDbContext(DbContextOptions<DefaultAppDbContext<IDbWrite>> options
+        , IOptions<KurisuDataAccessorSettingBuilder> builderOptions
         , IDefaultValuesOnSaveChangesResolver defaultValuesOnSaveChangesResolver
         , IQueryFilterResolver queryFilterResolver
         , IModelConfigurationSourceResolver modelConfigurationSourceResolver
-        , ICurrentTenantInfoResolver currentTenantInfoResolver)
-        : base(options, builderOptions, defaultValuesOnSaveChangesResolver, queryFilterResolver, modelConfigurationSourceResolver)
+        , ICurrentTenantInfoResolver currentTenantInfoResolver
+        , ICurrentUserInfoResolver currentUserInfoResolver)
+        : base(options, builderOptions, defaultValuesOnSaveChangesResolver, queryFilterResolver, modelConfigurationSourceResolver, currentUserInfoResolver)
     {
         TenantId = currentTenantInfoResolver.GetTenantId();
     }

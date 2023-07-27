@@ -15,9 +15,9 @@ namespace Kurisu.Test.Framework.Db.Method;
 [Trait("db", "query")]
 public class TestQuery
 {
-    private readonly IAppDbService _dbService;
+    private readonly IDbService _dbService;
 
-    public TestQuery(IAppDbService dbService)
+    public TestQuery(IDbService dbService)
     {
         _dbService = dbService;
     }
@@ -56,8 +56,8 @@ public class TestQuery
     {
         await DbSeedHelper.InitializeAsync(_dbService);
 
-        var pages = await _dbService.Queryable<WeatherForecast>().ToPageAsync(pageIndex, pageSize);
-        var total = await _dbService.Queryable<WeatherForecast>().CountAsync();
+        var pages = await _dbService.AsQueryable<WeatherForecast>().ToPageAsync(pageIndex, pageSize);
+        var total = await _dbService.AsQueryable<WeatherForecast>().CountAsync();
 
         Assert.Equal(total, pages.Total);
 
@@ -80,7 +80,7 @@ public class TestQuery
     {
         await DbSeedHelper.InitializeAsync(_dbService);
 
-        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(async () => { await _dbService.Queryable<WeatherForecast>().ToPageAsync(pageIndex, pageSize); });
+        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(async () => { await _dbService.AsQueryable<WeatherForecast>().ToPageAsync(pageIndex, pageSize); });
 
         var dbIds = Enumerable.Range(1, 100);
         Assert.Throws<ArgumentOutOfRangeException>(() => dbIds.ToPage(pageIndex, pageSize));
@@ -117,7 +117,7 @@ public class TestQuery
 
     private async Task<List<WeatherForecast>> GetWeatherForecastList()
     {
-        var res = await _dbService.Queryable<WeatherForecast>().OrderBy(x => x.Date).ToListAsync();
+        var res = await _dbService.AsQueryable<WeatherForecast>().OrderBy(x => x.Date).ToListAsync();
         return res;
     }
 }

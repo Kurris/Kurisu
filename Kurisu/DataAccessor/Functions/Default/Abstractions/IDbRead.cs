@@ -1,23 +1,38 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
 using Kurisu.DataAccessor.Dto;
-using Kurisu.DataAccessor.Functions.Default.Abstractions;
 using Microsoft.EntityFrameworkCore;
 
-namespace Kurisu.DataAccessor.Functions.ReadWriteSplit.Abstractions;
+namespace Kurisu.DataAccessor.Functions.Default.Abstractions;
 
 /// <summary>
-/// 从库接口,读操作
+/// 读取接口
 /// </summary>
-public interface IAppSlaveDb : IBaseDbService
+public interface IDbRead : IBaseDbService
 {
     /// <summary>
-    /// 获取从库上下文对线
+    /// 获取从库上下文对象
     /// </summary>
     /// <returns></returns>
-    DbContext GetSlaveDbContext();
+    DbContext GetDbContext();
+
+    /// <summary>
+    /// 取消跟踪
+    /// </summary>
+    /// <returns></returns>
+    IDbRead AsNoTracking();
+
+
+    /// <summary>
+    /// 特定实体取消跟踪
+    /// </summary>
+    /// <returns></returns>
+    IQueryable<T> AsNoTracking<T>() where T : class, new();
+
+    #region first
 
     /// <summary>
     /// 返回第一个实体
@@ -51,10 +66,26 @@ public interface IAppSlaveDb : IBaseDbService
     /// <returns></returns>
     Task<T> FirstOrDefaultAsync<T>(Expression<Func<T, bool>> predicate) where T : class, new();
 
+
+    #endregion
+
+    #region list
+
     /// <summary>
     /// 查询列表
     /// </summary>
-    Task<List<T>> ToListAsync<T>(Expression<Func<T, bool>> predicate = null) where T : class, new();
+    Task<List<T>> ToListAsync<T>(Expression<Func<T, bool>> predicate) where T : class, new();
+
+
+    /// <summary>
+    /// 查询列表
+    /// </summary>
+    Task<List<T>> ToListAsync<T>() where T : class, new();
+
+
+    #endregion
+
+    #region page
 
     /// <summary>
     /// 分页查询
@@ -63,7 +94,21 @@ public interface IAppSlaveDb : IBaseDbService
     /// <param name="predicate"></param>
     /// <typeparam name="T"></typeparam>
     /// <returns></returns>
-    Task<Pagination<T>> ToPageAsync<T>(PageInput input, Expression<Func<T, bool>> predicate = null) where T : class, new();
+    Task<Pagination<T>> ToPageAsync<T>(PageInput input, Expression<Func<T, bool>> predicate) where T : class, new();
+
+
+    /// <summary>
+    /// 分页查询
+    /// </summary>
+    /// <param name="input"></param>
+    /// <param name="predicate"></param>
+    /// <typeparam name="T"></typeparam>
+    /// <returns></returns>
+    Task<Pagination<T>> ToPageAsync<T>(PageInput input) where T : class, new();
+
+    #endregion
+
+    #region sql
 
     /// <summary>
     /// sql查询
@@ -99,4 +144,9 @@ public interface IAppSlaveDb : IBaseDbService
     /// <typeparam name="T">实体类型</typeparam>
     /// <remarks>参数化:$"select top 1 from blog where id = {value}" </remarks>
     Task<T> FirstOrDefaultAsync<T>(FormattableString sql) where T : class, new();
+
+
+    Task<Pagination<T>> ToPageAsync<T>(string sql, PageInput input) where T : class, new();
+
+    #endregion
 }

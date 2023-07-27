@@ -12,9 +12,9 @@ namespace Kurisu.Test.Framework.Db.Method;
 [Trait("db", "delete")]
 public class TestDelete
 {
-    private readonly IAppDbService _dbService;
+    private readonly IDbService _dbService;
 
-    public TestDelete(IAppDbService dbService)
+    public TestDelete(IDbService dbService)
     {
         _dbService = dbService;
     }
@@ -53,7 +53,7 @@ public class TestDelete
 
     private async Task<List<WeatherForecast>> GetWeatherForecastList()
     {
-        var res = await _dbService.Queryable<WeatherForecast>().OrderBy(x => x.Date).ToListAsync();
+        var res = await _dbService.AsQueryable<WeatherForecast>().OrderBy(x => x.Date).ToListAsync();
         return res;
     }
 }

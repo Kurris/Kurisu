@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
-using Kurisu.DataAccessor.Functions.ReadWriteSplit.Abstractions;
+using Kurisu.DataAccessor.Functions.Default.Abstractions;
 using Kurisu.Test.Framework.Db.Method.Entities;
 using Kurisu.Utils.Extensions;
 
@@ -14,7 +14,7 @@ public class DbSeedHelper
         "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
     };
 
-    public static async Task InitializeAsync(IAppMasterDb dbService)
+    public static async Task InitializeAsync(IDbWrite dbService)
     {
         // var rng = new Random();
         // var weatherForecasts = Enumerable.Range(1, 100).Select(index => new WeatherForecast
@@ -26,7 +26,7 @@ public class DbSeedHelper
 
         var json = await File.ReadAllTextAsync("./WeatherForecast.json");
         var weatherForecasts = json.ToObject<List<WeatherForecast>>();
-        var dbContext = dbService.GetMasterDbContext() as TestAppDbContext;
+        var dbContext = dbService.GetWriteDbContext() as TestAppDbContext;
         await dbContext.Database.EnsureDeletedAsync();
         await dbContext.Database.EnsureCreatedAsync();
         dbContext.WeatherForecasts.AddRange(weatherForecasts);

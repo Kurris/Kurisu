@@ -3,13 +3,8 @@ namespace Kurisu.DataAccessor;
 /// <summary>
 /// 数据访问builder 配置
 /// </summary>
-public class KurisuDataAccessorBuilderSetting
+public class KurisuDataAccessorSettingBuilder
 {
-    /// <summary>
-    /// 是否开启软删除(默认:true)
-    /// </summary>
-    public bool IsEnableSoftDeleted { get; set; } = true;
-
     /// <summary>
     /// 是否开启读写分离
     /// </summary>

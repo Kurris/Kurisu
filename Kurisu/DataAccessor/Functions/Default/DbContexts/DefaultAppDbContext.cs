@@ -1,11 +1,12 @@
 using System;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
+using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
+using Kurisu.Authentication.Abstractions;
 using Kurisu.DataAccessor.Entity;
 using Kurisu.DataAccessor.Functions.Default.Abstractions;
-using Kurisu.DataAccessor.Functions.ReadWriteSplit.Abstractions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 
@@ -14,37 +15,37 @@ namespace Kurisu.DataAccessor.Functions.Default.DbContexts;
 /// <summary>
 /// AppDbContext 程序默认DbContext
 /// </summary>
-public class DefaultAppDbContext<TDbService> : DbContext, IDbContextSoftDeleted where TDbService : IBaseDbService
+public class DefaultAppDbContext<TDbService> : DbContext where TDbService : IBaseDbService
 {
     private readonly IDefaultValuesOnSaveChangesResolver _defaultValuesOnSaveChangesResolver;
     private readonly IQueryFilterResolver _queryFilterResolver;
     private readonly IModelConfigurationSourceResolver _modelConfigurationSourceResolver;
 
-
     public DefaultAppDbContext(DbContextOptions<DefaultAppDbContext<TDbService>> options
-        , IOptions<KurisuDataAccessorBuilderSetting> builderOptions
+        , IOptions<KurisuDataAccessorSettingBuilder> builderOptions
         , IDefaultValuesOnSaveChangesResolver defaultValuesOnSaveChangesResolver
         , IQueryFilterResolver queryFilterResolver
-        , IModelConfigurationSourceResolver modelConfigurationSourceResolver) : base(options)
+        , IModelConfigurationSourceResolver modelConfigurationSourceResolver
+        , ICurrentUserInfoResolver currentUserInfoResolver) : base(options)
     {
         _defaultValuesOnSaveChangesResolver = defaultValuesOnSaveChangesResolver;
         _queryFilterResolver = queryFilterResolver;
         _modelConfigurationSourceResolver = modelConfigurationSourceResolver;
 
-        //true
-        IsEnableSoftDeleted = builderOptions.Value.IsEnableSoftDeleted;
+        UserId = currentUserInfoResolver.GetSubjectId<int?>();
     }
 
     /// <summary>
-    /// 是否开启软删除(默认:true)
+    /// 当前请求用户id
     /// </summary>
-    public bool IsEnableSoftDeleted { get; set; }
+    public int? UserId { get; }
+
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         //定义TableAttribute,并且非继承
         var entityTypes = App.ActiveTypes.Where(x => x.IsDefined(typeof(TableAttribute), false)
-                                                     && x.BaseType is {IsGenericType: true}
+                                                     && x.BaseType is { IsGenericType: true }
                                                      && x.BaseType.GetGenericTypeDefinition() == typeof(BaseEntity<,>));
 
         foreach (var entityType in entityTypes)
@@ -54,6 +55,14 @@ public class DefaultAppDbContext<TDbService> : DbContext, IDbContextSoftDeleted 
                 continue;
 
             var builder = modelBuilder.Entity(entityType);
+            if (entityType.IsDefined(typeof(EnableSplitTableAttribute), false))
+            {
+                if (UserId.HasValue)
+                {
+                    var suffix = UserId.GetHashCode() % 3;
+                    builder.ToTable(entityType.GetCustomAttribute<TableAttribute>().Name + "_" + suffix);
+                }
+            }
 
             //查询过滤
             _queryFilterResolver.HandleQueryFilter(this, entityType, builder);
@@ -95,14 +104,15 @@ public class DefaultAppDbContext<TDbService> : DbContext, IDbContextSoftDeleted 
 /// <summary>
 /// 程序默认数据库上下文
 /// </summary>
-public class DefaultAppDbContext : DefaultAppDbContext<IAppMasterDb>
+public class DefaultAppDbContext : DefaultAppDbContext<IDbWrite>
 {
-    public DefaultAppDbContext(DbContextOptions<DefaultAppDbContext<IAppMasterDb>> options
-        , IOptions<KurisuDataAccessorBuilderSetting> builderOptions
+    public DefaultAppDbContext(DbContextOptions<DefaultAppDbContext<IDbWrite>> options
+        , IOptions<KurisuDataAccessorSettingBuilder> builderOptions
         , IDefaultValuesOnSaveChangesResolver defaultValuesOnSaveChangesResolver
         , IQueryFilterResolver queryFilterResolver
-        , IModelConfigurationSourceResolver modelConfigurationSourceResolver)
-        : base(options, builderOptions, defaultValuesOnSaveChangesResolver, queryFilterResolver, modelConfigurationSourceResolver)
+        , IModelConfigurationSourceResolver modelConfigurationSourceResolver
+        , ICurrentUserInfoResolver currentUserInfoResolver)
+        : base(options, builderOptions, defaultValuesOnSaveChangesResolver, queryFilterResolver, modelConfigurationSourceResolver, currentUserInfoResolver)
     {
     }
 }

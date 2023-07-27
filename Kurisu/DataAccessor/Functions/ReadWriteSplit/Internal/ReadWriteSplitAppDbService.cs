@@ -4,82 +4,98 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
 using Kurisu.DataAccessor.Dto;
+using Kurisu.DataAccessor.Functions.Default.Abstractions;
 using Kurisu.DataAccessor.Functions.Default.Internal;
-using Kurisu.DataAccessor.Functions.ReadWriteSplit.Abstractions;
-using Microsoft.EntityFrameworkCore;
 
 namespace Kurisu.DataAccessor.Functions.ReadWriteSplit.Internal;
 
 /// <summary>
 /// 数据库访问服务
 /// </summary>
-public class ReadWriteSplitAppDbService : DefaultAppDbService
+internal class ReadWriteSplitAppDbService : DefaultAppDbService
 {
-    protected readonly IAppSlaveDb SlaveDb;
+    protected readonly IDbRead _dbRead;
 
-    public ReadWriteSplitAppDbService(IAppMasterDb appMasterDb, IAppSlaveDb appSlaveDb) : base(appMasterDb)
+    public ReadWriteSplitAppDbService(IDbWrite dbWrite, IDbRead dbRead) : base(dbWrite)
     {
-        SlaveDb = appSlaveDb;
+        _dbRead = dbRead;
     }
 
-    public override DbContext GetSlaveDbContext() => SlaveDb.GetSlaveDbContext();
-
-    public override IQueryable<T> Queryable<T>(bool useMasterDb) where T : class
+    public override IQueryable<T> AsQueryable<T>(bool useWriteDb)
     {
-        return useMasterDb
-            ? MasterDb.Queryable<T>()
-            : SlaveDb.Queryable<T>();
+        if (useWriteDb)
+            return base.AsQueryable<T>();
+
+        return _dbRead.AsQueryable<T>();
     }
 
-
-    public override IQueryable<T> Queryable<T>() where T : class
+    public override IQueryable<T> AsQueryable<T>()
     {
-        //默认从库
-        return Queryable<T>(false);
+        return _dbRead.AsQueryable<T>();
     }
 
-    #region Read
-
-    public override async Task<T> FirstOrDefaultAsync<T>() where T : class
+    public override Task<T> FirstOrDefaultAsync<T>()
     {
-        return await SlaveDb.FirstOrDefaultAsync<T>();
+        return _dbRead.FirstOrDefaultAsync<T>();
     }
 
-    public override async ValueTask<T> FirstOrDefaultAsync<T>(params object[] keyValues) where T : class
+    public override ValueTask<T> FirstOrDefaultAsync<T>(params object[] keyValues)
     {
-        return await SlaveDb.FirstOrDefaultAsync<T>(keyValues);
+        return _dbRead.FirstOrDefaultAsync<T>(keyValues);
     }
 
-    public override async ValueTask<object> FirstOrDefaultAsync(Type type, params object[] keys)
+    public override ValueTask<object> FirstOrDefaultAsync(Type type, params object[] keys)
     {
-        return await SlaveDb.FirstOrDefaultAsync(type, keys);
+        return _dbRead.FirstOrDefaultAsync(type, keys);
     }
 
-    public override async Task<T> FirstOrDefaultAsync<T>(Expression<Func<T, bool>> predicate) where T : class
+    public override Task<T> FirstOrDefaultAsync<T>(Expression<Func<T, bool>> predicate)
     {
-        return await SlaveDb.FirstOrDefaultAsync(predicate);
+        return _dbRead.FirstOrDefaultAsync(predicate);
     }
 
-    public override async Task<List<T>> ToListAsync<T>(Expression<Func<T, bool>> predicate = null) where T : class
+    public override Task<T> FirstOrDefaultAsync<T>(string sql, params object[] args)
     {
-        return await SlaveDb.ToListAsync(predicate);
+        return _dbRead.FirstOrDefaultAsync<T>(sql, args);
     }
 
-    public override async Task<Pagination<T>> ToPageAsync<T>(PageInput input, Expression<Func<T, bool>> predicate = null) where T : class
+    public override Task<T> FirstOrDefaultAsync<T>(FormattableString sql)
     {
-        return await SlaveDb.ToPageAsync(input, predicate);
+        return _dbRead.FirstOrDefaultAsync<T>(sql);
     }
 
-    public override async Task<List<T>> ToListAsync<T>(string sql, params object[] args) where T : class
+    public override Task<List<T>> ToListAsync<T>()
     {
-        return await SlaveDb.ToListAsync<T>(sql, args);
+        return _dbRead.ToListAsync<T>();
     }
 
-    public override async Task<T> FirstOrDefaultAsync<T>(string sql, params object[] args) where T : class
+    public override Task<List<T>> ToListAsync<T>(Expression<Func<T, bool>> predicate)
     {
-        return await SlaveDb.FirstOrDefaultAsync<T>(sql, args);
+        return _dbRead.ToListAsync(predicate);
     }
 
+    public override Task<List<T>> ToListAsync<T>(string sql, params object[] args)
+    {
+        return _dbRead.ToListAsync<T>(sql, args);
+    }
 
-    #endregion
+    public override Task<List<T>> ToListAsync<T>(FormattableString sql)
+    {
+        return _dbRead.ToListAsync<T>(sql);
+    }
+
+    public override Task<Pagination<T>> ToPageAsync<T>(PageInput input)
+    {
+        return _dbRead.ToPageAsync<T>(input);
+    }
+
+    public override Task<Pagination<T>> ToPageAsync<T>(PageInput input, Expression<Func<T, bool>> predicate)
+    {
+        return _dbRead.ToPageAsync(input, predicate);
+    }
+
+    public override Task<Pagination<T>> ToPageAsync<T>(string sql, PageInput input)
+    {
+        return _dbRead.ToPageAsync<T>(sql, input);
+    }
 }

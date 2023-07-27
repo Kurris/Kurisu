@@ -12,9 +12,9 @@ namespace Kurisu.Test.Framework.Db.Method;
 [Trait("db", "insert")]
 public class TestInsert
 {
-    private readonly IAppDbService _dbService;
+    private readonly IDbService _dbService;
 
-    public TestInsert(IAppDbService appDbService)
+    public TestInsert(IDbService appDbService)
     {
         _dbService = appDbService;
     }
@@ -31,8 +31,8 @@ public class TestInsert
             Summary = "test"
         };
 
-        await _dbService.InsertAsync(data);
-        var count = await _dbService.Queryable<WeatherForecast>().CountAsync();
+        await _dbService.AddAsync(data);
+        var count = await _dbService.AsQueryable<WeatherForecast>().CountAsync();
 
         Assert.Equal(100, count);
     }
@@ -49,9 +49,9 @@ public class TestInsert
             Summary = "test"
         };
 
-        await _dbService.InsertAsync(data);
+        await _dbService.AddAsync(data);
         await _dbService.SaveChangesAsync();
-        var count = await _dbService.Queryable<WeatherForecast>().CountAsync();
+        var count = await _dbService.AsQueryable<WeatherForecast>().CountAsync();
 
         Assert.Equal(101, count);
     }
@@ -73,13 +73,13 @@ public class TestInsert
         //weatherForecasts   0X2314
         //entities = 0X2314
 
-        await _dbService.InsertRangeAsync(weatherForecasts);
+        await _dbService.AddRangeAsync(weatherForecasts);
         {
             //entities = null
         }
         await _dbService.SaveChangesAsync();
 
-        var count = await _dbService.Queryable<WeatherForecast>().CountAsync();
+        var count = await _dbService.AsQueryable<WeatherForecast>().CountAsync();
 
         Assert.Equal(200, count);
     }
@@ -89,22 +89,24 @@ public class TestInsert
     {
         await DbSeedHelper.InitializeAsync(_dbService);
 
-        var keyObj = await _dbService.InsertReturnIdentityAsync(new WeatherForecast
+        var o1 = new WeatherForecast
         {
             Date = DateTime.Now,
             TemperatureC = 100,
             Summary = "test",
-        });
+        };
 
-        Assert.Equal(101, keyObj);
+        await _dbService.AddAsync(o1);
+        Assert.Equal(101, o1.Id);
 
-        var keyInt = await _dbService.InsertReturnIdentityAsync<int>(new WeatherForecast
+        var o2 = new WeatherForecast
         {
             Date = DateTime.Now,
             TemperatureC = 100,
             Summary = "test",
-        });
+        };
 
-        Assert.Equal(102, keyInt);
+        await _dbService.AddAsync(o2);
+        Assert.Equal(102, o2.Id);
     }
 }

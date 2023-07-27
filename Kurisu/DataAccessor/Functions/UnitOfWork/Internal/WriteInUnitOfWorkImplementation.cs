@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using Kurisu.DataAccessor.Functions.Default.Internal;
 using Kurisu.DataAccessor.Functions.UnitOfWork.Abstractions;
-using Kurisu.DataAccessor.Functions.UnitOfWork.DbContexts;
 using Microsoft.EntityFrameworkCore;
 
 namespace Kurisu.DataAccessor.Functions.UnitOfWork.Internal;
@@ -11,19 +10,20 @@ namespace Kurisu.DataAccessor.Functions.UnitOfWork.Internal;
 /// <summary>
 /// 工作单元,写实现
 /// </summary>
-public class WriteInUnitOfWorkImplementation : WriteImplementation
+internal class WriteInUnitOfWorkImplementation : WriteImplementation
 {
+    private readonly IUnitOfWorkDbContext _unitOfWorkDbContext;
+
     public WriteInUnitOfWorkImplementation(DbContext dbContext) : base(dbContext)
     {
         if (!dbContext.GetType().IsAssignableTo(typeof(IUnitOfWorkDbContext)))
         {
-            throw new ArgumentException(nameof(DbContext) + " 尚未实现IUnitOfWorkDbContext");
+            throw new ArgumentException(nameof(dbContext) + " 尚未实现IUnitOfWorkDbContext");
         }
 
         _unitOfWorkDbContext = (IUnitOfWorkDbContext) dbContext;
     }
 
-    private IUnitOfWorkDbContext _unitOfWorkDbContext;
 
     public override async Task DeleteByIdsAsync<T>(params object[] keyValues)
     {
@@ -44,30 +44,6 @@ public class WriteInUnitOfWorkImplementation : WriteImplementation
         await SaveChangesToDatabaseAsync();
     }
 
-    public override async ValueTask InsertAsync(object entity)
-    {
-        await base.InsertAsync(entity);
-        await SaveChangesToDatabaseAsync();
-    }
-
-    public override async ValueTask InsertAsync<T>(T entity)
-    {
-        await base.InsertAsync(entity);
-        await SaveChangesToDatabaseAsync();
-    }
-
-
-    public override async Task InsertRangeAsync<T>(IEnumerable<T> entities)
-    {
-        await base.InsertRangeAsync(entities);
-        await SaveChangesToDatabaseAsync();
-    }
-
-    public override async Task InsertRangeAsync(IEnumerable<object> entities)
-    {
-        await base.InsertRangeAsync(entities);
-        await SaveChangesToDatabaseAsync();
-    }
 
     public override async Task UpdateAsync(object entity, bool updateAll = false)
     {

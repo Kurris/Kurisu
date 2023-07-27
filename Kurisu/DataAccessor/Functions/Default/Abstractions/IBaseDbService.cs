@@ -12,5 +12,5 @@ public interface IBaseDbService
     /// </summary>
     /// <typeparam name="T">实体类型</typeparam>
     /// <returns><see cref="IQueryable"/>可查询表达式</returns>
-    IQueryable<T> Queryable<T>() where T : class, new();
+    IQueryable<T> AsQueryable<T>() where T : class, new();
 }

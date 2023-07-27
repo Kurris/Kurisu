@@ -2,9 +2,11 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Threading.Tasks;
 using Kurisu.DataAccessor.Entity;
-using Kurisu.DataAccessor.Functions.ReadWriteSplit.Abstractions;
+using Kurisu.DataAccessor.Functions.Default.Abstractions;
+using Kurisu.Utils.Extensions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Metadata;
@@ -18,100 +20,72 @@ namespace Kurisu.DataAccessor.Functions.Default.Internal;
 /// </summary>
 // ReSharper disable once ClassWithVirtualMembersNeverInherited.Global
 [SkipScan]
-public class WriteImplementation : ReadImplementation, IAppMasterDb
+public class WriteImplementation : ReadImplementation, IDbWrite
 {
+    private readonly DbContext _dbContext;
+
     /// <summary>
     /// ctor
     /// </summary>
     /// <param name="dbContext"></param>
     public WriteImplementation(DbContext dbContext) : base(dbContext)
     {
-        DbContext = dbContext;
+        _dbContext = dbContext;
     }
 
-    protected override DbContext DbContext { get; }
+    public override DbContext GetDbContext() => _dbContext;
 
-    public DbContext GetMasterDbContext() => DbContext;
 
-    public override IQueryable<T> Queryable<T>()
+    public override IQueryable<T> AsQueryable<T>()
     {
-        return DbContext.Set<T>().AsQueryable();
+        return _dbContext.Set<T>().AsQueryable();
     }
-
 
     public virtual async Task<int> SaveChangesAsync()
     {
-        return await DbContext.SaveChangesAsync();
+        return await _dbContext.SaveChangesAsync();
     }
 
 
     public virtual async Task<int> RunSqlAsync(string sql, params object[] args)
     {
-        return await DbContext.Database.ExecuteSqlRawAsync(sql, args);
+        return await _dbContext.Database.ExecuteSqlRawAsync(sql, args);
     }
 
     public virtual async Task<int> RunSqlAsync(FormattableString strSql)
     {
-        return await DbContext.Database.ExecuteSqlInterpolatedAsync(strSql);
+        return await _dbContext.Database.ExecuteSqlInterpolatedAsync(strSql);
     }
+
+    #region save
 
     public virtual async ValueTask SaveAsync(object entity)
     {
-        var (_, value) = FindKeyAndValue<object>(entity);
-
-        switch (value)
-        {
-            case Guid guid when guid == Guid.Empty:
-                throw new ArgumentException("主键为Guid类型时，主键必须存在唯一值");
-            case Guid:
-            case null:
-            case 0:
-                await DbContext.AddAsync(entity);
-                break;
-            default:
-                DbContext.Update(entity);
-                break;
-        }
+        var id = FindKeyValue<int>(entity);
+        if (id == 0)
+            await _dbContext.AddAsync(entity);
+        else
+            _dbContext.Update(entity);
     }
 
     public virtual async ValueTask SaveAsync<T>(T entity) where T : class, new()
     {
-        var (_, value) = FindKeyAndValue<object>(entity);
-
-        switch (value)
-        {
-            case Guid guid when guid == Guid.Empty:
-                throw new ArgumentException("主键为Guid类型时，主键必须存在唯一值");
-            case Guid:
-            case null:
-            case 0:
-                await DbContext.AddAsync(entity);
-                break;
-            default:
-                DbContext.Update(entity);
-                break;
-        }
+        var id = FindKeyValue<int>(entity);
+        if (id == 0)
+            await _dbContext.AddAsync(entity);
+        else
+            _dbContext.Update(entity);
     }
 
     public virtual async ValueTask SaveRangeAsync(IEnumerable<object> entities)
     {
         foreach (var entity in entities)
         {
-            var (_, value) = FindKeyAndValue<object>(entity);
-
-            switch (value)
-            {
-                case Guid guid when guid == Guid.Empty:
-                    throw new ArgumentException("主键为Guid类型时，主键必须存在唯一值");
-                case Guid:
-                case null:
-                case 0:
-                    await DbContext.AddAsync(entity);
-                    break;
-                default:
-                    DbContext.Update(entity);
-                    break;
-            }
+            var id = FindKeyValue<int>(entity);
+            if (id == 0)
+                await _dbContext.AddAsync(entity);
+            else
+                _dbContext.Update(entity);
         }
     }
 
@@ -119,42 +93,76 @@ public class WriteImplementation : ReadImplementation, IAppMasterDb
     {
         foreach (var entity in entities)
         {
-            var (_, value) = FindKeyAndValue<object>(entity);
-
-            switch (value)
-            {
-                case Guid guid when guid == Guid.Empty:
-                    throw new ArgumentException("主键为Guid类型时，主键必须存在唯一值");
-                case Guid:
-                case null:
-                case 0:
-                    await DbContext.AddAsync(entity);
-                    break;
-                default:
-                    DbContext.Update(entity);
-                    break;
-            }
+            var id = FindKeyValue<int>(entity);
+            if (id == 0)
+                await _dbContext.AddAsync(entity);
+            else
+                _dbContext.Update(entity);
         }
     }
 
-    public virtual async Task UpdateAsync(object entity, bool updateAll = false)
+    #endregion
+
+    #region add
+
+    public virtual async ValueTask AddAsync(object entity)
     {
-        await UpdateAsync<object>(entity, updateAll);
+        await _dbContext.AddAsync(entity);
     }
 
-    public virtual async Task UpdateAsync<T>(T entity, bool updateAll = false) where T : class, new()
+    public virtual async ValueTask AddAsync<T>(T entity) where T : class, new()
     {
-        DbContext.Update(entity);
-        if (!updateAll)
+        await _dbContext.Set<T>().AddAsync(entity);
+    }
+
+    public virtual async Task AddRangeAsync(IEnumerable<object> entities)
+    {
+        await _dbContext.AddRangeAsync(entities);
+    }
+
+    public virtual async Task AddRangeAsync<T>(IEnumerable<T> entities) where T : class, new()
+    {
+        await _dbContext.Set<T>().AddRangeAsync(entities);
+    }
+
+    #endregion
+
+    #region update
+
+    public virtual async Task UpdateAsync(object entity, bool all = false)
+    {
+        _dbContext.Update(entity);
+        if (!all)
             IgnoreNullAndDefaultValues(entity);
 
         await Task.CompletedTask;
     }
 
-    public virtual async Task UpdateRangeAsync<T>(IEnumerable<T> entities, bool updateAll = false) where T : class, new()
+    public virtual async Task UpdateAsync<T>(T entity, bool all = false) where T : class, new()
     {
-        DbContext.UpdateRange(entities);
-        if (!updateAll)
+        _dbContext.Set<T>().Update(entity);
+        if (!all)
+            IgnoreNullAndDefaultValues(entity);
+
+        await Task.CompletedTask;
+    }
+
+    public virtual async Task UpdateRangeAsync<T>(IEnumerable<T> entities, bool all = false) where T : class, new()
+    {
+        _dbContext.Set<T>().UpdateRange(entities);
+        if (!all)
+        {
+            foreach (var entity in entities)
+                IgnoreNullAndDefaultValues(entity);
+        }
+
+        await Task.CompletedTask;
+    }
+
+    public virtual async Task UpdateRangeAsync(IEnumerable<object> entities, bool all = false)
+    {
+        _dbContext.UpdateRange(entities);
+        if (!all)
         {
             foreach (var entity in entities)
                 IgnoreNullAndDefaultValues(entity);
@@ -164,72 +172,41 @@ public class WriteImplementation : ReadImplementation, IAppMasterDb
     }
 
 
-    public virtual async ValueTask<TKey> InsertReturnIdentityAsync<TKey>(object entity)
-    {
-        await DbContext.AddAsync(entity);
-        await DbContext.SaveChangesAsync();
-        return FindKeyValue<TKey>(entity);
-    }
 
-    public virtual async ValueTask<TKey> InsertReturnIdentityAsync<TKey, TEntity>(TEntity entity) where TEntity : class, new()
-    {
-        await DbContext.Set<TEntity>().AddAsync(entity);
-        await DbContext.SaveChangesAsync();
-        return FindKeyValue<TKey>(entity);
-    }
 
-    public virtual async ValueTask<object> InsertReturnIdentityAsync(object entity)
-    {
-        await DbContext.AddAsync(entity);
-        await DbContext.SaveChangesAsync();
-        return FindKeyValue<object>(entity);
-    }
+    #endregion
 
-    public virtual async ValueTask InsertAsync(object entity)
-    {
-        await DbContext.AddAsync(entity);
-    }
-
-    public virtual async ValueTask InsertAsync<T>(T entity) where T : class, new()
-    {
-        await DbContext.Set<T>().AddAsync(entity);
-    }
-
-    public virtual async Task InsertRangeAsync(IEnumerable<object> entities)
-    {
-        await DbContext.AddRangeAsync(entities);
-    }
-
-    public virtual async Task InsertRangeAsync<T>(IEnumerable<T> entities) where T : class, new()
-    {
-        await DbContext.Set<T>().AddRangeAsync(entities);
-    }
-
+    #region delete
 
     public virtual async Task DeleteAsync(object entity)
     {
-        DbContext.Remove(entity);
+        _dbContext.Remove(entity);
         await Task.CompletedTask;
     }
 
 
     public virtual async Task DeleteAsync<T>(T entity) where T : class, new()
     {
-        DbContext.Set<T>().Remove(entity);
+        _dbContext.Set<T>().Remove(entity);
         await Task.CompletedTask;
     }
 
     public virtual async Task DeleteRangeAsync<T>(IEnumerable<T> entities) where T : class, new()
     {
-        DbContext.Set<T>().RemoveRange(entities);
+        _dbContext.Set<T>().RemoveRange(entities);
         await Task.CompletedTask;
     }
 
 
     public virtual async Task DeleteRangeAsync(IEnumerable<object> entities)
     {
-        DbContext.RemoveRange(entities);
+        _dbContext.RemoveRange(entities);
         await Task.CompletedTask;
+    }
+
+    public Task DeleteAsync<T>(Expression<Func<T, bool>> predicate) where T : class, new()
+    {
+        throw new NotImplementedException();
     }
 
 
@@ -238,10 +215,13 @@ public class WriteImplementation : ReadImplementation, IAppMasterDb
         var entities = BuildEntities<T>(EntityState.Deleted, keyValues);
         if (entities?.Any() == true)
         {
-            var deletes = await DbContext.Set<T>().Where(x => keyValues.Contains(DbContext.Entry(x).CurrentValues[BaseEntityConstants.Id])).ToListAsync();
+            var deletes = await _dbContext.Set<T>().Where(x => keyValues.Contains(_dbContext.Entry(x).CurrentValues[BaseEntityConstants.Id])).ToListAsync();
             await DeleteRangeAsync(deletes);
         }
     }
+
+
+    #endregion
 
     public virtual async Task<int> UseTransactionAsync(Func<Task> func)
     {
@@ -263,79 +243,44 @@ public class WriteImplementation : ReadImplementation, IAppMasterDb
 
     public virtual async Task<IDbContextTransaction> BeginTransactionAsync()
     {
-        return await DbContext.Database.BeginTransactionAsync();
+        return await _dbContext.Database.BeginTransactionAsync();
     }
-
 
     #region find key and value
 
     /// <summary>
-    /// 查找key的值
+    /// 查找主键值
     /// </summary>
     /// <param name="entity"></param>
     /// <typeparam name="TKey"></typeparam>
     /// <returns></returns>
     private TKey FindKeyValue<TKey>(object entity)
     {
-        return FindKeyAndValue<TKey>(entity).value;
+        return entity.GetExpressionPropertyValue<TKey>(BaseEntityConstants.Id);
+        //var key = GetEntityType(entity).FindPrimaryKey();
+        //var propertyInfo = key.Properties.First(x => x.Name == BaseEntityConstants.Id).PropertyInfo;
+        //return (propertyInfo.Name, (TKey)propertyInfo.GetValue(entity));
     }
 
     /// <summary>
-    /// 查找key 和 value的值
-    /// </summary>
-    /// <param name="entity"></param>
-    /// <typeparam name="TKey"></typeparam>
-    /// <returns></returns>
-    private (string key, TKey value) FindKeyAndValue<TKey>(object entity)
-    {
-        var key = GetEntityType(entity).FindPrimaryKey();
-        var propertyInfo = key.Properties.First(x => x.Name == BaseEntityConstants.Id).PropertyInfo;
-        return (propertyInfo.Name, (TKey) propertyInfo.GetValue(entity));
-    }
-
-    /// <summary>
-    /// 查找key value
+    /// 查找主键值
     /// </summary>
     /// <param name="t"></param>
     /// <typeparam name="TEntity"></typeparam>
     /// <typeparam name="TKey"></typeparam>
     /// <returns></returns>
     // ReSharper disable once UnusedMember.Local
-    private (string key, TKey value) FindKeyValue<TEntity, TKey>(TEntity t) where TEntity : class, new()
+    private TKey FindKeyValue<TEntity, TKey>(TEntity t) where TEntity : class, new()
     {
-        var key = GetEntityType<TEntity>().FindPrimaryKey();
-        var propInfo = key.Properties[0].PropertyInfo;
-        return (propInfo.Name, (TKey) propInfo.GetValue(t));
-    }
-
-    /// <summary>
-    /// 查找table和keys
-    /// </summary>
-    /// <typeparam name="T"></typeparam>
-    /// <returns></returns>
-    // ReSharper disable once UnusedMember.Local
-    private (string table, IEnumerable<string> keys) FindTableAndKeys<T>() where T : class, new()
-    {
-        var entityType = GetEntityType<T>();
-        var tableName = entityType.GetTableName();
-        var key = entityType.FindPrimaryKey();
-        return (tableName, key.Properties.Select(x => x.PropertyInfo.Name));
-    }
-
-    /// <summary>
-    /// 查找keys
-    /// </summary>
-    /// <typeparam name="T"></typeparam>
-    /// <returns></returns>
-    // ReSharper disable once UnusedMember.Local
-    private IEnumerable<string> FindKeys<T>() where T : class, new()
-    {
-        var key = GetEntityType<T>().FindPrimaryKey();
-        return key.Properties.Select(x => x.PropertyInfo.Name);
+        return t.GetExpressionPropertyValue<TKey>(BaseEntityConstants.Id);
+        //var key = GetEntityType<TEntity>().FindPrimaryKey();
+        //var propInfo = key.Properties[0].PropertyInfo;
+        //return (propInfo.Name, (TKey)propInfo.GetValue(t));
     }
 
     #endregion
 
+    #region others
 
     /// <summary>
     /// 生成指定的状态的实体
@@ -385,7 +330,7 @@ public class WriteImplementation : ReadImplementation, IAppMasterDb
         where TEntity : class, new()
     {
         //触发跟踪实体
-        var entry = DbContext.Entry(entity);
+        var entry = _dbContext.Entry(entity);
         entry.State = entityState;
         return entry;
     }
@@ -399,7 +344,7 @@ public class WriteImplementation : ReadImplementation, IAppMasterDb
     /// <returns></returns>
     private List<EntityTrackState<T>> GetTrackStates<T>(params object[] keyValues) where T : class, new()
     {
-        var entries = DbContext.ChangeTracker.Entries<T>().ToArray();
+        var entries = _dbContext.ChangeTracker.Entries<T>().ToArray();
 
         var result = new List<EntityTrackState<T>>(entries.Length);
         foreach (var keyValue in keyValues)
@@ -428,13 +373,15 @@ public class WriteImplementation : ReadImplementation, IAppMasterDb
         var properties = GetEntityType<T>()?.GetProperties().ToArray();
         if (properties == null || !properties.Any()) return;
 
+        var entry = _dbContext.Entry(entity);
+
         foreach (var property in properties)
         {
-            var entityProperty = DbContext.Entry(entity).Property(property.Name);
-            if (entityProperty != null)
+            var propertyEntry = entry.Property(property.Name);
+            if (propertyEntry != null)
             {
-                var propertyValue = entityProperty.CurrentValue;
-                var propertyType = entityProperty.Metadata.PropertyInfo?.PropertyType;
+                var propertyValue = propertyEntry.CurrentValue;
+                var propertyType = property.ClrType;//propertyEntry.Metadata.PropertyInfo.PropertyType;
 
                 // 判断是否是无效的值，比如为 null，默认时间，以及空 Guid 值
                 var isInvalid = propertyValue == null
@@ -443,7 +390,7 @@ public class WriteImplementation : ReadImplementation, IAppMasterDb
                                 || propertyType == typeof(Guid) && propertyValue.ToString() == Guid.Empty.ToString();
 
                 if (isInvalid)
-                    entityProperty.IsModified = false;
+                    propertyEntry.IsModified = false;
             }
         }
     }
@@ -456,7 +403,7 @@ public class WriteImplementation : ReadImplementation, IAppMasterDb
     /// <returns></returns>
     private IEntityType GetEntityType<T>() where T : class, new()
     {
-        return DbContext.Model.FindEntityType(typeof(T));
+        return _dbContext.Model.FindEntityType(typeof(T));
     }
 
     /// <summary>
@@ -466,7 +413,7 @@ public class WriteImplementation : ReadImplementation, IAppMasterDb
     /// <returns></returns>
     private IEntityType GetEntityType(object obj)
     {
-        return DbContext.Model.FindEntityType(obj.GetType());
+        return _dbContext.Model.FindEntityType(obj.GetType());
     }
 
 
@@ -476,4 +423,6 @@ public class WriteImplementation : ReadImplementation, IAppMasterDb
         public object KeyValue { get; init; }
         public EntityEntry<T> Entry { get; init; }
     }
+
+    #endregion
 }

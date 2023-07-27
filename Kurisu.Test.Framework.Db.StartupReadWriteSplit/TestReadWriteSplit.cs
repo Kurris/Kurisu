@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using Kurisu.DataAccessor.Functions.Default.Abstractions;
 using Kurisu.DataAccessor.Functions.Default.DbContexts;
 using Kurisu.DataAccessor.Functions.Default.Internal;
-using Kurisu.DataAccessor.Functions.ReadWriteSplit.Abstractions;
 using Kurisu.DataAccessor.Functions.ReadWriteSplit.Internal;
 using Kurisu.DataAccessor.Functions.ReadWriteSplit.Resolvers;
 using Microsoft.Extensions.DependencyInjection;
@@ -24,7 +23,7 @@ public class TestReadWriteSplit
     [Fact]
     public void GetSlaveDb_Return_NotNull()
     {
-        var slaveDb = _serviceProvider.GetService<IAppSlaveDb>();
+        var slaveDb = _serviceProvider.GetService<IDbRead>();
         Assert.NotNull(slaveDb);
     }
 
@@ -45,11 +44,11 @@ public class TestReadWriteSplit
     {
         var resolver = _serviceProvider.GetService<IDbConnectStringResolver>();
 
-        var masterDbString = resolver.GetConnectionString(typeof(DefaultAppDbContext<IAppMasterDb>));
+        var masterDbString = resolver.GetConnectionString(typeof(DefaultAppDbContext<IDbWrite>));
         var dbString = "server=isawesome.cn;port=3306;userid=root;password=root;database=demo;Charset=utf8mb4;";
         Assert.Equal(dbString, masterDbString);
 
-        var slaveDbString = resolver.GetConnectionString(typeof(DefaultAppDbContext<IAppSlaveDb>));
+        var slaveDbString = resolver.GetConnectionString(typeof(DefaultAppDbContext<IDbRead>));
         Assert.Contains(slaveDbString, new List<string>()
         {
             "server=isawesome.cn;port=32001;userid=root;password=zxc111;database=demo;Charset=utf8mb4;"
@@ -59,27 +58,27 @@ public class TestReadWriteSplit
     [Fact]
     public void GetDbContext_Return_MatchDbContext()
     {
-        var masterDb = _serviceProvider.GetService<IAppMasterDb>();
+        var masterDb = _serviceProvider.GetService<IDbWrite>();
 
-        var masterType = masterDb.GetMasterDbContext().GetType();
-        Assert.Equal(typeof(DefaultAppDbContext<IAppMasterDb>), masterType);
+        var masterType = masterDb.GetWriteDbContext().GetType();
+        Assert.Equal(typeof(DefaultAppDbContext<IDbWrite>), masterType);
 
-        var slaveDb = _serviceProvider.GetService<IAppSlaveDb>();
+        var slaveDb = _serviceProvider.GetService<IDbRead>();
 
-        var slaveType = slaveDb.GetSlaveDbContext().GetType();
-        Assert.Equal(typeof(DefaultAppDbContext<IAppSlaveDb>), slaveType);
+        var slaveType = slaveDb.GetReadDbContext().GetType();
+        Assert.Equal(typeof(DefaultAppDbContext<IDbRead>), slaveType);
     }
 
 
     [Fact]
     public void GetIAppXXXDb_Return_MatchImplementation()
     {
-        var masterDb = _serviceProvider.GetService<IAppMasterDb>();
+        var masterDb = _serviceProvider.GetService<IDbWrite>();
 
         var masterType = masterDb.GetType();
         Assert.Equal(typeof(WriteImplementation), masterType);
 
-        var slaveDb = _serviceProvider.GetService<IAppSlaveDb>();
+        var slaveDb = _serviceProvider.GetService<IDbRead>();
 
         var slaveDbType = slaveDb.GetType();
         Assert.Equal(typeof(ReadImplementation), slaveDbType);
@@ -88,7 +87,7 @@ public class TestReadWriteSplit
     [Fact]
     public void GetIAppDbService_Return_ReadWriteAppDbService()
     {
-        var dbService = _serviceProvider.GetService<IAppDbService>();
+        var dbService = _serviceProvider.GetService<IDbService>();
 
         var type = dbService.GetType();
 

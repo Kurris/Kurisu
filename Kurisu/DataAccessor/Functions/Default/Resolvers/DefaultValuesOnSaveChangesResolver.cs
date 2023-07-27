@@ -1,7 +1,6 @@
 using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
-using System.Linq.Expressions;
 using Kurisu.Authentication.Abstractions;
 using Kurisu.DataAccessor.Entity;
 using Kurisu.DataAccessor.Functions.Default.Abstractions;
@@ -17,7 +16,6 @@ namespace Kurisu.DataAccessor.Functions.Default.Resolvers;
 public class DefaultValuesOnSaveChangesResolver : IDefaultValuesOnSaveChangesResolver
 {
     private readonly int _sub;
-    private Func<IDbContextSoftDeleted, bool> _dbContextSoftDeletedCheckHandler;
 
     public DefaultValuesOnSaveChangesResolver(ICurrentUserInfoResolver currentUserInfoResolver)
     {
@@ -80,20 +78,8 @@ public class DefaultValuesOnSaveChangesResolver : IDefaultValuesOnSaveChangesRes
     /// <param name="entry"></param>
     protected virtual void OnDeleted(DbContext dbContext, EntityEntry entry)
     {
-        //定义获取DbContext是否开启软删除的方法
-        if (_dbContextSoftDeletedCheckHandler == null)
-        {
-            var parameter = Expression.Parameter(typeof(IDbContextSoftDeleted));
-            var softDeletedMemberExpression = Expression.Property(Expression.Constant(dbContext), nameof(IDbContextSoftDeleted.IsEnableSoftDeleted));
-            //expression : p => p.IsEnableSoftDeleted == true
-            var binaryExpression = Expression.Equal(softDeletedMemberExpression, Expression.Constant(true));
-
-            var lambda = Expression.Lambda<Func<IDbContextSoftDeleted, bool>>(binaryExpression, parameter);
-            _dbContextSoftDeletedCheckHandler = lambda.Compile();
-        }
-
-        //当前DbContext开启软删除并且实体继承ISoftDeleted
-        if (_dbContextSoftDeletedCheckHandler(dbContext as IDbContextSoftDeleted) && entry.Entity.GetType().IsAssignableTo(typeof(ISoftDeleted)))
+        //当前实体继承ISoftDeleted
+        if (entry.Entity.GetType().IsAssignableTo(typeof(ISoftDeleted)))
         {
             //只有在IsSoftDeleted = false进行删除时才会软删除
             //实体值主动设置为true,则物理删除

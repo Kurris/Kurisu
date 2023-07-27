@@ -1,10 +1,13 @@
 using System;
 using Kurisu.DataAccessor;
-using Kurisu.DataAccessor.Functions.ReadWriteSplit.Abstractions;
+using Kurisu.DataAccessor.Functions.Default.Abstractions;
+using Kurisu.DataAccessor.Functions.Default.Internal;
+using Kurisu.DataAccessor.Functions.MultiTenant.DbContexts;
 using Kurisu.DataAccessor.Functions.UnitOfWork.Abstractions;
 using Kurisu.DataAccessor.Functions.UnitOfWork.DbContexts;
 using Kurisu.DataAccessor.Functions.UnitOfWork.Internal;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 
 // ReSharper disable once CheckNamespace
 namespace Microsoft.Extensions.DependencyInjection;
@@ -28,18 +31,26 @@ public static class UnitOfWorkServiceCollectionExtensions
 
         //无需处理从库操作
         //替换主实现
-        builder.Services.AddScoped<IAppMasterDb>(provider =>
+        //builder.Services.AddScoped<IAppMasterDb>(provider =>
+        //{
+        //    var masterDbContext = provider.GetService<UnitOfWorkDbContext>();
+        //    //加入到上下文管理容器中
+        //    var container = provider.GetRequiredService<IDbContextContainer>();
+        //    container.Manage(masterDbContext);
+        //    return new WriteInUnitOfWorkImplementation(masterDbContext);
+        //});
+        builder.Services.Replace(ServiceDescriptor.Scoped(typeof(IDbWrite), provider =>
         {
             var masterDbContext = provider.GetService<UnitOfWorkDbContext>();
             //加入到上下文管理容器中
             var container = provider.GetRequiredService<IDbContextContainer>();
             container.Manage(masterDbContext);
             return new WriteInUnitOfWorkImplementation(masterDbContext);
-        });
+        }));
 
         //配置开启工作单元
         builder.ConfigurationBuilders.Add(x => x.IsEnableUnitOfWork = true);
-        builder.Services.Configure<KurisuDataAccessorBuilderSetting>(x => { builder.ConfigurationBuilders.ForEach(action => action(x)); });
+        builder.Services.Configure<KurisuDataAccessorSettingBuilder>(x => { builder.ConfigurationBuilders.ForEach(action => action(x)); });
 
         return builder;
     }

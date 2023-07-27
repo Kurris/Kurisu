@@ -1,37 +1,38 @@
-using IdentityModel;
+using Kurisu.DataAccessor.Functions.Default.Abstractions;
+using Kurisu.DataAccessor.Functions.Default.DbContexts;
+using Kurisu.DataAccessor.Functions.UnitOfWork.Attributes;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace Kurisu.Test.WebApi_A.Controllers;
 
-[Authorize]
 [ApiController]
 [Route("api/[controller]")]
 public class WeatherForecastController : ControllerBase
 {
-    private static readonly string[] Summaries = new[]
-    {
-        "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
-    };
-
     private readonly ILogger<WeatherForecastController> _logger;
-    private readonly HttpClient _client;
+    private readonly IDbService _dbService;
 
-    public WeatherForecastController(ILogger<WeatherForecastController> logger, IHttpClientFactory httpClientFactory)
+    public WeatherForecastController(ILogger<WeatherForecastController> logger, IDbService dbService)
     {
-        _client = httpClientFactory.CreateClient();
         _logger = logger;
+        _dbService = dbService;
     }
 
-    [HttpGet(Name = "GetWeatherForecast")]
-    public IEnumerable<WeatherForecast> Get()
+    //[UnitOfWork(IsAutomaticSaveChanges = false)]
+    [Authorize]
+    [HttpGet]
+    public async Task<List<Entity.Test>> GetWeatherForecast()
     {
-        return Enumerable.Range(1, 5).Select(index => new WeatherForecast
-            {
-                Date = DateTime.Now.AddDays(index),
-                TemperatureC = Random.Shared.Next(-20, 55),
-                Summary = Summaries[Random.Shared.Next(Summaries.Length)]
-            })
-            .ToArray();
+        var t = new Entity.Test()
+        {
+            Name = "test",
+        };
+
+        await _dbService.AddAsync(t);
+        //await _dbService.SaveChangesAsync();
+
+        return await _dbService.AsNoTracking<Entity.Test>().ToListAsync();
     }
 }

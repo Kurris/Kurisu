@@ -14,10 +14,4 @@ public interface IUnitOfWorkDbContext
     /// </remarks>
     /// </summary>
     bool IsAutomaticSaveChanges { get; set; }
-
-    /// <summary>
-    /// 获取实现工作单元的DbContext
-    /// </summary>
-    /// <returns></returns>
-    DbContext GetUnitOfWorkDbContext();
 }

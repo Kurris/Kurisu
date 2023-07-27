@@ -14,13 +14,13 @@ public class TestDependencies
     private readonly ITestScopeWithInterceptor _scopeWithInterceptor;
     private readonly IGenericsGet<Cat> _catGenericsGet;
     private readonly IGenericsGet<Dog> _dogGenericsGet;
-    private readonly IAppDbService _appDbService;
+    private readonly IDbService _appDbService;
 
     public TestDependencies(IServiceProvider serviceProvider
         , ITestScopeWithInterceptor scopeWithInterceptor
         , IGenericsGet<Cat> catGenericsGet
         , IGenericsGet<Dog> dogGenericsGet
-        , IAppDbService appDbService)
+        , IDbService appDbService)
     {
         _serviceProvider = serviceProvider;
         _scopeWithInterceptor = scopeWithInterceptor;

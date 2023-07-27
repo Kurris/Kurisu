@@ -1,12 +1,10 @@
 using System;
 using Kurisu.DataAccessor.Functions.Default.Abstractions;
-using Kurisu.DataAccessor.Functions.Default.Internal;
-using Kurisu.DataAccessor.Functions.ReadWriteSplit.Abstractions;
 using Kurisu.DataAccessor.Interceptors;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
+using Kurisu.DataAccessor.Functions.Default.Internal;
 
 namespace Kurisu.Test.Framework.Db.Method.DI;
 
@@ -30,12 +28,12 @@ public class DbInjectHelper
         });
 
         //读写操作实现类
-        services.AddScoped(typeof(IAppMasterDb), provider =>
+        services.AddScoped(typeof(IDbWrite), provider =>
         {
             var masterDbContext = provider.GetService<TestAppDbContext>();
             return new WriteImplementation(masterDbContext);
         });
 
-        services.AddScoped<IAppDbService, DefaultAppDbService>();
+        services.AddScoped<IDbService, DefaultAppDbService>();
     }
 }

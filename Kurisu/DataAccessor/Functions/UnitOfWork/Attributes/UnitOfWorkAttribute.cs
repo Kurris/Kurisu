@@ -13,28 +13,36 @@ namespace Kurisu.DataAccessor.Functions.UnitOfWork.Attributes;
 [AttributeUsage(AttributeTargets.Method)]
 public class UnitOfWorkAttribute : Attribute, IAsyncActionFilter
 {
-    private readonly bool _isAutomaticSaveChanges;
-
-    /// <summary>
-    /// 工作单元,自动提交
-    /// </summary>
-    public UnitOfWorkAttribute() : this(true)
-    {
-    }
-
     /// <summary>
     /// 工作单元
     /// </summary>
-    /// <param name="isAutomaticSaveChanges">是否自动提交</param>
-    public UnitOfWorkAttribute(bool isAutomaticSaveChanges)
+    public UnitOfWorkAttribute()
     {
-        _isAutomaticSaveChanges = isAutomaticSaveChanges;
     }
+
+    /// <summary>
+    /// 是否开启事务
+    /// </summary>
+    /// <remarks>
+    /// 默认:true
+    /// </remarks>
+    public bool IsUseTransaction { get; set; } = true;
+
+    /// <summary>
+    /// 是否自动提交
+    /// </summary>
+    /// <remarks>
+    /// 默认:true
+    /// </remarks>
+    public bool IsAutomaticSaveChanges { get; set; } = true;
 
     /// <summary>
     /// 当事务保存成功后,接受数据库的更改
     /// </summary>
-    public bool AcceptAllChangesOnSuccess { get; set; } = true;
+    /// <remarks>
+    /// 默认:true
+    /// </remarks>
+    public bool IsAcceptAllChangesOnSuccess { get; set; } = true;
 
     /// <summary>
     /// 接口过滤器
@@ -43,26 +51,37 @@ public class UnitOfWorkAttribute : Attribute, IAsyncActionFilter
     /// <param name="next"></param>
     public async Task OnActionExecutionAsync(ActionExecutingContext context, ActionExecutionDelegate next)
     {
-        var dbContextContainer = context.HttpContext.RequestServices.GetRequiredService<IDbContextContainer>();
+        var dbContextContainer = context.HttpContext.RequestServices.GetService<IDbContextContainer>()
+            ?? throw new NotSupportedException($"工作单元未开启:[{nameof(UnitOfWorkAttribute)}]");
+
         //检查上下文个数,开启事务管理
         if (dbContextContainer.Count > 0)
         {
-            dbContextContainer.IsAutomaticSaveChanges = _isAutomaticSaveChanges;
+            dbContextContainer.IsAutomaticSaveChanges = IsAutomaticSaveChanges;
 
-            //开启事务
-            await dbContextContainer.BeginTransactionAsync();
+            if (IsUseTransaction)
+            {
+                //开启事务
+                await dbContextContainer.BeginTransactionAsync();
 
-            //执行请求scope并获取结果
-            var result = await next();
+                //执行请求scope并获取结果
+                var result = await next();
 
-            //提交事务
-            await dbContextContainer.CommitTransactionAsync(AcceptAllChangesOnSuccess, result.Exception);
+                //提交事务
+                await dbContextContainer.CommitTransactionAsync(IsAcceptAllChangesOnSuccess, result.Exception);
+            }
+            else
+            {
+                await next();
+
+                if (IsAutomaticSaveChanges)
+                    await dbContextContainer.SaveChangesAsync(IsAcceptAllChangesOnSuccess);
+            }
         }
         else
         {
-            var logger = context.HttpContext.RequestServices.GetService<ILogger<UnitOfWorkAttribute>>()!;
+            var logger = context.HttpContext.RequestServices.GetRequiredService<ILogger<UnitOfWorkAttribute>>()!;
             logger.LogInformation("数据库上下文管理数:{Count}", dbContextContainer.Count);
-
             await next();
         }
     }
