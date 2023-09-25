@@ -3,11 +3,11 @@ using System.Text;
 using System.Threading.Tasks;
 using Kurisu.Startup.Abstractions;
 using Kurisu.UnifyResultAndValidation.Abstractions;
-using Kurisu.Utils.Extensions;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
+using Newtonsoft.Json;
 
 namespace Kurisu.Startup.AppPacks;
 
@@ -49,7 +49,8 @@ public class GlobalExceptionMiddleware : BaseMiddleware
             context.Response.StatusCode = ex.Source!.Contains("IdentityModel.AspNetCore") ? 401 : 500;
             var apiResult = context.RequestServices.GetService<IApiResult>();
 
-            var bytes = Encoding.UTF8.GetBytes(apiResult!.GetDefaultErrorApiResult(ex.Message).ToJson());
+            var json = JsonConvert.SerializeObject(apiResult!.GetDefaultErrorApiResult(ex.Message));
+            var bytes = Encoding.UTF8.GetBytes(json);
 
             context.Response.ContentType = "application/json";
             context.Response.ContentLength = bytes.Length;

@@ -1,9 +1,9 @@
 using System;
-using Kurisu.DataAccessor.Entity;
+using Kurisu.DataAccess.Entity;
 
 namespace Kurisu.Test.Framework.Db.Method.Entities;
 
-public class WeatherForecast : BaseEntity<int, int?>, ISoftDeleted
+public class WeatherForecast : BaseEntity<int>, ISoftDeleted
 {
     public DateTime Date { get; set; }
 

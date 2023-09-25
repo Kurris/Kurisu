@@ -1,6 +1,6 @@
 using System;
 using Kurisu.Authentication;
-using Kurisu.DataAccessor;
+using Kurisu.DataAccess;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Xunit;

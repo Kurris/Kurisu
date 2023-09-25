@@ -93,11 +93,11 @@ public class DefaultSwaggerPack : BaseAppPack
 
             c.OperationFilter<AddResponseHeadersFilter>();
             c.OperationFilter<AppendAuthorizeToSummaryOperationFilter>();
+            c.OperationFilter<SecurityRequirementsOperationFilter>();
 
             //OAuth2.0 Token 获取
             if (setting.Enable)
             {
-                c.OperationFilter<SecurityRequirementsOperationFilter>();
                 c.AddSecurityDefinition("oauth2", new OpenApiSecurityScheme
                 {
                     Type = SecuritySchemeType.OAuth2,

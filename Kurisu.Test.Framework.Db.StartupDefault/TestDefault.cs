@@ -1,8 +1,8 @@
 using System;
-using Kurisu.DataAccessor.Functions.Default.Abstractions;
-using Kurisu.DataAccessor.Functions.Default.DbContexts;
-using Kurisu.DataAccessor.Functions.Default.Internal;
-using Kurisu.DataAccessor.Functions.Default.Resolvers;
+using Kurisu.DataAccess.Functions.Default;
+using Kurisu.DataAccess.Functions.Default.Abstractions;
+using Kurisu.DataAccess.Functions.Default.Internal;
+using Kurisu.DataAccess.Functions.Default.Resolvers;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
@@ -68,7 +68,7 @@ public class TestDefault
 
         Assert.Equal(typeof(WriteImplementation), type);
     }
-        
+
 
     [Fact]
     public void GetIAppDbService_Return_DefaultAppDbService()

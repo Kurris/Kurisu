@@ -1,5 +1,5 @@
 using System;
-using Kurisu.DataAccessor.Functions.Default.Abstractions;
+using Kurisu.DataAccess.Functions.Default.Abstractions;
 using Kurisu.Test.Framework.DI.Dependencies.Abstractions;
 using Kurisu.Test.Framework.DI.Dtos;
 using Microsoft.Extensions.DependencyInjection;

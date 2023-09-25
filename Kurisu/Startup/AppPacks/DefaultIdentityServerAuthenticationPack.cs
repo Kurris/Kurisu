@@ -19,6 +19,7 @@ public class DefaultIdentityServerAuthenticationPack : BaseAppPack
     {
         var setting = Configuration.GetSection(nameof(IdentityServerSetting)).Get<IdentityServerSetting>();
         services.AddKurisuOAuth2Authentication(setting);
+        services.AddKurisuJwtAuthentication(new JwtSetting(), context => { });
     }
 
     public override void Configure(IApplicationBuilder app, IWebHostEnvironment env)

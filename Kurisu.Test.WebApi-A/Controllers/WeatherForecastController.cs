@@ -1,38 +1,54 @@
-using Kurisu.DataAccessor.Functions.Default.Abstractions;
-using Kurisu.DataAccessor.Functions.Default.DbContexts;
-using Kurisu.DataAccessor.Functions.UnitOfWork.Attributes;
+using Kurisu.MVC;
+using Kurisu.Test.WebApi_A.Dtos;
+using Kurisu.Utils;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
 namespace Kurisu.Test.WebApi_A.Controllers;
 
+[ApiDefinition("天气api")]
 [ApiController]
 [Route("api/[controller]")]
 public class WeatherForecastController : ControllerBase
 {
     private readonly ILogger<WeatherForecastController> _logger;
-    private readonly IDbService _dbService;
+    private readonly DefaultShardingDbContext _context;
 
-    public WeatherForecastController(ILogger<WeatherForecastController> logger, IDbService dbService)
+    public WeatherForecastController(ILogger<WeatherForecastController> logger, DefaultShardingDbContext context)
     {
         _logger = logger;
-        _dbService = dbService;
+        _context = context;
     }
 
-    //[UnitOfWork(IsAutomaticSaveChanges = false)]
+    /// <summary>
+    /// 添加
+    /// </summary>
+    [HttpPost]
+    public async Task Add()
+    {
+        await _context.Tests.AddAsync(new Entity.Test
+        {
+            Id = SnowFlakeHelper.Instance.NextId(),
+            Name = "222"
+        });
+
+        await _context.SaveChangesAsync();
+    }
+
+
     [Authorize]
     [HttpGet]
-    public async Task<List<Entity.Test>> GetWeatherForecast()
+    public async Task<List<Entity.Test>> List()
     {
-        var t = new Entity.Test()
-        {
-            Name = "test",
-        };
+        return await _context.Tests.ToListAsync();
+    }
 
-        await _dbService.AddAsync(t);
-        //await _dbService.SaveChangesAsync();
 
-        return await _dbService.AsNoTracking<Entity.Test>().ToListAsync();
+    [HttpGet("page")]
+    public async Task<List<Entity.Test>> GetPages([FromQuery] NameInput input)
+    {
+        var count = await _context.Tests.CountAsync();
+        return await _context.Tests.Skip((input.PageIndex - 1) * input.PageSize).Take(input.PageSize).ToListAsync();
     }
 }

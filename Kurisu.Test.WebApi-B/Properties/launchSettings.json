@@ -1,9 +1,8 @@
-﻿{
+{
   "$schema": "https://json.schemastore.org/launchsettings.json",
   "profiles": {
     "Kurisu.Test.WebApi_B": {
       "commandName": "Project",
-      "dotnetRunMessages": true,
       "applicationUrl": "http://localhost:5002",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development"

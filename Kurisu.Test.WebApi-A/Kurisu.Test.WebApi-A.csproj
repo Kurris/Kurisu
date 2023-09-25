@@ -8,12 +8,16 @@
         <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
     </PropertyGroup>
 
+    <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
+      <DocumentationFile>bin\Debug\net6.0\Kurisu.Test.WebApi-A.xml</DocumentationFile>
+    </PropertyGroup>
+
     <ItemGroup>
         <PackageReference Include="Grpc.AspNetCore" Version="2.50.0" />
-        <PackageReference Include="Swashbuckle.AspNetCore" Version="6.2.3" />
     </ItemGroup>
 
     <ItemGroup>
+      <ProjectReference Include="..\Kurisu.EFSharding\Kurisu.EFSharding.csproj" />
       <ProjectReference Include="..\Kurisu\Kurisu.csproj" />
     </ItemGroup>
 

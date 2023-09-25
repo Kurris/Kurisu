@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
-using Kurisu.DataAccessor.Functions.Default.Abstractions;
+using Kurisu.DataAccess.Functions.Default.Abstractions;
 using Kurisu.Test.Framework.Db.Method.Entities;
 using Kurisu.Utils.Extensions;
 
@@ -26,7 +26,7 @@ public class DbSeedHelper
 
         var json = await File.ReadAllTextAsync("./WeatherForecast.json");
         var weatherForecasts = json.ToObject<List<WeatherForecast>>();
-        var dbContext = dbService.GetWriteDbContext() as TestAppDbContext;
+        var dbContext = dbService.GetDbContext() as TestAppDbContext;
         await dbContext.Database.EnsureDeletedAsync();
         await dbContext.Database.EnsureCreatedAsync();
         dbContext.WeatherForecasts.AddRange(weatherForecasts);

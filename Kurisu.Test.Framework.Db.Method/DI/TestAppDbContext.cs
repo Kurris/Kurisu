@@ -1,7 +1,7 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
-using Kurisu.DataAccessor.Entity;
+using Kurisu.DataAccess.Entity;
 using Kurisu.Test.Framework.Db.Method.Entities;
 using Microsoft.EntityFrameworkCore;
 

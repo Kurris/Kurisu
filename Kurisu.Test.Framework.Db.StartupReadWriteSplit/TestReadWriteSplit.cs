@@ -1,10 +1,10 @@
 using System;
 using System.Collections.Generic;
-using Kurisu.DataAccessor.Functions.Default.Abstractions;
-using Kurisu.DataAccessor.Functions.Default.DbContexts;
-using Kurisu.DataAccessor.Functions.Default.Internal;
-using Kurisu.DataAccessor.Functions.ReadWriteSplit.Internal;
-using Kurisu.DataAccessor.Functions.ReadWriteSplit.Resolvers;
+using Kurisu.DataAccess.Functions.Default;
+using Kurisu.DataAccess.Functions.Default.Abstractions;
+using Kurisu.DataAccess.Functions.Default.Internal;
+using Kurisu.DataAccess.Functions.ReadWriteSplit.Internal;
+using Kurisu.DataAccess.Functions.ReadWriteSplit.Resolvers;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
@@ -49,7 +49,7 @@ public class TestReadWriteSplit
         Assert.Equal(dbString, masterDbString);
 
         var slaveDbString = resolver.GetConnectionString(typeof(DefaultAppDbContext<IDbRead>));
-        Assert.Contains(slaveDbString, new List<string>()
+        Assert.Contains(slaveDbString, new List<string>
         {
             "server=isawesome.cn;port=32001;userid=root;password=zxc111;database=demo;Charset=utf8mb4;"
         });
@@ -60,12 +60,12 @@ public class TestReadWriteSplit
     {
         var masterDb = _serviceProvider.GetService<IDbWrite>();
 
-        var masterType = masterDb.GetWriteDbContext().GetType();
+        var masterType = masterDb.GetDbContext().GetType();
         Assert.Equal(typeof(DefaultAppDbContext<IDbWrite>), masterType);
 
         var slaveDb = _serviceProvider.GetService<IDbRead>();
 
-        var slaveType = slaveDb.GetReadDbContext().GetType();
+        var slaveType = slaveDb.GetDbContext().GetType();
         Assert.Equal(typeof(DefaultAppDbContext<IDbRead>), slaveType);
     }
 

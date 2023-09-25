@@ -12,28 +12,41 @@
         <PackageReleaseNotes>see more: https://github.com/Kurris/Kurisu</PackageReleaseNotes>
     </PropertyGroup>
 
+    <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
+      <NoWarn>1701;1702;EF1001</NoWarn>
+    </PropertyGroup>
+
     <ItemGroup>
-      <PackageReference Include="Castle.Core" Version="5.0.0" />
-      <PackageReference Include="Castle.Core.AsyncInterceptor" Version="2.1.0" />
-      <PackageReference Include="Grpc.Net.Client" Version="2.52.0" />
-      <PackageReference Include="IdentityModel" Version="5.1.0" />
-      <PackageReference Include="IdentityModel.AspNetCore.OAuth2Introspection" Version="5.1.0" />
-      <PackageReference Include="Mapster" Version="7.2.0" />
-      <PackageReference Include="Mapster.DependencyInjection" Version="1.0.0" />
-      <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="5.0.10" />
-      <PackageReference Include="Microsoft.AspNetCore.Hosting" Version="2.2.7" />
-      <PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="5.0.15" />
-      <PackageReference Include="Microsoft.EntityFrameworkCore" Version="5.0.10" />
-      <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="5.0.10" />
-      <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
-      <PackageReference Include="Pomelo.EntityFrameworkCore.MySql" Version="5.0.2" />
-      <PackageReference Include="Serilog.AspNetCore" Version="6.0.1" />
-      <PackageReference Include="Swashbuckle.AspNetCore" Version="5.6.3" />
-      <PackageReference Include="Swashbuckle.AspNetCore.Filters" Version="5.1.2" />
+        <PackageReference Include="Castle.Core" Version="5.0.0" />
+        <PackageReference Include="Castle.Core.AsyncInterceptor" Version="2.1.0" />
+        <PackageReference Include="Grpc.Net.Client" Version="2.52.0" />
+        <PackageReference Include="IdentityModel" Version="5.1.0" />
+        <PackageReference Include="IdentityModel.AspNetCore.OAuth2Introspection" Version="5.1.0" />
+        <PackageReference Include="Mapster" Version="7.2.0" />
+        <PackageReference Include="Mapster.DependencyInjection" Version="1.0.0" />
+        <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="6.0.20" />
+        <PackageReference Include="Microsoft.AspNetCore.Hosting" Version="2.2.7" />
+        <PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="6.0.20" />
+        <PackageReference Include="Microsoft.CodeAnalysis.Common" Version="4.6.0" />
+        <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.6.0" />
+        <PackageReference Include="Microsoft.EntityFrameworkCore" Version="6.0.20" />
+        <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="6.0.20">
+            <!--<PrivateAssets>all</PrivateAssets>-->
+        </PackageReference>
+        <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="6.0.20" />
+        <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
+        <PackageReference Include="Pomelo.EntityFrameworkCore.MySql" Version="6.0.2" />
+        <PackageReference Include="Serilog.AspNetCore" Version="6.0.1" />
+        <PackageReference Include="Swashbuckle.AspNetCore" Version="6.5.0" />
+        <PackageReference Include="Swashbuckle.AspNetCore.Filters" Version="7.0.8" />
     </ItemGroup>
 
     <ItemGroup>
         <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\Kurisu.Utils\Kurisu.Utils.csproj" />
     </ItemGroup>
 
 </Project>

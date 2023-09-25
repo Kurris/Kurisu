@@ -43,6 +43,8 @@ public abstract class DefaultKurisuStartup
 
         //注入自定义pack
         services.AddKurisuAppPacks(Configuration);
+
+        //services.AddRouting(options => { options.LowercaseUrls = true; });
     }
 
     public virtual void Configure(IApplicationBuilder app, IWebHostEnvironment env)
@@ -60,12 +62,10 @@ public abstract class DefaultKurisuStartup
             App.DisposeObjects();
         });
 
-        using (var scope = InternalApp.ApplicationServices.CreateScope())
-        {
-            app.UseKurisuAppPacks(env, scope.ServiceProvider, true);
-            app.UseRouting();
-            app.UseKurisuAppPacks(env, scope.ServiceProvider, false);
-        }
+        app.UseKurisuAppPacks(env, app.ApplicationServices, true);
+        app.UseRouting();
+        app.UseKurisuAppPacks(env, app.ApplicationServices, false);
+
 
         app.UseEndpoints(endpoints => { endpoints.MapControllers(); });
     }

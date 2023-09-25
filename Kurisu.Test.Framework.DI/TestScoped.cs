@@ -1,6 +1,6 @@
 using System;
 using System.Threading.Tasks;
-using Kurisu.DataAccessor.Functions.Default.Abstractions;
+using Kurisu.DataAccess.Functions.Default.Abstractions;
 using Kurisu.Scope;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;

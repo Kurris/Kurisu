@@ -1,10 +1,10 @@
 using System;
-using Kurisu.DataAccessor.Functions.Default.Abstractions;
-using Kurisu.DataAccessor.Interceptors;
+using Kurisu.DataAccess.Functions.Default.Abstractions;
+using Kurisu.DataAccess.Functions.Default.Internal;
+using Kurisu.DataAccess.Interceptors;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Kurisu.DataAccessor.Functions.Default.Internal;
 
 namespace Kurisu.Test.Framework.Db.Method.DI;
 

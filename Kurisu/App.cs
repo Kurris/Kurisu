@@ -137,6 +137,11 @@ public class App
             if (activeAssemblies.Exists(x => x.FullName!.Equals(reference.FullName, StringComparison.OrdinalIgnoreCase)))
                 continue;
 
+            if (reference.Name == "Microsoft.EntityFrameworkCore.Design")
+            {
+                continue;
+            }
+
             var refAssembly = Assembly.Load(reference);
             activeAssemblies.Add(refAssembly);
         }
@@ -158,6 +163,6 @@ public class App
             .Where(type => !type.FullName!.StartsWith("Nest"))
             .Where(type => !type.FullName!.StartsWith("Elasticsearch"))
             .Where(type => !type.IsDefined(typeof(SkipScanAttribute)))
-        );
+        ).Reverse();
     }
 }
