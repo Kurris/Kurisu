@@ -8,7 +8,7 @@ using Microsoft.Extensions.DependencyInjection;
 namespace Kurisu.Startup;
 
 /// <summary>
-/// appPack
+/// 程序包
 /// </summary>
 public abstract class BaseAppPack : IAppPack
 {
@@ -20,7 +20,7 @@ public abstract class BaseAppPack : IAppPack
     /// <summary>
     /// 启动顺序
     /// </summary>
-    public virtual int Order => 0;
+    public virtual int Order => 100;
 
     /// <summary>
     /// 是否启用

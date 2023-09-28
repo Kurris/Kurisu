@@ -28,7 +28,7 @@ public static class OAuth2AuthenticationServiceCollectionExtensions
             .AddJwtBearer(options =>
             {
                 options.Authority = setting.Authority;
-                options.MetadataAddress = "http://localhost:5000/.well-known/openid-configuration";
+                //options.MetadataAddress = "http://localhost:5000/.well-known/openid-configuration";
                 options.RequireHttpsMetadata = setting.RequireHttpsMetadata;
 
                 options.TokenValidationParameters.ValidateIssuer = !string.IsNullOrEmpty(setting.Issuer);
@@ -37,7 +37,7 @@ public static class OAuth2AuthenticationServiceCollectionExtensions
                 options.TokenValidationParameters.ValidateAudience = !string.IsNullOrEmpty(setting.Audience);
                 options.TokenValidationParameters.ValidAudience = setting.Audience;
 
-                options.TokenValidationParameters.ValidTypes = new[] {"at+jwt"};
+                options.TokenValidationParameters.ValidTypes = new[] { "at+jwt" };
 
                 //person access token
                 if (setting.Pat.Enable)

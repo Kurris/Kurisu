@@ -19,6 +19,7 @@ public static class DatabaseExtensions
     /// <returns></returns>
     public static async Task<bool> IsTableExistsAsync(this DatabaseFacade database, string tableName)
     {
+        await database.CreateAsync();
         var conn = database.GetDbConnection();
         //var t = _dbContext.Model.FindEntityType(typeof(Entity.Test).FullName);
 
@@ -40,7 +41,19 @@ public static class DatabaseExtensions
     /// <param name="database"></param>
     public static async Task CreateTablesAsync(this DatabaseFacade database)
     {
-        RelationalDatabaseCreator databaseCreator = (RelationalDatabaseCreator) database.GetService<IRelationalDatabaseCreator>();
+        RelationalDatabaseCreator databaseCreator = (RelationalDatabaseCreator)database.GetService<IRelationalDatabaseCreator>();
         await databaseCreator.CreateTablesAsync();
+    }
+
+    public static async Task CreateAsync(this DatabaseFacade database)
+    {
+        try
+        {
+            RelationalDatabaseCreator databaseCreator = (RelationalDatabaseCreator)database.GetService<IRelationalDatabaseCreator>();
+            await databaseCreator.CreateAsync();
+        }
+        catch (System.Exception)
+        {
+        }
     }
 }

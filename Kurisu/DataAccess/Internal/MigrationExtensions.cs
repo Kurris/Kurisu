@@ -6,7 +6,6 @@ using System.Reflection;
 using System.Threading.Tasks;
 using Kurisu.DataAccess.Extensions;
 using Kurisu.DataAccess.Functions.Default;
-using Kurisu.Utils.Extensions;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.EntityFrameworkCore;

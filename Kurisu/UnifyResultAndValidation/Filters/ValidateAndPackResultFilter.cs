@@ -46,11 +46,11 @@ public class ValidateAndPackResultFilter : IAsyncActionFilter, IAsyncResultFilte
                 //实体对象，如果是FileResultContent/IActionResult则不会进入
                 case ObjectResult objectResult:
                 {
-                    var result = objectResult.Value ?? string.Empty;
-                    var type = result.GetType();
+                        var result = objectResult.Value;
+                        var type = result?.GetType() ?? typeof(object);
 
-                    //返回值已经包装
-                    if (type.IsGenericType && type.IsAssignableTo(typeof(IApiResult)))
+                        //返回值已经包装
+                        if (type.IsGenericType && type.IsAssignableTo(typeof(IApiResult)))
                         context.Result = new ObjectResult(result);
                     else
                         context.Result = new ObjectResult(apiResult.GetDefaultSuccessApiResult(result));

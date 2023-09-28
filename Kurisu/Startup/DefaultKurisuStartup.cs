@@ -25,26 +25,27 @@ public abstract class DefaultKurisuStartup
         //映射配置文件
         services.AddKurisuConfiguration(Configuration);
 
+        //依赖注入
+        services.AddKurisuDependencyInjection();
+
+        //路由小写
+        services.AddRouting(options => { options.LowercaseUrls = true; });
+
         //处理api响应时,循环序列化问题
         //返回json为驼峰命名
         //时间格式
-        services.AddControllers().AddNewtonsoftJson(options =>
+        services.AddControllers(options => options.SuppressImplicitRequiredAttributeForNonNullableReferenceTypes = true).AddNewtonsoftJson(options =>
         {
             options.SerializerSettings.ReferenceLoopHandling = ReferenceLoopHandling.Ignore;
             options.SerializerSettings.DateFormatString = "yyyy-MM-dd HH:mm:ss";
             options.SerializerSettings.ContractResolver = new CamelCasePropertyNamesContractResolver();
         });
 
-        //依赖注入
-        services.AddKurisuDependencyInjection();
-
-        //格式统一
+        //响应,异常格式统一
         services.AddKurisuUnifyResult();
 
         //注入自定义pack
         services.AddKurisuAppPacks(Configuration);
-
-        //services.AddRouting(options => { options.LowercaseUrls = true; });
     }
 
     public virtual void Configure(IApplicationBuilder app, IWebHostEnvironment env)
@@ -62,10 +63,12 @@ public abstract class DefaultKurisuStartup
             App.DisposeObjects();
         });
 
-        app.UseKurisuAppPacks(env, app.ApplicationServices, true);
-        app.UseRouting();
-        app.UseKurisuAppPacks(env, app.ApplicationServices, false);
-
+        using (var scope = app.ApplicationServices.CreateScope())
+        {
+            app.UseKurisuAppPacks(env, scope.ServiceProvider, true);
+            app.UseRouting();
+            app.UseKurisuAppPacks(env, scope.ServiceProvider, false);
+        }
 
         app.UseEndpoints(endpoints => { endpoints.MapControllers(); });
     }

@@ -38,26 +38,6 @@ public class DefaultSwaggerPack : BaseAppPack
 
     public override void ConfigureServices(IServiceCollection services)
     {
-        var setting = Configuration.GetSection(nameof(SwaggerOAuthSetting)).Get<SwaggerOAuthSetting>();
-        if (setting == null)
-            return;
-
-        //eg:配置文件appsetting.json的key如果存在":"，那么解析将会失败
-        var needFixeScopes = setting.Scopes
-            .Where(x => x.Key.Contains('|'))
-            .ToDictionary(x => x.Key, x => x.Value);
-
-        //移除｜相关key
-        foreach (var scope in needFixeScopes)
-            setting.Scopes.Remove(scope.Key);
-
-        //修改正确的key，
-        foreach (var (s, value) in needFixeScopes)
-        {
-            var key = s.Replace("|", ":");
-            setting.Scopes.TryAdd(key, value);
-        }
-
         services.AddSwaggerGen(c =>
         {
             //没有分组的api
@@ -91,13 +71,50 @@ public class DefaultSwaggerPack : BaseAppPack
                 .ToList()
                 .ForEach(file => c.IncludeXmlComments(file));
 
+            //Bearer Token
+            c.AddSecurityRequirement(new OpenApiSecurityRequirement()
+                {
+                    {
+                        new OpenApiSecurityScheme()
+                        {
+                             Reference = new OpenApiReference()
+                             {
+                                 Type = ReferenceType.SecurityScheme,
+                                 Id = JwtBearerDefaults.AuthenticationScheme
+                             }
+                        },Array.Empty<string>()
+                    }
+                });
+            c.AddSecurityDefinition(JwtBearerDefaults.AuthenticationScheme, new OpenApiSecurityScheme
+            {
+                Description = "请输入带有Bearer的Token,如“Bearer {Token}” ",
+                Name = "Authorization",
+                In = ParameterLocation.Header,
+                Type = SecuritySchemeType.ApiKey
+            });
             c.OperationFilter<AddResponseHeadersFilter>();
             c.OperationFilter<AppendAuthorizeToSummaryOperationFilter>();
-            c.OperationFilter<SecurityRequirementsOperationFilter>();
 
             //OAuth2.0 Token 获取
-            if (setting.Enable)
+            var setting = Configuration.GetSection(nameof(SwaggerOAuthSetting)).Get<SwaggerOAuthSetting>();
+            if (setting != null && setting.Enable)
             {
+                //eg:配置文件appsetting.json的key如果存在":"，那么解析将会失败
+                var needFixeScopes = setting.Scopes
+                    .Where(x => x.Key.Contains('|'))
+                    .ToDictionary(x => x.Key, x => x.Value);
+
+                //移除｜相关key
+                foreach (var scope in needFixeScopes)
+                    setting.Scopes.Remove(scope.Key);
+
+                //修改正确的key，
+                foreach (var (s, value) in needFixeScopes)
+                {
+                    var key = s.Replace("|", ":");
+                    setting.Scopes.TryAdd(key, value);
+                }
+
                 c.AddSecurityDefinition("oauth2", new OpenApiSecurityScheme
                 {
                     Type = SecuritySchemeType.OAuth2,
@@ -112,22 +129,9 @@ public class DefaultSwaggerPack : BaseAppPack
                         }
                     }
                 });
+
+                c.OperationFilter<SecurityRequirementsOperationFilter>();
             }
-
-            //Bearer Token
-            c.AddSecurityDefinition(JwtBearerDefaults.AuthenticationScheme, new OpenApiSecurityScheme
-            {
-                Description = "请输入带有Bearer的Token,如“Bearer {Token}” ",
-                Name = "Authorization",
-                In = ParameterLocation.Header,
-                Type = SecuritySchemeType.ApiKey
-            });
-
-            // c.CustomOperationIds(apiDesc =>
-            // {
-            //     var controllerAction = apiDesc.ActionDescriptor as ControllerActionDescriptor;
-            //     return controllerAction.ControllerName + "-" + controllerAction.ActionName;
-            // });
         });
     }
 
@@ -137,19 +141,19 @@ public class DefaultSwaggerPack : BaseAppPack
         {
             //OAuth2.0 client 信息
             var setting = Configuration.GetSection(nameof(SwaggerOAuthSetting)).Get<SwaggerOAuthSetting>();
-            if (setting != null)
+            app.UseSwagger();
+            app.UseSwaggerUI(c =>
             {
-                app.UseSwagger();
-                app.UseSwaggerUI(c =>
-                {
-                    c.SwaggerEndpoint("/swagger/v1/swagger.json", "API文档");
-                    _apiInfos.ForEach(info => { c.SwaggerEndpoint($"/swagger/{info.Title}/swagger.json", info.Title); });
+                c.SwaggerEndpoint("/swagger/v1/swagger.json", "API文档");
+                _apiInfos.ForEach(info => { c.SwaggerEndpoint($"/swagger/{info.Title}/swagger.json", info.Title); });
 
+                if (setting?.Enable == true)
+                {
                     c.OAuthClientId(setting.ClientId);
                     c.OAuthClientSecret(setting.ClientSecret);
                     c.OAuthUsePkce();
-                });
-            }
+                }
+            });
         }
     }
 

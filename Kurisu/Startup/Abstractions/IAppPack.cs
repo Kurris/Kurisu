@@ -14,14 +14,17 @@ public interface IAppPack : IOrderedFilter
     /// <summary>
     /// 触发方法
     /// </summary>
-    /// <param name="serviceProvider">服务提供器</param>
+    /// <remarks>
+    /// 执行当前pack相关的处理
+    /// </remarks>
+    /// <param name="serviceProvider">临时scope服务提供器</param>
     // ReSharper disable once UnusedParameter.Global
     void Invoke(IServiceProvider serviceProvider);
 
     /// <summary>
     /// 服务配置
     /// </summary>
-    /// <param name="services">服务容器</param>
+    /// <param name="services"></param>
     void ConfigureServices(IServiceCollection services);
 
     /// <summary>

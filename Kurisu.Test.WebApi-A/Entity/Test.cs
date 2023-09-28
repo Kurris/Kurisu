@@ -20,6 +20,7 @@ public class Test : BaseEntity, IEntityTypeConfiguration<Test>
     public string Name { get; set; }
     // public List<int> Data { get; set; }
 
+
     public void Configure(EntityTypeBuilder<Test> builder)
     {
         // builder.Property(x => x.Data).HasJsonConversion();

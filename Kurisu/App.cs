@@ -129,6 +129,7 @@ public class App
 
         //添加当前程序集
         activeAssemblies.AddRange(AppDomain.CurrentDomain.GetAssemblies());
+        var name = AppDomain.CurrentDomain.FriendlyName;
 
         var references = Assembly.GetExecutingAssembly().GetReferencedAssemblies();
         //添加引用的程序集
@@ -137,32 +138,23 @@ public class App
             if (activeAssemblies.Exists(x => x.FullName!.Equals(reference.FullName, StringComparison.OrdinalIgnoreCase)))
                 continue;
 
-            if (reference.Name == "Microsoft.EntityFrameworkCore.Design")
-            {
-                continue;
-            }
-
             var refAssembly = Assembly.Load(reference);
             activeAssemblies.Add(refAssembly);
         }
 
-        //排除无效type
-        ActiveTypes = activeAssemblies.SelectMany(x => x.GetTypes()
-            .Where(type => type.IsPublic)
-            .Where(type => !type.IsAbstract)
-            //常见类型
-            .Where(type => !type.FullName!.StartsWith("System"))
-            .Where(type => !type.FullName!.StartsWith("Microsoft"))
-            .Where(type => !type.FullName!.StartsWith("Internal"))
-            .Where(type => !type.FullName!.StartsWith("Swashbuckle"))
-            .Where(type => !type.FullName!.StartsWith("Serilog"))
-            .Where(type => !type.FullName!.StartsWith("Mapster"))
-            .Where(type => !type.FullName!.StartsWith("Pomelo"))
-            .Where(type => !type.FullName!.StartsWith("Newtonsoft"))
-            .Where(type => !type.FullName!.StartsWith("MySql"))
-            .Where(type => !type.FullName!.StartsWith("Nest"))
-            .Where(type => !type.FullName!.StartsWith("Elasticsearch"))
-            .Where(type => !type.IsDefined(typeof(SkipScanAttribute)))
-        ).Reverse();
+        ActiveTypes = activeAssemblies.SelectMany(assembly =>
+        {
+            try
+            {
+                return assembly.GetTypes()
+                .Where(type => type.IsPublic)
+                .Where(type => !type.IsAbstract)
+                .Where(type => !type.IsDefined(typeof(SkipScanAttribute)));
+            }
+            catch (Exception)
+            {
+                return Array.Empty<Type>();
+            }
+        }).Reverse().ToList();
     }
 }

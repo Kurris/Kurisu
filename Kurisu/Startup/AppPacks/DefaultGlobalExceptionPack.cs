@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Serialization;
 
 namespace Kurisu.Startup.AppPacks;
 
@@ -49,7 +50,11 @@ public class GlobalExceptionMiddleware : BaseMiddleware
             context.Response.StatusCode = ex.Source!.Contains("IdentityModel.AspNetCore") ? 401 : 500;
             var apiResult = context.RequestServices.GetService<IApiResult>();
 
-            var json = JsonConvert.SerializeObject(apiResult!.GetDefaultErrorApiResult(ex.Message));
+            //驼峰
+            var json = JsonConvert.SerializeObject(apiResult!.GetDefaultErrorApiResult(ex.Message), new JsonSerializerSettings
+            {
+                ContractResolver = new CamelCasePropertyNamesContractResolver()
+            });
             var bytes = Encoding.UTF8.GetBytes(json);
 
             context.Response.ContentType = "application/json";

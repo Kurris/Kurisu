@@ -80,10 +80,10 @@ public static class DatabaseAccessorServiceCollectionExtensions
 
                     if (!string.IsNullOrEmpty(dbSetting.MigrationsAssembly))
                         builder.MigrationsAssembly(dbSetting.MigrationsAssembly);
-                })
-                .ReplaceService<IModelCacheKeyFactory, DynamicModelCacheKeyFactory>()
-                .ReplaceService<IModelCustomizer, CustomModelCustomizer>()
-                .ReplaceService<IModelSource, CustomModelSource>();
+                });
+                //.ReplaceService<IModelCacheKeyFactory, DynamicModelCacheKeyFactory>()
+                //.ReplaceService<IModelCustomizer, CustomModelCustomizer>()
+                //.ReplaceService<IModelSource, CustomModelSource>();
                 // .AddInterceptors(provider.GetRequiredService<IDbConnectionInterceptor>()
                 //     , provider.GetRequiredService<IDbCommandInterceptor>()
                 //     , provider.GetRequiredService<IDbTransactionInterceptor>()

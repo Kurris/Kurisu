@@ -92,7 +92,6 @@ public static class ProgramExtensions
             host.UseSerilog((context, configuration) => configuration.ReadFrom.Configuration(context.Configuration));
         }
 
-        await host.Build()
-            .RunAsync();
+        await host.Build().RunAsync();
     }
 }
