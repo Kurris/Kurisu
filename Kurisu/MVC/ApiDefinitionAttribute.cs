@@ -21,4 +21,9 @@ public class ApiDefinitionAttribute : Attribute
     /// api分组
     /// </summary>
     public string Group { get; }
+
+    /// <summary>
+    /// 描述
+    /// </summary>
+    public string Description { get; set; }
 }

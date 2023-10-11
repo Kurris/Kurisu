@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using Kurisu.Authentication;
+using Kurisu.Document.Settings;
 using Kurisu.MVC;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
@@ -96,7 +96,7 @@ public class DefaultSwaggerPack : BaseAppPack
             c.OperationFilter<AppendAuthorizeToSummaryOperationFilter>();
 
             //OAuth2.0 Token 获取
-            var setting = Configuration.GetSection(nameof(SwaggerOAuthSetting)).Get<SwaggerOAuthSetting>();
+            var setting = Configuration.GetSection(nameof(SwaggerOAuth2Setting)).Get<SwaggerOAuth2Setting>();
             if (setting != null && setting.Enable)
             {
                 //eg:配置文件appsetting.json的key如果存在":"，那么解析将会失败
@@ -140,7 +140,7 @@ public class DefaultSwaggerPack : BaseAppPack
         if (env.IsDevelopment())
         {
             //OAuth2.0 client 信息
-            var setting = Configuration.GetSection(nameof(SwaggerOAuthSetting)).Get<SwaggerOAuthSetting>();
+            var setting = Configuration.GetSection(nameof(SwaggerOAuth2Setting)).Get<SwaggerOAuth2Setting>();
             app.UseSwagger();
             app.UseSwaggerUI(c =>
             {
@@ -171,14 +171,15 @@ public class DefaultSwaggerPack : BaseAppPack
 
         foreach (var controller in controllers)
         {
-            var appInfo = controller.GetCustomAttribute<ApiDefinitionAttribute>()!;
+            var apiInfo = controller.GetCustomAttribute<ApiDefinitionAttribute>()!;
 
-            if (_apiInfos.All(x => x.Title != appInfo.Group))
+            if (_apiInfos.All(x => x.Title != apiInfo.Group))
             {
                 _apiInfos.Add(new OpenApiInfo
                 {
-                    Title = appInfo.Group,
-                    Version = "v1"
+                    Title = apiInfo.Group,
+                    Version = "v1",
+                    Description = apiInfo.Description
                 });
             }
         }

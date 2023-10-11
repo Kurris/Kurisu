@@ -3,13 +3,13 @@ using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using Kurisu.ConfigurableOptions.Attributes;
 
-namespace Kurisu.Authentication;
+namespace Kurisu.Document.Settings;
 
 /// <summary>
 /// swagger oauth2.0 配置
 /// </summary>
 [Configuration]
-public class SwaggerOAuthSetting : IValidatableObject
+public class SwaggerOAuth2Setting : IValidatableObject
 {
     /// <summary>
     /// 是否启用
@@ -43,33 +43,27 @@ public class SwaggerOAuthSetting : IValidatableObject
     /// <returns></returns>
     public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
     {
-        var results = new List<ValidationResult>();
-
         if (!Enable)
-        {
-            return results;
-        }
+            yield break;
 
         if (string.IsNullOrEmpty(Authority))
         {
-            results.Add(new ValidationResult("授权地址不能为空", new[] {nameof(Authority)}));
+            yield return new ValidationResult("授权地址不能为空", new[] { nameof(Authority) });
         }
 
         if (string.IsNullOrEmpty(ClientId))
         {
-            results.Add(new ValidationResult("客户端不能为空", new[] {nameof(ClientId)}));
+            yield return new ValidationResult("客户端不能为空", new[] { nameof(ClientId) });
         }
 
         if (string.IsNullOrEmpty(ClientSecret))
         {
-            results.Add(new ValidationResult("客户端密钥不能为空", new[] {nameof(ClientSecret)}));
+            yield return new ValidationResult("客户端密钥不能为空", new[] { nameof(ClientSecret) });
         }
 
         if (Scopes?.Any() != true || !Scopes.ContainsKey("openid"))
         {
-            results.Add(new ValidationResult("授权作用域必须包括openid", new[] {nameof(Scopes)}));
+            yield return new ValidationResult("授权作用域必须包括openid", new[] { nameof(Scopes) });
         }
-
-        return results;
     }
 }

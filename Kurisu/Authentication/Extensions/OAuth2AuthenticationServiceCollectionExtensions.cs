@@ -1,8 +1,9 @@
 using System;
 using System.Linq;
-using Kurisu.Authentication;
+using Kurisu.Authentication.Settings;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Net.Http.Headers;
 
 // ReSharper disable once CheckNamespace
 namespace Microsoft.Extensions.DependencyInjection;
@@ -45,16 +46,17 @@ public static class OAuth2AuthenticationServiceCollectionExtensions
                     options.ForwardDefaultSelector = context =>
                     {
                         var (scheme, token) = GetBearerValueTuple(context);
-                        return scheme.Equals(JwtBearerDefaults.AuthenticationScheme, StringComparison.OrdinalIgnoreCase) && !token.Contains('.') ? "token" : null;
+                        //如果不是bearer则转到pat的scheme进行验证
+                        return scheme.Equals(JwtBearerDefaults.AuthenticationScheme, StringComparison.OrdinalIgnoreCase) && !token.Contains('.') ? setting.Pat.Scheme : null;
                     };
                 }
             });
 
         if (setting.Pat.Enable)
         {
-            builder.AddOAuth2Introspection("token", options =>
+            builder.AddOAuth2Introspection(setting.Pat.Scheme, options =>
             {
-                options.DiscoveryPolicy.RequireHttps = true;
+                options.DiscoveryPolicy.RequireHttps = setting.RequireHttpsMetadata;
                 options.DiscoveryPolicy.ValidateIssuerName = !string.IsNullOrEmpty(setting.Issuer);
                 options.ClaimsIssuer = setting.Issuer;
                 options.Authority = setting.Authority;
@@ -74,7 +76,7 @@ public static class OAuth2AuthenticationServiceCollectionExtensions
     /// <returns></returns>
     private static (string scheme, string token) GetBearerValueTuple(HttpContext context)
     {
-        var authorizationValue = context.Request.Headers["Authorization"].FirstOrDefault();
+        var authorizationValue = context.Request.Headers[HeaderNames.Authorization].FirstOrDefault();
 
         if (string.IsNullOrEmpty(authorizationValue))
         {

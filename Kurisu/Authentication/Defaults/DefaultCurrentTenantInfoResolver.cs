@@ -1,13 +1,15 @@
+using System;
 using Kurisu.Authentication.Abstractions;
+using Mapster;
 using Microsoft.AspNetCore.Http;
 
-namespace Kurisu.Authentication.Internal;
+namespace Kurisu.Authentication.Defaults;
 
 /// <summary>
 /// 租户信息获取处理器
 /// </summary>
 // ReSharper disable once ClassWithVirtualMembersNeverInherited.Global
-internal class DefaultCurrentTenantInfoResolver : ICurrentTenantInfoResolver
+public class DefaultCurrentTenantInfoResolver : ICurrentTenantInfoResolver
 {
     private readonly IHttpContextAccessor _httpContextAccessor;
 
@@ -22,14 +24,15 @@ internal class DefaultCurrentTenantInfoResolver : ICurrentTenantInfoResolver
     /// <remarks>claims:tenant; header:X-Requested-TenantId</remarks>
     public virtual string TenantKey => "tenant";
 
-    /// <summary>
-    /// 获取租户id
-    /// </summary>
-    /// <returns></returns>
-    public virtual int GetTenantId()
+    public virtual T GetTenantId<T>()
     {
-        //return _httpContextAccessor.HttpContext.Request.Headers.ContainsKey(TenantKey) ? int.Parse(_httpContextAccessor.HttpContext.Request.Headers[TenantKey]) : 0;
         var tenantValue = _httpContextAccessor?.HttpContext?.User.FindFirst(TenantKey)?.Value;
-        return !string.IsNullOrEmpty(tenantValue) ? int.Parse(tenantValue) : 0;
+        return string.IsNullOrEmpty(tenantValue) ? default : tenantValue.Adapt<T>();
     }
+
+    public Guid GetUidTenantId() => GetTenantId<Guid>();
+
+    public string GetStringTenantId() => GetTenantId<string>();
+
+    public int GetIntTenantId() => GetTenantId<int>();
 }

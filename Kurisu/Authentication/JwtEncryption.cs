@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
@@ -11,15 +12,16 @@ namespace Kurisu.Authentication;
 public class JwtEncryption
 {
     /// <summary>
-    /// token生成
+    /// 生成token
     /// </summary>
-    /// <param name="userId"></param>
+    /// <param name="user"></param>
+    /// <param name="claims"></param>
     /// <param name="key"></param>
     /// <param name="iss"></param>
     /// <param name="aud"></param>
     /// <param name="exp"></param>
     /// <returns></returns>
-    public static string GenerateToken(string userId, string key, string iss, string aud, int exp = 7200)
+    public static string GenerateToken(Claim[] user, Claim[] claims, string key, string iss, string aud, int exp = 7200)
     {
         var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(key));
 
@@ -28,19 +30,25 @@ public class JwtEncryption
 
         var descriptor = new SecurityTokenDescriptor
         {
-            Subject = new ClaimsIdentity(new Claim[]
+            Subject = new ClaimsIdentity(),
+            Claims = new Dictionary<string, object>
             {
-                new(JwtClaimTypes.Issuer, iss),
-                new(JwtClaimTypes.Audience, aud),
-                new(JwtClaimTypes.Id, userId),
-                new(JwtClaimTypes.NotBefore, dtNow.ToString(CultureInfo.InvariantCulture)),
-                new(JwtClaimTypes.Expiration, dtExpires.ToString(CultureInfo.InvariantCulture))
-            }),
+                [JwtClaimTypes.Issuer] = iss,
+                [JwtClaimTypes.Audience] = aud,
+                [JwtClaimTypes.NotBefore] = dtNow.ToString(CultureInfo.InvariantCulture),
+                [JwtClaimTypes.Expiration] = dtExpires.ToString(CultureInfo.InvariantCulture),
+            },
             IssuedAt = dtNow, //颁发时间
             NotBefore = dtNow,
             Expires = dtExpires,
             SigningCredentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256)
         };
+
+        descriptor.Subject.AddClaims(user);
+        foreach (var item in claims)
+        {
+            descriptor.Claims.Add(item.Type, item.Value);
+        }
 
         var jwtHandler = new JwtSecurityTokenHandler();
         var securityToken = jwtHandler.CreateToken(descriptor);

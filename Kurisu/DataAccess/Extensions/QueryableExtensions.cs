@@ -136,14 +136,14 @@ public static class QueryableExtensions
                 resultExpression = Expression.Call(
                     queryable.ElementType,
                     sortAsc ? "OrderBy" : "OrderByDescending", //方法名称
-                    new[] {typeof(TEntity), property.PropertyType}, queryable.Expression, Expression.Quote(orderByExpression));
+                    new[] { typeof(TEntity), property.PropertyType }, queryable.Expression, Expression.Quote(orderByExpression));
             }
             else
             {
                 resultExpression = Expression.Call(
                     queryable.ElementType,
                     sortAsc ? "ThenBy" : "ThenByDescending",
-                    new[] {typeof(TEntity), property.PropertyType}, queryable.Expression, Expression.Quote(orderByExpression));
+                    new[] { typeof(TEntity), property.PropertyType }, queryable.Expression, Expression.Quote(orderByExpression));
             }
 
             queryable = queryable.Provider.CreateQuery<TEntity>(resultExpression);
@@ -196,10 +196,10 @@ public static class QueryableExtensions
     /// <param name="queryable"></param>
     /// <typeparam name="TEntity"></typeparam>
     /// <returns></returns>
-    public static IQueryable<TEntity> WithTenant<TEntity>(this IQueryable<TEntity> queryable) where TEntity : ITenantId, new()
+    public static IQueryable<TEntity> WithTenant<TEntity, TId>(this IQueryable<TEntity> queryable) where TEntity : ITenantId<TId>, new()
     {
-        var tenantId = Scoped.Temp.Value.Create(x => x.GetService<ICurrentTenantInfoResolver>().GetTenantId());
-        return queryable.Where(x => x.TenantId == tenantId);
+        var tenantId = Scoped.Temp.Value.Create(x => x.GetService<ICurrentTenantInfoResolver>().GetTenantId<TId>());
+        return queryable.Where(x => x.TenantId.Equals(tenantId));
     }
 
 
@@ -210,8 +210,8 @@ public static class QueryableExtensions
     /// <param name="tenantId"></param>
     /// <typeparam name="TEntity"></typeparam>
     /// <returns></returns>
-    public static IQueryable<TEntity> WithTenant<TEntity>(this IQueryable<TEntity> queryable, int tenantId) where TEntity : ITenantId, new()
+    public static IQueryable<TEntity> WithTenant<TEntity, TId>(this IQueryable<TEntity> queryable, TId tenantId) where TEntity : ITenantId<TId>, new()
     {
-        return queryable.Where(x => x.TenantId == tenantId);
+        return queryable.Where(x => x.TenantId.Equals(tenantId));
     }
 }

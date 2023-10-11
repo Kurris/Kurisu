@@ -1,7 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 using Kurisu.ConfigurableOptions.Attributes;
 
-namespace Kurisu.Authentication;
+namespace Kurisu.Authentication.Settings;
 
 /// <summary>
 /// identity server 配置

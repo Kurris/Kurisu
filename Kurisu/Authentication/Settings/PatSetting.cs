@@ -1,5 +1,6 @@
 // ReSharper disable ClassNeverInstantiated.Global
-namespace Kurisu.Authentication;
+
+namespace Kurisu.Authentication.Settings;
 
 /// <summary>
 /// 个人访问token配置
@@ -10,6 +11,11 @@ public class PatSetting
     /// 是否启用
     /// </summary>
     public bool Enable { get; set; }
+
+    /// <summary>
+    /// 验证scheme
+    /// </summary>
+    public string Scheme { get; set; }
 
     /// <summary>
     /// 客户端id

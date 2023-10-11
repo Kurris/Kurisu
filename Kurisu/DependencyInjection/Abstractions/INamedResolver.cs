@@ -23,13 +23,4 @@ public interface INamedResolver
     /// <typeparam name="TService">服务类型</typeparam>
     /// <returns></returns>
     TService GetService<TService>(string serviceName) where TService : class;
-
-    /// <summary>
-    /// 获取服务实例
-    /// </summary>
-    /// <param name="serviceName">服务名称</param>
-    /// <typeparam name="TLifeTime">生命周期</typeparam>
-    /// <typeparam name="TService">服务类型</typeparam>
-    /// <returns></returns>
-    TService GetService<TLifeTime, TService>(string serviceName) where TLifeTime : IDependency where TService : class, IDependency;
 }

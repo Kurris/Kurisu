@@ -1,6 +1,7 @@
 using System;
 using System.Text;
-using Kurisu.Authentication;
+using System.Threading.Tasks;
+using Kurisu.Authentication.Settings;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 
@@ -25,14 +26,14 @@ public static class JwtAuthenticationServiceCollectionExtensions
         services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             .AddJwtBearer(options =>
             {
-                //     options.Events = new JwtBearerEvents
-                //     {
-                //         OnMessageReceived = context =>
-                //         {
-                //             onMessageReceived?.Invoke(context);
-                //             return Task.CompletedTask;
-                //         }
-                //     };
+                options.Events = new JwtBearerEvents
+                {
+                    OnMessageReceived = context =>
+                    {
+                        onMessageReceived?.Invoke(context);
+                        return Task.CompletedTask;
+                    }
+                };
                 options.TokenValidationParameters = new TokenValidationParameters
                 {
                     ValidateIssuer = !string.IsNullOrEmpty(jwtSetting.Issuer),
@@ -41,7 +42,7 @@ public static class JwtAuthenticationServiceCollectionExtensions
                     ValidateIssuerSigningKey = true,
                     ValidIssuer = jwtSetting.Issuer,
                     ValidAudience = jwtSetting.Audience,
-                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSetting.TokenSecretKey)),
+                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSetting.SecretKey)),
                     RequireExpirationTime = true,
                 };
             });

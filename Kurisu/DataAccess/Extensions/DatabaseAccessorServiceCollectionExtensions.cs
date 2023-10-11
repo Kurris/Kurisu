@@ -5,10 +5,7 @@ using Kurisu.DataAccess.Functions.Default;
 using Kurisu.DataAccess.Functions.Default.Abstractions;
 using Kurisu.DataAccess.Functions.Default.Internal;
 using Kurisu.DataAccess.Functions.Default.Resolvers;
-using Kurisu.DataAccess.Internal;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Diagnostics;
-using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 

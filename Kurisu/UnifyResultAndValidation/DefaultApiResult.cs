@@ -21,7 +21,7 @@ public class DefaultApiResult<T> : IApiResult
     /// </summary>
     public DefaultApiResult()
     {
-        this.State = State.Error;
+        this.State = ApiStateCode.Error;
     }
 
     /// <summary>
@@ -30,7 +30,7 @@ public class DefaultApiResult<T> : IApiResult
     /// <param name="message">信息</param>
     /// <param name="data">数据</param>
     /// <param name="state">状态</param>
-    public DefaultApiResult(string message, T data, State state)
+    public DefaultApiResult(string message, T data, ApiStateCode state)
     {
         this.Message = message;
         this.Data = data;
@@ -50,14 +50,14 @@ public class DefaultApiResult<T> : IApiResult
     /// <summary>
     /// 状态
     /// </summary>
-    public State State { get; set; }
+    public ApiStateCode State { get; set; }
 
 
     public virtual IApiResult GetDefaultSuccessApiResult<TResult>(TResult apiResult)
     {
         return new DefaultApiResult<TResult>
         {
-            State = State.Success,
+            State = ApiStateCode.Success,
             Message = "success",
             Data = apiResult
         };
@@ -67,7 +67,7 @@ public class DefaultApiResult<T> : IApiResult
     {
         return new DefaultApiResult<TResult>
         {
-            State = State.ValidateError,
+            State = ApiStateCode.ValidateError,
             Message = "validation error",
             Data = apiResult
         };
@@ -77,7 +77,7 @@ public class DefaultApiResult<T> : IApiResult
     {
         return new DefaultApiResult<object>
         {
-            State = State.Forbidden,
+            State = ApiStateCode.Forbidden,
             Message = "forbidden"
         };
     }
@@ -94,7 +94,7 @@ public class DefaultApiResult<T> : IApiResult
 /// <summary>
 /// 返回状态
 /// </summary>
-public enum State
+public enum ApiStateCode
 {
     /// <summary>
     /// 操作成功

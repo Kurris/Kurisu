@@ -86,17 +86,17 @@ public class App
     /// <summary>
     /// 应用程序有效类型
     /// </summary>
-    internal static IEnumerable<Type> ActiveTypes { get; private set; }
+    internal static List<Type> ActiveTypes { get; private set; }
 
     /// <summary>
     /// 自定义应用pack
     /// </summary>
-    private static IEnumerable<BaseAppPack> _appPacks;
+    private static List<BaseAppPack> _appPacks;
 
     /// <summary>
     /// 自定义应用pack
     /// </summary>
-    internal static IEnumerable<BaseAppPack> AppPacks
+    internal static List<BaseAppPack> AppPacks
     {
         get
         {
@@ -105,7 +105,8 @@ public class App
             var packTypes = ActiveTypes.Where(x => x.IsSubclassOf(typeof(BaseAppPack)));
             _appPacks = packTypes.Select(x => Activator.CreateInstance(x) as BaseAppPack)
                 .Where(x => x.IsEnable)
-                .OrderBy(x => x.Order);
+                .OrderBy(x => x.Order)
+                .ToList();
 
             return _appPacks;
         }
@@ -155,6 +156,8 @@ public class App
             {
                 return Array.Empty<Type>();
             }
-        }).Reverse().ToList();
+        })
+        .Reverse().ToList();
+
     }
 }

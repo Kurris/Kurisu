@@ -26,6 +26,7 @@ internal class NamedResolver : INamedResolver
     /// <returns></returns>
     public object GetService(Type type, string serviceName)
     {
+        //todo interface type ->  name -- implement type
         var services = _serviceProvider.GetServices(type).ToArray();
         return services.Any() ? services.FirstOrDefault(x => GetServiceName(x.GetType()).Equals(serviceName)) : null;
     }
@@ -42,20 +43,6 @@ internal class NamedResolver : INamedResolver
     }
 
     /// <summary>
-    /// 指定服务生命周期,获取命名服务
-    /// </summary>
-    /// <param name="serviceName">服务命名</param>
-    /// <typeparam name="TLifeTime">生命周期</typeparam>
-    /// <typeparam name="TService">服务类型</typeparam>
-    /// <returns></returns>
-    public TService GetService<TLifeTime, TService>(string serviceName) where TLifeTime : IDependency where TService : class, IDependency
-    {
-        var func = _serviceProvider.GetService(typeof(Func<string, TLifeTime, object>)) as Func<string, TLifeTime, object>;
-        return func!.Invoke(serviceName, default) as TService;
-    }
-
-
-    /// <summary>
     /// 解析服务名称
     /// </summary>
     /// <param name="type">服务类型</param>
@@ -63,8 +50,8 @@ internal class NamedResolver : INamedResolver
     // ReSharper disable once SuggestBaseTypeForParameter
     private static string GetServiceName(Type type)
     {
-        return type.IsDefined(typeof(RegisterAttribute))
-            ? type.GetCustomAttribute<RegisterAttribute>()!.Name
+        return type.IsDefined(typeof(ServiceAttribute))
+            ? type.GetCustomAttribute<ServiceAttribute>()!.Named
             : type.Name;
     }
 }

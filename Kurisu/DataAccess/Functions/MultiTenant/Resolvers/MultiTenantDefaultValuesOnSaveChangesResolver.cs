@@ -19,13 +19,13 @@ public class MultiTenantDefaultValuesOnSaveChangesResolver : DefaultValuesOnSave
         _currentTenantInfoResolver = currentTenantInfoResolver;
     }
 
-    protected const string TenantProperty = nameof(ITenantId.TenantId);
+    protected const string TenantProperty = nameof(ITenantId<int>.TenantId);
 
     protected override void OnAdded(DbContext dbContext, EntityEntry entry)
     {
-        if (entry.Entity.GetType().IsAssignableTo(typeof(ITenantId)))
+        if (entry.Entity.GetType().IsAssignableTo(typeof(ITenantId<int>)))
         {
-            entry.CurrentValues[TenantProperty] = _currentTenantInfoResolver.GetTenantId();
+            entry.CurrentValues[TenantProperty] = _currentTenantInfoResolver.GetTenantId<int>();
         }
 
         base.OnAdded(dbContext, entry);

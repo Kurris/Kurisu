@@ -1,3 +1,6 @@
+
+using System;
+
 namespace Kurisu.Authentication.Abstractions;
 
 /// <summary>
@@ -10,6 +13,24 @@ public interface ICurrentUserInfoResolver
     /// </summary>
     /// <returns></returns>
     T GetSubjectId<T>();
+
+    /// <summary>
+    /// uid类型subject id
+    /// </summary>
+    /// <returns></returns>
+    Guid GetUidSubjectId();
+
+    /// <summary>
+    /// string类型subject id
+    /// </summary>
+    /// <returns></returns>
+    string GetStringSubjectId();
+
+    /// <summary>
+    /// int类型subject id
+    /// </summary>
+    /// <returns></returns>
+    int GetIntSubjectId();
 
     /// <summary>
     /// 获取用户请求access_token

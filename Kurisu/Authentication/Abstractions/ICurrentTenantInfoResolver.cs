@@ -1,3 +1,5 @@
+using System;
+
 namespace Kurisu.Authentication.Abstractions;
 
 /// <summary>
@@ -7,9 +9,6 @@ public interface ICurrentTenantInfoResolver
 {
     /// <summary>
     /// Claims:tenant; header:X-Requested-TenantId
-    /// <remarks>
-    /// 默认:tenant
-    /// </remarks>
     /// </summary>
     string TenantKey { get; }
 
@@ -17,5 +16,23 @@ public interface ICurrentTenantInfoResolver
     /// 获取租户id
     /// </summary>
     /// <returns></returns>
-    int GetTenantId();
+    T GetTenantId<T>();
+
+    /// <summary>
+    /// uid类型
+    /// </summary>
+    /// <returns></returns>
+    Guid GetUidTenantId();
+
+    /// <summary>
+    /// string类型
+    /// </summary>
+    /// <returns></returns>
+    string GetStringTenantId();
+
+    /// <summary>
+    /// int类型
+    /// </summary>
+    /// <returns></returns>
+    int GetIntTenantId();
 }
