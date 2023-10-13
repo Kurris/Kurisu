@@ -4,7 +4,7 @@ using Kurisu.Proxy.Abstractions;
 
 namespace Kurisu.Proxy.Internal;
 
-public static class AsyncInterceptorExtensions
+internal static class AsyncInterceptorExtensions
 {
     public static IInterceptor ToInterceptor(this IAsyncInterceptor interceptor)
     {

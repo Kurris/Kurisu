@@ -1,14 +1,10 @@
-using Kurisu.DataAccess.Sharding;
 using Kurisu.Grpc;
-using Kurisu.EFSharding;
-using Kurisu.EFSharding.Dynamicdatasources;
 using Kurisu.Startup;
-using Kurisu.Test.WebApi_A.Routes;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using Kurisu.DataAccess.Functions.Default;
 using Kurisu.DataAccess.Internal;
 using Kurisu.DataAccess.Functions.Default.Abstractions;
+using Kurisu.RemoteCall.Extensions;
 
 namespace Kurisu.Test.WebApi_A;
 
@@ -32,7 +28,7 @@ public class Startup : DefaultKurisuStartup
         {
             SizeLimit = 102400
         }));
-
+        services.AddKurisuRemoteCall();
         services.AddKurisuDatabaseAccessor();
         //services.AddShardingDbContext<DefaultShardingDbContext>()
         //    .UseRouteConfig((sp, o) =>
@@ -62,11 +58,11 @@ public class Startup : DefaultKurisuStartup
     public override void Configure(IApplicationBuilder app, IWebHostEnvironment env)
     {
         //app.ApplicationServices.UseAutoTryCompensateTable().GetAwaiter().GetResult();
-        using (var scope = app.ApplicationServices.CreateScope())
-        {
-            var db = scope.ServiceProvider.GetRequiredService<DefaultAppDbContext<IDbWrite>>();
-            db.RunDynamicMigrationAsync().Wait();
-        }
+        //using (var scope = app.ApplicationServices.CreateScope())
+        //{
+        //    var db = scope.ServiceProvider.GetRequiredService<DefaultAppDbContext<IDbWrite>>();
+        //    db.RunDynamicMigrationAsync().GetAwaiter().GetResult();
+        //}
 
         // IdentityModelEventSource.ShowPII = true;
 

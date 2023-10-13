@@ -3,7 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Kurisu.Test.Framework.DI.Named;
 
-[Register("wechat")]
+[Service("wechat")]
 public class WechatSendMessage : ISendMessage
 {
     public string Send()

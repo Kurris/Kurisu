@@ -9,7 +9,7 @@ namespace Kurisu.Document.Settings;
 /// swagger oauth2.0 配置
 /// </summary>
 [Configuration]
-public class SwaggerOAuth2Setting : IValidatableObject
+public class SwaggerOAuthSetting : IValidatableObject
 {
     /// <summary>
     /// 是否启用

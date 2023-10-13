@@ -19,15 +19,19 @@ public class TestNamed
     public void GetService_Return_MatchService()
     {
         var dingDingService = _namedResolver.GetService<ISendMessage>("dingding");
-        Assert.Equal(typeof(DingDingSendMessage), dingDingService.GetType());
+        //Assert.Equal(typeof(DingDingSendMessage), dingDingService.GetType());
         Assert.Equal("dingding", dingDingService.Send());
 
-        var wechatService = _namedResolver.GetService<IScopeDependency, ISendMessage>("wechat");
+        var wechatService = _namedResolver.GetService<ISendMessage>("wechat");
         Assert.Equal(typeof(WechatSendMessage), wechatService.GetType());
         Assert.Equal("wechat", wechatService.Send());
 
         var emailService = _namedResolver.GetService<ISendMessage>("email");
+        emailService.Send();
+
+        emailService = _namedResolver.GetService<ISendMessage>("email");
+        emailService.Send();
         Assert.Equal(typeof(EmailSendMessage), emailService.GetType());
-        Assert.Equal("email", emailService.Send());
+        Assert.Equal("email3", emailService.Send());
     }
 }

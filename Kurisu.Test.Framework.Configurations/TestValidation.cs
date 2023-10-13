@@ -1,5 +1,5 @@
 using System;
-using Kurisu.Authentication;
+using Kurisu.Document.Settings;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Xunit;

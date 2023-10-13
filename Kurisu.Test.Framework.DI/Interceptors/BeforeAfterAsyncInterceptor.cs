@@ -1,23 +1,23 @@
 using System;
 using System.Threading.Tasks;
-using Castle.DynamicProxy;
+using Kurisu.Proxy;
+using Kurisu.Proxy.Abstractions;
 
 namespace Kurisu.Test.Framework.DI.Interceptors;
 
-public class BeforeAfterAsyncInterceptor : AsyncInterceptorBase
+public class BeforeAfterAsyncInterceptor : Aop
 {
-    protected override async Task InterceptAsync(IInvocation invocation, IInvocationProceedInfo proceedInfo, Func<IInvocation, IInvocationProceedInfo, Task> proceed)
+    protected override async Task InterceptAsync(IProxyInvocation invocation, Func<IProxyInvocation, Task> proceed)
     {
         Console.WriteLine("before");
-        // Cannot simply return the the task, as any exceptions would not be caught below.
-        await proceed(invocation, proceedInfo).ConfigureAwait(false);
+        await proceed(invocation).ConfigureAwait(false);
         Console.WriteLine("after");
     }
 
-    protected override async Task<TResult> InterceptAsync<TResult>(IInvocation invocation, IInvocationProceedInfo proceedInfo, Func<IInvocation, IInvocationProceedInfo, Task<TResult>> proceed)
+    protected override async Task<TResult> InterceptAsync<TResult>(IProxyInvocation invocation, Func<IProxyInvocation, Task<TResult>> proceed)
     {
         Console.WriteLine("before");
-        var result = await proceed(invocation, proceedInfo).ConfigureAwait(false);
+        var result = await proceed(invocation).ConfigureAwait(false);
         Console.WriteLine("after");
         return result;
     }

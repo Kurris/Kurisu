@@ -3,11 +3,13 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Kurisu.Test.Framework.DI.Named;
 
-[Register("email")]
+[Service("email", LifeTime = typeof(ISingletonDependency))]
 public class EmailSendMessage : ISendMessage
 {
+    public int Count { get; set; } = 1;
+
     public string Send()
     {
-        return "email";
+        return "email" + Count++;
     }
 }

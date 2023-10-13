@@ -1,5 +1,5 @@
 using System;
-using Kurisu.Authentication;
+using Kurisu.Authentication.Settings;
 using Kurisu.DataAccess;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;

@@ -11,7 +11,7 @@ namespace Kurisu.Proxy.Internal;
 /// <summary>
 /// 代理信息
 /// </summary>
-internal class ProxyInfo : IProxyInfo
+internal class ProxyInfo : IProxyInvocation
 {
     private static readonly ConcurrentDictionary<ValueTuple<Type, MethodInfo>, bool> InterceptorInvoke = new();
 
@@ -55,10 +55,15 @@ internal class ProxyInfo : IProxyInfo
     {
         return InterceptorInvoke.GetOrAdd((InterfaceType, Method), _ =>
         {
+            if (Target == null)
+            {
+                return true;
+            }
+
+            var type = GetRealTarget(Target).GetType();
             var interceptorType = GetRealType(interceptor);
 
-            var t = Target.GetType();
-            var typeExists = t.GetCustomAttributes<AopAttribute>().SelectMany(x => x.Interceptors).Any(x => x.Equals(interceptorType))
+            var typeExists = type.GetCustomAttributes<AopAttribute>().SelectMany(x => x.Interceptors).Any(x => x.Equals(interceptorType))
                 || InterfaceType.GetCustomAttributes<AopAttribute>().SelectMany(x => x.Interceptors).Any(x => x.Equals(interceptorType));
 
             if (!typeExists)
@@ -66,9 +71,7 @@ internal class ProxyInfo : IProxyInfo
                 var methodExists = Method.GetCustomAttributes<AopAttribute>().SelectMany(x => x.Interceptors).Any(x => x.Equals(interceptorType));
                 if (!methodExists)
                 {
-                    return t.GetMethod(Method.Name, Method.GetParameters().Select(x => x.ParameterType).ToArray()).GetCustomAttributes<AopAttribute>()
-                        .SelectMany(x => x.Interceptors).Any(x => x.Equals(interceptorType))
-                        || GetRealTarget(Target).GetType().GetMethod(Method.Name, Method.GetParameters().Select(x => x.ParameterType).ToArray()).GetCustomAttributes<AopAttribute>()
+                    return type.GetMethod(Method.Name, Method.GetParameters().Select(x => x.ParameterType).ToArray()).GetCustomAttributes<AopAttribute>()
                         .SelectMany(x => x.Interceptors).Any(x => x.Equals(interceptorType));
                 }
                 return methodExists;

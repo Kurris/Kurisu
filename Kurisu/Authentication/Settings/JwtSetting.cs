@@ -1,11 +1,10 @@
 using System.ComponentModel.DataAnnotations;
 using Kurisu.ConfigurableOptions.Attributes;
-using Microsoft.Extensions.Options;
 
 namespace Kurisu.Authentication.Settings;
 
 [Configuration]
-public class JwtSetting : IPostConfigureOptions<JwtSetting>
+public class JwtSetting
 {
     /// <summary>
     /// √‹‘ø
@@ -28,9 +27,4 @@ public class JwtSetting : IPostConfigureOptions<JwtSetting>
     /// second
     /// </summary>
     public int Expiration { get; set; } = 7200;
-
-
-    public void PostConfigure(string name, JwtSetting options)
-    {
-    }
 }

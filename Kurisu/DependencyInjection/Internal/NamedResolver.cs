@@ -1,6 +1,4 @@
 using System;
-using System.Linq;
-using System.Reflection;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Kurisu.DependencyInjection.Internal;
@@ -26,9 +24,11 @@ internal class NamedResolver : INamedResolver
     /// <returns></returns>
     public object GetService(Type type, string serviceName)
     {
-        //todo interface type ->  name -- implement type
-        var services = _serviceProvider.GetServices(type).ToArray();
-        return services.Any() ? services.FirstOrDefault(x => GetServiceName(x.GetType()).Equals(serviceName)) : null;
+        if (DependencyInjectionHelper.NamedServices.TryGetValue(serviceName, out type))
+        {
+            return _serviceProvider.GetService(type);
+        }
+        return null;
     }
 
     /// <summary>
@@ -40,18 +40,5 @@ internal class NamedResolver : INamedResolver
     public TService GetService<TService>(string serviceName) where TService : class
     {
         return GetService(typeof(TService), serviceName) as TService;
-    }
-
-    /// <summary>
-    /// 解析服务名称
-    /// </summary>
-    /// <param name="type">服务类型</param>
-    /// <returns></returns>
-    // ReSharper disable once SuggestBaseTypeForParameter
-    private static string GetServiceName(Type type)
-    {
-        return type.IsDefined(typeof(ServiceAttribute))
-            ? type.GetCustomAttribute<ServiceAttribute>()!.Named
-            : type.Name;
     }
 }

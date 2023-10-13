@@ -1,49 +1,32 @@
 ﻿using System;
-using System.ComponentModel;
-using System.Net.Http;
-using System.Threading.Tasks;
-using Kurisu.Proxy.Abstractions;
-using Kurisu.Proxy;
 using Kurisu.Proxy.Attributes;
-using Newtonsoft.Json;
-using System.Reflection;
-using Kurisu.UnifyResultAndValidation;
-using Microsoft.Extensions.DependencyInjection;
 
-namespace Kurisu.RemoteCall
+namespace Kurisu.RemoteCall;
+
+/// <summary>
+/// 启用远程调用
+/// </summary>
+[AttributeUsage(AttributeTargets.Interface, Inherited = false)]
+public sealed class EnableRemoteClientAttribute : AopAttribute
 {
-    public class EnableRemoteClientAttribute : AopAttribute
+    public EnableRemoteClientAttribute()
     {
-        public EnableRemoteClientAttribute() : base(typeof(EnableHttpClient))
-        {
-        }
-
-        public string Name { get; set; }
-
-        public string BaseUrl { get; set; }
-
-        public Type FallbackType { get; set; }
     }
 
+    /// <summary>
+    /// client name
+    /// </summary>
+    public string Name { get; set; }
 
-    [SkipScan]
-    public class EnableHttpClient : Aop
-    {
-        protected override async Task InterceptAsync(IProxyInfo invocation, Func<IProxyInfo, Task> proceed)
-        {
-            var t = invocation.Method.GetCustomAttribute<DescriptionAttribute>();
-            var httpClient = new HttpClient();
-            var str = "";//await httpClient.GetStringAsync(t.Description);
+    /// <summary>
+    /// base url
+    /// </summary>
+    public string BaseUrl { get; set; }
 
-            await proceed(invocation).ConfigureAwait(false);
-        }
-
-        protected override async Task<TResult> InterceptAsync<TResult>(IProxyInfo invocation, Func<IProxyInfo, Task<TResult>> proceed)
-        {
-            var t = invocation.Method.GetCustomAttribute<DescriptionAttribute>().Description;
-            //var httpClient = new HttpClient();
-            var v1 = JsonConvert.SerializeObject(new DefaultApiResult<object> { State = ApiStateCode.Success });
-            return await Task.FromResult(JsonConvert.DeserializeObject<TResult>(v1));
-        }
-    }
+    /// <summary>
+    /// 
+    /// </summary>
+    public Type FallbackType { get; set; }
 }
+
+

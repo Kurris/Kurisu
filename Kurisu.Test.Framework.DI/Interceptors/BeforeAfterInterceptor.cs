@@ -1,15 +1,14 @@
 using System;
-using Castle.DynamicProxy;
+using Kurisu.Proxy.Abstractions;
 
 namespace Kurisu.Test.Framework.DI.Interceptors;
 
 public class BeforeAfterInterceptor : IInterceptor
 {
-    public void Intercept(IInvocation invocation)
+    public void Intercept(IProxyInvocation invocation)
     {
         Console.WriteLine("before");
         invocation.Proceed();
         Console.WriteLine("after");
-        //invocation.ReturnValue
     }
 }

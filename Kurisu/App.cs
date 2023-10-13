@@ -38,7 +38,7 @@ public class App
     /// 默认从请求作用域中获取,可指定从根服务中创建新的作用域(Root ServiceProvider 创建的域或者服务都需要手动释放),该作用域会在请求结束后释放
     /// </remarks>
     /// <returns></returns>
-    public static IServiceProvider GetServiceProvider(bool fromRootService = false)
+    internal static IServiceProvider GetServiceProvider(bool fromRootService = false)
     {
         var httpContext = HttpContext;
 
@@ -149,7 +149,6 @@ public class App
             {
                 return assembly.GetTypes()
                 .Where(type => type.IsPublic)
-                .Where(type => !type.IsAbstract)
                 .Where(type => !type.IsDefined(typeof(SkipScanAttribute)));
             }
             catch (Exception)

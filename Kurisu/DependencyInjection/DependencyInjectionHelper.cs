@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -17,6 +18,9 @@ internal class DependencyInjectionHelper
                         && !x.IsInterface);
 
 
+    public static readonly ConcurrentDictionary<string, Type> NamedServices = new();
+
+
     public static (ServiceLifetime lifeTime, Type[] interfaceTypes) GetInterfacesAndLifeTime(Type type)
     {
         //获取服务的所有接口
@@ -27,14 +31,14 @@ internal class DependencyInjectionHelper
         if (lifeTimeInterfaces.Length > 1) throw new ApplicationException($"{type.FullName}不允许存在多个生命周期定义");
 
         //具体的生命周期类型
-        var currentLifeTimeInterface = lifeTimeInterfaces[0];
+        var currentLifeTimeInterface = lifeTimeInterfaces.FirstOrDefault();
 
         //能够注册的接口
         var ableRegisterInterfaces = interfaces
             .Where(x => x != currentLifeTimeInterface)
             .Where(x => x != typeof(IDependency));
 
-        return (GetRegisterType(currentLifeTimeInterface), ableRegisterInterfaces.ToArray());
+        return (GetRegisterLifetimeType(currentLifeTimeInterface), ableRegisterInterfaces.ToArray());
     }
 
 
@@ -44,19 +48,21 @@ internal class DependencyInjectionHelper
     /// <param name="lifeTimeType"></param>
     /// <returns></returns>
     /// <exception cref="InvalidCastException"></exception>
-    public static ServiceLifetime GetRegisterType(MemberInfo lifeTimeType)
+    public static ServiceLifetime GetRegisterLifetimeType(MemberInfo lifeTimeType)
     {
+        if (lifeTimeType == null) return ServiceLifetime.Scoped;
+
         //判断注册方式
         return lifeTimeType.Name switch
         {
             nameof(ITransientDependency) => ServiceLifetime.Transient,
             nameof(ISingletonDependency) => ServiceLifetime.Singleton,
             nameof(IScopeDependency) => ServiceLifetime.Scoped,
-            _ => throw new InvalidCastException($"非法生命周期类型{lifeTimeType.Name}")
+            _ => ServiceLifetime.Scoped
         };
     }
 
-    public static void Register(IServiceCollection services, ServiceLifetime lifeTime, Type service, Type interfaceType = null)
+    public static void Register(IServiceCollection services, ServiceLifetime lifetime, Type service, Type interfaceType = null)
     {
         //范型类型转换
         if (service.IsGenericType)
@@ -67,7 +73,7 @@ internal class DependencyInjectionHelper
         }
 
         if (interfaceType == null)
-            services.Add(ServiceDescriptor.Describe(service, service, lifeTime));
+            services.Add(ServiceDescriptor.Describe(service, service, lifetime));
         else
         {
             if (interfaceType.IsGenericType)
@@ -77,7 +83,7 @@ internal class DependencyInjectionHelper
                     throw new NullReferenceException(nameof(interfaceType));
             }
 
-            services.Add(ServiceDescriptor.Describe(interfaceType, service, lifeTime));
+            services.Add(ServiceDescriptor.Describe(interfaceType, service, lifetime));
         }
     }
 }

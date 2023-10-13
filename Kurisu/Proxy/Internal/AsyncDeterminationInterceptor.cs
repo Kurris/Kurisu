@@ -7,7 +7,10 @@ using Kurisu.Proxy.Enums;
 
 namespace Kurisu.Proxy.Internal;
 
-public class AsyncDeterminationInterceptor : IInterceptor
+/// <summary>
+/// castle.core.asyncinterceptor
+/// </summary>
+internal class AsyncDeterminationInterceptor : IInterceptor
 {
     private static readonly MethodInfo HandleAsyncMethodInfo =
      typeof(AsyncDeterminationInterceptor)
@@ -24,11 +27,11 @@ public class AsyncDeterminationInterceptor : IInterceptor
         AsyncInterceptor = asyncInterceptor;
     }
 
-    private delegate void GenericAsyncHandler(IProxyInfo invocation, IAsyncInterceptor asyncInterceptor);
+    private delegate void GenericAsyncHandler(IProxyInvocation invocation, IAsyncInterceptor asyncInterceptor);
 
     public IAsyncInterceptor AsyncInterceptor { get; }
 
-    public void Intercept(IProxyInfo invocation)
+    public void Intercept(IProxyInvocation invocation)
     {
         MethodType methodType = GetMethodType(invocation.Method.ReturnType);
 
@@ -71,7 +74,7 @@ public class AsyncDeterminationInterceptor : IInterceptor
         return (GenericAsyncHandler)method.CreateDelegate(typeof(GenericAsyncHandler));
     }
 
-    private static void HandleAsyncWithResult<TResult>(IProxyInfo invocation, IAsyncInterceptor asyncInterceptor)
+    private static void HandleAsyncWithResult<TResult>(IProxyInvocation invocation, IAsyncInterceptor asyncInterceptor)
     {
         asyncInterceptor.InterceptAsynchronous<TResult>(invocation);
     }

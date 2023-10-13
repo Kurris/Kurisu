@@ -3,7 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Kurisu.Test.Framework.DI.Named;
 
-[Register("dingding")]
+[Service("dingding")]
 public class DingDingSendMessage : ISendMessage
 {
     public string Send()

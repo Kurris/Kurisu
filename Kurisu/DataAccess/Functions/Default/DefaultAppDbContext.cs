@@ -39,7 +39,7 @@ public class DefaultAppDbContext<TDbService> : DbContext where TDbService : IBas
     /// <summary>
     /// 扫描TableAttribute|IBaseEntity的实体类型
     /// </summary>
-    protected readonly IReadOnlyList<Type> EntityTypes = App.ActiveTypes.Where(x => x.IsDefined(typeof(TableAttribute)) || x.IsAssignableTo(typeof(IBaseEntity))).ToList();
+    protected readonly IReadOnlyList<Type> EntityTypes = App.ActiveTypes.Where(x => !x.IsAbstract).Where(x => x.IsDefined(typeof(TableAttribute)) || x.IsAssignableTo(typeof(IBaseEntity))).ToList();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

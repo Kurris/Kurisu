@@ -23,13 +23,13 @@ internal static class InterceptorDependencyInjectionServiceCollectionExtensions
         services.RegisterInterceptors();
 
         var serviceTypes = DependencyInjectionHelper.Services
-            .Where(x => x.IsAssignableTo(typeof(IDependency)));
+            .Where(x => x.IsAssignableTo(typeof(IDependency)))
+            .Where(x => !x.IsAbstract)
+            .Where(x => !x.IsDefined(typeof(ServiceAttribute), false));
 
         foreach (var service in serviceTypes)
         {
-
             var (lifeTime, interfaceTypes) = DependencyInjectionHelper.GetInterfacesAndLifeTime(service);
-
             var interceptorTypes = service.GetAllInterceptorTypes(interfaceTypes);
 
             if (interceptorTypes.Any())
@@ -130,7 +130,7 @@ internal static class InterceptorDependencyInjectionServiceCollectionExtensions
 
     internal static void RegisterInterceptors(this IServiceCollection services)
     {
-        var interceptors = DependencyInjectionHelper.Services.Where(x => x.IsSubclassOf(typeof(Aop)));
+        var interceptors = DependencyInjectionHelper.Services.Where(x => x.IsAssignableTo(typeof(IInterceptor)) || x.IsAssignableTo(typeof(IAsyncInterceptor)));
         foreach (var item in interceptors)
         {
             DependencyInjectionHelper.Register(services, ServiceLifetime.Singleton, item);

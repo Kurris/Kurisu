@@ -9,6 +9,7 @@
 
     <ItemGroup>
       <ProjectReference Include="..\Kurisu.Utils\Kurisu.Utils.csproj" />
+      <ProjectReference Include="..\Kurisu\Kurisu.csproj" />
     </ItemGroup>
 
 </Project>

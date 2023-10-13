@@ -1,5 +1,4 @@
 using System;
-using Kurisu.DataAccess.Functions.Default.Abstractions;
 using Kurisu.Test.Framework.DI.Dependencies.Abstractions;
 using Kurisu.Test.Framework.DI.Dtos;
 using Microsoft.Extensions.DependencyInjection;
@@ -14,19 +13,16 @@ public class TestDependencies
     private readonly ITestScopeWithInterceptor _scopeWithInterceptor;
     private readonly IGenericsGet<Cat> _catGenericsGet;
     private readonly IGenericsGet<Dog> _dogGenericsGet;
-    private readonly IDbService _appDbService;
 
     public TestDependencies(IServiceProvider serviceProvider
         , ITestScopeWithInterceptor scopeWithInterceptor
         , IGenericsGet<Cat> catGenericsGet
-        , IGenericsGet<Dog> dogGenericsGet
-        , IDbService appDbService)
+        , IGenericsGet<Dog> dogGenericsGet)
     {
         _serviceProvider = serviceProvider;
         _scopeWithInterceptor = scopeWithInterceptor;
         _catGenericsGet = catGenericsGet;
         _dogGenericsGet = dogGenericsGet;
-        _appDbService = appDbService;
     }
 
     [Fact]

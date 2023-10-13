@@ -20,40 +20,24 @@ internal static class NamedDependencyInjectionServiceCollectionExtensions
     /// <exception cref="ArgumentOutOfRangeException"></exception>
     internal static void RegisterNamedServices(this IServiceCollection services)
     {
-        var serviceTypes = DependencyInjectionHelper.Services.Where(x => x.IsDefined(typeof(ServiceAttribute), false));
-        if (!serviceTypes.Any())
-        {
-            return;
-        }
         services.AddNamedResolver();
 
+        var serviceTypes = DependencyInjectionHelper.Services.Where(x => !x.IsAbstract).Where(x => x.IsDefined(typeof(ServiceAttribute), false));
         foreach (var service in serviceTypes)
         {
-            //获取服务的所有接口
-            var interfaces = service.GetInterfaces();
-            var serviceAttribute = service.GetCustomAttribute<ServiceAttribute>();
-            var typeNamed = serviceAttribute.Named;
-            //具体的生命周期类型
-            var currentLifeTimeInterface = serviceAttribute.LifeTime;
-
             if (service.IsGenericType)
             {
                 throw new NotSupportedException($"不支持泛型类{service.FullName}生成命名服务");
             }
 
-            var (lifeTime, interfaceTypes) = DependencyInjectionHelper.GetInterfacesAndLifeTime(service);
+            var serviceAttribute = service.GetCustomAttribute<ServiceAttribute>();
+            var typeNamed = serviceAttribute.Named;
 
-            //注册服务
-            if (interfaceTypes.Any())
-            {
-                //注册所有接口
-                foreach (var interfaceType in interfaceTypes)
-                    DependencyInjectionHelper.Register(services, lifeTime, service, interfaceType);
-            }
-            else
-            {
-                DependencyInjectionHelper.Register(services, lifeTime, service);
-            }
+            DependencyInjectionHelper.NamedServices.TryAdd(typeNamed, service);
+            //具体的生命周期类型
+            var lifetime = DependencyInjectionHelper.GetRegisterLifetimeType(serviceAttribute.LifeTime);
+
+            DependencyInjectionHelper.Register(services, lifetime, service);
         }
     }
 

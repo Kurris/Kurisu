@@ -96,7 +96,7 @@ public class DefaultSwaggerPack : BaseAppPack
             c.OperationFilter<AppendAuthorizeToSummaryOperationFilter>();
 
             //OAuth2.0 Token 获取
-            var setting = Configuration.GetSection(nameof(SwaggerOAuth2Setting)).Get<SwaggerOAuth2Setting>();
+            var setting = Configuration.GetSection(nameof(SwaggerOAuthSetting)).Get<SwaggerOAuthSetting>();
             if (setting != null && setting.Enable)
             {
                 //eg:配置文件appsetting.json的key如果存在":"，那么解析将会失败
@@ -140,7 +140,7 @@ public class DefaultSwaggerPack : BaseAppPack
         if (env.IsDevelopment())
         {
             //OAuth2.0 client 信息
-            var setting = Configuration.GetSection(nameof(SwaggerOAuth2Setting)).Get<SwaggerOAuth2Setting>();
+            var setting = Configuration.GetSection(nameof(SwaggerOAuthSetting)).Get<SwaggerOAuthSetting>();
             app.UseSwagger();
             app.UseSwaggerUI(c =>
             {

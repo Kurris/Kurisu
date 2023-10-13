@@ -27,7 +27,7 @@ public static class DependencyInjectionServiceCollectionExtensions
     /// <exception cref="ApplicationException"></exception>
     private static void RegisterServices(this IServiceCollection services)
     {
-        var serviceTypes = DependencyInjectionHelper.Services.Where(x => x.IsAssignableTo(typeof(IDependency)));
+        var serviceTypes = DependencyInjectionHelper.Services.Where(x => !x.IsAbstract).Where(x => x.IsAssignableTo(typeof(IDependency)));
 
         foreach (var service in serviceTypes)
         {

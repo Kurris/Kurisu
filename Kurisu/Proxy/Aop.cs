@@ -20,31 +20,31 @@ public abstract class Aop : IAsyncInterceptor
         [typeof(void)] = InterceptSynchronousVoid,
     };
 
-    private delegate void GenericSynchronousHandler(Aop me, IProxyInfo invocation);
+    private delegate void GenericSynchronousHandler(Aop me, IProxyInvocation invocation);
 
-    public void InterceptSynchronous(IProxyInfo invocation)
+    public void InterceptSynchronous(IProxyInvocation invocation)
     {
         Type returnType = invocation.Method.ReturnType;
         GenericSynchronousHandler handler = GenericSynchronousHandlers.GetOrAdd(returnType, CreateHandler);
         handler(this, invocation);
     }
 
-    public void InterceptAsynchronous(IProxyInfo invocation)
+    public void InterceptAsynchronous(IProxyInvocation invocation)
     {
         invocation.ReturnValue = InterceptAsync(invocation, ProceedAsynchronous);
     }
 
-    public void InterceptAsynchronous<TResult>(IProxyInfo invocation)
+    public void InterceptAsynchronous<TResult>(IProxyInvocation invocation)
     {
         invocation.ReturnValue = InterceptAsync(invocation, ProceedAsynchronous<TResult>);
     }
 
-    protected abstract Task InterceptAsync(IProxyInfo invocation, Func<IProxyInfo, Task> proceed);
+    protected abstract Task InterceptAsync(IProxyInvocation invocation, Func<IProxyInvocation, Task> proceed);
 
-    protected abstract Task<TResult> InterceptAsync<TResult>(IProxyInfo invocation, Func<IProxyInfo, Task<TResult>> proceed);
+    protected abstract Task<TResult> InterceptAsync<TResult>(IProxyInvocation invocation, Func<IProxyInvocation, Task<TResult>> proceed);
 
 
-    private static void InterceptSynchronousResult<TResult>(Aop me, IProxyInfo invocation)
+    private static void InterceptSynchronousResult<TResult>(Aop me, IProxyInvocation invocation)
     {
         Task<TResult> task = me.InterceptAsync(invocation, ProceedSynchronous<TResult>);
 
@@ -60,7 +60,7 @@ public abstract class Aop : IAsyncInterceptor
         task.RethrowIfFaulted();
     }
 
-    private static void InterceptSynchronousVoid(Aop me, IProxyInfo invocation)
+    private static void InterceptSynchronousVoid(Aop me, IProxyInvocation invocation)
     {
         Task task = me.InterceptAsync(invocation, ProceedSynchronous);
 
@@ -82,7 +82,7 @@ public abstract class Aop : IAsyncInterceptor
         return (GenericSynchronousHandler)method.CreateDelegate(typeof(GenericSynchronousHandler));
     }
 
-    private static Task ProceedSynchronous(IProxyInfo invocation)
+    private static Task ProceedSynchronous(IProxyInvocation invocation)
     {
         try
         {
@@ -96,7 +96,7 @@ public abstract class Aop : IAsyncInterceptor
     }
 
 
-    private static Task<TResult> ProceedSynchronous<TResult>(IProxyInfo invocation)
+    private static Task<TResult> ProceedSynchronous<TResult>(IProxyInvocation invocation)
     {
         try
         {
@@ -111,7 +111,7 @@ public abstract class Aop : IAsyncInterceptor
 
 
 
-    private static async Task ProceedAsynchronous(IProxyInfo invocation)
+    private static async Task ProceedAsynchronous(IProxyInvocation invocation)
     {
         invocation.Proceed();
 
@@ -121,7 +121,7 @@ public abstract class Aop : IAsyncInterceptor
         await originalReturnValue.ConfigureAwait(false);
     }
 
-    private static async Task<TResult> ProceedAsynchronous<TResult>(IProxyInfo invocation)
+    private static async Task<TResult> ProceedAsynchronous<TResult>(IProxyInvocation invocation)
     {
         invocation.Proceed();
 

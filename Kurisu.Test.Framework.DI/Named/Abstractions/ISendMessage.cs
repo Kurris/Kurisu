@@ -1,8 +1,6 @@
-using Microsoft.Extensions.DependencyInjection;
-
 namespace Kurisu.Test.Framework.DI.Named.Abstractions;
 
-public interface ISendMessage : ISingletonDependency
+public interface ISendMessage 
 {
     string Send();
 }

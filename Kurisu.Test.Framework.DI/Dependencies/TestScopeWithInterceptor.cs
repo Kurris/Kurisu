@@ -1,11 +1,12 @@
+using Kurisu.Proxy.Attributes;
 using Kurisu.Test.Framework.DI.Dependencies.Abstractions;
 using Kurisu.Test.Framework.DI.Interceptors;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace Kurisu.Test.Framework.DI.Dependencies;
 
-[Register(typeof(BeforeAfterInterceptor), typeof(BeforeAfterAsyncInterceptor))]
-public class TestScopeWithInterceptor : ITestScopeWithInterceptor, IScopeDependency
+
+[Aop(typeof(BeforeAfterInterceptor), typeof(BeforeAfterAsyncInterceptor))]
+public class TestScopeWithInterceptor : ITestScopeWithInterceptor
 {
     public string Get()
     {
