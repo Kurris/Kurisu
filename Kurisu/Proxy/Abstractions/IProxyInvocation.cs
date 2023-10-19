@@ -1,4 +1,5 @@
-﻿using System.Reflection;
+﻿using System;
+using System.Reflection;
 
 namespace Kurisu.Proxy.Abstractions;
 
@@ -7,6 +8,11 @@ namespace Kurisu.Proxy.Abstractions;
 /// </summary>
 public interface IProxyInvocation
 {
+    /// <summary>
+    /// 接口类型
+    /// </summary>
+    public Type InterfaceType { get; set; }
+
     /// <summary>
     /// 代理对象
     /// </summary>

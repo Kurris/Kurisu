@@ -54,10 +54,11 @@ public abstract class Aop : IAsyncInterceptor
             // Need to use Task.Run() to prevent deadlock in .NET Framework ASP.NET requests.
             // GetAwaiter().GetResult() prevents a thrown exception being wrapped in a AggregateException.
             // See https://stackoverflow.com/a/17284612
-            Task.Run(() => task).GetAwaiter().GetResult();
+            invocation.ReturnValue = Task.Run(() => task).GetAwaiter().GetResult();
         }
 
         task.RethrowIfFaulted();
+
     }
 
     private static void InterceptSynchronousVoid(Aop me, IProxyInvocation invocation)
