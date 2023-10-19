@@ -86,7 +86,7 @@ public class App
     /// <summary>
     /// 应用程序有效类型
     /// </summary>
-    internal static List<Type> ActiveTypes { get; private set; }
+    public static List<Type> ActiveTypes { get; private set; }
 
     /// <summary>
     /// 自定义应用pack

@@ -91,6 +91,11 @@ public class DefaultApiResult<T> : IApiResult
     }
 }
 
+public class DefaultApiResult : DefaultApiResult<object>
+{
+
+}
+
 /// <summary>
 /// 返回状态
 /// </summary>

@@ -47,8 +47,4 @@
       <ProjectReference Include="..\Kurisu.Utils\Kurisu.Utils.csproj" />
     </ItemGroup>
 
-    <ItemGroup>
-      <Folder Include="RemoteCall\Atributes\" />
-    </ItemGroup>
-
 </Project>

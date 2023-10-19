@@ -9,16 +9,15 @@ public static class EnableRemoteClientExtensions
 {
     public static IServiceCollection AddKurisuRemoteCall(this IServiceCollection services)
     {
-        services.AddSingleton<EnableHttpClient>();
-        services.AddHttpClient("kurisu.remote.httpClient");
+        services.AddSingleton<DefaultRemoteCallClient>();
+        services.AddHttpClient(HttpClientName);
 
-        //
         var interfaceTypes = App.ActiveTypes.Where(x => x.IsInterface && x.IsDefined(typeof(EnableRemoteClientAttribute), false));
         foreach (var interfaceType in interfaceTypes)
         {
             services.Add(ServiceDescriptor.Describe(interfaceType, sp =>
             {
-                var interceptor = sp.GetService<EnableHttpClient>().ToInterceptor();
+                var interceptor = sp.GetService<DefaultRemoteCallClient>().ToInterceptor();
                 return ProxyGenerator.Create(null, interfaceType, interceptor);
 
             }, ServiceLifetime.Singleton));
@@ -26,4 +25,6 @@ public static class EnableRemoteClientExtensions
 
         return services;
     }
+
+    public const string HttpClientName = "kurisu.remote.httpClient";
 }
