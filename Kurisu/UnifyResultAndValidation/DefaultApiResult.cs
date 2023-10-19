@@ -21,7 +21,7 @@ public class DefaultApiResult<T> : IApiResult
     /// </summary>
     public DefaultApiResult()
     {
-        this.State = ApiStateCode.Error;
+        this.Code = ApiStateCode.Error;
     }
 
     /// <summary>
@@ -34,7 +34,7 @@ public class DefaultApiResult<T> : IApiResult
     {
         this.Message = message;
         this.Data = data;
-        this.State = state;
+        this.Code = state;
     }
 
     /// <summary>
@@ -50,14 +50,14 @@ public class DefaultApiResult<T> : IApiResult
     /// <summary>
     /// 状态
     /// </summary>
-    public ApiStateCode State { get; set; }
+    public ApiStateCode Code { get; set; }
 
 
     public virtual IApiResult GetDefaultSuccessApiResult<TResult>(TResult apiResult)
     {
         return new DefaultApiResult<TResult>
         {
-            State = ApiStateCode.Success,
+            Code = ApiStateCode.Success,
             Message = "success",
             Data = apiResult
         };
@@ -67,7 +67,7 @@ public class DefaultApiResult<T> : IApiResult
     {
         return new DefaultApiResult<TResult>
         {
-            State = ApiStateCode.ValidateError,
+            Code = ApiStateCode.ValidateError,
             Message = "validation error",
             Data = apiResult
         };
@@ -77,7 +77,7 @@ public class DefaultApiResult<T> : IApiResult
     {
         return new DefaultApiResult<object>
         {
-            State = ApiStateCode.Forbidden,
+            Code = ApiStateCode.Forbidden,
             Message = "forbidden"
         };
     }
