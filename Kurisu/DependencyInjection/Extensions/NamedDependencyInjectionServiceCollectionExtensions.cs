@@ -35,7 +35,7 @@ internal static class NamedDependencyInjectionServiceCollectionExtensions
 
             DependencyInjectionHelper.NamedServices.TryAdd(typeNamed, service);
             //具体的生命周期类型
-            var lifetime = DependencyInjectionHelper.GetRegisterLifetimeType(serviceAttribute.LifeTime);
+            var lifetime = serviceAttribute.Lifetime;
 
             DependencyInjectionHelper.Register(services, lifetime, service);
         }

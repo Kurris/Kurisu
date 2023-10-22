@@ -5,6 +5,7 @@ using System.Linq;
 using System.Reflection;
 using Kurisu.Document.Settings;
 using Kurisu.MVC;
+using Kurisu.Startup;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -18,7 +19,7 @@ using Swashbuckle.AspNetCore.SwaggerGen;
 
 // ReSharper disable ClassNeverInstantiated.Global
 
-namespace Kurisu.Startup.AppPacks;
+namespace Kurisu.Document;
 
 /// <summary>
 /// swagger默认pack

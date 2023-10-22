@@ -9,14 +9,14 @@ public static class AuthenticationServiceCollectionExtensions
     public static IServiceCollection AddKurisuUserInfo(this IServiceCollection services)
     {
         services.AddHttpContextAccessor();
-        services.TryAddSingleton<ICurrentUserInfoResolver, DefaultCurrentUserInfoResolver>();
+        services.TryAddSingleton<ICurrentUserInfo, DefaultCurrentUserInfoResolver>();
         return services;
     }
 
     public static IServiceCollection AddKurisuTenantInfo(this IServiceCollection services)
     {
         services.AddHttpContextAccessor();
-        services.TryAddSingleton<ICurrentTenantInfoResolver, DefaultCurrentTenantInfoResolver>();
+        services.TryAddSingleton<ICurrentTenantInfo, DefaultCurrentTenantInfoResolver>();
         return services;
     }
 }

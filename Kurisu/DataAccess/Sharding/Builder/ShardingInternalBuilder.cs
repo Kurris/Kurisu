@@ -1,7 +1,7 @@
-using Microsoft.EntityFrameworkCore;
+//using Microsoft.EntityFrameworkCore;
 
-namespace Kurisu.DataAccess.Sharding.Builder;
+//namespace Kurisu.DataAccess.Sharding.Builder;
 
-internal class ShardingInternalBuilder<TDbContext> : IShardingInternalBuilder where TDbContext : DbContext, IShardingDbContext
-{
-}
+//internal class ShardingInternalBuilder<TDbContext> : IShardingInternalBuilder where TDbContext : DbContext, IShardingDbContext
+//{
+//}

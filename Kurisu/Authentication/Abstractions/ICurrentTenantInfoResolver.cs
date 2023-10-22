@@ -5,7 +5,7 @@ namespace Kurisu.Authentication.Abstractions;
 /// <summary>
 /// 租户信息获取处理器
 /// </summary>
-public interface ICurrentTenantInfoResolver
+public interface ICurrentTenantInfo
 {
     /// <summary>
     /// Claims:tenant; header:X-Requested-TenantId

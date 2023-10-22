@@ -1,28 +1,28 @@
-using System.Collections.Generic;
-using System.Linq;
-using Kurisu.DataAccess.Sharding.Metadata;
+//using System.Collections.Generic;
+//using System.Linq;
+//using Kurisu.DataAccess.Sharding.Metadata;
 
-namespace Kurisu.DataAccess.Sharding.VirtualRoute.TableRoute.Abstractions;
+//namespace Kurisu.DataAccess.Sharding.VirtualRoute.TableRoute.Abstractions;
 
-public abstract class AbstractVirtualTableRoute<TEntity> : IVirtualTableRoute<TEntity> where TEntity : class, new()
-{
-    public abstract void OnMetadataBuilder(MetadataBuilder<TEntity> builder);
-
-
-    public EntityMetadata Metadata { get; }
+//public abstract class AbstractVirtualTableRoute<TEntity> : IVirtualTableRoute<TEntity> where TEntity : class, new()
+//{
+//    public abstract void OnMetadataBuilder(MetadataBuilder<TEntity> builder);
 
 
-    public List<TableRouteUnit> RouteWithPredicate(DatasourceRouteResult dataSourceRouteResult, IQueryable queryable, bool isQuery)
-    {
-        throw new System.NotImplementedException();
-    }
+//    public EntityMetadata Metadata { get; }
 
-    public TableRouteUnit RouteWithValue(DatasourceRouteResult dataSourceRouteResult, object shardingKey)
-    {
-        throw new System.NotImplementedException();
-    }
 
-    public abstract IEnumerable<string> GetTails();
+//    public List<TableRouteUnit> RouteWithPredicate(DatasourceRouteResult dataSourceRouteResult, IQueryable queryable, bool isQuery)
+//    {
+//        throw new System.NotImplementedException();
+//    }
 
-    public bool EnableEntityQuery { get; }
-}
+//    public TableRouteUnit RouteWithValue(DatasourceRouteResult dataSourceRouteResult, object shardingKey)
+//    {
+//        throw new System.NotImplementedException();
+//    }
+
+//    public abstract IEnumerable<string> GetTails();
+
+//    public bool EnableEntityQuery { get; }
+//}

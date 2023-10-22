@@ -1,10 +1,10 @@
-using Microsoft.EntityFrameworkCore.Diagnostics;
+//using Microsoft.EntityFrameworkCore.Diagnostics;
 
-namespace Kurisu.DataAccess.Interceptors;
+//namespace Kurisu.DataAccess.Interceptors;
 
-/// <summary>
-/// 上下文连接拦截器
-/// </summary>
-public class DefaultDbConnectionInterceptor : DbConnectionInterceptor
-{
-}
+///// <summary>
+///// 上下文连接拦截器
+///// </summary>
+//public class DefaultDbConnectionInterceptor : DbConnectionInterceptor
+//{
+//}

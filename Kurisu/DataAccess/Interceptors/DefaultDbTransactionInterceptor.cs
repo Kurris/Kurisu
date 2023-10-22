@@ -1,7 +1,7 @@
-using Microsoft.EntityFrameworkCore.Diagnostics;
+//using Microsoft.EntityFrameworkCore.Diagnostics;
 
-namespace Kurisu.DataAccess.Interceptors;
+//namespace Kurisu.DataAccess.Interceptors;
 
-public class DefaultDbTransactionInterceptor : DbTransactionInterceptor
-{
-}
+//public class DefaultDbTransactionInterceptor : DbTransactionInterceptor
+//{
+//}

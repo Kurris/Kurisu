@@ -107,7 +107,7 @@ internal class DefaultRemoteCallClient : Aop
                 else if (formData.Key.ParameterType == typeof(byte[]))
                 {
                     var fileInfos = p.Where(x => x.Key.Name != formData.Key.Name);
-                    if (fileInfos.Count() < 1)
+                    if (!fileInfos.Any())
                     {
                         throw new FileLoadException("请在其他参数中需要明确文件流的fileName");
                     }

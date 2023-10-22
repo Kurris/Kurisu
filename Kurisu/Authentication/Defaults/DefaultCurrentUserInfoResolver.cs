@@ -12,7 +12,7 @@ namespace Kurisu.Authentication.Defaults;
 /// 默认当前用户信息处理器
 /// </summary>
 // ReSharper disable once ClassWithVirtualMembersNeverInherited.Global
-public class DefaultCurrentUserInfoResolver : ICurrentUserInfoResolver
+public class DefaultCurrentUserInfoResolver : ICurrentUserInfo
 {
     private readonly IHttpContextAccessor _httpContextAccessor;
 

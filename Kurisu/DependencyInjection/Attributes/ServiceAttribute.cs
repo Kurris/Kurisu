@@ -30,5 +30,5 @@ public class ServiceAttribute : Attribute
     /// </summary>
     public string Named { get; }
 
-    public Type LifeTime { get; set; } = typeof(IScopeDependency);
+    public ServiceLifetime Lifetime { get; set; } = ServiceLifetime.Scoped;
 }

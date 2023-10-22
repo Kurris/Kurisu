@@ -14,5 +14,5 @@ public interface IChannelHandler<in TMessage> : ISingletonDependency where TMess
     /// </summary>
     /// <param name="argument"></param>
     /// <returns></returns>
-    Task InvokeAsync(TMessage argument);
+    Task InvokeAsync(TMessage message);
 }

@@ -21,7 +21,7 @@ public class GrpcClientService<TModule, TClient> : IGrpcClientService<TModule, T
     where TModule : IGrpcModule
     where TClient : ClientBase
 {
-    private readonly ICurrentUserInfoResolver _currentUserInfoResolver;
+    private readonly ICurrentUserInfo _currentUserInfoResolver;
     private readonly Interceptor[] _grpcInterceptors;
 
     /// <summary>
@@ -45,7 +45,7 @@ public class GrpcClientService<TModule, TClient> : IGrpcClientService<TModule, T
     /// <param name="currentUserInfoResolver"></param>
     /// <param name="grpcModule"></param>
     /// <param name="interceptors"></param>
-    public GrpcClientService(IOptions<GrpcSetting> options, ICurrentUserInfoResolver currentUserInfoResolver,
+    public GrpcClientService(IOptions<GrpcSetting> options, ICurrentUserInfo currentUserInfoResolver,
         TModule grpcModule, IEnumerable<IGrpcInterceptor> interceptors)
     {
         if (options.Value == null) throw new ArgumentNullException(nameof(options));

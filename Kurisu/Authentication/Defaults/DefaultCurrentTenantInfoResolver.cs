@@ -9,7 +9,7 @@ namespace Kurisu.Authentication.Defaults;
 /// 租户信息获取处理器
 /// </summary>
 // ReSharper disable once ClassWithVirtualMembersNeverInherited.Global
-public class DefaultCurrentTenantInfoResolver : ICurrentTenantInfoResolver
+public class DefaultCurrentTenantInfoResolver : ICurrentTenantInfo
 {
     private readonly IHttpContextAccessor _httpContextAccessor;
 
