@@ -1,5 +1,5 @@
-﻿using Kurisu.Proxy;
-using Kurisu.Proxy.Abstractions;
+﻿using Kurisu.Core.Proxy;
+using Kurisu.Core.Proxy.Abstractions;
 
 namespace Kurisu.Test.WebApi_A
 {

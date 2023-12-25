@@ -16,18 +16,17 @@ public class Startup
             .AddJsonFile("appsettings.json")
             .AddJsonFile("appsettings.Development.json").Build();
 
-        services.AddKurisuConfiguration(configuration);
-        services.AddKurisuDependencyInjection();
-        services.AddKurisuDatabaseAccessor();
+        services.AddConfiguration(configuration);
+        services.AddDependencyInjection();
 
         var rootServices = services.BuildServiceProvider();
 
         //根服务提供器
         // = app.ApplicationServices;
 
-        var type = Assembly.Load("Kurisu").GetTypes().First(x => x.Name.Equals("InternalApp"));
+        var type = Assembly.Load("Kurisu.AspNetCore").GetTypes().First(x => x.Name.Equals("InternalApp"));
         var obj = Activator.CreateInstance(type);
-        var propertyInfo = obj.GetType().GetProperty("ApplicationServices", BindingFlags.Static | BindingFlags.NonPublic);
+        var propertyInfo = obj.GetType().GetProperty("RootServices", BindingFlags.Static | BindingFlags.NonPublic);
         propertyInfo.SetValue(obj, rootServices);
     }
 }

@@ -1,29 +1,12 @@
 ﻿using System.Security.Claims;
 using IdentityModel;
-using Kurisu.Authentication;
-using Kurisu.Utils;
-using Kurisu.Utils.Extensions;
 using Kurisu.Test.Console;
 using System.Diagnostics;
-using System.Linq;
-using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
-using Microsoft.AspNetCore.Rewrite;
+using Kurisu.AspNetCore.Authentication;
+using Kurisu.AspNetCore.Utils;
+using Kurisu.AspNetCore.Utils.Extensions;
 
 Microsoft.IdentityModel.Logging.IdentityModelEventSource.ShowPII = true;
-
-//json
-var persons = new List<Person>() { new Person() { Id = 1, Name = "小李" }, new Person() { Id = 2, Name = "小王" } };
-
-var sap = new List<Person>() { new Person() { Id = 1, Name = "小赵" }, new Person() { Id = 2, Name = "小王" }, new Person() { Id = 3, Name = "小X" } };
-
-//persons = persons.Except(sap, new PersonEqualityComparer()).ToList();
-
-var  spersons = sap.Intersect(persons, new PersonEqualityComparer());
-for (int i = 0; i < spersons.Count(); i++)
-{
-    sap.Remove(spersons.ElementAt(i));
-}
 
 
 var sw = Stopwatch.StartNew();
@@ -39,17 +22,19 @@ var token = JwtEncryption.GenerateToken(new Claim[]
 , "123456789XCVBN@123", "ligy", "api");
 
 
-SnowFlakeHelper.Instance.NextId();
+var uid = SnowFlakeHelper.Instance.NextId();
+var dt = SnowFlakeHelper.AnalyzeId(uid);
 
-var list = new List<long>(50000);
+
+var list = new List<long>(5000000);
 sw.Restart();
-for (var j = 0; j < 10000; j++)
+for (var j = 0; j < 5000000; j++)
 {
     list.Add(SnowFlakeHelper.Instance.NextId());
 }
 
 Console.WriteLine($"雪花id耗时:{sw.Elapsed}");
-Console.WriteLine($"雪花id个数:{list.Distinct().Count()}");
+Console.WriteLine($"雪花id个数:{list.Select(x => x.ToString().Length).Distinct().Count()}");
 
 Console.WriteLine("/*--------------------------------------------------------------------------------------------------*/");
 var testObject = new TestObject
@@ -89,52 +74,3 @@ for (var i = 0; i < loopTimes; i++)
 
 Console.WriteLine($"反射方法耗时:{sw.Elapsed}");
 
-
-class Person
-{
-    public int Id { get; set; }
-    public string Name { get; set; }
-}
-
-
-class PersonEqualityComparer : IEqualityComparer<Person>
-{
-    public bool Equals(Person x, Person y)
-    {
-        if (ReferenceEquals(x, y)) return true;
-        if (ReferenceEquals(x, null)) return false;
-        if (ReferenceEquals(y, null)) return false;
-        if (x.GetType() != y.GetType()) return false;
-        return x.Id == y.Id && x.Name == x.Name;
-    }
-
-    public int GetHashCode(Person obj)
-    {
-        if (Object.ReferenceEquals(obj, null)) return 0;
-        //return HashCode.Combine(obj.Id, obj.Name);
-
-        return obj.Id.GetHashCode() ^ obj.Name.GetHashCode();
-    }
-
-    //public bool Equals(Person x, Person y)
-    //{
-    //    //Check whether the compared objects reference the same data.
-    //    if (Object.ReferenceEquals(x, y)) return true;
-
-    //    //Check whether any of the compared objects is null.
-    //    if (Object.ReferenceEquals(x, null) || Object.ReferenceEquals(y, null))
-    //        return false;
-
-    //    //Check whether the products' properties are equal.
-    //    return x.Equals(y);
-    //}
-
-    //public int GetHashCode(Person obj)
-    //{
-    //    //Check whether the object is null
-    //    if (Object.ReferenceEquals(obj, null)) return 0;
-    //    return obj.GetHashCode();
-    //}
-
-
-}

@@ -1,8 +1,9 @@
-﻿using Kurisu.Proxy.Attributes;
+﻿using Kurisu.Core.Proxy.Attributes;
+using Kurisu.SqlSugar.Attributes;
 
 namespace Kurisu.Test.WebApi_A;
 
-public class TestService : ITryTestService, IScopeDependency
+public class TestService : ITryTestService
 {
     public async Task<string> Say()
     {
@@ -12,24 +13,22 @@ public class TestService : ITryTestService, IScopeDependency
 
     public async Task Wall()
     {
-    
     }
 }
 
-
-public interface ITryTestService
+public interface ITryTestService : IScopeDependency
 {
     [Log]
+    [Transactional]
     Task<string> Say();
-
 
     Task Wall();
 }
 
 public class LogAttribute : AopAttribute
 {
-    public LogAttribute() : base(typeof(Log))
+    public LogAttribute()
     {
-
+        Interceptors = new[] { typeof(Log) };
     }
 }

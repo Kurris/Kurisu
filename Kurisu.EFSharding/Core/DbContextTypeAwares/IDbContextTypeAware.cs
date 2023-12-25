@@ -1,4 +1,4 @@
-// namespace Kurisu.EFSharding.Core.DbContextTypeAwares;
+// namespace Kurisu.AspNetCore.EFSharding.Core.DbContextTypeAwares;
 //
 // public interface IDbContextTypeAware
 // {

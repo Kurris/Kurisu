@@ -1,8 +1,9 @@
-using Kurisu.Startup;
+using Kurisu.AspNetCore.Authentication.Extensions;
+using Kurisu.AspNetCore.Startup;
 
 namespace Kurisu.Test.WebApi_B;
 
-public class Startup : DefaultKurisuStartup
+public class Startup : DefaultStartup
 {
     public Startup(IConfiguration configuration) : base(configuration)
     {
@@ -11,7 +12,7 @@ public class Startup : DefaultKurisuStartup
     public override void ConfigureServices(IServiceCollection services)
     {
         base.ConfigureServices(services);
-        services.AddKurisuUserInfo();
+        services.AddUserInfo();
     }
 
     public override void Configure(IApplicationBuilder app, IWebHostEnvironment env)

@@ -1,5 +1,5 @@
 using System;
-using Kurisu.Document.Settings;
+using Kurisu.AspNetCore.Document.Settings;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Xunit;
@@ -19,7 +19,7 @@ public class TestValidation
     [Fact]
     public void QuerySwaggerSetting_WithNoClientId_Return_OptionsValidationException()
     {
-        var swaggerOptions = _serviceProvider.GetService<IOptions<SwaggerOAuthSetting>>();
+        var swaggerOptions = _serviceProvider.GetService<IOptions<SwaggerOptions>>();
         Assert.Throws<OptionsValidationException>(() => { _ = swaggerOptions.Value; });
     }
 }

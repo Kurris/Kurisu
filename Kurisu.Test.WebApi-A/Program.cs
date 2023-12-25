@@ -1,3 +1,4 @@
+using Kurisu.AspNetCore.Startup;
 using Kurisu.Startup;
 
 namespace Kurisu.Test.WebApi_A;

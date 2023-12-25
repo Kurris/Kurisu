@@ -1,13 +1,15 @@
-using Kurisu.DataAccess.Functions.Default.Abstractions;
-using Kurisu.DataAccess.Functions.Default;
-using Kurisu.MVC;
+using System.ComponentModel.DataAnnotations;
+using Kurisu.AspNetCore.MVC;
+using Kurisu.RemoteCall.Attributes;
 using Kurisu.Test.WebApi_A.Dtos;
-using Kurisu.Utils;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
+using SqlSugar;
 
 namespace Kurisu.Test.WebApi_A.Controllers;
 
+/// <summary>
+/// 这是天气
+/// </summary>
 [ApiDefinition("天气api")]
 [ApiController]
 [Route("api/[controller]")]
@@ -15,51 +17,62 @@ public class WeatherForecastController : ControllerBase
 {
     private readonly ILogger<WeatherForecastController> _logger;
     private readonly ITryTestService _testService;
-    private readonly DefaultAppDbContext<IDbWrite> _context;
-    private readonly IUserApi _userApi;
+    private readonly ITestApi _userApi;
+    private readonly ISqlSugarClient _sugarClient;
 
-    public WeatherForecastController(ILogger<WeatherForecastController> logger, ITryTestService testService,
-        DefaultAppDbContext<IDbWrite> context, IUserApi userApi)
+    public WeatherForecastController(ILogger<WeatherForecastController> logger, ITryTestService testService, ITestApi userApi, ISqlSugarClient sugarClient)
     {
         _logger = logger;
         _testService = testService;
-        _context = context;
         _userApi = userApi;
-    }
-
-    [HttpGet("test")]
-    public async Task<object> TestInterceptor()
-    {
-        return await _userApi.GetHtmlAsync("", 1, 10);
+        _sugarClient = sugarClient;
     }
 
     /// <summary>
-    /// 添加
+    /// 测试
     /// </summary>
-    [HttpPost]
-    public async Task Add()
+    // [Authorize]
+    [HttpGet("test")]
+    public async Task<object> TestInterceptor()
     {
-        await _context.AddAsync(new Entity.Test
+        //await _testService.Say();
+        return await _userApi.GetString();
+        //await _userApi.SendMsg(new NameInput() { Name = "xiaoshang" });
+        ////await _userApi.GetH();
+        ////await _userApi.PutAsync(2);
+        ////return await _userApi.GetHtmlAsync(new NameInput() { Name = "ligy" }, 1, 10);
+        //var filePath = @"E:\dl\晶科\钉钉.txt";
+        //await _userApi.UploadAsync(await System.IO.File.ReadAllBytesAsync(filePath), "file", Path.GetFileName(filePath));
+    }
+
+    [HttpGet("test-something")]
+    public TestDto GetTest()
+    {
+        return new TestDto()
         {
-            Id = SnowFlakeHelper.Instance.NextId(),
-            Name = "222"
-        });
+            LogDate = DateTime.Now,
+        };
+    }
 
-        await _context.SaveChangesAsync();
+    [HttpPost("upload")]
+    public async Task UploadFile(IFormFile file)
+    {
     }
 
 
-    [HttpGet]
-    public async Task<List<Entity.Test>> List()
+    [HttpPost("post")]
+    public async Task UploadFile(string nameInput)
     {
-        return await _context.Set<Entity.Test>().ToListAsync();
     }
 
-
-    [HttpGet("page")]
-    public async Task<List<Entity.Test>> GetPages([FromQuery] NameInput input)
+    [HttpPut("{id}")]
+    public async Task UploadFile(int id)
     {
-        var count = await _context.Set<Entity.Test>().CountAsync();
-        return await _context.Set<Entity.Test>().Skip((input.PageIndex - 1) * input.PageSize).Take(input.PageSize).ToListAsync();
+    }
+
+    [HttpGet("string")]
+    public async Task<string> GetString([Required] string whatStr)
+    {
+        return await Task.FromResult("测试string");
     }
 }

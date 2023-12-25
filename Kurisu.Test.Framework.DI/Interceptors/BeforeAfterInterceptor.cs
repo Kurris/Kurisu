@@ -1,5 +1,5 @@
 using System;
-using Kurisu.Proxy.Abstractions;
+using Kurisu.Core.Proxy.Abstractions;
 
 namespace Kurisu.Test.Framework.DI.Interceptors;
 

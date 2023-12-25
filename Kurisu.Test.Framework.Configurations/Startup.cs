@@ -11,6 +11,6 @@ public class Startup
             .AddJsonFile("appsettings.json")
             .AddJsonFile("appsettings.Development.json").Build();
             
-        services.AddKurisuConfiguration(configuration);
+        services.AddConfiguration(configuration);
     }
 }

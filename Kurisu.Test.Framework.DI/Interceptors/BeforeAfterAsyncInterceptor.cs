@@ -1,7 +1,7 @@
 using System;
 using System.Threading.Tasks;
-using Kurisu.Proxy;
-using Kurisu.Proxy.Abstractions;
+using Kurisu.Core.Proxy;
+using Kurisu.Core.Proxy.Abstractions;
 
 namespace Kurisu.Test.Framework.DI.Interceptors;
 

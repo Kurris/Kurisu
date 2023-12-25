@@ -1,8 +1,8 @@
 using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
-using Kurisu.Authentication.Abstractions;
-using Kurisu.Authentication.Defaults;
+using Kurisu.AspNetCore.Authentication.Defaults;
+using Kurisu.Core.User.Abstractions;
 using Microsoft.AspNetCore.Http;
 using Xunit;
 
@@ -27,7 +27,7 @@ public class TestCurrentUserInfo
     {
         var token = "eyJhbGciOiJSUzI1NiIsImtpZCI6IkVCODQxRDM2RTA1OUVBQzFGMDY3RkQzQjJCNjkyMEQ3IiwidHlwIjoiYXQrand0In0.eyJuYmYiOjE2NjAwMjY0MzQsImV4cCI6MTY2MDAzMDAzNCwiaXNzIjoiaWRlbnRpdHkuaXNhd2Vzb21lLmNuIiwiYXVkIjoid2VhdGhlciIsImNsaWVudF9pZCI6InNwYSIsInN1YiI6IjMiLCJhdXRoX3RpbWUiOjE2NjAwMjY0MjEsImlkcCI6ImxvY2FsIiwianRpIjoiQUU5MDI4NzEyNTFDRERFQjFDNThEQ0Q3M0UyMTlEQzMiLCJzaWQiOiJDRkQwNzkyMTU4MzJGNjdBQjZFNTkzMzEyQjgwMDMyMyIsImlhdCI6MTY2MDAyNjQzNCwic2NvcGUiOlsib3BlbmlkIiwicHJvZmlsZSIsIndlYXRoZXI6c2VhcmNoIiwib2ZmbGluZV9hY2Nlc3MiXSwiYW1yIjpbInB3ZCJdfQ.S3q77NoIG0ZoU9EoRg7tKUvDKwAFnfkelEgh8bCaLjAxCXYV0NGiK_2nTfwC10WgjZnXPw0ZXT9ZF_oPKZMEOAghICKnYLAfOhlS8nQIaVuBxqZEzodXhp-VlZ04KJUeWyux0DXqZsrvv7gXitIU_IknncZWvNHO4zHrV7YgLqOrrR6nBVK3M6eGfQ7KTsJg9smON2izMCTb6vFbTSzIMDVrdJiymyokaQkAKolU0-kIRbWyI8ilSjZrnjvOomw_q78hCfBVBk0W4Tyf1M9mXHfwfpOIswlozfWjDm85zvR4HK7hechTogaPzMjIFmIMOMn_rqZJKVlIhqXB1cFvww";
 
-        var accessToken = GetResolver(token).GetBearerToken();
+        var accessToken = GetResolver(token).GetToken();
 
         Assert.Equal("Bearer " + token, accessToken);
     }
@@ -38,7 +38,7 @@ public class TestCurrentUserInfo
     /// </summary>
     /// <param name="token"></param>
     /// <returns></returns>
-    private static ICurrentUserInfoResolver GetResolver(string token)
+    private static ICurrentUser GetResolver(string token)
     {
         var jwtSecurityToken = new JwtSecurityToken(token);
 
@@ -65,6 +65,6 @@ public class TestCurrentUserInfo
         httpContextAccessor.HttpContext.Request.Headers.Add("Authorization", "Bearer " + token);
         httpContextAccessor.HttpContext.User = principal;
 
-        return new DefaultCurrentUserInfoResolver(httpContextAccessor);
+        return new DefaultCurrentUser(httpContextAccessor);
     }
 }

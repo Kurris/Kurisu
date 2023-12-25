@@ -4,7 +4,7 @@ using Kurisu.EFSharding.Exceptions;
 
 namespace Kurisu.EFSharding.Extensions;
 
-public static class ExpressionExtension
+internal static class ExpressionExtension
 {
     public static void SetPropertyValue<T>(this T t, string name, object value)
     {

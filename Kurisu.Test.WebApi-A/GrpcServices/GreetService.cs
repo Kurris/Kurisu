@@ -1,11 +1,11 @@
 using Grpc.Core;
-using Kurisu.Grpc.Attributes;
+using Kurisu.AspNetCore.Grpc.Attributes;
 using Kurisu.Test.Greet;
 using Microsoft.AspNetCore.Authorization;
 
 namespace Kurisu.Test.WebApi_A.GrpcServices;
 
-[Authorize]
+// [Authorize]
 [GrpcImplement]
 public class GreetService : Greeter.GreeterBase
 {

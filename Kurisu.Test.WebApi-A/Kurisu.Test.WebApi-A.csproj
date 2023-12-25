@@ -2,27 +2,51 @@
 
     <PropertyGroup>
         <TargetFramework>net6.0</TargetFramework>
-        <Nullable>enable</Nullable>
+        <Nullable>disable</Nullable>
         <ImplicitUsings>enable</ImplicitUsings>
         <RootNamespace>Kurisu.Test.WebApi_A</RootNamespace>
         <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
+        <GenerateDocumentationFile>True</GenerateDocumentationFile>
     </PropertyGroup>
 
     <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
       <DocumentationFile>bin\Debug\net6.0\Kurisu.Test.WebApi-A.xml</DocumentationFile>
     </PropertyGroup>
 
+    <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
+      <DocumentationFile>bin\Release\Kurisu.Test.WebApi-A.xml</DocumentationFile>
+    </PropertyGroup>
+
     <ItemGroup>
-        <PackageReference Include="Grpc.AspNetCore" Version="2.50.0" />
+      <Compile Remove="log\**" />
+      <Content Remove="log\**" />
+      <EmbeddedResource Remove="log\**" />
+      <None Remove="log\**" />
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\Kurisu.EFSharding\Kurisu.EFSharding.csproj" />
-      <ProjectReference Include="..\Kurisu\Kurisu.csproj" />
+        <PackageReference Include="Grpc.AspNetCore" Version="2.50.0" />
+        <PackageReference Include="Kurisu.AspNetCore" Version="0.4.1" />
+        <PackageReference Include="Serilog.Sinks.Async" Version="1.5.0" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\Kurisu.RemoteCall\Kurisu.RemoteCall.csproj" />
+      <ProjectReference Include="..\Kurisu.SqlSugar\Kurisu.SqlSugar.csproj" />
     </ItemGroup>
 
     <ItemGroup>
       <Protobuf Include="Protos\greet.proto" GrpcServices="Server" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Folder Include="Entity\" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Content Update="appsettings.Development.json">
+        <DependentUpon>appsettings.json</DependentUpon>
+      </Content>
     </ItemGroup>
 
 </Project>

@@ -35,7 +35,7 @@
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\Kurisu\Kurisu.csproj" />
+      <ProjectReference Include="..\Kurisu.AspNetCore\Kurisu.AspNetCore.csproj" />
     </ItemGroup>
 
 </Project>

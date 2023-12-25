@@ -1,14 +1,14 @@
-using Kurisu.Grpc;
-using Kurisu.Startup;
+using System.Reflection;
+using Kurisu.AspNetCore.Grpc;
+using Kurisu.AspNetCore.Grpc.Interceptors;
+using Kurisu.AspNetCore.Startup;
+using Kurisu.SqlSugar.Extensions;
 using Microsoft.Extensions.Caching.Memory;
-using Kurisu.DataAccess.Functions.Default;
-using Kurisu.DataAccess.Internal;
-using Kurisu.DataAccess.Functions.Default.Abstractions;
-using Kurisu.RemoteCall.Extensions;
+using Microsoft.Extensions.FileProviders;
 
 namespace Kurisu.Test.WebApi_A;
 
-public class Startup : DefaultKurisuStartup
+public class Startup : DefaultStartup
 {
     public Startup(IConfiguration configuration) : base(configuration)
     {
@@ -18,6 +18,7 @@ public class Startup : DefaultKurisuStartup
     {
         base.ConfigureServices(services);
 
+        services.AddHttpContextAccessor();
         services.AddGrpc(options =>
         {
             options.Interceptors.Add<ServiceLoggerInterceptor>();
@@ -28,8 +29,11 @@ public class Startup : DefaultKurisuStartup
         {
             SizeLimit = 102400
         }));
-        services.AddKurisuRemoteCall();
-        services.AddKurisuDatabaseAccessor();
+
+        services.AddSqlSugar();
+
+        var m = typeof(ITryTestService).GetMethods().Where(x => x.GetCustomAttribute(typeof(LogAttribute), false) != null);
+
         //services.AddShardingDbContext<DefaultShardingDbContext>()
         //    .UseRouteConfig((sp, o) =>
         //    {
@@ -53,6 +57,19 @@ public class Startup : DefaultKurisuStartup
         //    })
         //    .ReplaceService<IModelCacheLockerProvider, DicModelCacheLockerProvider>()
         //    .AddShardingCore();
+
+        // var t = new Entity.Test()
+        // {
+        //     Id = 1,
+        //     Name = "ligy"
+        // };
+        //
+        // var u = new
+        // {
+        //     Name = "shx"
+        // };
+        //
+        // u.Adapt(t);
     }
 
     public override void Configure(IApplicationBuilder app, IWebHostEnvironment env)
@@ -67,6 +84,26 @@ public class Startup : DefaultKurisuStartup
         // IdentityModelEventSource.ShowPII = true;
 
         base.Configure(app, env);
+
+        string contentRoot = Directory.GetCurrentDirectory();
+        string folder = Path.Combine(contentRoot, "files");
+        if (!Directory.Exists(folder))
+        {
+            Directory.CreateDirectory(folder);
+        }
+
+        IFileProvider fileProvider = new PhysicalFileProvider(folder);
+        app.UseStaticFiles(new StaticFileOptions
+        {
+            FileProvider = fileProvider,
+            RequestPath = "/files"
+        })
+            .UseDirectoryBrowser(new DirectoryBrowserOptions
+            {
+                FileProvider = fileProvider,
+                RequestPath = "/files"
+            });
+
         app.UseEndpoints(builder => builder.MapGrpcServices());
     }
 }

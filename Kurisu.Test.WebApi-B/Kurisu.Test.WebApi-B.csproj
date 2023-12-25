@@ -18,13 +18,19 @@
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\Kurisu\Kurisu.csproj" />
+      <ProjectReference Include="..\Kurisu.AspNetCore\Kurisu.AspNetCore.csproj" />
     </ItemGroup>
 
     <ItemGroup>
       <Protobuf Include="..\Kurisu.Test.WebApi-A\Protos\greet.proto" GrpcServices="Client">
         <Link>Protos\greet.proto</Link>
       </Protobuf>
+    </ItemGroup>
+
+    <ItemGroup>
+      <Content Update="appsettings.Development.json">
+        <DependentUpon>appsettings.json</DependentUpon>
+      </Content>
     </ItemGroup>
 
 </Project>

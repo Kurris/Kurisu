@@ -1,4 +1,4 @@
-using Kurisu.ConfigurableOptions.Attributes;
+using Kurisu.Core.ConfigurableOptions.Attributes;
 
 namespace Kurisu.Test.Framework.Configurations;
 
