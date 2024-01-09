@@ -92,42 +92,54 @@ public static class SqlSugarServiceCollectionExtensions
             //增删改
             db.Aop.DataExecuting = (oldValue, entity) =>
             {
+                var sugarOptions = sp.GetService<ISqlSugarOptionsService>();
+
                 var currentUser = sp.GetService<ICurrentUser>();
 
-                if (currentUser != null && entity.PropertyName == nameof(ITenantId.TenantId) && typeof(ITenantId).IsAssignableFrom(entity.EntityValue.GetType()))
+                if (sugarOptions.IgnoreTenant == false //启用租户
+                && currentUser != null //用户信息存在
+                && entity.PropertyName == nameof(ITenantId.TenantId) //当前为租户字段
+                && typeof(ITenantId).IsAssignableFrom(entity.EntityValue.GetType())) //继承ITenantId
                 {
-                    var hotelId = currentUser.GetStringTenantId();
-                    entity.SetValue(hotelId);
+                    var tenant = currentUser.GetStringTenantId();
+                    entity.SetValue(tenant);
                 }
 
-                if (entity.OperationType == DataFilterType.InsertByObject)
+                switch (entity.OperationType)
                 {
-                    if (entity.IsAnyAttribute<InsertDateTimeGenerationAttribute>())
-                    {
-                        entity.SetValue(DateTime.Now);
-                    }
+                    case DataFilterType.InsertByObject:
+                        {
+                            if (entity.IsAnyAttribute<InsertDateTimeGenerationAttribute>())
+                            {
+                                entity.SetValue(DateTime.Now);
+                            }
 
-                    if (currentUser != null && entity.IsAnyAttribute<InsertUserGenerationAttribute>())
-                    {
-                        entity.SetValue(currentUser.GetStringSubjectId());
-                    }
-                }
-                else if (entity.OperationType == DataFilterType.UpdateByObject)
-                {
-                    if (entity.IsAnyAttribute<UpdateDateTimeGenerationAttribute>())
-                    {
-                        entity.SetValue(DateTime.Now);
-                    }
+                            if (currentUser != null && entity.IsAnyAttribute<InsertUserGenerationAttribute>())
+                            {
+                                entity.SetValue(currentUser.GetStringSubjectId());
+                            }
 
-                    if (currentUser != null && entity.IsAnyAttribute<UpdateUserGenerationAttribute>())
-                    {
-                        entity.SetValue(currentUser.GetStringSubjectId());
-                    }
+                            break;
+                        }
+                    case DataFilterType.UpdateByObject:
+                        {
+                            if (entity.IsAnyAttribute<UpdateDateTimeGenerationAttribute>())
+                            {
+                                entity.SetValue(DateTime.Now);
+                            }
+
+                            if (currentUser != null && entity.IsAnyAttribute<UpdateUserGenerationAttribute>())
+                            {
+                                entity.SetValue(currentUser.GetStringSubjectId());
+                            }
+
+                            break;
+                        }
                 }
             };
 
             //对查询后的数据处理(加解密处理)
-            db.Aop.DataExecuted = (oldValue, entity) => { };
+            //db.Aop.DataExecuted = (oldValue, entity) => { };
 
             if (options.Diff?.Enable == true)
             {

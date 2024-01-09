@@ -10,20 +10,18 @@ namespace Kurisu.SqlSugar.Aops;
 /// </summary>
 public abstract class BaseSqlSugarAop : Aop
 {
-    private readonly IHttpContextAccessor _httpContextAccessor;
-
     public BaseSqlSugarAop(IHttpContextAccessor httpContextAccessor)
     {
-        _httpContextAccessor = httpContextAccessor;
+        Accessor = httpContextAccessor;
     }
 
     /// <summary>
     /// 当前请求作用域Db对象
     /// </summary>
-    public ISqlSugarClient Db => _httpContextAccessor.HttpContext.RequestServices.GetService<ISqlSugarClient>();
+    public ISqlSugarClient Db => Accessor!.HttpContext!.RequestServices.GetService<ISqlSugarClient>();
 
     /// <summary>
     /// http上下文访问器
     /// </summary>
-    public IHttpContextAccessor Accessor => _httpContextAccessor;
+    public IHttpContextAccessor Accessor { get; }
 }

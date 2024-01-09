@@ -1,4 +1,5 @@
-﻿using Kurisu.Core.DataAccess.Entity;
+﻿using System.Linq.Expressions;
+using Kurisu.Core.DataAccess.Entity;
 using SqlSugar;
 
 namespace Kurisu.SqlSugar.Services.Implements;
@@ -62,6 +63,21 @@ internal class DbContext : IDbContext
         return await _db.Updateable(obj).EnableDiffLogEventIF(_sqlSugarOptionsService.Diff).ExecuteCommandAsync();
     }
 
+    public async Task<int> DeleteReallyAsync<T>(T obj) where T : class, new()
+    {
+        return await _db.Deleteable(obj).EnableDiffLogEventIF(_sqlSugarOptionsService.Diff).ExecuteCommandAsync();
+    }
+
+    public async Task<int> DeleteReallyAsync<T>(Expression<Func<T, bool>> expression) where T : class, new()
+    {
+        return await _db.Deleteable(expression).EnableDiffLogEventIF(_sqlSugarOptionsService.Diff).ExecuteCommandAsync();
+    }
+
+    public async Task<int> DeleteReallyAsync<T>(List<T> obj) where T : class, new()
+    {
+        return await _db.Deleteable(obj).EnableDiffLogEventIF(_sqlSugarOptionsService.Diff).ExecuteCommandAsync();
+    }
+
 
     public async Task<int> UpdateAsync<T>(T obj) where T : class, new()
     {
@@ -80,6 +96,16 @@ internal class DbContext : IDbContext
 
     public IUpdateable<T> Updateable<T>() where T : class, new()
     {
-        return _db.Updateable<T>();
+        return _db.Updateable<T>().EnableDiffLogEventIF(_sqlSugarOptionsService.Diff);
+    }
+
+    public Task<DbResult<T>> UseTransactionAsync<T>(Func<Task<T>> func, Action<Exception> callback = null)
+    {
+        return _db.Ado.UseTranAsync(func, callback);
+    }
+
+    public DbResult<T> UseTransaction<T>(Func<T> func, Action<Exception> callback = null)
+    {
+        return _db.Ado.UseTran(func, callback);
     }
 }

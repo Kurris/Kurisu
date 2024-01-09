@@ -1,6 +1,4 @@
-﻿using Microsoft.Extensions.DependencyInjection;
-
-namespace Kurisu.SqlSugar.Services;
+﻿namespace Kurisu.SqlSugar.Services;
 
 /// <summary>
 /// sugar配置服务
@@ -11,8 +9,7 @@ public interface ISqlSugarOptionsService
     /// 日志标题
     /// </summary>
     public string Title { get; set; }
-
-
+    
     /// <summary>
     /// 路由地址
     /// </summary>
@@ -32,4 +29,9 @@ public interface ISqlSugarOptionsService
     /// 触发时间
     /// </summary>
     public DateTime RaiseTime { get; set; }
+
+    /// <summary>
+    /// 忽略租户查询和插入
+    /// </summary>
+    public bool IgnoreTenant { get; set; }
 }

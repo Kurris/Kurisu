@@ -31,8 +31,8 @@ public class Log : BaseSqlSugarAop
 
     private void PreSetting(IProxyInvocation invocation)
     {
-        var log = invocation.Method.GetCustomAttribute<LogAttribute>();
-        var options = Accessor.HttpContext.RequestServices.GetService<ISqlSugarOptionsService>();
+        var log = invocation.Method.GetCustomAttribute<LogAttribute>()!;
+        var options = Accessor.HttpContext!.RequestServices.GetService<ISqlSugarOptionsService>();
 
         options.Diff = log.Diff;
         options.BatchNo = Guid.NewGuid();

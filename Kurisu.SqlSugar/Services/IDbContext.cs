@@ -1,4 +1,5 @@
-﻿using Kurisu.Core.DataAccess.Entity;
+﻿using System.Linq.Expressions;
+using Kurisu.Core.DataAccess.Entity;
 using Microsoft.Extensions.DependencyInjection;
 using SqlSugar;
 
@@ -20,6 +21,7 @@ public interface IDbContext
 
     ISugarQueryable<T> Queryable<T>();
 
+
     Task<long> InsertReturnIdentityAsync<T>(T obj) where T : class, new();
 
     Task<int> InsertAsync<T>(T obj) where T : class, new();
@@ -28,11 +30,20 @@ public interface IDbContext
 
     Task<int> InsertAsync<T>(List<T> obj) where T : class, new();
 
+
     Task<int> DeleteAsync<T>(T obj) where T : class, ISoftDeleted, new();
 
     Task<int> DeleteAsync<T>(T[] obj) where T : class, ISoftDeleted, new();
 
     Task<int> DeleteAsync<T>(List<T> obj) where T : class, ISoftDeleted, new();
+
+
+    Task<int> DeleteReallyAsync<T>(T obj) where T : class, new();
+
+    Task<int> DeleteReallyAsync<T>(Expression<Func<T, bool>> expression) where T : class, new();
+
+    Task<int> DeleteReallyAsync<T>(List<T> obj) where T : class, new();
+
 
     Task<int> UpdateAsync<T>(T obj) where T : class, new();
 
@@ -41,4 +52,8 @@ public interface IDbContext
     Task<int> UpdateAsync<T>(List<T> obj) where T : class, new();
 
     IUpdateable<T> Updateable<T>() where T : class, new();
+    
+    Task<DbResult<T>> UseTransactionAsync<T>(Func<Task<T>> func, Action<Exception> callback = null);
+
+    DbResult<T> UseTransaction<T>(Func<T> func, Action<Exception> callback = null);
 }

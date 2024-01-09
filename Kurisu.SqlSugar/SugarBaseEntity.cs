@@ -2,7 +2,7 @@
 using Kurisu.SqlSugar.Attributes;
 using SqlSugar;
 
-namespace Dlhis.Entity;
+namespace Kurisu.SqlSugar;
 
 public class SugarBaseEntity : BaseEntity<long, int>
 {

@@ -1,5 +1,4 @@
-﻿using Dlhis.Entity;
-using Kurisu.Core.DataAccess.Entity;
+﻿using Kurisu.Core.DataAccess.Entity;
 using SqlSugar;
 
 namespace Kurisu.SqlSugar.DiffLog;
