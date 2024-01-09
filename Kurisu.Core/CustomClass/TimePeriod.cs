@@ -30,9 +30,9 @@ public class TimePeriod
     /// <returns></returns>
     public bool IsDuplicate(TimePeriod period)
     {
-        var currnetHours = GetHourPeriod();
+        var currentHours = GetHourPeriod();
         var hours = period.GetHourPeriod();
-        if (hours.Concat(currnetHours).Distinct().Count() != currnetHours.Count + hours.Count)
+        if (hours.Concat(currentHours).Distinct().Count() != currentHours.Count + hours.Count)
         {
             if (IsCrossDay() && period.IsCrossDay())
             {
@@ -48,20 +48,26 @@ public class TimePeriod
     /// <summary>
     /// 当前时间在区间内
     /// </summary>
+    /// <param name="dateTime"></param>
     /// <returns></returns>
-    public bool IsPresent()
+    public bool IsPresent(DateTime? dateTime)
     {
-        var nowHour = DateTime.Now.Hour;
-        var nowMin = DateTime.Now.Minute;
-
+        dateTime ??= DateTime.Now;
+        
+        var nowHour = dateTime.Value.Hour;
+        var nowMin = dateTime.Value.Minute;
+        
         var hours = GetHourPeriod();
-        if (hours.Contains(nowHour))
+        
+        if (!hours.Contains(nowHour))
         {
-            if (nowHour == Start.Value.Hour)
-                return nowMin > Start.Value.Minute;
-            else if (nowHour == End.Value.Hour)
-                return nowMin < End.Value.Minute;
+            return false;
         }
+
+        if (nowHour == Start.Value.Hour)
+            return nowMin > Start.Value.Minute;
+        else if (nowHour == End.Value.Hour)
+            return nowMin < End.Value.Minute;
 
         return false;
     }

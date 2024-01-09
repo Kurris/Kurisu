@@ -1,5 +1,6 @@
 using Kurisu.Core.Result.Abstractions;
 using Microsoft.Extensions.DependencyInjection;
+using Newtonsoft.Json;
 
 namespace Kurisu.Core.Result;
 
@@ -39,16 +40,19 @@ public class DefaultApiResult<T> : IApiResult
     /// <summary>
     /// 信息
     /// </summary>
+    [JsonProperty(Order = 1)]
     public string Msg { get; set; }
 
     /// <summary>
     /// 结果内容
     /// </summary>
+    [JsonProperty(Order = 2)]
     public T Data { get; set; }
 
     /// <summary>
     /// 状态
     /// </summary>
+    [JsonProperty(Order = 0)]
     public ApiStateCode Code { get; set; }
 
 
