@@ -69,7 +69,7 @@ public class TimePeriod
         else if (nowHour == End.Value.Hour)
             return nowMin < End.Value.Minute;
 
-        return false;
+        return true;
     }
 
     private IReadOnlyList<int> GetHourPeriod()

@@ -22,7 +22,23 @@ public static class EnumerableExtensions
     public static IEnumerable<T> WhereIf<T>(this IEnumerable<T> enumerable, bool condition, Func<T, bool> predicate)
     {
         return condition
-          ? enumerable.Where(predicate)
-          : enumerable;
+            ? enumerable.Where(predicate)
+            : enumerable;
+    }
+
+
+    public static bool IsEmpty<T>(this IEnumerable<T> enumerable)
+    {
+        if (enumerable == null)
+        {
+            return true;
+        }
+
+        return !enumerable.Any();
+    }
+
+    public static bool IsPresent<T>(this IEnumerable<T> enumerable)
+    {
+        return !enumerable.IsEmpty();
     }
 }

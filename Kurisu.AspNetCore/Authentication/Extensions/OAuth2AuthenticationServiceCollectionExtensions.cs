@@ -4,7 +4,9 @@ using System.Net.Http;
 using Kurisu.AspNetCore.Authentication.Extensions;
 using Kurisu.AspNetCore.Authentication.Options;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Net.Http.Headers;
 
 // ReSharper disable once CheckNamespace
@@ -25,25 +27,32 @@ public static class OAuth2AuthenticationServiceCollectionExtensions
     public static IServiceCollection AddOAuth2Authentication(this IServiceCollection services, IdentityServerOptions options)
     {
         services.AddUserInfo();
+        services.AddHttpClient("AuthenticationBackchannel", (sp, httpClient) =>
+            {
+                if (sp.GetService<IWebHostEnvironment>().IsProduction())
+                {
+                    httpClient.DefaultRequestHeaders.Add("X-Requested-Internal", "internal");
+                }
+            })
+            .ConfigurePrimaryHttpMessageHandler(() =>
+            {
+                var handler = new HttpClientHandler
+                {
+                    ClientCertificateOptions = ClientCertificateOption.Manual,
+                    ServerCertificateCustomValidationCallback = (_, _, _, _) => true
+                };
+
+                return handler;
+            });
+
+        services.AddOptions<JwtBearerOptions>(JwtBearerDefaults.AuthenticationScheme)
+            .Configure<IHttpClientFactory>((configureOptions, httpClientFactory) => { configureOptions.Backchannel = httpClientFactory.CreateClient("AuthenticationBackchannel"); });
+
         var builder = services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             .AddJwtBearer(configureOptions =>
             {
                 configureOptions.Authority = options.Authority;
                 configureOptions.RequireHttpsMetadata = options.RequireHttpsMetadata;
-
-                configureOptions.BackchannelHttpHandler = new HttpClientHandler
-                {
-                    //处理自签名证书
-                    ClientCertificateOptions = ClientCertificateOption.Manual,
-                    ServerCertificateCustomValidationCallback = (httpRequestMessage, cert, cetChain, policyErrors) =>
-                    {
-#if !DEBUG
-                        httpRequestMessage.Headers.Add("X-Requested-Internal", "internal");
-#endif
-                        return true;
-                    }
-                };
-
 
                 configureOptions.TokenValidationParameters.ValidateIssuer = !string.IsNullOrEmpty(options.Issuer);
                 configureOptions.TokenValidationParameters.ValidIssuer = options.Issuer;
@@ -64,6 +73,7 @@ public static class OAuth2AuthenticationServiceCollectionExtensions
                     };
                 }
             });
+
 
         if (options.Pat.Enable)
         {

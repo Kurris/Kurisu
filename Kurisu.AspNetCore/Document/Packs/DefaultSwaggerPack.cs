@@ -190,12 +190,14 @@ public class DefaultSwaggerPack : BaseAppPack
             return;
         }
 
+        var virtualPath = Configuration.GetValue("VirtualPath", string.Empty);
+        
         app.UseSwagger();
         app.UseSwaggerUI(c =>
         {
             //默认没分组
-            c.SwaggerEndpoint("/swagger/v1/swagger.json", "Api Document");
-            _apiInfos.ForEach(info => { c.SwaggerEndpoint($"/swagger/{info.Title}/swagger.json", info.Title); });
+            c.SwaggerEndpoint($"{virtualPath}/swagger/v1/swagger.json", "Api Document");
+            _apiInfos.ForEach(info => { c.SwaggerEndpoint($"{virtualPath}/swagger/{info.Title}/swagger.json", info.Title); });
 
             c.OAuthClientId(setting.ClientId);
             c.OAuthClientSecret(setting.ClientSecret);

@@ -10,7 +10,7 @@ namespace Kurisu.Core.Proxy.Internal;
 /// </summary>
 internal class ProxyInfo : IProxyInvocation
 {
-    private static readonly ConcurrentDictionary<ValueTuple<Type, MethodInfo>, bool> _invoke = new();
+    private static readonly ConcurrentDictionary<ValueTuple<Type, ValueTuple<MethodInfo, Type>>, bool> _invoke = new();
 
     /// <summary>
     /// 接口类型
@@ -50,7 +50,8 @@ internal class ProxyInfo : IProxyInvocation
 
     internal bool IsInterceptor(IInterceptor interceptor)
     {
-        return _invoke.GetOrAdd((InterfaceType, Method), _ =>
+        var interceptorType = GetRealType(interceptor);
+        return _invoke.GetOrAdd((InterfaceType, (Method, interceptorType)), _ =>
         {
             if (Target == null)
             {
@@ -58,7 +59,6 @@ internal class ProxyInfo : IProxyInvocation
             }
 
             var type = GetRealTarget(Target).GetType();
-            var interceptorType = GetRealType(interceptor);
 
             if (ProxyMap.InterceptorTypeInvoke.TryGetValue(type, out var interceptorTypes))
             {
@@ -76,7 +76,7 @@ internal class ProxyInfo : IProxyInvocation
                 }
             }
 
-            
+
             if (ProxyMap.InterceptorMethodInvoke.TryGetValue((type, type.GetMethod(Method.Name, Method.GetParameters().Select(x => x.ParameterType).ToArray())), out interceptorTypes))
             {
                 if (interceptorTypes.Contains(interceptorType))

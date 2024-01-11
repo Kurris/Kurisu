@@ -40,4 +40,11 @@ public interface ICurrentUser : ICurrentTenant
     /// </summary>
     /// <returns></returns>
     string GetToken();
+
+    /// <summary>
+    /// 获取用户声明
+    /// </summary>
+    /// <param name="claimType"></param>
+    /// <returns></returns>
+    string GetUserClaim(string claimType);
 }

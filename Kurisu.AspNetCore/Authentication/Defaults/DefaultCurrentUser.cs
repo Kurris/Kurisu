@@ -22,25 +22,14 @@ public class DefaultCurrentUser : DefaultCurrentTenant, ICurrentUser
     }
 
     /// <summary>
-    /// 请求HttpContext
-    /// </summary>
-    protected HttpContext HttpContext => _httpContextAccessor.HttpContext;
-
-    private string _subject = string.Empty;
-
-    /// <summary>
     /// 获取用户id
     /// </summary>
     /// <returns></returns>
     public virtual T GetSubjectId<T>()
     {
-        if (string.IsNullOrEmpty(_subject))
-        {
-            //microsoft identity model框架对值token claim的key进行了转换
-            _subject = HttpContext?.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        }
-
-        return string.IsNullOrEmpty(_subject) ? default : _subject.Adapt<T>();
+        //microsoft identity model框架对值token claim的key进行了转换
+        var subject = _httpContextAccessor?.HttpContext?.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        return string.IsNullOrEmpty(subject) ? default : subject.Adapt<T>();
     }
 
     /// <summary>
@@ -49,8 +38,8 @@ public class DefaultCurrentUser : DefaultCurrentTenant, ICurrentUser
     /// <returns></returns>
     public virtual string GetToken()
     {
-        var bearerToken = HttpContext.Request.Headers[HeaderNames.Authorization].FirstOrDefault();
-        return bearerToken;
+        var token = _httpContextAccessor.HttpContext.Request.Headers[HeaderNames.Authorization].FirstOrDefault();
+        return token;
     }
 
     public Guid GetUidSubjectId() => GetSubjectId<Guid>();
@@ -61,6 +50,18 @@ public class DefaultCurrentUser : DefaultCurrentTenant, ICurrentUser
 
     public string GetName()
     {
-        throw new NotImplementedException();
+        var name = GetUserClaim("preferred_username");
+        return name;
+    }
+
+    public string GetUserClaim(string claimType)
+    {
+        var value = _httpContextAccessor?
+            .HttpContext?
+            .User?.Claims?
+            .FirstOrDefault(x => x.Type == claimType)?
+            .Value;
+
+        return value;
     }
 }

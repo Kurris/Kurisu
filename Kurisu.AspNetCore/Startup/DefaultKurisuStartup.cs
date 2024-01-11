@@ -24,6 +24,8 @@ public abstract class DefaultStartup
 
     public virtual void ConfigureServices(IServiceCollection services)
     {
+        services.AddHttpContextAccessor();
+
         //映射配置文件
         services.AddConfiguration(Configuration);
 

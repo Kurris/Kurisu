@@ -15,7 +15,7 @@ public class SwaggerOptions : IValidatableObject
     /// 是否启用
     /// </summary>
     public bool Enable { get; set; }
-
+    
     /// <summary>
     /// 授权地址
     /// </summary>
