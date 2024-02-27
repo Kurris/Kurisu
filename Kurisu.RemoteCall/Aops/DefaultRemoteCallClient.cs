@@ -130,7 +130,6 @@ public class DefaultRemoteCallClient : Aop
 
                 requestParameters.Add(content);
             }
-
             else
             {
                 var body = "{}";
