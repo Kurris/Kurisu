@@ -36,8 +36,19 @@ public class ValidateAndPackResultFilter : IAsyncActionFilter, IAsyncResultFilte
                         Message = x.ErrorMessage
                     }));
 
+            var msg = string.Empty;
+            if (!errorResults.Any())
+            {
+                msg = ":请求参数为空";
+            }
+            else
+            {
+                var es = errorResults.Select(x => x.Message);
+                msg = "\r\n" + string.Join("\r\n", es);
+            }
+
             //包装验证错误信息
-            context.Result = new ObjectResult(apiResult.GetDefaultValidateApiResult(errorResults));
+            context.Result = new ObjectResult(apiResult.GetDefaultValidateApiResult(msg));
         }
         else
         {
@@ -45,17 +56,16 @@ public class ValidateAndPackResultFilter : IAsyncActionFilter, IAsyncResultFilte
             {
                 //实体对象，如果是FileResultContent/IActionResult则不会进入
                 case ObjectResult objectResult:
-                {
-                    var result = objectResult.Value;
-                    var type = result?.GetType() ?? typeof(object);
-
-                    //返回值已经包装
-                    if (type.IsGenericType && type.IsAssignableTo(typeof(IApiResult)))
-                        context.Result = new ObjectResult(result);
-                    else
-                        context.Result = new ObjectResult(apiResult.GetDefaultSuccessApiResult(result));
-                    break;
-                }
+                    {
+                        var result = objectResult.Value;
+                        var type = result?.GetType() ?? typeof(object);
+                        //返回值已经包装
+                        if (type.IsGenericType && type.IsAssignableTo(typeof(IApiResult)))
+                            context.Result = new ObjectResult(result);
+                        else
+                            context.Result = new ObjectResult(apiResult.GetDefaultSuccessApiResult(result));
+                        break;
+                    }
                 //空task
                 case EmptyResult:
                     context.Result = new ObjectResult(apiResult.GetDefaultSuccessApiResult((object)null));

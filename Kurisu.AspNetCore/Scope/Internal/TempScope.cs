@@ -16,7 +16,7 @@ internal class TempScope : IScope
     /// <param name="handler">异步方法</param>
     public async Task CreateAsync(Func<IServiceProvider, Task> handler)
     {
-        await using var scope = App.GetServiceProvider(true).CreateAsyncScope();
+        using var scope = App.GetServiceProvider(true).CreateScope();
         await handler.Invoke(scope.ServiceProvider);
     }
 
@@ -51,7 +51,7 @@ internal class TempScope : IScope
     /// <returns></returns>
     public async Task<TResult> CreateAsync<TResult>(Func<IServiceProvider, Task<TResult>> handler)
     {
-        await using var scope = App.GetServiceProvider(true).CreateAsyncScope();
+        using var scope = App.GetServiceProvider(true).CreateScope();
         return await handler.Invoke(scope.ServiceProvider);
     }
 }

@@ -23,11 +23,8 @@ public class App
     /// <summary>
     /// 服务提供器
     /// </summary>
-    /// <remarks>
-    /// 默认从请求作用域中获取,可指定从根服务中创建新的作用域(Root ServiceProvider 创建的域或者服务都需要手动释放),该作用域会在请求结束后释放
-    /// </remarks>
     /// <returns></returns>
-    internal static IServiceProvider GetServiceProvider(bool fromRoot = false)
+    public static IServiceProvider GetServiceProvider(bool fromRoot = false)
     {
         if (fromRoot)
         {
@@ -35,9 +32,7 @@ public class App
         }
 
         var httpContext = InternalApp.RootServices.GetService<IHttpContextAccessor>().HttpContext;
-        var scope = httpContext.RequestServices.CreateAsyncScope();
-        AddDisposableObject(scope);
-        return scope.ServiceProvider;
+        return httpContext.RequestServices;
     }
 
 

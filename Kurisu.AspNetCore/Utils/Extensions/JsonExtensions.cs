@@ -24,7 +24,6 @@ public static class JsonExtensions
     /// <returns></returns>
     public static T ToObject<T>(this string json, JsonSerializerSettings settings = default)
     {
-        settings ??= DefaultSetting;
         return JsonConvert.DeserializeObject<T>(json, settings);
     }
 
@@ -36,7 +35,6 @@ public static class JsonExtensions
     /// <returns></returns>
     public static string ToJson<T>(this T obj, JsonSerializerSettings settings = default)
     {
-        settings ??= DefaultSetting;
         return JsonConvert.SerializeObject(obj, settings);
     }
 }

@@ -3,13 +3,16 @@ using System.Text;
 
 namespace Kurisu.AspNetCore.Utils;
 
+/// <summary>
+/// 雪花id帮助类
+/// </summary>
 public sealed class SnowFlakeHelper
 {
     private static readonly object _lock = new();
     private static SnowFlakeHelper _instance;
     private static readonly DateTime _jan1St1970 = new(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
 
-    public static SnowFlakeHelper Initialize(long datacenterId = 1, long workerId = 2)
+    public static SnowFlakeHelper Initialize(long datacenterId = 1, long workerId = 1)
     {
         // ReSharper disable once InvertIf
         //双if 加锁
