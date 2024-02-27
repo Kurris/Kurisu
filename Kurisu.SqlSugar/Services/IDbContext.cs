@@ -19,7 +19,19 @@ public interface IDbContext
     /// </remarks>
     public ISqlSugarClient Client { get; }
 
+    /// <summary>
+    /// 查询
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <returns></returns>
     ISugarQueryable<T> Queryable<T>();
+
+    /// <summary>
+    /// 切换数据库
+    /// </summary>
+    /// <param name="dbId"></param>
+    /// <returns></returns>
+    IDbContext ChangeDb(string dbId);
 
 
     Task<long> InsertReturnIdentityAsync<T>(T obj) where T : class, new();
@@ -52,7 +64,7 @@ public interface IDbContext
     Task<int> UpdateAsync<T>(List<T> obj) where T : class, new();
 
     IUpdateable<T> Updateable<T>() where T : class, new();
-    
+
     Task<DbResult<T>> UseTransactionAsync<T>(Func<Task<T>> func, Action<Exception> callback = null);
 
     DbResult<T> UseTransaction<T>(Func<T> func, Action<Exception> callback = null);

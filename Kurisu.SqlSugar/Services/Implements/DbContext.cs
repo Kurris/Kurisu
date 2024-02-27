@@ -22,6 +22,11 @@ internal class DbContext : IDbContext
         return _db.Queryable<T>();
     }
 
+    public IDbContext ChangeDb(string dbId)
+    {
+        var client = ((SqlSugarClient)_db).GetConnection(dbId);
+        return new DbContext(client, _sqlSugarOptionsService);
+    }
 
     public async Task<long> InsertReturnIdentityAsync<T>(T obj) where T : class, new()
     {

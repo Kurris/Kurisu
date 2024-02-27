@@ -4,9 +4,15 @@ using SqlSugar;
 
 namespace Kurisu.SqlSugar.Options;
 
+/// <summary>
+/// 差异处理options
+/// </summary>
 [Configuration("SqlSugarOptions:Diff")]
 public class DiffOptions : IValidatableObject
 {
+    /// <summary>
+    /// 是否启用
+    /// </summary>
     public bool Enable { get; set; }
 
     /// <summary>
@@ -19,6 +25,11 @@ public class DiffOptions : IValidatableObject
     /// </summary>
     public List<string> Commands { get; set; }
 
+    /// <summary>
+    /// 验证参数
+    /// </summary>
+    /// <param name="validationContext"></param>
+    /// <returns></returns>
     public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
     {
         if (Enable)

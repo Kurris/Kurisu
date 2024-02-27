@@ -1,4 +1,5 @@
 ﻿using Kurisu.Core.DataAccess.Entity;
+using Microsoft.Extensions.DependencyInjection;
 using SqlSugar;
 
 namespace Kurisu.SqlSugar.DiffLog;
@@ -6,8 +7,9 @@ namespace Kurisu.SqlSugar.DiffLog;
 /// <summary>
 /// 数据变更记录
 /// </summary>
-[SugarTable(TableName = "TableColumnChanges")]
-public class TableColumnChangesEntity : SugarBaseEntity, ITenantId
+[SkipScan]
+[SugarTable(TableName = "TableRowChange")]
+public class TableRowChangeEntity : SugarBaseEntity, ITenantId
 {
     /// <summary>
     /// 标题
@@ -32,14 +34,13 @@ public class TableColumnChangesEntity : SugarBaseEntity, ITenantId
     /// <summary>
     /// 操作表名称
     /// </summary>
+    [SugarColumn(IndexGroupNameList = new[] { "idx_TableColumnChanges_TableName" })]
     public string TableName { get; set; }
-
 
     /// <summary>
     /// 主键值
     /// </summary>
     public string KeyValue { get; set; }
-
 
     /// <summary>
     /// 变更字段
@@ -57,5 +58,10 @@ public class TableColumnChangesEntity : SugarBaseEntity, ITenantId
     /// </summary>
     public string CreatedByName { get; set; }
 
+
+    /// <summary>
+    /// 租户id
+    /// </summary>
+    [SugarColumn(IndexGroupNameList = new[] { "idx_TableColumnChanges_TenantId" })]
     public string TenantId { get; set; }
 }

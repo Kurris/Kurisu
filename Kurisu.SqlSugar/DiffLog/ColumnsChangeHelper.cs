@@ -11,19 +11,22 @@ namespace Kurisu.SqlSugar.DiffLog;
 
 internal class ColumnsChangeHelper
 {
-    public static List<TableColumnChangesEntity> GetChanges(IServiceProvider sp, DiffLogModel model)
+    private readonly static List<string> _ignoreColumns = new() { nameof(SugarBaseEntity.ModifiedTime) };
+
+    public static List<TableRowChangeEntity> GetChanges(IServiceProvider sp, DiffLogModel model)
     {
         var operation = model.DiffType.ToString();
+
         var dbOptions = sp.GetService<IOptions<SqlSugarOptions>>().Value;
-        if (dbOptions.Diff?.Enable != true || dbOptions.Diff?.Commands?.Any() != true || dbOptions.Diff?.Commands?.Contains(operation) != true)
+        if (dbOptions.Diff.Commands.Contains(operation) != true)
         {
-            return new List<TableColumnChangesEntity>();
+            return new List<TableRowChangeEntity>();
         }
 
         var optionsService = sp.GetService<ISqlSugarOptionsService>();
         var currentUser = sp.GetService<ICurrentUser>();
 
-        var entries = new List<TableColumnChangesEntity>();
+        var entries = new List<TableRowChangeEntity>();
 
         var uid = Guid.NewGuid();
         var befores = model.BeforeData;
@@ -42,7 +45,7 @@ internal class ColumnsChangeHelper
             .ToList()
 
         }).ToList();
-
+        
         var afterUnits = afters?.Select(x => new DiffTableModel
         {
             Table = x.TableName,
@@ -77,6 +80,11 @@ internal class ColumnsChangeHelper
 
                 foreach (var column in item.Columns)
                 {
+                    if (_ignoreColumns.Contains(column.Column))
+                    {
+                        continue;
+                    }
+
                     var c = before.Columns.FirstOrDefault(x => x.Column == column.Column);
                     if (c.Value != column.Value)
                     {
@@ -92,6 +100,11 @@ internal class ColumnsChangeHelper
             {
                 foreach (var column in item.Columns)
                 {
+                    if (_ignoreColumns.Contains(column.Column))
+                    {
+                        continue;
+                    }
+
                     changeInfos.Add(new ColumnChangesDetail
                     {
                         Column = column.Column,
@@ -102,7 +115,7 @@ internal class ColumnsChangeHelper
 
             if (changeInfos.Any())
             {
-                entries.Add(new TableColumnChangesEntity
+                entries.Add(new TableRowChangeEntity
                 {
                     RoutePath = optionsService?.RoutePath ?? string.Empty,
                     Title = optionsService?.Title ?? string.Empty,
@@ -123,7 +136,7 @@ internal class ColumnsChangeHelper
 
         if (!entries.Any() && model.DiffType == DiffType.delete)
         {
-            entries.Add(new TableColumnChangesEntity
+            entries.Add(new TableRowChangeEntity
             {
                 RoutePath = optionsService?.RoutePath ?? string.Empty,
                 Title = optionsService?.Title ?? string.Empty,
@@ -146,10 +159,10 @@ internal class ColumnsChangeHelper
 
     private static string FixTableName(string sql)
     {
-        var tableName = sql.Split(" ")[2].TrimStart('`').TrimEnd('`');
+        var tableName = sql.Split(" ")[2].TrimStart('[').TrimEnd(']').TrimStart('`').TrimEnd('`');
         if (string.IsNullOrEmpty(tableName))
         {
-            tableName = sql.Split(" ")[1].TrimStart('[').TrimEnd(']');
+            tableName = sql.Split(" ")[1].TrimStart('[').TrimEnd(']').TrimStart('`').TrimEnd('`');
         }
 
         return tableName;
@@ -157,11 +170,23 @@ internal class ColumnsChangeHelper
 
     private static string FixWhere(DiffType diffType, string sql, SugarParameter[] parameters)
     {
+        var arr = sql.Split(" ");
+
         if (diffType == DiffType.insert)
         {
             return string.Empty;
         }
-        var arr = sql.Split(" ");
+        else if (diffType == DiffType.update)
+        {
+            var w = sql.Split("WHERE")[1];
+            foreach (var item in parameters)
+            {
+                w = w.Replace(item.ParameterName, "'" + item.Value.ToString() + "'");
+            }
+            return w;
+        }
+
+
         arr = arr.Skip(3).Take(arr.Length - 3).ToArray();
 
         string where = string.Join(" ", arr);

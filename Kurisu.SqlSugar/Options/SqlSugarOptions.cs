@@ -3,6 +3,9 @@ using Kurisu.Core.ConfigurableOptions.Attributes;
 
 namespace Kurisu.SqlSugar.Options;
 
+/// <summary>
+/// SqlSugar配置options
+/// </summary>
 [Configuration]
 public class SqlSugarOptions
 {
