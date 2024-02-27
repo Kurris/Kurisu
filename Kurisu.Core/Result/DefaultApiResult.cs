@@ -61,7 +61,7 @@ public class DefaultApiResult<T> : IApiResult
         return new DefaultApiResult<TResult>
         {
             Code = ApiStateCode.Success,
-            Msg = "success",
+            Msg = "操作成功",
             Data = apiResult
         };
     }
@@ -71,8 +71,7 @@ public class DefaultApiResult<T> : IApiResult
         return new DefaultApiResult<TResult>
         {
             Code = ApiStateCode.ValidateError,
-            Msg = "validation error",
-            Data = apiResult
+            Msg = "参数验证错误" + apiResult,
         };
     }
 
@@ -81,7 +80,7 @@ public class DefaultApiResult<T> : IApiResult
         return new DefaultApiResult<object>
         {
             Code = ApiStateCode.Forbidden,
-            Msg = "forbidden"
+            Msg = "无权操作"
         };
     }
 

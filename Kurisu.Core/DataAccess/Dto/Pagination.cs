@@ -28,7 +28,7 @@ public class Pagination<T>
     {
         get
         {
-            if (Total > 0)
+            if (Total > 0 && PageSize > 0)
             {
                 return Total % PageSize == 0
                     ? Total / PageSize
