@@ -11,6 +11,6 @@ internal class SqlSugarOptionsService : ISqlSugarOptionsService
     public Guid BatchNo { get; set; }
 
     public DateTime RaiseTime { get; set; }
-    
+
     public bool IgnoreTenant { get; set; }
 }

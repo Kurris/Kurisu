@@ -9,7 +9,7 @@ public interface ISqlSugarOptionsService
     /// 日志标题
     /// </summary>
     public string Title { get; set; }
-    
+
     /// <summary>
     /// 路由地址
     /// </summary>
@@ -30,8 +30,5 @@ public interface ISqlSugarOptionsService
     /// </summary>
     public DateTime RaiseTime { get; set; }
 
-    /// <summary>
-    /// 忽略租户查询和插入
-    /// </summary>
     public bool IgnoreTenant { get; set; }
 }

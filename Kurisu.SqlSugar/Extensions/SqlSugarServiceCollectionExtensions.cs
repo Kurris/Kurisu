@@ -17,7 +17,7 @@ namespace Kurisu.SqlSugar.Extensions;
 /// </summary>
 public static class SqlSugarServiceCollectionExtensions
 {
-    private readonly static string _infoTemplate = "ExecuteCommand[{ms}] Timeout[{timeout}] \r\n {Sql}";
+    private readonly static string _infoTemplate = "ExecuteCommand[{ms}] Timeout[{timeout}] \r\n {sql}";
 
     /// <summary>
     /// 添加sqlsugar
@@ -27,11 +27,15 @@ public static class SqlSugarServiceCollectionExtensions
     public static void AddSqlSugar(this IServiceCollection services, Func<IServiceProvider, List<ConnectionConfig>> configOtherConnections = null)
     {
         services.AddScoped<ISqlSugarOptionsService, SqlSugarOptionsService>();
+        services.AddScoped<DataPermissionService>();
         services.AddScoped<IDbContext, DbContext>();
         services.AddScoped(typeof(ISqlSugarClient), sp =>
         {
             var options = sp.GetService<IOptions<SqlSugarOptions>>().Value;
             var logger = sp.GetService<ILogger<SqlSugarClient>>();
+            var currentUser = sp.GetService<ICurrentUser>();
+            var sugarOptions = sp.GetService<ISqlSugarOptionsService>();
+            var dataPermission = sp.GetService<DataPermissionService>();
 
             var configs = new List<ConnectionConfig>()
             {
@@ -48,17 +52,17 @@ public static class SqlSugarServiceCollectionExtensions
                     {
                         DisableNvarchar = true,
                     },
-                    ConfigureExternalServices = new ConfigureExternalServices
-                    {
-                        EntityService = (c, p) =>
-                        {
-                            if (!p.IsPrimarykey && c.PropertyType.IsGenericType && c.PropertyType.GetGenericTypeDefinition() == typeof(Nullable<>)
-                            || (!p.IsPrimarykey && p.PropertyInfo.PropertyType == typeof(string)))
-                            {
-                                p.IsNullable = true;
-                            }
-                        }
-                    }
+                    //ConfigureExternalServices = new ConfigureExternalServices
+                    //{
+                    //    EntityService = (c, p) =>
+                    //    {
+                    //        if (!p.IsPrimarykey && c.PropertyType.IsGenericType && c.PropertyType.GetGenericTypeDefinition() == typeof(Nullable<>)
+                    //        || (!p.IsPrimarykey && p.PropertyInfo.PropertyType == typeof(string)))
+                    //        {
+                    //            p.IsNullable = true;
+                    //        }
+                    //    }
+                    //}
                 }
             };
 
@@ -79,17 +83,16 @@ public static class SqlSugarServiceCollectionExtensions
 
                 //警告慢sql
                 if (ms >= options.SlowSqlTime * 1000)
-                    logger.LogWarning(_infoTemplate, ms, options.Timeout, sql);
+                    logger.LogWarning(message: _infoTemplate, ms, options.Timeout, sql);
 
                 if (options.EnableSqlLog)
                 {
                     sql = UtilMethods.GetSqlString(DbType.MySql, sql, parameters);
-                    logger.LogInformation(_infoTemplate, ms, options.Timeout, sql);
+                    logger.LogInformation(message: _infoTemplate, ms, options.Timeout, sql);
                 }
             };
 
-            //租户处理
-            var currentUser = sp.GetService<ICurrentUser>();
+            //ITenantId租户处理
             if (currentUser != null)
             {
                 var tenantId = currentUser.GetStringTenantId();
@@ -101,23 +104,29 @@ public static class SqlSugarServiceCollectionExtensions
 
 
             //#if DEBUG
-            ////SQL执行前
+            //SQL执行前
             //db.Aop.OnLogExecuting = (sql, parameters) =>
             //{
             //    logger.LogInformation(UtilMethods.GetSqlString(DbType.SqlServer, sql, parameters));
             //};
             //#endif
+
             //操作数据权限
-            //db.Aop.OnExecutingChangeSql = (sql, parameters) => new KeyValuePair<string, SugarParameter[]>(sql, parameters);
+
+            db.Aop.OnExecutingChangeSql = (sql, parameters) =>
+            {
+                if (dataPermission.Enable && dataPermission.UseSqlWhere)
+                {
+                    sql += $"\r\n and ({string.Join(" and ", dataPermission.Wheres)})";
+                }
+                return new KeyValuePair<string, SugarParameter[]>(sql, parameters);
+            };
+
 
 
             //增删改
             db.Aop.DataExecuting = (oldValue, model) =>
             {
-                var sugarOptions = sp.GetService<ISqlSugarOptionsService>();
-
-                var currentUser = sp.GetService<ICurrentUser>();
-
                 if (sugarOptions.IgnoreTenant == false //启用租户
                 && currentUser != null //用户信息存在
                 && model.PropertyName == nameof(ITenantId.TenantId) //当前为租户字段
@@ -127,6 +136,7 @@ public static class SqlSugarServiceCollectionExtensions
                     model.SetValue(tenant);
                 }
 
+                //处理人员和时间字段
                 switch (model.OperationType)
                 {
                     case DataFilterType.InsertByObject:

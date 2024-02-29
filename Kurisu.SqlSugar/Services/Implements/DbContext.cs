@@ -1,5 +1,7 @@
 ﻿using System.Linq.Expressions;
 using Kurisu.Core.DataAccess.Entity;
+using Kurisu.Core.User.Abstractions;
+using Microsoft.Extensions.DependencyInjection;
 using SqlSugar;
 
 namespace Kurisu.SqlSugar.Services.Implements;
@@ -7,25 +9,45 @@ namespace Kurisu.SqlSugar.Services.Implements;
 internal class DbContext : IDbContext
 {
     private readonly ISqlSugarClient _db;
+    private readonly IServiceProvider _serviceProvider;
     private readonly ISqlSugarOptionsService _sqlSugarOptionsService;
 
-    public DbContext(ISqlSugarClient db, ISqlSugarOptionsService sqlSugarOptionsService)
+    public DbContext(ISqlSugarClient db, IServiceProvider serviceProvider)
     {
         _db = db;
-        _sqlSugarOptionsService = sqlSugarOptionsService;
+        _serviceProvider = serviceProvider;
+        _sqlSugarOptionsService = serviceProvider.GetService<ISqlSugarOptionsService>();
     }
 
     public ISqlSugarClient Client => _db;
 
     public ISugarQueryable<T> Queryable<T>()
     {
-        return _db.Queryable<T>();
+        var dataPermission = _serviceProvider.GetService<DataPermissionService>();
+        if (dataPermission.Enable && !dataPermission.UseSqlWhere && typeof(T).IsAssignableTo(typeof(ITenantId)))
+        {
+            var tenantIds = _serviceProvider.GetService<ICurrentUser>().GetUserClaim("tenants").Split(",").ToList();
+
+            var parameterExpression = Expression.Parameter(typeof(T));
+            var prop = Expression.Property(parameterExpression, nameof(ITenantId.TenantId));
+            var eq = typeof(List<string>).GetMethod("Contains", new[] { typeof(string) });
+            var constant = Expression.Constant(tenantIds, typeof(List<string>));
+            var containsExp = Expression.Call(constant, eq, prop);
+
+            var where = Expression.Lambda<Func<T, bool>>(containsExp, parameterExpression);
+
+            return _db.Queryable<T>().Where(where);
+        }
+        else
+        {
+            return _db.Queryable<T>();
+        }
     }
 
     public IDbContext ChangeDb(string dbId)
     {
         var client = ((SqlSugarClient)_db).GetConnection(dbId);
-        return new DbContext(client, _sqlSugarOptionsService);
+        return new DbContext(client, _serviceProvider);
     }
 
     public async Task<long> InsertReturnIdentityAsync<T>(T obj) where T : class, new()
