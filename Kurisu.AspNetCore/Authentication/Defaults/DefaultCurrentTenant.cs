@@ -9,7 +9,7 @@ namespace Kurisu.AspNetCore.Authentication.Defaults;
 /// 租户信息获取处理器
 /// </summary>
 // ReSharper disable once ClassWithVirtualMembersNeverInherited.Global
-public class DefaultCurrentTenant: ICurrentTenant
+public class DefaultCurrentTenant : ICurrentTenant
 {
     private readonly IHttpContextAccessor _httpContextAccessor;
 
@@ -24,16 +24,11 @@ public class DefaultCurrentTenant: ICurrentTenant
     /// <remarks>claims:tenant; header:X-Requested-TenantId</remarks>
     public virtual string TenantKey => "tenant";
 
-    private string _tenantValue = string.Empty;
 
     public virtual T GetTenantId<T>()
     {
-        if (string.IsNullOrEmpty(_tenantValue))
-        {
-            _tenantValue = _httpContextAccessor?.HttpContext?.User.FindFirst(TenantKey)?.Value;
-        }
-
-        return string.IsNullOrEmpty(_tenantValue) ? default : _tenantValue.Adapt<T>();
+        var v = _httpContextAccessor?.HttpContext?.User.FindFirst(TenantKey)?.Value;
+        return string.IsNullOrEmpty(v) ? default : v.Adapt<T>();
     }
 
     public Guid GetUidTenantId() => GetTenantId<Guid>();
