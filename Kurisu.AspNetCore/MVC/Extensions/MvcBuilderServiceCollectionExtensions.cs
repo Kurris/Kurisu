@@ -38,10 +38,9 @@ public static class MvcBuilderServiceCollectionExtensions
         services.Configure<MvcOptions>(options =>
         {
             options.Filters.Add<TFilter>(); // 使用ActivatorUtilities
-            options.Filters.Add<TFilter>(); // 使用ActivatorUtilities
             //options.Filters.AddService() 使用依赖注入的方式
 
-            // 其他额外配置
+            //其他额外配置
             configure?.Invoke(options);
         });
 
