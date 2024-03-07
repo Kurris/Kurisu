@@ -6,14 +6,17 @@ namespace Kurisu.AspNetCore.UnifyResultAndValidation;
 /// <summary>
 /// 用户友好异常
 /// </summary>
+/// <remarks>
+/// 不产生日志和堆栈信息
+/// </remarks>
 [SkipScan]
 public class UserFriendlyException : Exception
 {
     /// <summary>
     /// ctor
     /// </summary>
-    /// <param name="errorMessage">错误信息</param>
-    public UserFriendlyException(string errorMessage) : base(errorMessage)
+    /// <param name="message">错误信息</param>
+    public UserFriendlyException(string message) : base(message)
     {
     }
 
@@ -27,11 +30,11 @@ public class UserFriendlyException : Exception
 
 
     /// <summary>
-    ///
+    ///c tor
     /// </summary>
-    /// <param name="errorMessage"></param>
+    /// <param name="message"></param>
     /// <param name="exception"></param>
-    public UserFriendlyException(string errorMessage, Exception exception) : base(errorMessage, exception)
+    public UserFriendlyException(string message, Exception exception) : base(message, exception)
     {
     }
 }

@@ -1,9 +1,13 @@
 using System.Linq;
 using System.Threading.Tasks;
+using Kurisu.AspNetCore.UnifyResultAndValidation.Options;
+using Kurisu.AspNetCore.Utils.Extensions;
 using Kurisu.Core.Result.Abstractions;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace Kurisu.AspNetCore.UnifyResultAndValidation.Filters;
 
@@ -16,6 +20,16 @@ public class ValidateAndPackResultFilter : IAsyncActionFilter, IAsyncResultFilte
 {
     public async Task OnActionExecutionAsync(ActionExecutingContext context, ActionExecutionDelegate next)
     {
+        if (context.HttpContext.RequestServices.GetService<IOptions<FilterOptions>>().Value?.EnableApiRequestLog == true)
+        {
+            //var desc = context.ActionDescriptor as ControllerActionDescriptor;
+            var path = context.HttpContext.Request.Path;
+            var method = context.HttpContext.Request.Method;
+            var parameters = context.ActionArguments.ToJson(JsonExtensions.DefaultSetting);
+            var logger = context.HttpContext.RequestServices.GetService<ILogger<ValidateAndPackResultFilter>>();
+            logger.LogInformation("Request: {method} {path} \r\nParams:{params}", method, path, parameters);
+        }
+
         //请求前
         await next();
         //请求后

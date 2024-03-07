@@ -7,7 +7,7 @@ namespace Kurisu.AspNetCore.Startup.AppPacks;
 /// <summary>
 /// 健康检查
 /// </summary>
-public class DefualtHealthcheck : BaseAppPack
+public class DefualtHealthcheckPack : BaseAppPack
 {
     public override bool IsBeforeUseRouting { get; }
 

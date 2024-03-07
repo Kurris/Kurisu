@@ -2,13 +2,13 @@ using System;
 using System.Text;
 using System.Threading.Tasks;
 using Kurisu.AspNetCore.Startup.Abstractions;
+using Kurisu.AspNetCore.Utils.Extensions;
 using Kurisu.Core.Result.Abstractions;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json;
-using Newtonsoft.Json.Serialization;
 
 namespace Kurisu.AspNetCore.Startup.AppPacks;
 
@@ -51,10 +51,7 @@ public class GlobalExceptionMiddleware : BaseMiddleware
             var apiResult = context.RequestServices.GetService<IApiResult>();
 
             //驼峰
-            var json = JsonConvert.SerializeObject(apiResult!.GetDefaultErrorApiResult(ex.Message), new JsonSerializerSettings
-            {
-                ContractResolver = new CamelCasePropertyNamesContractResolver()
-            });
+            var json = JsonConvert.SerializeObject(apiResult!.GetDefaultErrorApiResult(ex.Message), JsonExtensions.DefaultSetting);
             var bytes = Encoding.UTF8.GetBytes(json);
 
             context.Response.ContentType = "application/json";
