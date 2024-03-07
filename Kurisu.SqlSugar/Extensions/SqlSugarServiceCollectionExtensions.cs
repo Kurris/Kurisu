@@ -52,17 +52,17 @@ public static class SqlSugarServiceCollectionExtensions
                     {
                         DisableNvarchar = true,
                     },
-                    //ConfigureExternalServices = new ConfigureExternalServices
-                    //{
-                    //    EntityService = (c, p) =>
-                    //    {
-                    //        if (!p.IsPrimarykey && c.PropertyType.IsGenericType && c.PropertyType.GetGenericTypeDefinition() == typeof(Nullable<>)
-                    //        || (!p.IsPrimarykey && p.PropertyInfo.PropertyType == typeof(string)))
-                    //        {
-                    //            p.IsNullable = true;
-                    //        }
-                    //    }
-                    //}
+                    ConfigureExternalServices = new ConfigureExternalServices
+                    {
+                        EntityService = (c, p) =>
+                        {
+                            if (!p.IsPrimarykey && c.PropertyType.IsGenericType && c.PropertyType.GetGenericTypeDefinition() == typeof(Nullable<>)
+                            || (!p.IsPrimarykey && p.PropertyInfo.PropertyType == typeof(string)))
+                            {
+                                p.IsNullable = true;
+                            }
+                        }
+                    }
                 }
             };
 
