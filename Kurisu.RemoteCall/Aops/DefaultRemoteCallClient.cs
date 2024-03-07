@@ -23,6 +23,13 @@ public class DefaultRemoteCallClient : Aop
     private readonly IConfiguration _configuration;
     private readonly ILogger<DefaultRemoteCallClient> _logger;
 
+    /// <summary>
+    /// ctor
+    /// </summary>
+    /// <param name="serviceProvider"></param>
+    /// <param name="httpClientFactory"></param>
+    /// <param name="configuration"></param>
+    /// <param name="logger"></param>
     public DefaultRemoteCallClient(
         IServiceProvider serviceProvider,
         IHttpClientFactory httpClientFactory,
@@ -72,6 +79,8 @@ public class DefaultRemoteCallClient : Aop
         //参数和值
         var methodParameters = invocation.Method.GetParameters();
         var methodParameterValues = methodParameters.Select((t, i) => new KeyValuePair<ParameterInfo, object>(t, invocation.Parameters[i])).ToList();
+
+        var useLog = (invocation.InterfaceType.GetCustomAttribute<RequestLogAttribute>() ?? invocation.Method.GetCustomAttribute<RequestLogAttribute>()) != null;
 
         //请求方式和地址
         var enableRemoteClientAttribute = invocation.InterfaceType.GetCustomAttribute<EnableRemoteClientAttribute>()!;
@@ -158,13 +167,17 @@ public class DefaultRemoteCallClient : Aop
             ? _httpClientFactory.CreateClient()
             : _httpClientFactory.CreateClient(enableRemoteClientAttribute.Name);
 
-        if (requestParameters.Count > 1)
+        //日志输出
+        if (useLog)
         {
-            _logger.LogInformation("{Method} {Url} \r\n Body:{Body} .", httpMethodType, url, JsonConvert.SerializeObject(requestParameters.LastOrDefault()));
-        }
-        else
-        {
-            _logger.LogInformation("{Method} {Url} .", httpMethodType, url);
+            if (requestParameters.Count > 1)
+            {
+                _logger.LogInformation("{method} {url} \r\n Body:{body} .", httpMethodType, url, JsonConvert.SerializeObject(requestParameters.LastOrDefault()));
+            }
+            else
+            {
+                _logger.LogInformation("{method} {url} .", httpMethodType, url);
+            }
         }
 
         //鉴权判断
