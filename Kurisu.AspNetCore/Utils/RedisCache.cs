@@ -45,19 +45,30 @@ public class RedisCache
         AddRegisterEvent();
     }
 
+    /// <summary>
+    /// lock
+    /// </summary>
+    /// <param name="lockKey"></param>
+    /// <param name="expiry"></param>
+    /// <returns></returns>
+    public async Task<RedisLock> LockAsync(string lockKey, TimeSpan? expiry = null)
+    {
+        return await new RedisLock(_db, lockKey, expiry).LockAsync();
+    }
+
+    /// <summary>
+    /// lock
+    /// </summary>
+    /// <param name="lockKey"></param>
+    /// <param name="expiry"></param>
+    /// <returns></returns>
+    public RedisLock Lock(string lockKey, TimeSpan? expiry = null)
+    {
+        return new RedisLock(_db, lockKey, expiry).Lock();
+    }
+
     #region String 操作
 
-
-    public async Task<bool> LockAsync(RedisKey key, RedisValue value, TimeSpan expiry)
-    {
-        var acquired = await _db.StringSetAsync(key, value, expiry, when: When.NotExists);
-        if (acquired)
-        {
-
-        }
-
-        return acquired;
-    }
 
     /// <summary>
     /// 设置key并保存字符串(如果key已存在,则覆盖值)
