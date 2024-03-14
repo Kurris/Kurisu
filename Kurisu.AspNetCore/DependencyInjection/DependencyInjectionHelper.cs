@@ -120,6 +120,12 @@ internal static class DependencyInjectionHelper
             return type;
         }
 
+        //非模板`1的接口
+        if (type.GenericTypeArguments.Length > 0)
+        {
+            return type;
+        }
+
         var interfaceFullName = type.Namespace + "." + type.Name;
         type = type.Assembly.GetType(interfaceFullName);
         if (type == null)
