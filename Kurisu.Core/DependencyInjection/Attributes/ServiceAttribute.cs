@@ -26,5 +26,8 @@ public class ServiceAttribute : Attribute
     /// </summary>
     public string Named { get; }
 
+    /// <summary>
+    /// 默认服务生命周期
+    /// </summary>
     public ServiceLifetime Lifetime { get; set; } = ServiceLifetime.Scoped;
 }

@@ -1,13 +1,24 @@
 ﻿namespace Kurisu.Core.DataAccess.Dto;
 
+/// <summary>
+/// 分页Dto
+/// </summary>
 public class PageDto
 {
+    /// <summary>
+    /// ctor
+    /// </summary>
     public PageDto()
     {
         PageIndex = 1;
         PageSize = 20;
     }
 
+    /// <summary>
+    /// ctor
+    /// </summary>
+    /// <param name="pageIndex"></param>
+    /// <param name="pageSize"></param>
     public PageDto(int pageIndex, int pageSize)
     {
         PageIndex = pageIndex;

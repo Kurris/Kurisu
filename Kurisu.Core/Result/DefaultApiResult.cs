@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using Kurisu.Core.Result.Abstractions;
 using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json;
@@ -5,7 +6,7 @@ using Newtonsoft.Json;
 namespace Kurisu.Core.Result;
 
 /// <summary>
-/// 数据结果返回模型
+/// 默认Api结果结构
 /// </summary>
 /// <typeparam name="T">数据类型</typeparam>
 [SkipScan]
@@ -21,7 +22,6 @@ public class DefaultApiResult<T> : IApiResult
     /// </summary>
     public DefaultApiResult()
     {
-        Code = ApiStateCode.Error;
     }
 
     /// <summary>
@@ -56,6 +56,7 @@ public class DefaultApiResult<T> : IApiResult
     public ApiStateCode Code { get; set; }
 
 
+    /// <inheritdoc/>
     public virtual IApiResult GetDefaultSuccessApiResult<TResult>(TResult apiResult)
     {
         return new DefaultApiResult<TResult>
@@ -66,15 +67,17 @@ public class DefaultApiResult<T> : IApiResult
         };
     }
 
-    public virtual IApiResult GetDefaultValidateApiResult<TResult>(TResult apiResult)
+    /// <inheritdoc/>
+    public virtual IApiResult GetDefaultValidateApiResult(string validateMessage)
     {
-        return new DefaultApiResult<TResult>
+        return new DefaultApiResult<object>
         {
             Code = ApiStateCode.ValidateError,
-            Msg = "参数验证错误" + apiResult,
+            Msg = "请求参数有误" + validateMessage,
         };
     }
 
+    /// <inheritdoc/>
     public virtual IApiResult GetDefaultForbiddenApiResult()
     {
         return new DefaultApiResult<object>
@@ -84,15 +87,20 @@ public class DefaultApiResult<T> : IApiResult
         };
     }
 
+    /// <inheritdoc/>
     public virtual IApiResult GetDefaultErrorApiResult(string errorMessage)
     {
         return new DefaultApiResult<object>
         {
+            Code = ApiStateCode.Error,
             Msg = errorMessage
         };
     }
 }
 
+/// <summary>
+/// 默认Api结果结构
+/// </summary>
 public class DefaultApiResult : DefaultApiResult<object>
 {
 }
@@ -105,30 +113,36 @@ public enum ApiStateCode
     /// <summary>
     /// 操作成功
     /// </summary>
+    [Description("操作成功")]
     Success = 200,
 
     /// <summary>
     /// 鉴权失败
     /// </summary>
+    [Description("鉴权失败")]
     Unauthorized = 401,
 
     /// <summary>
-    /// 无权限
+    /// 无权操作
     /// </summary>
+    [Description("无权操作")]
     Forbidden = 403,
 
     /// <summary>
-    /// 找不到资源
+    /// 资源不存在
     /// </summary>
+    [Description("资源不存在")]
     NotFound = 404,
 
     /// <summary>
-    /// 实体验证失败
+    /// 请求参数有误
     /// </summary>
+    [Description("请求参数有误")]
     ValidateError = 400,
 
     /// <summary>
     /// 执行异常
     /// </summary>
+    [Description("执行异常")]
     Error = 500
 }

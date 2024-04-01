@@ -1,12 +1,13 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
 		<TargetFramework>net6.0</TargetFramework>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>disable</Nullable>
 		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-		<Version>0.1.0</Version>
+		<Version>0.2.0</Version>
 		<Authors>ligy</Authors>
+		<GenerateDocumentationFile>True</GenerateDocumentationFile>
 	</PropertyGroup>
 
 	<ItemGroup>
@@ -18,12 +19,6 @@
 
 	<ItemGroup>
 		<Folder Include="ConfigurableOptions\" />
-	</ItemGroup>
-
-	<ItemGroup>
-		<Reference Include="Microsoft.AspNetCore.Http.Abstractions">
-			<HintPath>C:\Program Files\dotnet\shared\Microsoft.AspNetCore.App\6.0.25\Microsoft.AspNetCore.Http.Abstractions.dll</HintPath>
-		</Reference>
 	</ItemGroup>
 
 </Project>

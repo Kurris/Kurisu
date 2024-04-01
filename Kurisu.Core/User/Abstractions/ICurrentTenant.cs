@@ -1,8 +1,11 @@
+using Microsoft.Extensions.DependencyInjection;
+
 namespace Kurisu.Core.User.Abstractions;
 
 /// <summary>
-/// 租户信息获取处理器
+/// 当前租户信息
 /// </summary>
+[SkipScan]
 public interface ICurrentTenant
 {
     /// <summary>

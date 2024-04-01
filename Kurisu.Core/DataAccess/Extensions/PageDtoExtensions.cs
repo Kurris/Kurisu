@@ -2,6 +2,9 @@
 
 namespace Kurisu.Core.DataAccess.Extensions;
 
+/// <summary>
+/// 分页扩展
+/// </summary>
 public static class PageDtoExtensions
 {
     /// <summary>

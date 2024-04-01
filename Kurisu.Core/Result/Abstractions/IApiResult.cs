@@ -30,10 +30,9 @@ public interface IApiResult
     IApiResult GetDefaultForbiddenApiResult();
 
     /// <summary>
-    /// 获取默认验证错误结果400
+    /// 获取默认验证错误结果
     /// </summary>
-    /// <typeparam name="TResult"></typeparam>
-    /// <param name="apiResult"></param>
+    /// <param name="validateMessage"></param>
     /// <returns></returns>
-    IApiResult GetDefaultValidateApiResult<TResult>(TResult apiResult);
+    IApiResult GetDefaultValidateApiResult(string validateMessage);
 }

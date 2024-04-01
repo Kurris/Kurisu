@@ -1,7 +1,7 @@
 ﻿namespace Kurisu.Core.DataAccess.Dto;
 
 /// <summary>
-/// 分页参数
+/// 分页
 /// </summary>
 /// <typeparam name="T">数据类型</typeparam>
 public class Pagination<T>
@@ -56,7 +56,7 @@ public class Pagination<T>
 }
 
 /// <summary>
-/// 分页参数
+/// 分页
 /// </summary>
 public class Pagination : Pagination<object>
 {

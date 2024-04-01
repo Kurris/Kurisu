@@ -3,11 +3,26 @@ using Kurisu.Core.Proxy.Attributes;
 
 namespace Kurisu.Core.Proxy;
 
+/// <summary>
+/// 代理类映射
+/// </summary>
 public static class ProxyMap
 {
+    /// <summary>
+    /// 类-代理实现
+    /// </summary>
     public static readonly Dictionary<Type, List<Type>> InterceptorTypeInvoke = new();
+
+    /// <summary>
+    /// 方法-代理实现
+    /// </summary>
     public static readonly Dictionary<ValueTuple<Type, MethodInfo>, List<Type>> InterceptorMethodInvoke = new();
 
+    /// <summary>
+    /// 获取代理实现
+    /// </summary>
+    /// <param name="type"></param>
+    /// <returns></returns>
     public static IEnumerable<Type> GetInterceptorTypes(this Type type)
     {
         var attributes = type.GetCustomAttributes<AopAttribute>();
@@ -25,6 +40,11 @@ public static class ProxyMap
         return result;
     }
 
+    /// <summary>
+    /// 获取代理实现
+    /// </summary>
+    /// <param name="methods"></param>
+    /// <returns></returns>
     public static IEnumerable<Type> GetInterceptorTypes(this MethodInfo[] methods)
     {
         if (methods.Length == 0)
@@ -52,6 +72,12 @@ public static class ProxyMap
         return result;
     }
 
+    /// <summary>
+    /// 获取代理实现
+    /// </summary>
+    /// <param name="service"></param>
+    /// <param name="interfaceTypes"></param>
+    /// <returns></returns>
     public static List<Type> GetAllInterceptorTypes(Type service, IEnumerable<Type> interfaceTypes)
     {
         var interceptorTypes = new List<Type>();
