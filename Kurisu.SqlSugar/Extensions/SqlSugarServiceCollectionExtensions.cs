@@ -44,7 +44,7 @@ public static class SqlSugarServiceCollectionExtensions
                     ConfigId = "db-main",
 
                     ConnectionString = options.DefaultConnectionString,
-                    DbType = DbType.MySql,
+                    DbType = DbType.MySqlConnector,
                     InitKeyType = InitKeyType.Attribute,
                     IsAutoCloseConnection = true,
 
