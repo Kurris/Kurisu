@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace Kurisu.RemoteCall.Attributes;
+﻿namespace Kurisu.RemoteCall.Attributes;
 
 /// <summary>
 /// 请求参数 media type
@@ -8,12 +6,19 @@ namespace Kurisu.RemoteCall.Attributes;
 [AttributeUsage(AttributeTargets.Method)]
 public class RequestMediaTypeAttribute : Attribute
 {
-    private readonly string _type;
+    private readonly string _contentType;
 
-    public RequestMediaTypeAttribute(string type)
+    /// <summary>
+    /// ctor
+    /// </summary>
+    /// <param name="contentType"></param>
+    public RequestMediaTypeAttribute(string contentType)
     {
-        _type = type;
+        _contentType = contentType;
     }
 
-    public string Type => _type;
+    /// <summary>
+    /// header content-type
+    /// </summary>
+    public string ContentType => _contentType;
 }

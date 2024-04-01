@@ -1,6 +1,7 @@
 ﻿using Kurisu.Core.Proxy.Attributes;
 using Kurisu.RemoteCall.Abstractions;
 using Kurisu.RemoteCall.Aops;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Kurisu.RemoteCall.Attributes;
@@ -11,6 +12,9 @@ namespace Kurisu.RemoteCall.Attributes;
 [AttributeUsage(AttributeTargets.Interface)]
 public sealed class EnableRemoteClientAttribute : AopAttribute
 {
+    /// <summary>
+    /// ctor
+    /// </summary>
     public EnableRemoteClientAttribute()
     {
         if (Interceptors?.Any() != true)
@@ -25,15 +29,17 @@ public sealed class EnableRemoteClientAttribute : AopAttribute
     public string Name { get; set; }
 
     /// <summary>
-    /// base url
+    /// BaseUrl , 支持从<see cref="IConfiguration"/>中获取:$(Path)
     /// </summary>
     public string BaseUrl { get; set; }
 
     /// <summary>
-    /// 请求处理策略<see cref="IHttpRemoteCallHandlerPolicy"/>
+    /// 请求处理策略<see cref="IHttpRemoteCallPolicyHandler"/>
     /// </summary>
-    public Type HandlerPolicy { get; set; }
+    public Type PolicyHandler { get; set; }
 
+
+    /// <inheritdoc/>
     public override void ConfigureServices(IServiceCollection services)
     {
         //默认HttpClient
@@ -46,9 +52,9 @@ public sealed class EnableRemoteClientAttribute : AopAttribute
         }
 
         var builder = services.AddHttpClient(Name);
-        if (HandlerPolicy != null && HandlerPolicy.IsAssignableTo(typeof(IHttpRemoteCallHandlerPolicy)))
+        if (PolicyHandler != null && PolicyHandler.IsAssignableTo(typeof(IHttpRemoteCallPolicyHandler)))
         {
-            ((IHttpRemoteCallHandlerPolicy)Activator.CreateInstance(HandlerPolicy))!.ConfigureHttpClient(builder);
+            ((IHttpRemoteCallPolicyHandler)Activator.CreateInstance(PolicyHandler))!.ConfigureHttpClient(builder);
         }
     }
 }

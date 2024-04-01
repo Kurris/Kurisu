@@ -1,15 +1,12 @@
 ﻿using Newtonsoft.Json;
 using System.Reflection;
 using Microsoft.Extensions.Configuration;
-using System.Net.Mime;
-using System.Text;
 using Kurisu.Core.Proxy;
 using Kurisu.Core.Proxy.Abstractions;
 using Kurisu.RemoteCall.Attributes;
 using Mapster;
 using Microsoft.Extensions.Logging;
-using Kurisu.Core.User.Abstractions;
-using Microsoft.Extensions.DependencyInjection;
+using System.ComponentModel.DataAnnotations;
 
 namespace Kurisu.RemoteCall.Aops;
 
@@ -42,12 +39,13 @@ public class DefaultRemoteCallClient : Aop
         _logger = logger;
     }
 
-
+    /// <inheritdoc/>
     protected override async Task InterceptAsync(IProxyInvocation invocation, Func<IProxyInvocation, Task> proceed)
     {
         await RequestAsync(invocation);
     }
 
+    /// <inheritdoc/>
     protected override async Task<TResult> InterceptAsync<TResult>(IProxyInvocation invocation, Func<IProxyInvocation, Task<TResult>> proceed)
     {
         TResult result;
@@ -79,13 +77,27 @@ public class DefaultRemoteCallClient : Aop
         //参数和值
         var methodParameters = invocation.Method.GetParameters();
         var methodParameterValues = methodParameters.Select((t, i) => new KeyValuePair<ParameterInfo, object>(t, invocation.Parameters[i])).ToList();
+        //验证
+        foreach (var parameter in methodParameterValues)
+        {
+            if (parameter.Key.ParameterType.IsGenericType && parameter.Key.ParameterType.GetGenericTypeDefinition().IsAssignableTo(typeof(List<>)))
+            {
+                var a = (IEnumerable<object>)parameter.Value;
+                foreach (var item in a)
+                {
+                    Validator.ValidateObject(item, new ValidationContext(item), true);
+                }
+            }
+            else
+            {
+                Validator.ValidateObject(parameter.Value, new ValidationContext(parameter.Value), true);
+            }
+        }
 
-        var useLog = (invocation.InterfaceType.GetCustomAttribute<RequestLogAttribute>() ?? invocation.Method.GetCustomAttribute<RequestLogAttribute>()) != null;
+        var defineHttpMethodAttribute = invocation.Method.GetCustomAttribute<HttpMethodAttribute>() ?? throw new NullReferenceException("请定义请求方式");
+        var defineRemoteClientAttribute = invocation.InterfaceType.GetCustomAttribute<EnableRemoteClientAttribute>()!;
 
-        //请求方式和地址
-        var enableRemoteClientAttribute = invocation.InterfaceType.GetCustomAttribute<EnableRemoteClientAttribute>()!;
-        var httpMethodAttribute = invocation.Method.GetCustomAttribute<HttpMethodAttribute>();
-        (HttpMethodEnumType? httpMethodType, string url) = InteralHelper.GetRequestUrl(_configuration, enableRemoteClientAttribute, httpMethodAttribute, methodParameterValues);
+        (HttpMethodEnumType? httpMethodType, string url) = InteralHelper.GetRequestUrl(_configuration, defineRemoteClientAttribute, defineHttpMethodAttribute, methodParameterValues);
 
         //请求方法
         var callMethod = (httpMethodType == HttpMethodEnumType.Get
@@ -98,100 +110,39 @@ public class DefaultRemoteCallClient : Aop
 
         if (httpMethodType != HttpMethodEnumType.Get)
         {
-            //找form参数(上传文件)
-            var formData = methodParameterValues.FirstOrDefault(x => x.Key.IsDefined(typeof(RequestFormAttribute)));
-            if (!formData.Equals(default(KeyValuePair<ParameterInfo, object>)))
-            {
-                var filePath = formData.Value.ToString()!;
-                var content = new MultipartFormDataContent();
-
-                if (formData.Key.ParameterType == typeof(string))
-                {
-                    //todo 大文件问题
-                    content.Add(new ByteArrayContent(await File.ReadAllBytesAsync(filePath)), "file", Path.GetFileName(filePath));
-                    //其他参数作为StringContent
-                    foreach (var item in methodParameterValues.Where(x => x.Key.Name != formData.Key.Name))
-                    {
-                        content.Add(new StringContent(item.Value.ToString()!), item.Key.Name!);
-                    }
-                }
-                else if (formData.Key.ParameterType == typeof(byte[]))
-                {
-                    var fileInfos = methodParameterValues.Where(x => x.Key.Name != formData.Key.Name).ToList();
-                    if (!fileInfos.Any())
-                    {
-                        throw new FileNotFoundException("请在其他参数中需要明确文件流的fileName");
-                    }
-
-                    content.Add(new ByteArrayContent((byte[])formData.Value), "file", fileInfos.First().Value.ToString()!);
-                    var others = methodParameterValues.Where(x => x.Key.Name != formData.Key.Name).Reverse().ToList();
-                    //不处理fileName的参数
-                    for (int i = 0; i < others.Count - 1; i++)
-                    {
-                        var item = others.ElementAt(i);
-                        content.Add(new StringContent(item.Value.ToString()!), item.Key.Name!);
-                    }
-                }
-                else if (formData.Key.ParameterType == typeof(Stream))
-                {
-                    throw new NotImplementedException();
-                }
-
-                requestParameters.Add(content);
-            }
-            else
-            {
-                var body = "{}";
-
-                //MediaTypeAttribute
-                string mediaType = invocation.Method.GetCustomAttribute<RequestMediaTypeAttribute>()?.Type ?? MediaTypeNames.Application.Json;
-                if (mediaType == MediaTypeNames.Application.Json)
-                {
-                    if (methodParameterValues.Any() && methodParameterValues[0].Key.ParameterType != typeof(string))
-                    {
-                        body = JsonConvert.SerializeObject(methodParameterValues[0].Value, InteralHelper.JsonSerializerSettings);
-                    }
-                }
-                // else if (mediaType == "application/x-www-form-urlencoded")
-                // {
-                //     
-                // }
-
-                var content = new StringContent(body, Encoding.UTF8, mediaType);
-                //添加发送内容
-                requestParameters.Add(content);
-            }
+            var content = await InteralHelper.FixContentAsync(invocation, methodParameterValues);
+            requestParameters.Add(content);
         }
 
-        var httpClient = string.IsNullOrEmpty(enableRemoteClientAttribute.Name)
+        var httpClient = string.IsNullOrEmpty(defineRemoteClientAttribute.Name)
             ? _httpClientFactory.CreateClient()
-            : _httpClientFactory.CreateClient(enableRemoteClientAttribute.Name);
+            : _httpClientFactory.CreateClient(defineRemoteClientAttribute.Name);
 
-        //日志输出
-        if (useLog)
+        //日志
+        if (InteralHelper.UseLog(invocation))
         {
             if (requestParameters.Count > 1)
-            {
                 _logger.LogInformation("{method} {url} \r\n Body:{body} .", httpMethodType, url, JsonConvert.SerializeObject(requestParameters.LastOrDefault()));
-            }
             else
-            {
                 _logger.LogInformation("{method} {url} .", httpMethodType, url);
-            }
         }
 
-        //鉴权判断
-        if (InteralHelper.UseAuth(invocation))
+        //鉴权
+        if (InteralHelper.UseAuth(_serviceProvider, invocation, out var headerName, out var token))
         {
-            var user = _serviceProvider.GetService<ICurrentUser>();
-            var token = user.GetToken();
-            httpClient.DefaultRequestHeaders.Add("Authorization", token);
+            httpClient.DefaultRequestHeaders.Add(headerName, token);
         }
 
         var task = (Task<HttpResponseMessage>)callMethod.Invoke(httpClient, requestParameters.ToArray())!;
         var response = await task.ConfigureAwait(false);
-        response.EnsureSuccessStatusCode();
+
         var responseJson = await response.Content.ReadAsStringAsync();
+        if (InteralHelper.UseLog(invocation))
+        {
+            _logger.LogInformation("Response: {response} .", responseJson);
+        }
+        response.EnsureSuccessStatusCode();
         return responseJson;
+
     }
 }
