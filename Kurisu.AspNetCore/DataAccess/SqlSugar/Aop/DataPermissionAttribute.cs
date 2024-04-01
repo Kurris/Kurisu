@@ -60,7 +60,7 @@ public class DataPermissionAttribute : Attribute, IAsyncActionFilter
             if (dp.UseSqlWhere == true)
             {
                 var currentUser = context.HttpContext.RequestServices.GetService<ICurrentUser>();
-                var tenantIds = currentUser.GetUserClaim("tenants").Split(',').Select(x => $"'{x}'");
+                var tenantIds = currentUser.GetUserClaim("tenants")?.Split(',').Select(x => $"'{x}'") ?? Array.Empty<string>();
 
                 if (_prefixs.Any())
                 {

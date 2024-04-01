@@ -4,6 +4,9 @@ using System.Reflection;
 
 namespace Kurisu.AspNetCore.Utils.Extensions;
 
+/// <summary>
+/// 枚举扩展
+/// </summary>
 public static class EnumExtensions
 {
     /// <summary>
@@ -22,7 +25,11 @@ public static class EnumExtensions
         return value.ToString();
     }
 
-
+    /// <summary>
+    /// 获取Description
+    /// </summary>
+    /// <param name="value"></param>
+    /// <returns></returns>
     public static string GetDescription(this Type value)
     {
         if (value!.IsDefined(typeof(DescriptionAttribute), false))

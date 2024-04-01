@@ -3,7 +3,7 @@
 	<PropertyGroup>
 		<TargetFramework>net6.0</TargetFramework>
 		<LangVersion>10</LangVersion>
-		<PackageVersion>0.7.0</PackageVersion>
+		<PackageVersion>0.7.2</PackageVersion>
 		<Description>see more : https://github.com/Kurris/Kurisu</Description>
 		<Copyright>Kurisu Copyright</Copyright>
 		<RepositoryUrl>https://github.com/Kurris/Kurisu</RepositoryUrl>
@@ -23,8 +23,7 @@
 	<ItemGroup>
 		<PackageReference Include="IdentityModel" Version="6.2.0" />
 		<PackageReference Include="IdentityModel.AspNetCore.OAuth2Introspection" Version="6.2.0" />
-		<PackageReference Include="Kurisu.Core" Version="0.1.0" />
-		<PackageReference Include="Kurisu.SqlSugar" Version="0.2.1" />
+		<PackageReference Include="Kurisu.SqlSugar" Version="0.3.2" />
 		<PackageReference Include="Mapster.DependencyInjection" Version="1.0.1" />
 		<PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="6.0.20" />
 		<PackageReference Include="Microsoft.AspNetCore.DataProtection.StackExchangeRedis" Version="6.0.27" />

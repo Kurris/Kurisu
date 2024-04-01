@@ -18,6 +18,12 @@ namespace Kurisu.AspNetCore.UnifyResultAndValidation.Filters;
 // ReSharper disable once ClassNeverInstantiated.Global
 public class ValidateAndPackResultFilter : IAsyncActionFilter, IAsyncResultFilter
 {
+    /// <summary>
+    /// 请求参数处理
+    /// </summary>
+    /// <param name="context"></param>
+    /// <param name="next"></param>
+    /// <returns></returns>
     public async Task OnActionExecutionAsync(ActionExecutingContext context, ActionExecutionDelegate next)
     {
         if (context.HttpContext.RequestServices.GetService<IOptions<FilterOptions>>().Value?.EnableApiRequestLog == true)
@@ -35,6 +41,12 @@ public class ValidateAndPackResultFilter : IAsyncActionFilter, IAsyncResultFilte
         //请求后
     }
 
+    /// <summary>
+    /// 请求结果处理
+    /// </summary>
+    /// <param name="context"></param>
+    /// <param name="next"></param>
+    /// <returns></returns>
     public async Task OnResultExecutionAsync(ResultExecutingContext context, ResultExecutionDelegate next)
     {
         var apiResult = context.HttpContext.RequestServices.GetService<IApiResult>()!;
@@ -58,7 +70,7 @@ public class ValidateAndPackResultFilter : IAsyncActionFilter, IAsyncResultFilte
             else
             {
                 var es = errorResults.Select(x => x.Message);
-                msg = "\r\n" + string.Join("\r\n", es);
+                msg = "\r\n" + es.Join("\r\n");
             }
 
             //包装验证错误信息

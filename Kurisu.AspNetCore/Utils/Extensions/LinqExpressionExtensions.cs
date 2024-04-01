@@ -8,7 +8,7 @@ namespace Kurisu.AspNetCore.Utils.Extensions;
 /// <summary>
 /// linq表达式扩展
 /// </summary>
-public static class LinqExpressionExtension
+public static class LinqExpressionExtensions
 {
     /// <summary>
     /// 返回一个默认表达式
@@ -59,11 +59,11 @@ public static class LinqExpressionExtension
     /// <param name="predicateCurrent">当前表达式</param>
     public static Expression<Func<T, bool>> Not<T>(this Expression<Func<T, bool>> predicateCurrent) where T : class
     {
-        ExpressionReplace ex = GenExpressionReplace<T>(out var expressionPara);
+        ExpressionReplace ex = GenExpressionReplace<T>(out var expressionParameter);
         var current = ex.Replace(predicateCurrent);
         var body = Expression.Not(current);
 
-        return Expression.Lambda<Func<T, bool>>(body, expressionPara);
+        return Expression.Lambda<Func<T, bool>>(body, expressionParameter);
     }
 
     /// <summary>
@@ -75,61 +75,27 @@ public static class LinqExpressionExtension
     /// <param name="expressionMethod">合并方法</param>
     private static Expression<Func<T, bool>> Combine<T>(Expression<Func<T, bool>> expressionFirst, Expression<Func<T, bool>> expressionSecond, Func<Expression, Expression, Expression> expressionMethod)
     {
-        ExpressionReplace ex = GenExpressionReplace<T>(out var expressionPara);
+        ExpressionReplace ex = GenExpressionReplace<T>(out var expressionParameter);
 
         var left = ex.Replace(expressionFirst.Body);
         var right = ex.Replace(expressionSecond.Body);
 
-        return Expression.Lambda<Func<T, bool>>(expressionMethod(left, right), expressionPara);
+        return Expression.Lambda<Func<T, bool>>(expressionMethod(left, right), expressionParameter);
     }
 
     /// <summary>
     /// 表达式替换帮助类
     /// </summary>
     /// <typeparam name="T"></typeparam>
-    /// <param name="expressionPara">引用相等的表达式参数</param>
+    /// <param name="expressionParameter">引用相等的表达式参数</param>
     /// <returns><see cref="ExpressionReplace"/></returns>
-    private static ExpressionReplace GenExpressionReplace<T>(out ParameterExpression expressionPara)
+    private static ExpressionReplace GenExpressionReplace<T>(out ParameterExpression expressionParameter)
     {
-        expressionPara = Expression.Parameter(typeof(T), "x");
-        return new ExpressionReplace(expressionPara);
+        expressionParameter = Expression.Parameter(typeof(T));
+        return new ExpressionReplace(expressionParameter);
     }
 }
 
-/// <summary>
-/// 表达式替换帮助类
-/// </summary>
-internal class ExpressionReplace : ExpressionVisitor
-{
-    /// <summary>
-    /// 当前的表达式参数
-    /// </summary>
-    public ParameterExpression ParameterExpression { get; }
-
-    /// <summary>
-    /// Ctor
-    /// </summary>
-    /// <param name="parameterExpression">表达式参数</param>
-    public ExpressionReplace(ParameterExpression parameterExpression)
-    {
-        ParameterExpression = parameterExpression;
-    }
-
-    /// <summary>
-    /// 替换成相同的引用
-    /// </summary>
-    /// <param name="expression"></param>
-    /// <returns></returns>
-    public Expression Replace(Expression expression)
-    {
-        return Visit(expression);
-    }
-
-    protected override Expression VisitParameter(ParameterExpression node)
-    {
-        return ParameterExpression;
-    }
-}
 
 
 /// <summary>
@@ -137,27 +103,6 @@ internal class ExpressionReplace : ExpressionVisitor
 /// </summary>
 public static class ExpressionHelper
 {
-    /// <summary>
-    /// Ids 获取Or表达式
-    /// </summary>
-    /// <typeparam name="T">类型</typeparam>
-    /// <param name="ids">id集合</param>
-    /// <param name="func">表达式方法</param>
-    /// <returns></returns>
-    public static Expression<Func<T, bool>> GetOrExpression<T>(this IEnumerable<int> ids, Func<int, Expression<Func<T, bool>>> func) where T : class
-    {
-        var expressions = LinqExpressionExtension.False<T>();
-
-        return ids.Select(func.Invoke).Aggregate(expressions, (current, exp) => current.Or(exp));
-    }
-
-    public static Expression<Func<T, bool>> GetOrExpression<T>(this IEnumerable<string> ids, Func<string, Expression<Func<T, bool>>> func) where T : class
-    {
-        var expressions = LinqExpressionExtension.False<T>();
-
-        return ids.Select(func.Invoke).Aggregate(expressions, (current, exp) => current.Or(exp));
-    }
-
     /// <summary>
     /// Ts 获取Or表达式
     /// </summary>
@@ -167,7 +112,7 @@ public static class ExpressionHelper
     /// <returns></returns>
     public static Expression<Func<T, bool>> GetOrExpression<T>(this IEnumerable<T> ts, Func<T, Expression<Func<T, bool>>> func) where T : class
     {
-        var expressions = LinqExpressionExtension.False<T>();
+        var expressions = LinqExpressionExtensions.False<T>();
 
         return ts.Select(func.Invoke).Aggregate(expressions, (current, exp) => current.Or(exp));
     }
@@ -175,11 +120,12 @@ public static class ExpressionHelper
     /// <summary>
     /// 获取实例的表达式
     /// </summary>
-    /// <typeparam name="T">类型</typeparam>
+    /// <typeparam name="T"></typeparam>
+    /// <param name="name"></param>
     /// <returns></returns>
-    public static ParameterExpression GetParameter<T>() where T : class
+    public static ParameterExpression GetParameter<T>(string name = null) where T : class
     {
-        return Expression.Parameter(typeof(T), typeof(T).Name);
+        return Expression.Parameter(typeof(T), name);
     }
 
     /// <summary>
@@ -289,5 +235,43 @@ public static class ExpressionHelper
         var prop = Expression.Property(parameterExpression, propertyName);
         var constant = Expression.Constant(value, value.GetType());
         return Expression.Lambda<Func<T, bool>>(func(prop, constant), parameterExpression);
+    }
+}
+
+
+
+
+/// <summary>
+/// 表达式替换帮助类
+/// </summary>
+class ExpressionReplace : ExpressionVisitor
+{
+    /// <summary>
+    /// 当前的表达式参数
+    /// </summary>
+    public ParameterExpression ParameterExpression { get; }
+
+    /// <summary>
+    /// ctor
+    /// </summary>
+    /// <param name="parameterExpression">表达式参数</param>
+    public ExpressionReplace(ParameterExpression parameterExpression)
+    {
+        ParameterExpression = parameterExpression;
+    }
+
+    /// <summary>
+    /// 替换成相同的引用
+    /// </summary>
+    /// <param name="expression"></param>
+    /// <returns></returns>
+    public Expression Replace(Expression expression)
+    {
+        return Visit(expression);
+    }
+
+    protected override Expression VisitParameter(ParameterExpression node)
+    {
+        return ParameterExpression;
     }
 }

@@ -4,6 +4,7 @@ using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Threading.Tasks;
 using Kurisu.Core.ConfigurableOptions.Attributes;
+using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using StackExchange.Redis;
 
@@ -33,14 +34,17 @@ public class RedisCache
     /// redis 连接对象
     /// </summary>
     private readonly IConnectionMultiplexer _connectionMultiplexer;
+    private readonly ILogger<RedisCache> _logger;
 
     /// <summary>
-    /// 构造
+    /// ctor
     /// </summary>
     /// <param name="connectionMultiplexer"></param>
-    public RedisCache(IConnectionMultiplexer connectionMultiplexer)
+    /// <param name="logger"></param>
+    public RedisCache(IConnectionMultiplexer connectionMultiplexer, ILogger<RedisCache> logger)
     {
         _connectionMultiplexer = connectionMultiplexer;
+        _logger = logger;
         _db = _connectionMultiplexer.GetDatabase();
         AddRegisterEvent();
     }
@@ -50,10 +54,32 @@ public class RedisCache
     /// </summary>
     /// <param name="lockKey"></param>
     /// <param name="expiry"></param>
+    /// <param name="retryInterval"></param>
+    /// <param name="retryCount"></param>
     /// <returns></returns>
-    public async Task<RedisLock> LockAsync(string lockKey, TimeSpan? expiry = null)
+    public async Task<RedisLock> LockAsync(string lockKey, TimeSpan? expiry = null, TimeSpan? retryInterval = null, int retryCount = 3)
     {
-        return await new RedisLock(_db, lockKey, expiry).LockAsync();
+        var locker = new RedisLock(_db, lockKey, expiry);
+        var retry = 0;
+        do
+        {
+            var handler = await locker.LockAsync();
+            retry++;
+
+            if (!handler.Acquired && retryInterval.HasValue)
+            {
+                await Task.Delay(retryInterval.Value);
+            }
+            else
+            {
+                return handler;
+            }
+
+            _logger.LogInformation("get {lockKey} fail {retry}. will retry in {interval}ms", lockKey, retry, retryInterval.Value.TotalMilliseconds);
+        }
+        while (!locker.Acquired && retryInterval.HasValue && retry < retryCount);
+
+        return locker;
     }
 
     /// <summary>
@@ -61,10 +87,32 @@ public class RedisCache
     /// </summary>
     /// <param name="lockKey"></param>
     /// <param name="expiry"></param>
+    /// <param name="retryInterval"></param>
+    /// <param name="retryCount"></param>
     /// <returns></returns>
-    public RedisLock Lock(string lockKey, TimeSpan? expiry = null)
+    public RedisLock Lock(string lockKey, TimeSpan? expiry = null, TimeSpan? retryInterval = null, int retryCount = 3)
     {
-        return new RedisLock(_db, lockKey, expiry).Lock();
+        var locker = new RedisLock(_db, lockKey, expiry);
+        var retry = 0;
+        do
+        {
+            var handler = locker.Lock();
+            retry++;
+
+            if (!handler.Acquired && retryInterval.HasValue)
+            {
+                Task.Delay(retryInterval.Value).Wait();
+            }
+            else
+            {
+                return handler;
+            }
+
+            _logger.LogInformation("get {lockKey} fail {retry}. will retry in {interval}ms", lockKey, retry, retryInterval.Value.TotalMilliseconds);
+        }
+        while (!locker.Acquired && retryInterval.HasValue && retry < retryCount);
+
+        return locker;
     }
 
     #region String 操作

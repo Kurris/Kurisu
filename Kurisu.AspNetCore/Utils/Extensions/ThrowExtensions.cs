@@ -4,8 +4,18 @@ using Kurisu.AspNetCore.UnifyResultAndValidation;
 
 namespace Kurisu.AspNetCore.Utils.Extensions;
 
+/// <summary>
+/// throw helper
+/// </summary>
 public static class ThrowExtensions
 {
+    /// <summary>
+    /// null异常抛出
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <param name="obj"></param>
+    /// <param name="errorMessage"></param>
+    /// <exception cref="UserFriendlyException"></exception>
     public static void ThrowIfNull<T>(this T obj, string errorMessage) where T : class
     {
         if (obj == null)
@@ -14,6 +24,12 @@ public static class ThrowExtensions
         }
     }
 
+    /// <summary>
+    /// true异常抛出 
+    /// </summary>
+    /// <param name="condition"></param>
+    /// <param name="errorMessage"></param>
+    /// <exception cref="UserFriendlyException"></exception>
     public static void ThrowIfTrue(this bool condition, string errorMessage)
     {
         if (condition)
@@ -22,7 +38,12 @@ public static class ThrowExtensions
         }
     }
 
-
+    /// <summary>
+    /// false异常抛出
+    /// </summary>
+    /// <param name="condition"></param>
+    /// <param name="errorMessage"></param>
+    /// <exception cref="UserFriendlyException"></exception>
     public static void ThrowIfFalse(this bool condition, string errorMessage)
     {
         if (!condition)
@@ -31,6 +52,13 @@ public static class ThrowExtensions
         }
     }
 
+    /// <summary>
+    /// notfound异常抛出
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <param name="values"></param>
+    /// <param name="errorMessage"></param>
+    /// <exception cref="UserFriendlyException"></exception>
     public static void ThrowIfEmpty<T>(this IEnumerable<T> values, string errorMessage)
     {
         if (values?.Any() != true)
@@ -39,7 +67,13 @@ public static class ThrowExtensions
         }
     }
 
-
+    /// <summary>
+    /// exists异常抛出
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <param name="values"></param>
+    /// <param name="errorMessage"></param>
+    /// <exception cref="UserFriendlyException"></exception>
     public static void ThrowIfExists<T>(this IEnumerable<T> values, string errorMessage)
     {
         if (values != null && values.Any())

@@ -74,34 +74,4 @@ public static class EnumerableExtensions
     {
         return !enumerable.IsEmpty();
     }
-
-    /// <summary>
-    /// 递归处理
-    /// </summary>
-    /// <typeparam name="T"></typeparam>
-    /// <param name="data"></param>
-    /// <returns></returns>
-    public static List<T> RecursionGetNext<T>(List<T> data) where T : IRecursionStruct<T>
-    {
-        var tops = data.Where(x => x.PCode.IsEmpty()).ToList();
-        tops.ForEach(current => current.RecursionGetNext(data));
-
-        return tops;
-    }
-
-    /// <summary>
-    /// 递归处理
-    /// </summary>
-    /// <typeparam name="T"></typeparam>
-    /// <param name="current"></param>
-    /// <param name="data"></param>
-    public static void RecursionGetNext<T>(this T current, List<T> data) where T : IRecursionStruct<T>
-    {
-        var next = data.Where(x => x.PCode == current.Code).ToList();
-        current.Next = next;
-        foreach (var item in next)
-        {
-            RecursionGetNext(item, data);
-        }
-    }
 }

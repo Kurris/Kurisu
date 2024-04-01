@@ -8,7 +8,7 @@ using StackExchange.Redis;
 namespace Kurisu.AspNetCore.DataProtection.Packs;
 
 /// <summary>
-/// 数据保存pack
+/// 数据保护pack
 /// </summary>
 public class DataProctectionPack : BaseAppPack
 {

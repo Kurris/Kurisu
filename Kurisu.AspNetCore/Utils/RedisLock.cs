@@ -50,6 +50,11 @@ public sealed class RedisLock : IDisposable, IAsyncDisposable
     }
 
     /// <summary>
+    /// 锁标识
+    /// </summary>
+    public bool Acquired => _acquired;
+
+    /// <summary>
     /// lock
     /// </summary>
     /// <returns></returns>
@@ -78,11 +83,6 @@ public sealed class RedisLock : IDisposable, IAsyncDisposable
 
         return this;
     }
-
-    /// <summary>
-    /// 锁标识
-    /// </summary>
-    public bool Acquired => _acquired;
 
     /// <summary>
     /// 续

@@ -1,7 +1,6 @@
 using System;
 using System.Linq;
 using Kurisu.AspNetCore.DependencyInjection;
-using Kurisu.DependencyInjection;
 
 // ReSharper disable once CheckNamespace
 namespace Microsoft.Extensions.DependencyInjection;
@@ -12,6 +11,11 @@ namespace Microsoft.Extensions.DependencyInjection;
 [SkipScan]
 public static class DependencyInjectionServiceCollectionExtensions
 {
+    /// <summary>
+    /// 自动依赖注入
+    /// </summary>
+    /// <param name="services"></param>
+    /// <returns></returns>
     public static IServiceCollection AddDependencyInjection(this IServiceCollection services)
     {
         services.RegisterServices();

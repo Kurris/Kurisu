@@ -12,6 +12,12 @@ public sealed class SnowFlakeHelper
     private static SnowFlakeHelper _instance;
     private static readonly DateTime _jan1St1970 = new(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
 
+    /// <summary>
+    /// 初始化
+    /// </summary>
+    /// <param name="datacenterId"></param>
+    /// <param name="workerId"></param>
+    /// <returns></returns>
     public static SnowFlakeHelper Initialize(long datacenterId = 1, long workerId = 1)
     {
         // ReSharper disable once InvertIf
@@ -68,16 +74,16 @@ public sealed class SnowFlakeHelper
     private const long _sequenceMask = -1L ^ -1L << _sequenceBits;
 
     // 数据中心ID(0~31)
-    private long DatacenterId { get; }
+    private long _datacenterId { get; }
 
     // 工作机器ID(0~31)
-    private long WorkerId { get; }
+    private long _workerId { get; }
 
     // 毫秒内序列(0~4095)
-    private long Sequence { get; set; }
+    private long _sequence { get; set; }
 
     // 上次生成ID的时间截
-    private long LastTimestamp { get; set; }
+    private long _lastTimestamp { get; set; }
 
 
     /// <summary>
@@ -97,10 +103,10 @@ public sealed class SnowFlakeHelper
             throw new Exception($"worker Id can't be greater than {_maxWorkerId} or less than 0");
         }
 
-        WorkerId = workerId;
-        DatacenterId = datacenterId;
-        Sequence = 0L;
-        LastTimestamp = -1L;
+        _workerId = workerId;
+        _datacenterId = datacenterId;
+        _sequence = 0L;
+        _lastTimestamp = -1L;
     }
 
     /// <summary>
@@ -112,39 +118,39 @@ public sealed class SnowFlakeHelper
         lock (this)
         {
             var timestamp = GetCurrentTimestamp();
-            if (timestamp > LastTimestamp) //时间戳改变，毫秒内序列重置
+            if (timestamp > _lastTimestamp) //时间戳改变，毫秒内序列重置
             {
-                Sequence = 0L;
+                _sequence = 0L;
             }
-            else if (timestamp == LastTimestamp) //如果是同一时间生成的，则进行毫秒内序列
+            else if (timestamp == _lastTimestamp) //如果是同一时间生成的，则进行毫秒内序列
             {
-                Sequence = Sequence + 1 & _sequenceMask;
-                if (Sequence == 0) //毫秒内序列溢出
+                _sequence = _sequence + 1 & _sequenceMask;
+                if (_sequence == 0) //毫秒内序列溢出
                 {
-                    timestamp = GetNextTimestamp(LastTimestamp); //阻塞到下一个毫秒,获得新的时间戳
+                    timestamp = GetNextTimestamp(_lastTimestamp); //阻塞到下一个毫秒,获得新的时间戳
                 }
             }
             else //当前时间小于上一次ID生成的时间戳，证明系统时钟被回拨，此时需要做回拨处理
             {
-                Sequence = Sequence + 1 & _sequenceMask;
-                if (Sequence > 0)
+                _sequence = _sequence + 1 & _sequenceMask;
+                if (_sequence > 0)
                 {
-                    timestamp = LastTimestamp; //停留在最后一次时间戳上，等待系统时间追上后即完全度过了时钟回拨问题。
+                    timestamp = _lastTimestamp; //停留在最后一次时间戳上，等待系统时间追上后即完全度过了时钟回拨问题。
                 }
                 else //毫秒内序列溢出
                 {
-                    timestamp = LastTimestamp + 1; //直接进位到下一个毫秒
+                    timestamp = _lastTimestamp + 1; //直接进位到下一个毫秒
                 }
                 //throw new Exception(string.Format("Clock moved backwards.  Refusing to generate id for {0} milliseconds", lastTimestamp - timestamp));
             }
 
-            LastTimestamp = timestamp; //上次生成ID的时间截
+            _lastTimestamp = timestamp; //上次生成ID的时间截
 
             //移位并通过或运算拼到一起组成64位的ID
             return timestamp - _twepoch << _timestampLeftShift
-                     | DatacenterId << _datacenterIdShift
-                     | WorkerId << _workerIdShift
-                     | Sequence;
+                     | _datacenterId << _datacenterIdShift
+                     | _workerId << _workerIdShift
+                     | _sequence;
         }
     }
 
