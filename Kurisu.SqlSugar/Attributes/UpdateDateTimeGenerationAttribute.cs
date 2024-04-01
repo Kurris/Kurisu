@@ -1,6 +1,4 @@
-﻿
-
-namespace Kurisu.SqlSugar.Attributes;
+﻿namespace Kurisu.SqlSugar.Attributes;
 
 /// <summary>
 /// 修改时自动创建时间

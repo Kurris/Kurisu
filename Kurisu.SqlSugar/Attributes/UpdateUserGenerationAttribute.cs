@@ -1,5 +1,4 @@
-﻿
-namespace Kurisu.SqlSugar.Attributes;
+﻿namespace Kurisu.SqlSugar.Attributes;
 
 /// <summary>
 /// 修改时自动获取当前用户

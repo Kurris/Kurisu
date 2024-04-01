@@ -50,44 +50,70 @@ internal class DbContext : IDbContext
         return new DbContext(client, _serviceProvider);
     }
 
+    #region insert
+
     public async Task<long> InsertReturnIdentityAsync<T>(T obj) where T : class, new()
     {
-        return await _db.Insertable(obj).EnableDiffLogEventIF(_sqlSugarOptionsService.Diff).ExecuteReturnBigIdentityAsync();
+        return await _db.Insertable(obj).ExecuteReturnBigIdentityAsync();
     }
 
     public async Task<int> InsertAsync<T>(T obj) where T : class, new()
     {
-        return await _db.Insertable(obj).EnableDiffLogEventIF(_sqlSugarOptionsService.Diff).ExecuteCommandAsync();
+        return await _db.Insertable(obj).ExecuteCommandAsync();
     }
 
     public async Task<int> InsertAsync<T>(T[] obj) where T : class, new()
     {
-        return await _db.Insertable(obj).EnableDiffLogEventIF(_sqlSugarOptionsService.Diff).ExecuteCommandAsync();
+        return await _db.Insertable(obj).ExecuteCommandAsync();
     }
 
     public async Task<int> InsertAsync<T>(List<T> obj) where T : class, new()
     {
-        return await _db.Insertable(obj).EnableDiffLogEventIF(_sqlSugarOptionsService.Diff).ExecuteCommandAsync();
+        return await _db.Insertable(obj).ExecuteCommandAsync();
     }
 
+    public long InsertReturnIdentity<T>(T obj) where T : class, new()
+    {
+        return _db.Insertable(obj).ExecuteReturnBigIdentity();
+    }
+
+    public int Insert<T>(T obj) where T : class, new()
+    {
+        return _db.Insertable(obj).ExecuteCommand();
+    }
+
+    public int Insert<T>(T[] obj) where T : class, new()
+    {
+        return _db.Insertable(obj).ExecuteCommand();
+    }
+
+    public int Insert<T>(List<T> obj) where T : class, new()
+    {
+        return _db.Insertable(obj).ExecuteCommand();
+    }
+
+    #endregion
+
+
+    #region delete
 
     public async Task<int> DeleteAsync<T>(T obj) where T : class, ISoftDeleted, new()
     {
         obj.IsDeleted = true;
-        return await _db.Updateable(obj).EnableDiffLogEventIF(_sqlSugarOptionsService.Diff).ExecuteCommandAsync();
+        return await _db.Updateable(obj).ExecuteCommandAsync();
     }
 
     public async Task<int> DeleteAsync<T>(T[] obj) where T : class, ISoftDeleted, new()
     {
         var list = obj.ToList();
         list.ForEach(x => x.IsDeleted = true);
-        return await _db.Updateable(list).EnableDiffLogEventIF(_sqlSugarOptionsService.Diff).ExecuteCommandAsync();
+        return await _db.Updateable(list).ExecuteCommandAsync();
     }
 
     public async Task<int> DeleteAsync<T>(List<T> obj) where T : class, ISoftDeleted, new()
     {
         obj.ForEach(x => x.IsDeleted = true);
-        return await _db.Updateable(obj).EnableDiffLogEventIF(_sqlSugarOptionsService.Diff).ExecuteCommandAsync();
+        return await _db.Updateable(obj).ExecuteCommandAsync();
     }
 
     public async Task<int> DeleteReallyAsync<T>(T obj) where T : class, new()
@@ -105,6 +131,51 @@ internal class DbContext : IDbContext
         return await _db.Deleteable(obj).EnableDiffLogEventIF(_sqlSugarOptionsService.Diff).ExecuteCommandAsync();
     }
 
+
+    public int Delete<T>(T obj) where T : class, ISoftDeleted, new()
+    {
+        obj.IsDeleted = true;
+        return Update(obj);
+    }
+
+    public int Delete<T>(T[] obj) where T : class, ISoftDeleted, new()
+    {
+        var list = obj.ToList();
+        list.ForEach(x => x.IsDeleted = true);
+        return Update(obj);
+    }
+
+    public int Delete<T>(List<T> obj) where T : class, ISoftDeleted, new()
+    {
+        obj.ForEach(x => x.IsDeleted = true);
+        return Update(obj);
+    }
+
+    public IDeleteable<T> Deleteable<T>() where T : class, new()
+    {
+        return _db.Deleteable<T>();
+    }
+
+    public int DeleteReally<T>(T obj) where T : class, new()
+    {
+        return _db.Deleteable(obj).EnableDiffLogEventIF(_sqlSugarOptionsService.Diff).ExecuteCommand();
+    }
+
+    public int DeleteReally<T>(Expression<Func<T, bool>> expression) where T : class, new()
+    {
+        return _db.Deleteable(expression).EnableDiffLogEventIF(_sqlSugarOptionsService.Diff).ExecuteCommand();
+    }
+
+    public int DeleteReally<T>(List<T> obj) where T : class, new()
+    {
+        return _db.Deleteable(obj).EnableDiffLogEventIF(_sqlSugarOptionsService.Diff).ExecuteCommand();
+    }
+
+
+    #endregion
+
+
+    #region update
 
     public async Task<int> UpdateAsync<T>(T obj) where T : class, new()
     {
@@ -125,6 +196,24 @@ internal class DbContext : IDbContext
     {
         return _db.Updateable<T>().EnableDiffLogEventIF(_sqlSugarOptionsService.Diff);
     }
+
+
+    public int Update<T>(T obj) where T : class, new()
+    {
+        return _db.Updateable(obj).EnableDiffLogEventIF(_sqlSugarOptionsService.Diff).ExecuteCommand();
+    }
+
+    public int Update<T>(T[] obj) where T : class, new()
+    {
+        return _db.Updateable(obj).EnableDiffLogEventIF(_sqlSugarOptionsService.Diff).ExecuteCommand();
+    }
+
+    public int Update<T>(List<T> obj) where T : class, new()
+    {
+        return _db.Updateable(obj).EnableDiffLogEventIF(_sqlSugarOptionsService.Diff).ExecuteCommand();
+    }
+
+    #endregion
 
     public Task<DbResult<T>> UseTransactionAsync<T>(Func<Task<T>> func, Action<Exception> callback = null)
     {

@@ -30,5 +30,8 @@ public interface ISqlSugarOptionsService
     /// </summary>
     public DateTime RaiseTime { get; set; }
 
+    /// <summary>
+    /// 忽略租户
+    /// </summary>
     public bool IgnoreTenant { get; set; }
 }

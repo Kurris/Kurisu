@@ -35,20 +35,28 @@ public interface IDbContext
 
 
     Task<long> InsertReturnIdentityAsync<T>(T obj) where T : class, new();
+    long InsertReturnIdentity<T>(T obj) where T : class, new();
 
     Task<int> InsertAsync<T>(T obj) where T : class, new();
+    int Insert<T>(T obj) where T : class, new();
 
     Task<int> InsertAsync<T>(T[] obj) where T : class, new();
+    int Insert<T>(T[] obj) where T : class, new();
 
     Task<int> InsertAsync<T>(List<T> obj) where T : class, new();
+    int Insert<T>(List<T> obj) where T : class, new();
 
 
     Task<int> DeleteAsync<T>(T obj) where T : class, ISoftDeleted, new();
+    int Delete<T>(T obj) where T : class, ISoftDeleted, new();
 
     Task<int> DeleteAsync<T>(T[] obj) where T : class, ISoftDeleted, new();
+    int Delete<T>(T[] obj) where T : class, ISoftDeleted, new();
 
     Task<int> DeleteAsync<T>(List<T> obj) where T : class, ISoftDeleted, new();
+    int Delete<T>(List<T> obj) where T : class, ISoftDeleted, new();
 
+    IDeleteable<T> Deleteable<T>() where T : class, new();
 
     Task<int> DeleteReallyAsync<T>(T obj) where T : class, new();
 
@@ -57,11 +65,24 @@ public interface IDbContext
     Task<int> DeleteReallyAsync<T>(List<T> obj) where T : class, new();
 
 
+    int DeleteReally<T>(T obj) where T : class, new();
+
+    int DeleteReally<T>(Expression<Func<T, bool>> expression) where T : class, new();
+
+    int DeleteReally<T>(List<T> obj) where T : class, new();
+
+
     Task<int> UpdateAsync<T>(T obj) where T : class, new();
 
     Task<int> UpdateAsync<T>(T[] obj) where T : class, new();
 
     Task<int> UpdateAsync<T>(List<T> obj) where T : class, new();
+
+    int Update<T>(T obj) where T : class, new();
+
+    int Update<T>(T[] obj) where T : class, new();
+
+    int Update<T>(List<T> obj) where T : class, new();
 
     IUpdateable<T> Updateable<T>() where T : class, new();
 

@@ -39,7 +39,7 @@ public static class SqlSugarServiceCollectionExtensions
 
             var configs = new List<ConnectionConfig>()
             {
-                new ConnectionConfig
+                new() 
                 {
                     ConfigId = "db-main",
 
@@ -177,7 +177,10 @@ public static class SqlSugarServiceCollectionExtensions
             };
 
             //对查询后的数据处理(加解密处理)
-            //db.Aop.DataExecuted = (oldValue, entity) => { };
+            //db.Aop.DataExecuted = (result, entity) =>
+            //{
+
+            //};
 
             if (options.Diff?.Enable == true && options.Diff?.Commands?.Any() == true)
             {
