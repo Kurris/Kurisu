@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
-using Kurisu.AspNetCore.UnifyResultAndValidation;
+using Kurisu.Core.CustomClass;
 
 namespace Kurisu.AspNetCore.Utils.Extensions;
 

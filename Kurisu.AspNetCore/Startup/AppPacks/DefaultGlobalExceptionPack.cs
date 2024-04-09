@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 
 namespace Kurisu.AspNetCore.Startup.AppPacks;
@@ -47,16 +48,22 @@ public class GlobalExceptionMiddleware : BaseMiddleware
         }
         catch (Exception ex)
         {
-            context.Response.StatusCode = ex.Source!.Contains("IdentityModel.AspNetCore") ? 401 : 500;
-            var apiResult = context.RequestServices.GetService<IApiResult>();
+            var logger = context.RequestServices.GetService<ILogger<GlobalExceptionMiddleware>>();
+            if (!context.Response.HasStarted)
+            {
+                context.Response.StatusCode = ex.Source!.Contains("IdentityModel.AspNetCore") ? 401 : 500;
+                var apiResult = context.RequestServices.GetService<IApiResult>();
 
-            //驼峰
-            var json = JsonConvert.SerializeObject(apiResult!.GetDefaultErrorApiResult(ex.Message), JsonExtensions.DefaultSetting);
-            var bytes = Encoding.UTF8.GetBytes(json);
+                //驼峰
+                var json = JsonConvert.SerializeObject(apiResult!.GetDefaultErrorApiResult(ex.Message), JsonExtensions.DefaultSetting);
+                var bytes = Encoding.UTF8.GetBytes(json);
 
-            context.Response.ContentType = "application/json";
-            context.Response.ContentLength = bytes.Length;
-            await context.Response.BodyWriter.WriteAsync(bytes);
+                context.Response.ContentType = "application/json";
+                context.Response.ContentLength = bytes.Length;
+                await context.Response.BodyWriter.WriteAsync(bytes);
+            }
+
+            logger.LogError(ex, "[ApiLog] Global Exception:{path} {message}", context.Request.Path, ex.Message);
 
             //异常堆栈显示在console
             throw;

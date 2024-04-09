@@ -8,19 +8,9 @@ namespace Kurisu.Startup;
 /// <summary>
 /// 启动Host
 /// </summary>
+[SkipScan]
 public static class KurisuHost
 {
-    /// <summary>
-    /// 启动
-    /// </summary>
-    /// <param name="useSerilog"></param>
-    /// <param name="args">参数</param>
-    /// <typeparam name="TStartup">>启动Startup类型</typeparam>
-    public static void Run<TStartup>(bool useSerilog, string[] args) where TStartup : DefaultStartup
-    {
-        Host.CreateDefaultBuilder(args).RunKurisu<TStartup>(useSerilog);
-    }
-
     /// <summary>
     /// 启动
     /// </summary>
@@ -28,18 +18,7 @@ public static class KurisuHost
     /// <param name="args"></param>
     public static void Run<TStartup>(string[] args) where TStartup : DefaultStartup
     {
-        Host.CreateDefaultBuilder(args).RunKurisu<TStartup>(true);
-    }
-
-    /// <summary>
-    /// 启动
-    /// </summary>
-    /// <param name="useSerilog"></param>
-    /// <param name="args">参数</param>
-    /// <typeparam name="TStartup">启动Startup类型</typeparam>
-    public static async Task RunAsync<TStartup>(bool useSerilog, string[] args) where TStartup : DefaultStartup
-    {
-        await Host.CreateDefaultBuilder(args).RunKurisuAsync<TStartup>(useSerilog);
+        Builder(args).RunKurisu<TStartup>();
     }
 
     /// <summary>
@@ -49,6 +28,17 @@ public static class KurisuHost
     /// <typeparam name="TStartup">启动Startup类型</typeparam>
     public static async Task RunAsync<TStartup>(string[] args) where TStartup : DefaultStartup
     {
-        await Host.CreateDefaultBuilder(args).RunKurisuAsync<TStartup>(true);
+        await Builder(args).RunKurisuAsync<TStartup>();
+    }
+
+
+    /// <summary>
+    /// builder
+    /// </summary>
+    /// <param name="args"></param>
+    /// <returns></returns>
+    public static IHostBuilder Builder(string[] args)
+    {
+        return Host.CreateDefaultBuilder(args);
     }
 }

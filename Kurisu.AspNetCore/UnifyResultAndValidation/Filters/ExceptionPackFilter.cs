@@ -1,4 +1,5 @@
 using System.Threading.Tasks;
+using Kurisu.Core.CustomClass;
 using Kurisu.Core.Result.Abstractions;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;

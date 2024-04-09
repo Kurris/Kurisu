@@ -1,3 +1,4 @@
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Kurisu.AspNetCore.UnifyResultAndValidation.Options;
@@ -26,14 +27,16 @@ public class ValidateAndPackResultFilter : IAsyncActionFilter, IAsyncResultFilte
     /// <returns></returns>
     public async Task OnActionExecutionAsync(ActionExecutingContext context, ActionExecutionDelegate next)
     {
-        if (context.HttpContext.RequestServices.GetService<IOptions<FilterOptions>>().Value?.EnableApiRequestLog == true)
-        {
+        //默认开启日志
+        var filterOptions = context.HttpContext.RequestServices.GetService<IOptions<FilterOptions>>().Value;
+        if (filterOptions == null || filterOptions.EnableApiRequestLog)
+        { 
             //var desc = context.ActionDescriptor as ControllerActionDescriptor;
             var path = context.HttpContext.Request.Path;
             var method = context.HttpContext.Request.Method;
             var parameters = context.ActionArguments.ToJson(JsonExtensions.DefaultSetting);
             var logger = context.HttpContext.RequestServices.GetService<ILogger<ValidateAndPackResultFilter>>();
-            logger.LogInformation("Request: {method} {path} \r\nParams:{params}", method, path, parameters);
+            logger.LogInformation("[ApiLog] Request: {method} {path} \r\nParams:{params}", method, path, parameters);
         }
 
         //请求前
