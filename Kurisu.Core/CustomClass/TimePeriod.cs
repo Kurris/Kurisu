@@ -6,6 +6,25 @@
 public class TimePeriod
 {
     /// <summary>
+    /// ctor
+    /// </summary>
+    public TimePeriod()
+    {
+
+    }
+
+    /// <summary>
+    /// ctor
+    /// </summary>
+    /// <param name="start"></param>
+    /// <param name="end"></param>
+    public TimePeriod(TimeOnly start, TimeOnly end)
+    {
+        Start = start;
+        End = end;
+    }
+
+    /// <summary>
     /// 开始时间
     /// </summary>
     public TimeOnly? Start { get; set; }
@@ -30,19 +49,33 @@ public class TimePeriod
     /// <returns></returns>
     public bool IsDuplicate(TimePeriod period)
     {
-        var currentHours = GetHourPeriod();
-        var hours = period.GetHourPeriod();
-        if (hours.Concat(currentHours).Distinct().Count() != currentHours.Count + hours.Count)
+        return !Check();
+
+        bool Check()
         {
-            if (IsCrossDay() && period.IsCrossDay())
+            if (IsCrossDay())
             {
-                return true;
+                if (period.IsCrossDay())
+                {
+                    return true;
+                }
+                else
+                {
+                    return period.Start > End && period.End < Start;
+                }
             }
-
-            return !(period.Start > End && period.End < Start);
+            else
+            {
+                if (period.IsCrossDay())
+                {
+                    return period.Start > End && period.End < Start;
+                }
+                else
+                {
+                    return period.Start > End || period.End < Start;
+                }
+            }
         }
-
-        return false;
     }
 
     /// <summary>
@@ -50,45 +83,36 @@ public class TimePeriod
     /// </summary>
     /// <param name="dateTime"></param>
     /// <returns></returns>
-    public bool IsPresent(DateTime? dateTime)
+    public bool IsPresent(DateTime dateTime)
     {
-        dateTime ??= DateTime.Now;
-        
-        var nowHour = dateTime.Value.Hour;
-        var nowMin = dateTime.Value.Minute;
-        
-        var hours = GetHourPeriod();
-        
-        if (!hours.Contains(nowHour))
-        {
-            return false;
-        }
+        DateTime start;
+        DateTime end;
 
-        if (nowHour == Start.Value.Hour)
-            return nowMin > Start.Value.Minute;
-        else if (nowHour == End.Value.Hour)
-            return nowMin < End.Value.Minute;
-
-        return true;
-    }
-
-    private IReadOnlyList<int> GetHourPeriod()
-    {
-        var hours = new List<int>();
         if (IsCrossDay())
         {
-            for (int i = 0; i < (25 - Start.Value.Hour); i++)
-                hours.Add(Start.Value.Hour + i);
+            //period = [22:00:00,03:00:00]
+            var currentStart = DateTime.Today.Add(Start.Value.ToTimeSpan());
+            var endOfDay = DateTime.Today.AddDays(1).AddSeconds(-1);
 
-            for (int i = 0; i < End.Value.Hour; i++)
-                hours.Add(i + 1);
+            //assume is left range . then currentStart is 2024-04-16 22:00:00 and endOfDay is 2024-04-16 23:59:59
+            if (dateTime >= currentStart && dateTime <= endOfDay)
+            {
+                start = currentStart; //2024-04-16 22:00:00
+                end = DateTime.Today.AddDays(1).Add(End.Value.ToTimeSpan());//2024-04-17 03:00:00
+            }
+            else
+            {
+
+                start = DateTime.Today.AddDays(-1).Add(Start.Value.ToTimeSpan());
+                end = DateTime.Today.Add(End.Value.ToTimeSpan());
+            }
         }
         else
         {
-            for (int i = Start.Value.Hour; i < End.Value.Hour + 1; i++)
-                hours.Add(i);
+            start = DateTime.Today.Add(Start.Value.ToTimeSpan());
+            end = DateTime.Today.Add(End.Value.ToTimeSpan());
         }
 
-        return hours;
+        return dateTime >= start && dateTime <= end;
     }
 }
