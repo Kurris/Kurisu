@@ -1,4 +1,5 @@
-﻿using System.Linq.Expressions;
+﻿using System.Data;
+using System.Linq.Expressions;
 using Kurisu.Core.DataAccess.Entity;
 using Microsoft.Extensions.DependencyInjection;
 using SqlSugar;
@@ -86,7 +87,11 @@ public interface IDbContext
 
     IUpdateable<T> Updateable<T>() where T : class, new();
 
-    Task<DbResult<T>> UseTransactionAsync<T>(Func<Task<T>> func, Action<Exception> callback = null);
+    Task UseTransactionAsync(Func<Task> func, IsolationLevel isolationLevel = IsolationLevel.RepeatableRead);
 
-    DbResult<T> UseTransaction<T>(Func<T> func, Action<Exception> callback = null);
+    void UseTransaction(Action action, IsolationLevel isolationLevel = IsolationLevel.RepeatableRead);
+
+    Task IgnoreAsync<T>(Func<Task> func);
+
+    void Ignore<T>(Action action);
 }

@@ -4,9 +4,9 @@ using SqlSugar;
 namespace Kurisu.SqlSugar.Extensions;
 
 /// <summary>
-/// 分页扩展
+/// 查询扩展
 /// </summary>
-public static class PageExtensions
+public static class SugarQueryableExtensions
 {
     /// <summary>
     /// 获取数据分页

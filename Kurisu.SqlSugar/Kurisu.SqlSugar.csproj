@@ -5,7 +5,7 @@
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>disable</Nullable>
 		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-		<Version>0.3.2</Version>
+		<Version>0.4.0</Version>
 		<GenerateDocumentationFile>True</GenerateDocumentationFile>
 		<OutputType>Library</OutputType>
 	</PropertyGroup>
@@ -14,7 +14,7 @@
  		<PackageReference Include="Kurisu.Core" Version="0.2.0" />
 		<PackageReference Include="Microsoft.Extensions.Options" Version="6.0.0" />
 		<PackageReference Include="MySqlConnector" Version="2.3.6" />
-		<PackageReference Include="SqlSugarCoreNoDrive" Version="5.1.4.149" />
+		<PackageReference Include="SqlSugarCoreNoDrive" Version="5.1.4.151" />
 	</ItemGroup>
 
 </Project>

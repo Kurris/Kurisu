@@ -1,4 +1,5 @@
-﻿using System.Linq.Expressions;
+﻿using System.Data;
+using System.Linq.Expressions;
 using Kurisu.Core.DataAccess.Entity;
 using Kurisu.Core.User.Abstractions;
 using Microsoft.Extensions.DependencyInjection;
@@ -215,13 +216,66 @@ internal class DbContext : IDbContext
 
     #endregion
 
-    public Task<DbResult<T>> UseTransactionAsync<T>(Func<Task<T>> func, Action<Exception> callback = null)
+    public async Task UseTransactionAsync(Func<Task> func, IsolationLevel isolationLevel = IsolationLevel.RepeatableRead)
     {
-        return _db.Ado.UseTranAsync(func, callback);
+        await _db.Ado.BeginTranAsync(isolationLevel);
+        try
+        {
+            await func();
+            await _db.Ado.CommitTranAsync();
+        }
+        catch (Exception)
+        {
+            await _db.Ado.RollbackTranAsync();
+            throw;
+        }
     }
 
-    public DbResult<T> UseTransaction<T>(Func<T> func, Action<Exception> callback = null)
+    public void UseTransaction(Action action, IsolationLevel isolationLevel = IsolationLevel.RepeatableRead)
     {
-        return _db.Ado.UseTran(func, callback);
+        _db.Ado.BeginTran(isolationLevel);
+        try
+        {
+            action();
+            _db.Ado.CommitTran();
+        }
+        catch (Exception)
+        {
+            _db.Ado.RollbackTran();
+            throw;
+        }
+    }
+
+
+    public async Task IgnoreAsync<T>(Func<Task> func)
+    {
+        try
+        {
+            Client.QueryFilter.ClearAndBackup<T>();
+            if (typeof(T) == typeof(ITenantId)) _sqlSugarOptionsService.IgnoreTenant = true;
+
+            await func();
+        }
+        finally
+        {
+            Client.QueryFilter.Restore();
+            if (typeof(T) == typeof(ITenantId)) _sqlSugarOptionsService.IgnoreTenant = false;
+        }
+    }
+
+    public void Ignore<T>(Action action)
+    {
+        try
+        {
+            Client.QueryFilter.ClearAndBackup<T>();
+            if (typeof(T) == typeof(ITenantId)) _sqlSugarOptionsService.IgnoreTenant = true;
+
+            action();
+        }
+        finally
+        {
+            Client.QueryFilter.Restore();
+            if (typeof(T) == typeof(ITenantId)) _sqlSugarOptionsService.IgnoreTenant = false;
+        }
     }
 }
