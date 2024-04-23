@@ -7,7 +7,12 @@ namespace Kurisu.AspNetCore.EventBus.Abstractions.Handler;
 /// 消息分发
 /// </summary>
 /// <typeparam name="TNotification"></typeparam>
-public interface IAsyncNotificationHandler<in TNotification> : IScopeDependency where TNotification : INotificationMessage
+public interface IAsyncNotificationHandler<in TNotification> : IScopeDependency where TNotification : INotifyMessage
 {
+    /// <summary>
+    /// 执行
+    /// </summary>
+    /// <param name="message"></param>
+    /// <returns></returns>
     Task InvokeAsync(TNotification message);
 }

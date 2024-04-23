@@ -9,7 +9,7 @@ public interface IEventBus
 {
     Task PublishAsync<TMessage>(TMessage message) where TMessage : IAsyncChannelMessage;
 
-    Task NotificationAsync<TNotification>(TNotification notification) where TNotification : INotificationMessage;
+    Task NotifyAsync<TNotification>(TNotification notification) where TNotification : INotifyMessage;
     
-    Task NotificationSequenceAsync<TNotification>(TNotification notification) where TNotification : INotificationMessage;
+    Task NotifySequenceAsync<TNotification>(TNotification notification) where TNotification : INotifyMessage;
 }

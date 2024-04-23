@@ -25,11 +25,12 @@
     </ItemGroup>
 
     <ItemGroup>
-        <PackageReference Include="Grpc.AspNetCore" Version="2.50.0" />
-        <PackageReference Include="Kurisu.AspNetCore" Version="0.5.5" />
-        <PackageReference Include="Kurisu.RemoteCall" Version="0.1.0" />
-        <PackageReference Include="Kurisu.SqlSugar" Version="0.1.2" />
-        <PackageReference Include="Serilog.Sinks.Async" Version="1.5.0" />
+      <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="6.0.28" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\Kurisu.AspNetCore\Kurisu.AspNetCore.csproj" />
+      <ProjectReference Include="..\Kurisu.RemoteCall\Kurisu.RemoteCall.csproj" />
     </ItemGroup>
 
     <ItemGroup>

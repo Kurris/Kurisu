@@ -2,9 +2,17 @@
 
 namespace Kurisu.Test.WebApi_A
 {
-    public class TestRequest
+    public class TestRequest : IValidatableObject
     {
         [Required]
-        public string Name { get; set; }
+        public string uniqueId { get; set; }
+        public string status { get; set; }
+
+        public string msg { get; set; }
+
+        public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
+        {
+            yield break;
+        }
     }
 }

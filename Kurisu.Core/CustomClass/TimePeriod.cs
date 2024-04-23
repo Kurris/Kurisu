@@ -91,26 +91,25 @@ public class TimePeriod
         if (IsCrossDay())
         {
             //period = [22:00:00,03:00:00]
-            var currentStart = DateTime.Today.Add(Start.Value.ToTimeSpan());
-            var endOfDay = DateTime.Today.AddDays(1).AddSeconds(-1);
+            var currentStart = dateTime.Date.Add(Start.Value.ToTimeSpan());
+            var endOfDay = dateTime.Date.AddDays(1).AddSeconds(-1);
 
             //assume is left range . then currentStart is 2024-04-16 22:00:00 and endOfDay is 2024-04-16 23:59:59
             if (dateTime >= currentStart && dateTime <= endOfDay)
             {
                 start = currentStart; //2024-04-16 22:00:00
-                end = DateTime.Today.AddDays(1).Add(End.Value.ToTimeSpan());//2024-04-17 03:00:00
+                end = dateTime.Date.AddDays(1).Add(End.Value.ToTimeSpan());//2024-04-17 03:00:00
             }
             else
             {
-
-                start = DateTime.Today.AddDays(-1).Add(Start.Value.ToTimeSpan());
-                end = DateTime.Today.Add(End.Value.ToTimeSpan());
+                start = dateTime.Date.AddDays(-1).Add(Start.Value.ToTimeSpan());
+                end = dateTime.Date.Add(End.Value.ToTimeSpan());
             }
         }
         else
         {
-            start = DateTime.Today.Add(Start.Value.ToTimeSpan());
-            end = DateTime.Today.Add(End.Value.ToTimeSpan());
+            start = dateTime.Date.Add(Start.Value.ToTimeSpan());
+            end = dateTime.Date.Add(End.Value.ToTimeSpan());
         }
 
         return dateTime >= start && dateTime <= end;

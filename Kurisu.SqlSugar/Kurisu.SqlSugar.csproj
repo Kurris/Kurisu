@@ -11,10 +11,13 @@
 	</PropertyGroup>
 
 	<ItemGroup>
- 		<PackageReference Include="Kurisu.Core" Version="0.2.0" />
 		<PackageReference Include="Microsoft.Extensions.Options" Version="6.0.0" />
 		<PackageReference Include="MySqlConnector" Version="2.3.6" />
-		<PackageReference Include="SqlSugarCoreNoDrive" Version="5.1.4.151" />
+		<PackageReference Include="SqlSugarCoreNoDrive" Version="5.1.4.152" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <ProjectReference Include="..\Kurisu.Core\Kurisu.Core.csproj" />
 	</ItemGroup>
 
 </Project>

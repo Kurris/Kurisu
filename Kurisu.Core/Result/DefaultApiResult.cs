@@ -1,4 +1,5 @@
 using System.ComponentModel;
+using Kurisu.Core.CustomClass;
 using Kurisu.Core.Result.Abstractions;
 using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json;
@@ -95,6 +96,21 @@ public class DefaultApiResult<T> : IApiResult
             Code = ApiStateCode.Error,
             Msg = errorMessage
         };
+    }
+
+    /// <summary>
+    /// 确保成功状态
+    /// </summary>
+    /// <returns></returns>
+    /// <exception cref="UserFriendlyException"></exception>
+    public T EnsureSuccessStatusCode()
+    {
+        if (Code != ApiStateCode.Success)
+        {
+            throw new UserFriendlyException(Msg);
+        }
+
+        return Data;
     }
 }
 

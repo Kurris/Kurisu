@@ -24,6 +24,7 @@ public class SugarBaseEntity : BaseEntity<long, int>
     /// <summary>
     /// 创建时间
     /// </summary>
+    [SugarColumn(IndexGroupNameList = new[] { "idx_createtime" })]
     [InsertDateTimeGeneration]
     public override DateTime CreateTime { get; set; }
 

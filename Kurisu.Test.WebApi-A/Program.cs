@@ -1,7 +1,10 @@
+using Kurisu.AspNetCore.EventBus.Extensions;
+using Kurisu.AspNetCore.EventBus.Internal;
 using Kurisu.AspNetCore.Startup;
 using Kurisu.AspNetCore.Utils.Extensions;
 using Kurisu.SqlSugar.Extensions;
 using Kurisu.Startup;
+using Kurisu.Test.WebApi_A.AutoReload;
 using Microsoft.IdentityModel.Logging;
 using SqlSugar;
 
@@ -11,7 +14,9 @@ class Program
 {
     public static void Main(string[] args)
     {
-        KurisuHost.Run<Startup>(true, args);
+        KurisuHost.Builder(args)
+            .EnableAppSettingsReload()
+            .RunKurisu<Startup>();
     }
 }
 
@@ -22,7 +27,7 @@ public class Startup : DefaultStartup
         IdentityModelEventSource.ShowPII = true;
     }
 
-    public override void ConfigureServices(IServiceCollection services)
+    public override async void ConfigureServices(IServiceCollection services)
     {
         base.ConfigureServices(services);
 
@@ -49,12 +54,14 @@ public class Startup : DefaultStartup
                  }
             };
         });
+
+        services.AddRedis();
+        services.AddEventBus();
     }
 
     public override void Configure(IApplicationBuilder app, IWebHostEnvironment env)
     {
         base.Configure(app, env);
-
-        //app.UseSnowFlakeInit();
+        app.UseSnowFlakeDistributedInitialize();
     }
 }

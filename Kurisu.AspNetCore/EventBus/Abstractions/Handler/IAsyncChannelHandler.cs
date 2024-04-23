@@ -1,3 +1,4 @@
+using System;
 using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -10,9 +11,10 @@ namespace Kurisu.AspNetCore.EventBus.Abstractions.Handler;
 public interface IAsyncChannelHandler<in TMessage> : ISingletonDependency where TMessage : IAsyncChannelMessage
 {
     /// <summary>
-    /// 接受管道信息并且执行方法
+    /// 执行
     /// </summary>
+    /// <param name="serviceProvider"></param>
     /// <param name="message"></param>
     /// <returns></returns>
-    Task InvokeAsync(TMessage message);
+    Task InvokeAsync(IServiceProvider serviceProvider, TMessage message);
 }

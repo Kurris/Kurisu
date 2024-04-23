@@ -13,12 +13,13 @@ namespace Kurisu.AspNetCore.EventBus.Internal;
 [SkipScan]
 internal class InternalEventBus : IEventBus
 {
+
     public Task PublishAsync<TMessage>(TMessage message) where TMessage : IAsyncChannelMessage
     {
         return AsyncChannelContext<TMessage>.PublishAsync(message);
     }
 
-    public Task NotificationAsync<TNotification>(TNotification notification) where TNotification : INotificationMessage
+    public Task NotifyAsync<TNotification>(TNotification notification) where TNotification : INotifyMessage
     {
         //todo pipeline
         return Scoped.Request.Value.CreateAsync(sp =>
@@ -31,7 +32,7 @@ internal class InternalEventBus : IEventBus
     }
 
 
-    public Task NotificationSequenceAsync<TNotification>(TNotification notification) where TNotification : INotificationMessage
+    public Task NotifySequenceAsync<TNotification>(TNotification notification) where TNotification : INotifyMessage
     {
         //todo pipeline
         return Scoped.Request.Value.CreateAsync(async sp =>

@@ -46,7 +46,10 @@ public static class OAuth2AuthenticationServiceCollectionExtensions
             });
 
         services.AddOptions<JwtBearerOptions>(JwtBearerDefaults.AuthenticationScheme)
-            .Configure<IHttpClientFactory>((configureOptions, httpClientFactory) => { configureOptions.Backchannel = httpClientFactory.CreateClient("AuthenticationBackchannel"); });
+            .Configure<IHttpClientFactory>((configureOptions, httpClientFactory) =>
+            {
+                configureOptions.Backchannel = httpClientFactory.CreateClient("AuthenticationBackchannel");
+            });
 
         var builder = services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             .AddJwtBearer(configureOptions =>
@@ -61,6 +64,12 @@ public static class OAuth2AuthenticationServiceCollectionExtensions
                 configureOptions.TokenValidationParameters.ValidAudience = options.Audience;
 
                 configureOptions.TokenValidationParameters.ValidTypes = new[] { "at+jwt" };
+
+
+                //configureOptions.Events.OnMessageReceived = context =>
+                //{
+                //    context.Token
+                //};
 
                 //person access token
                 if (options.Pat.Enable)

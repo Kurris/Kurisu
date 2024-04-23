@@ -5,16 +5,31 @@ namespace Kurisu.AspNetCore.Utils.Extensions;
 /// </summary>
 public static class StringExtensions
 {
+    /// <summary>
+    /// 不存在值
+    /// </summary>
+    /// <param name="str"></param>
+    /// <returns></returns>
     public static bool IsEmpty(this string str)
     {
         return string.IsNullOrEmpty(str);
     }
 
+    /// <summary>
+    /// 存在值
+    /// </summary>
+    /// <param name="str"></param>
+    /// <returns></returns>
     public static bool IsPresent(this string str)
     {
         return !str.IsEmpty();
     }
 
+    /// <summary>
+    /// null或者有空白
+    /// </summary>
+    /// <param name="str"></param>
+    /// <returns></returns>
     public static bool IsWhiteSpace(this string str)
     {
         return string.IsNullOrWhiteSpace(str);

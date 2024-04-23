@@ -30,7 +30,7 @@ public class ValidateAndPackResultFilter : IAsyncActionFilter, IAsyncResultFilte
         //默认开启日志
         var filterOptions = context.HttpContext.RequestServices.GetService<IOptions<FilterOptions>>().Value;
         if (filterOptions == null || filterOptions.EnableApiRequestLog)
-        { 
+        {
             //var desc = context.ActionDescriptor as ControllerActionDescriptor;
             var path = context.HttpContext.Request.Path;
             var method = context.HttpContext.Request.Method;
@@ -68,12 +68,12 @@ public class ValidateAndPackResultFilter : IAsyncActionFilter, IAsyncResultFilte
             var msg = string.Empty;
             if (!errorResults.Any())
             {
-                msg = ":请求参数为空";
+                msg = ":参数为空";
             }
             else
             {
-                var es = errorResults.Select(x => x.Message);
-                msg = "\r\n" + es.Join("\r\n");
+                var es = errorResults.Select(x => x.Message).Distinct();
+                msg = ":" + es.Join(",");
             }
 
             //包装验证错误信息
