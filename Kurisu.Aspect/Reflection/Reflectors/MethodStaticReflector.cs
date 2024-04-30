@@ -2,13 +2,12 @@
 using System.Reflection.Emit;
 using Kurisu.Aspect.Core.Utils;
 using Kurisu.Aspect.Reflection.Emit;
-using Kurisu.Aspect.Reflection.Extensions;
 
-namespace Kurisu.Aspect.Reflection;
+namespace Kurisu.Aspect.Reflection.Reflectors;
 
-internal class CallMethodReflector : MethodReflector
+internal class MethodStaticReflector : MethodReflector
 {
-    public CallMethodReflector(MethodInfo reflectionInfo)
+    public MethodStaticReflector(MethodInfo reflectionInfo)
         : base(reflectionInfo)
     {
     }
@@ -20,15 +19,6 @@ internal class CallMethodReflector : MethodReflector
 
         var ilGen = dynamicMethod.GetILGenerator();
         var parameterTypes = Current.GetParameterTypes();
-
-        ilGen.EmitLoadArgument(0);
-        ilGen.EmitConvertFromObject(Current.DeclaringType);
-        if (Current.DeclaringType!.GetTypeInfo().IsValueType)
-        {
-            var local = ilGen.DeclareLocal(Current.DeclaringType);
-            ilGen.Emit(OpCodes.Stloc, local);
-            ilGen.Emit(OpCodes.Ldloca, local);
-        }
 
         if (parameterTypes.Length == 0)
         {
@@ -58,7 +48,7 @@ internal class CallMethodReflector : MethodReflector
             ilGen.Emit(OpCodes.Ldelem_Ref);
             if (parameterTypes[i].IsByRef)
             {
-                var defType = parameterTypes[i].GetElementType();
+                var defType = parameterTypes[i].GetElementType()!;
                 var indexedLocal = new IndexedLocalBuilder(ilGen.DeclareLocal(defType), i);
                 indexedLocals[index++] = indexedLocal;
                 ilGen.EmitConvertFromObject(defType);
@@ -73,12 +63,12 @@ internal class CallMethodReflector : MethodReflector
 
         return CreateDelegate(() =>
         {
-            for (var i = 0; i < indexedLocals.Length; i++)
+            foreach (var t in indexedLocals)
             {
                 ilGen.EmitLoadArgument(1);
-                ilGen.EmitInt(indexedLocals[i].Index);
-                ilGen.Emit(OpCodes.Ldloc, indexedLocals[i].LocalBuilder);
-                ilGen.EmitConvertToObject(indexedLocals[i].LocalType);
+                ilGen.EmitInt(t.Index);
+                ilGen.Emit(OpCodes.Ldloc, t.LocalBuilder);
+                ilGen.EmitConvertToObject(t.LocalType);
                 ilGen.Emit(OpCodes.Stelem_Ref);
             }
         });
@@ -93,5 +83,15 @@ internal class CallMethodReflector : MethodReflector
             ilGen.Emit(OpCodes.Ret);
             return (Func<object, object[], object>)dynamicMethod.CreateDelegate(typeof(Func<object, object[], object>));
         }
+    }
+
+    public override object Invoke(object instance, params object[] parameters)
+    {
+        return Invoker(null, parameters);
+    }
+
+    public override object StaticInvoke(params object[] parameters)
+    {
+        return Invoker(null, parameters);
     }
 }

@@ -1,10 +1,10 @@
 ﻿using System.Reflection;
 
-namespace Kurisu.Aspect.Reflection;
+namespace Kurisu.Aspect.Reflection.Reflectors;
 
-internal class OpenGenericMethodReflector : MethodReflector
+internal class MethodOpenGenericReflector : MethodReflector
 {
-    public OpenGenericMethodReflector(MethodInfo reflectionInfo)
+    public MethodOpenGenericReflector(MethodInfo reflectionInfo)
         : base(reflectionInfo)
     {
     }

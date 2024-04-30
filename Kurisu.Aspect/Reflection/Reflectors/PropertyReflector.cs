@@ -2,17 +2,17 @@
 using System.Reflection.Emit;
 using Kurisu.Aspect.Reflection.Emit;
 
-namespace Kurisu.Aspect.Reflection;
+namespace Kurisu.Aspect.Reflection.Reflectors;
 
-internal class FieldReflector : MemberReflector<FieldInfo>
+internal class PropertyReflector : MemberReflector<PropertyInfo>
 {
     protected Func<object, object> Getter { get; }
     protected Action<object, object> Setter { get; }
 
-    public FieldReflector(FieldInfo reflectionInfo) : base(reflectionInfo)
+    public PropertyReflector(PropertyInfo reflectionInfo) : base(reflectionInfo)
     {
-        Getter = CreateGetter();
-        Setter = CreateSetter();
+        Getter = reflectionInfo.CanRead ? CreateGetter() : ins => throw new InvalidOperationException($"Property {Current.Name} does not define get accessor.");
+        Setter = reflectionInfo.CanWrite ? CreateSetter() : (ins, val) => { throw new InvalidOperationException($"Property {Current.Name} does not define get accessor."); };
     }
 
     protected virtual Func<object, object> CreateGetter()
@@ -21,8 +21,9 @@ internal class FieldReflector : MemberReflector<FieldInfo>
         var ilGen = dynamicMethod.GetILGenerator();
         ilGen.EmitLoadArgument(0);
         ilGen.EmitConvertFromObject(Current.DeclaringType);
-        ilGen.Emit(OpCodes.Ldfld, Current);
-        ilGen.EmitConvertToObject(Current.FieldType);
+        ilGen.Emit(OpCodes.Callvirt, Current.GetMethod!);
+        if (Current.PropertyType.GetTypeInfo().IsValueType)
+            ilGen.EmitConvertToObject(Current.PropertyType);
         ilGen.Emit(OpCodes.Ret);
         return (Func<object, object>)dynamicMethod.CreateDelegate(typeof(Func<object, object>));
     }
@@ -34,8 +35,8 @@ internal class FieldReflector : MemberReflector<FieldInfo>
         ilGen.EmitLoadArgument(0);
         ilGen.EmitConvertFromObject(Current.DeclaringType);
         ilGen.EmitLoadArgument(1);
-        ilGen.EmitConvertFromObject(Current.FieldType);
-        ilGen.Emit(OpCodes.Stfld, Current);
+        ilGen.EmitConvertFromObject(Current.PropertyType);
+        ilGen.Emit(OpCodes.Callvirt, Current.SetMethod!);
         ilGen.Emit(OpCodes.Ret);
         return (Action<object, object>)dynamicMethod.CreateDelegate(typeof(Action<object, object>));
     }
@@ -47,7 +48,7 @@ internal class FieldReflector : MemberReflector<FieldInfo>
             throw new ArgumentNullException(nameof(instance));
         }
 
-        return Getter(instance);
+        return Getter.Invoke(instance);
     }
 
     public virtual void SetValue(object instance, object value)
@@ -62,11 +63,11 @@ internal class FieldReflector : MemberReflector<FieldInfo>
 
     public virtual object GetStaticValue()
     {
-        throw new InvalidOperationException($"Field {Current.Name} must be static to call this method. For get instance field value, call 'GetValue'.");
+        throw new InvalidOperationException($"Property {Current.Name} must be static to call this method. For get instance property value, call 'GetValue'.");
     }
 
     public virtual void SetStaticValue(object value)
     {
-        throw new InvalidOperationException($"Field {Current.Name} must be static to call this method. For set instance field value, call 'SetValue'.");
+        throw new InvalidOperationException($"Property {Current.Name} must be static to call this method. For set instance property value, call 'SetValue'.");
     }
 }

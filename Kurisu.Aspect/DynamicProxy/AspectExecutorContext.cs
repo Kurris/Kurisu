@@ -18,7 +18,7 @@ namespace Kurisu.Aspect.DynamicProxy
         public object[] Parameters { get; }
 
         public AspectExecutorContext(MethodInfo serviceMethod, MethodInfo targetMethod, MethodInfo proxyMethod,
-            object targetInstance, object proxyInstance, object[] parameters)
+            object targetInstance, object proxyInstance,  object[] parameters)
         {
             ServiceMethod = serviceMethod;
             TargetMethod = targetMethod;

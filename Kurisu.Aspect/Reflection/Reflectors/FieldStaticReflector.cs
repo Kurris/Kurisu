@@ -2,20 +2,19 @@
 using System.Reflection.Emit;
 using Kurisu.Aspect.Reflection.Emit;
 
-namespace Kurisu.Aspect.Reflection;
+namespace Kurisu.Aspect.Reflection.Reflectors;
 
-internal class FieldEnumReflector : FieldReflector
+internal class FieldStaticReflector : FieldReflector
 {
-    public FieldEnumReflector(FieldInfo reflectionInfo) : base(reflectionInfo)
+    public FieldStaticReflector(FieldInfo reflectionInfo) : base(reflectionInfo)
     {
     }
 
     protected override Func<object, object> CreateGetter()
     {
-        var dynamicMethod = new DynamicMethod($"getter-{Guid.NewGuid()}", typeof(object), new[] { typeof(object) }, Current.Module, true);
+        var dynamicMethod = new DynamicMethod($"getter-{Guid.NewGuid()}", typeof(object), new Type[] { typeof(object) }, Current.Module, true);
         var ilGen = dynamicMethod.GetILGenerator();
-        var value = Current.GetValue(null);
-        ilGen.EmitConstant(value, Current.FieldType);
+        ilGen.Emit(OpCodes.Ldsfld, Current);
         ilGen.EmitConvertToObject(Current.FieldType);
         ilGen.Emit(OpCodes.Ret);
         return (Func<object, object>)dynamicMethod.CreateDelegate(typeof(Func<object, object>));
@@ -23,8 +22,11 @@ internal class FieldEnumReflector : FieldReflector
 
     protected override Action<object, object> CreateSetter()
     {
-        var dynamicMethod = new DynamicMethod($"setter-{Guid.NewGuid()}", typeof(void), new[] { typeof(object), typeof(object) }, Current.Module, true);
+        var dynamicMethod = new DynamicMethod($"setter-{Guid.NewGuid()}", typeof(void), new Type[] { typeof(object), typeof(object) }, Current.Module, true);
         var ilGen = dynamicMethod.GetILGenerator();
+        ilGen.EmitLoadArgument(1);
+        ilGen.EmitConvertFromObject(Current.FieldType);
+        ilGen.Emit(OpCodes.Stsfld, Current);
         ilGen.Emit(OpCodes.Ret);
         return (Action<object, object>)dynamicMethod.CreateDelegate(typeof(Action<object, object>));
     }
@@ -36,7 +38,7 @@ internal class FieldEnumReflector : FieldReflector
 
     public override void SetValue(object instance, object value)
     {
-        throw new FieldAccessException("Cannot set a constant field");
+        Setter(null, value);
     }
 
     public override object GetStaticValue()
@@ -46,6 +48,6 @@ internal class FieldEnumReflector : FieldReflector
 
     public override void SetStaticValue(object value)
     {
-        throw new FieldAccessException("Cannot set a constant field");
+        Setter(null, value);
     }
 }

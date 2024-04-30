@@ -1,16 +1,19 @@
 ﻿using Kurisu.Aspect.Core.DynamicProxy;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace Kurisu.Aspect
+namespace Kurisu.Aspect;
+
+public static class DependenceInjectionExtensions
 {
-    public static class DependenceInjectionExtensions
+    /// <summary>
+    /// 启用动态代理
+    /// </summary>
+    /// <param name="services"></param>
+    public static void AddAspect(this IServiceCollection services)
     {
-        public static void AddAspect(this IServiceCollection services)
-        {
-            services.AddSingleton<IAspectExecutorFactory, AspectExecutorFactory>();
-            services.AddSingleton<AspectBuilderFactory>();
-            services.AddSingleton(typeof(AspectCaching<,>));
-            services.AddSingleton<InterceptorCollector>();
-        }
+        services.AddSingleton<IAspectExecutorFactory, AspectExecutorFactory>();
+        services.AddSingleton<AspectBuilderFactory>();
+        services.AddSingleton(typeof(AspectCaching<,>));
+        services.AddSingleton<InterceptorCollector>();
     }
 }

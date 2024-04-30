@@ -1,6 +1,6 @@
 ﻿using System.Reflection;
 
-namespace Kurisu.Aspect.Reflection;
+namespace Kurisu.Aspect.Reflection.Reflectors;
 
 /// <summary>
 /// 成员反射器

@@ -1,5 +1,6 @@
 ﻿using System.Reflection;
 using Kurisu.Aspect.Reflection.Internals;
+using Kurisu.Aspect.Reflection.Reflectors;
 
 namespace Kurisu.Aspect.Reflection.Factories;
 
@@ -17,17 +18,17 @@ internal static class MethodReflectorFactory
             var methodInfo = item.Item1;
             if (methodInfo.ContainsGenericParameters)
             {
-                return new OpenGenericMethodReflector(methodInfo);
+                return new MethodOpenGenericReflector(methodInfo);
             }
 
             if (methodInfo.IsStatic)
             {
-                return new StaticMethodReflector(methodInfo);
+                return new MethodStaticReflector(methodInfo);
             }
 
             if (methodInfo.DeclaringType!.GetTypeInfo().IsValueType || callOption == CallOptions.Call)
             {
-                return new CallMethodReflector(methodInfo);
+                return new MethodCallReflector(methodInfo);
             }
 
             return new MethodReflector(methodInfo);

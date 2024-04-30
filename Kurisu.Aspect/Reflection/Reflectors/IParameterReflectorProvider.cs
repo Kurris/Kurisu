@@ -1,4 +1,4 @@
-﻿namespace Kurisu.Aspect.Reflection;
+﻿namespace Kurisu.Aspect.Reflection.Reflectors;
 
 internal interface IParameterReflectorProvider
 {

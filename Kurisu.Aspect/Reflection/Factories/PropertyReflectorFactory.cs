@@ -1,5 +1,6 @@
 ﻿using System.Reflection;
 using Kurisu.Aspect.Reflection.Internals;
+using Kurisu.Aspect.Reflection.Reflectors;
 
 namespace Kurisu.Aspect.Reflection.Factories;
 
@@ -17,17 +18,17 @@ internal static class PropertyReflectorFactory
             var property = item.Item1;
             if (property.DeclaringType!.GetTypeInfo().ContainsGenericParameters)
             {
-                return new PropertyReflector.OpenGenericPropertyReflector(property);
+                return new PropertyOpenGenericReflector(property);
             }
 
             if ((property.CanRead && property.GetMethod!.IsStatic) || (property.CanWrite && property.SetMethod!.IsStatic))
             {
-                return new PropertyReflector.StaticPropertyReflector(property);
+                return new PropertyStaticReflector(property);
             }
 
             if (property.DeclaringType.GetTypeInfo().IsValueType || item.Item2 == CallOptions.Call)
             {
-                return new PropertyReflector.CallPropertyReflector(property);
+                return new PropertyCallReflector(property);
             }
 
             return new PropertyReflector(property);

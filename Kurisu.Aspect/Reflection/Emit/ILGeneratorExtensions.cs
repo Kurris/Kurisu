@@ -48,15 +48,8 @@ internal static class ILGeneratorExtensions
 
     public static void EmitConvertToObject(this ILGenerator ilGenerator, Type typeFrom)
     {
-        if (ilGenerator == null)
-        {
-            throw new ArgumentNullException(nameof(ilGenerator));
-        }
-
-        if (typeFrom == null)
-        {
-            throw new ArgumentNullException(nameof(typeFrom));
-        }
+        if (ilGenerator == null) throw new ArgumentNullException(nameof(ilGenerator));
+        if (typeFrom == null) throw new ArgumentNullException(nameof(typeFrom));
 
         if (typeFrom.GetTypeInfo().IsGenericParameter)
         {
@@ -64,21 +57,14 @@ internal static class ILGeneratorExtensions
         }
         else
         {
-            ilGenerator.EmitConvertToType(typeFrom, typeof(object), true);
+            ilGenerator.EmitConvertToType(typeFrom, typeof(object));
         }
     }
 
     public static void EmitConvertFromObject(this ILGenerator ilGenerator, Type typeTo)
     {
-        if (ilGenerator == null)
-        {
-            throw new ArgumentNullException(nameof(ilGenerator));
-        }
-
-        if (typeTo == null)
-        {
-            throw new ArgumentNullException(nameof(typeTo));
-        }
+        if (ilGenerator == null) throw new ArgumentNullException(nameof(ilGenerator));
+        if (typeTo == null) throw new ArgumentNullException(nameof(typeTo));
 
         if (typeTo.GetTypeInfo().IsGenericParameter)
         {
@@ -86,7 +72,7 @@ internal static class ILGeneratorExtensions
         }
         else
         {
-            ilGenerator.EmitConvertToType(typeof(object), typeTo, true);
+            ilGenerator.EmitConvertToType(typeof(object), typeTo);
         }
     }
 
@@ -113,63 +99,35 @@ internal static class ILGeneratorExtensions
         }
 
         ilGenerator.Emit(OpCodes.Ldtoken, type);
-        ilGenerator.Emit(OpCodes.Call, MethodInfoConstant.GetTypeFromHandle);
+        ilGenerator.EmitMethodCall(MethodInfoConstant.GetTypeFromHandle);
+    }
+
+    private static void EmitMethodCall(this ILGenerator ilGenerator, MethodInfo method)
+    {
+        ilGenerator.Emit(OpCodes.Call, method);
     }
 
     public static void EmitMethod(this ILGenerator ilGenerator, MethodInfo method)
     {
-        if (ilGenerator == null)
-        {
-            throw new ArgumentNullException(nameof(ilGenerator));
-        }
-
-        if (method == null)
-        {
-            throw new ArgumentNullException(nameof(method));
-        }
+        if (ilGenerator == null) throw new ArgumentNullException(nameof(ilGenerator));
+        if (method == null) throw new ArgumentNullException(nameof(method));
 
         EmitMethod(ilGenerator, method, method.DeclaringType);
     }
 
-    public static void EmitMethod(this ILGenerator ilGenerator, MethodInfo method, Type declaringType)
+    private static void EmitMethod(this ILGenerator ilGenerator, MethodInfo method, Type declaringType)
     {
-        if (ilGenerator == null)
-        {
-            throw new ArgumentNullException(nameof(ilGenerator));
-        }
-
-        if (method == null)
-        {
-            throw new ArgumentNullException(nameof(method));
-        }
-
-        if (declaringType == null)
-        {
-            throw new ArgumentNullException(nameof(declaringType));
-        }
-
         ilGenerator.Emit(OpCodes.Ldtoken, method);
         ilGenerator.Emit(OpCodes.Ldtoken, declaringType);
-        ilGenerator.Emit(OpCodes.Call, MethodInfoConstant.GetMethodFromHandle);
+        ilGenerator.EmitMethodCall(MethodInfoConstant.GetMethodFromHandle);
         ilGenerator.EmitConvertToType(typeof(MethodBase), typeof(MethodInfo));
     }
 
     public static void EmitConvertToType(this ILGenerator ilGenerator, Type typeFrom, Type typeTo, bool isChecked = true)
     {
-        if (ilGenerator == null)
-        {
-            throw new ArgumentNullException(nameof(ilGenerator));
-        }
-
-        if (typeFrom == null)
-        {
-            throw new ArgumentNullException(nameof(typeFrom));
-        }
-
-        if (typeTo == null)
-        {
-            throw new ArgumentNullException(nameof(typeTo));
-        }
+        if (ilGenerator == null) throw new ArgumentNullException(nameof(ilGenerator));
+        if (typeFrom == null) throw new ArgumentNullException(nameof(typeFrom));
+        if (typeTo == null) throw new ArgumentNullException(nameof(typeTo));
 
         var typeFromInfo = typeFrom.GetTypeInfo();
         var typeToInfo = typeTo.GetTypeInfo();
@@ -186,8 +144,8 @@ internal static class ILGeneratorExtensions
             typeToInfo.IsInterface ||
             typeFrom == typeof(object) || // boxing cast
             typeTo == typeof(object) ||
-            typeFrom == typeof(System.Enum) ||
-            typeFrom == typeof(System.ValueType) ||
+            typeFrom == typeof(Enum) ||
+            typeFrom == typeof(ValueType) ||
             TypeInfoUtils.IsLegalExplicitVariantDelegateConversion(typeFromInfo, typeToInfo))
         {
             ilGenerator.EmitCastToType(typeFromInfo, typeToInfo);
@@ -243,19 +201,19 @@ internal static class ILGeneratorExtensions
         }
 
         MethodInfo mi = nullableType.GetTypeInfo().GetMethod("get_HasValue", BindingFlags.Instance | BindingFlags.Public);
-        ilGenerator.Emit(OpCodes.Call, mi);
+        ilGenerator.EmitMethodCall(mi!);
     }
 
     public static void EmitGetValueOrDefault(this ILGenerator ilGenerator, Type nullableType)
     {
         MethodInfo mi = nullableType.GetTypeInfo().GetMethod("GetValueOrDefault", Type.EmptyTypes);
-        ilGenerator.Emit(OpCodes.Call, mi);
+        ilGenerator.EmitMethodCall(mi!);
     }
 
     public static void EmitGetValue(this ILGenerator ilGenerator, Type nullableType)
     {
-        MethodInfo mi = nullableType.GetTypeInfo().GetMethod("get_Value", BindingFlags.Instance | BindingFlags.Public);
-        ilGenerator.Emit(OpCodes.Call, mi);
+        var mi = nullableType.GetTypeInfo().GetMethod("get_Value", BindingFlags.Instance | BindingFlags.Public);
+        ilGenerator.EmitMethodCall(mi!);
     }
 
     public static void EmitConstant(this ILGenerator ilGenerator, object value, Type valueType)
@@ -281,8 +239,7 @@ internal static class ILGeneratorExtensions
             return;
         }
 
-        var t = value as Type;
-        if (t != null)
+        if (value is Type t)
         {
             ilGenerator.EmitType(t);
             if (valueType != typeof(Type))
@@ -584,7 +541,7 @@ internal static class ILGeneratorExtensions
         {
             ilGenerator.Emit(OpCodes.Dup);
             ilGenerator.EmitInt(i);
-            var constantType = items.GetValue(i).GetType();
+            var constantType = items.GetValue(i)!.GetType();
             if (constantType == elementType)
             {
                 ilGenerator.EmitConstant(items.GetValue(i), elementType);
@@ -814,6 +771,7 @@ internal static class ILGeneratorExtensions
     {
         bool isTypeFromNullable = typeFrom.IsNullableType();
         bool isTypeToNullable = typeTo.IsNullableType();
+
         if (isTypeFromNullable && isTypeToNullable)
             ilGenerator.EmitNullableToNullableConversion(typeFrom, typeTo, isChecked);
         else if (isTypeFromNullable)
@@ -861,8 +819,7 @@ internal static class ILGeneratorExtensions
 
     private static void EmitNullableToNonNullableStructConversion(this ILGenerator ilGenerator, TypeInfo typeFrom, TypeInfo typeTo, bool isChecked)
     {
-        LocalBuilder locFrom = null;
-        locFrom = ilGenerator.DeclareLocal(typeFrom.AsType());
+        LocalBuilder locFrom = ilGenerator.DeclareLocal(typeFrom.AsType());
         ilGenerator.Emit(OpCodes.Stloc, locFrom);
         ilGenerator.Emit(OpCodes.Ldloca, locFrom);
         ilGenerator.EmitGetValue(typeFrom.AsType());

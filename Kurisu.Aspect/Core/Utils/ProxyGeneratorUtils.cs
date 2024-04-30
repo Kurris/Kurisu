@@ -3,9 +3,9 @@ using System.Reflection;
 using System.Reflection.Emit;
 using Kurisu.Aspect.Core.DynamicProxy;
 using Kurisu.Aspect.DynamicProxy;
-using Kurisu.Aspect.Reflection;
 using Kurisu.Aspect.Reflection.Emit;
 using Kurisu.Aspect.Reflection.Extensions;
+using Kurisu.Aspect.Reflection.Reflectors;
 
 namespace Kurisu.Aspect.Core.Utils;
 
@@ -26,6 +26,7 @@ public class ProxyGeneratorUtils
     {
         var assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName(_proxyAssemblyName), AssemblyBuilderAccess.RunAndCollect);
         _moduleBuilder = assemblyBuilder.DefineDynamicModule("core");
+
         _definedTypes = new Dictionary<string, Type>();
         _proxyNameUtils = new ProxyNameUtils();
     }
@@ -52,7 +53,7 @@ public class ProxyGeneratorUtils
         }
     }
 
-    public Type CreateInterfaceProxy(Type interfaceType, Type implType, Type[] additionalInterfaces)
+    internal Type CreateInterfaceProxy(Type interfaceType, Type implType, Type[] additionalInterfaces)
     {
         if (!interfaceType.GetTypeInfo().IsVisible() || !interfaceType.GetTypeInfo().IsInterface)
         {
@@ -613,11 +614,10 @@ public class ProxyGeneratorUtils
                 var ilGen = methodBuilder.GetILGenerator();
 
                 var activatorContext = ilGen.DeclareLocal(typeof(AspectExecutorContext));
-                var returnValue = default(LocalBuilder);
 
                 EmitInitializeMetaData(ilGen);
 
-                ilGen.Emit(OpCodes.Newobj, MethodUtils.AspectExecutorContextCtor);
+                ilGen.EmitNew(MethodUtils.AspectExecutorContextCtor);
                 ilGen.Emit(OpCodes.Stloc, activatorContext);
 
                 ilGen.EmitThis();
@@ -626,7 +626,7 @@ public class ProxyGeneratorUtils
                 ilGen.Emit(OpCodes.Ldloc, activatorContext);
 
                 EmitReturnValue(ilGen);
-
+                var returnValue = default(LocalBuilder);
                 if (method.ReturnType != typeof(void))
                 {
                     returnValue = ilGen.DeclareLocal(method.ReturnType);
@@ -1263,8 +1263,7 @@ public class ProxyGeneratorUtils
         {
             _fields = new Dictionary<string, FieldBuilder>();
             _nestedTypeBuilder = typeBuilder.DefineNestedType("MethodConstant", TypeAttributes.NestedPrivate);
-            ConstructorBuilder constructorBuilder = _nestedTypeBuilder.DefineTypeInitializer();
-            _ilGen = constructorBuilder.GetILGenerator();
+            _ilGen = _nestedTypeBuilder.DefineTypeInitializer().GetILGenerator();
         }
 
         public void AddMethod(string name, MethodInfo method)

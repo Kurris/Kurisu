@@ -4,14 +4,14 @@ using Kurisu.Aspect.Reflection.Emit;
 using Kurisu.Aspect.Reflection.Extensions;
 using Kurisu.Aspect.Reflection.Internals;
 
-namespace Kurisu.Aspect.Reflection;
+namespace Kurisu.Aspect.Reflection.Reflectors;
 
 internal partial class CustomAttributeReflector
 {
     private readonly CustomAttributeData _customAttributeData;
     private readonly Func<Attribute> _invoker;
 
-    internal readonly HashSet<RuntimeTypeHandle> _tokens;
+    internal  HashSet<RuntimeTypeHandle> Tokens { get; }
 
     public Type AttributeType { get; }
 
@@ -20,7 +20,7 @@ internal partial class CustomAttributeReflector
         _customAttributeData = customAttributeData ?? throw new ArgumentNullException(nameof(customAttributeData));
         AttributeType = _customAttributeData.AttributeType;
         _invoker = CreateInvoker();
-        _tokens = GetAttrTokens(AttributeType);
+        Tokens = GetAttrTokens(AttributeType);
     }
 
     private Func<Attribute> CreateInvoker()
@@ -32,7 +32,7 @@ internal partial class CustomAttributeReflector
         {
             if (constructorParameter.ArgumentType.IsArray)
             {
-                ilGen.EmitArray(((IEnumerable<CustomAttributeTypedArgument>)constructorParameter.Value).Select(x => x.Value).ToArray(),
+                ilGen.EmitArray(((IEnumerable<CustomAttributeTypedArgument>)constructorParameter.Value!).Select(x => x.Value).ToArray(),
                     constructorParameter.ArgumentType.GetTypeInfo().UnWrapArrayType());
             }
             else
@@ -42,19 +42,17 @@ internal partial class CustomAttributeReflector
         }
 
         var attributeLocal = ilGen.DeclareLocal(AttributeType);
-
         ilGen.EmitNew(_customAttributeData.Constructor);
-
         ilGen.Emit(OpCodes.Stloc, attributeLocal);
 
         var attributeTypeInfo = AttributeType.GetTypeInfo();
 
-        foreach (var namedArgument in _customAttributeData.NamedArguments)
+        foreach (var namedArgument in _customAttributeData.NamedArguments!)
         {
             ilGen.Emit(OpCodes.Ldloc, attributeLocal);
             if (namedArgument.TypedValue.ArgumentType.IsArray)
             {
-                ilGen.EmitArray(((IEnumerable<CustomAttributeTypedArgument>)namedArgument.TypedValue.Value).Select(x => x.Value).ToArray(),
+                ilGen.EmitArray(((IEnumerable<CustomAttributeTypedArgument>)namedArgument.TypedValue.Value!).Select(x => x.Value).ToArray(),
                     namedArgument.TypedValue.ArgumentType.GetTypeInfo().UnWrapArrayType());
             }
             else
@@ -65,12 +63,12 @@ internal partial class CustomAttributeReflector
             if (namedArgument.IsField)
             {
                 var field = attributeTypeInfo.GetField(namedArgument.MemberName);
-                ilGen.Emit(OpCodes.Stfld, field);
+                ilGen.Emit(OpCodes.Stfld, field!);
             }
             else
             {
                 var property = attributeTypeInfo.GetProperty(namedArgument.MemberName);
-                ilGen.Emit(OpCodes.Callvirt, property.SetMethod);
+                ilGen.Emit(OpCodes.Callvirt, property!.SetMethod!);
             }
         }
 
@@ -84,9 +82,9 @@ internal partial class CustomAttributeReflector
         var tokenSet = new HashSet<RuntimeTypeHandle>();
         for (var attr = attributeType; attr != typeof(object); attr = attr.GetTypeInfo().BaseType)
         {
-            tokenSet.Add(attr.TypeHandle);
+            tokenSet.Add(attr!.TypeHandle);
         }
-
+    
         return tokenSet;
     }
 
@@ -103,8 +101,8 @@ internal partial class CustomAttributeReflector
 
 internal partial class CustomAttributeReflector
 {
-    public static Reflection.CustomAttributeReflector Create(CustomAttributeData customAttributeData)
+    public static CustomAttributeReflector Create(CustomAttributeData customAttributeData)
     {
-        return ReflectorCacheUtils<CustomAttributeData, Reflection.CustomAttributeReflector>.GetOrAdd(customAttributeData, data => new Reflection.CustomAttributeReflector(data));
+        return ReflectorCacheUtils<CustomAttributeData, CustomAttributeReflector>.GetOrAdd(customAttributeData, data => new CustomAttributeReflector(data));
     }
 }

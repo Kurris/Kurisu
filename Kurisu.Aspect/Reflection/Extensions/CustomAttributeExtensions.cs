@@ -1,4 +1,6 @@
-﻿namespace Kurisu.Aspect.Reflection.Extensions;
+﻿using Kurisu.Aspect.Reflection.Reflectors;
+
+namespace Kurisu.Aspect.Reflection.Extensions;
 
 internal static class CustomAttributeExtensions
 {
@@ -52,7 +54,7 @@ internal static class CustomAttributeExtensions
         for (var i = 0; i < customAttributeLength; i++)
         {
             var reflector = customAttributeReflectors[i];
-            if (reflector._tokens.Contains(attrToken))
+            if (reflector.Tokens.Contains(attrToken))
                 checkedAttrs[@checked++] = reflector.Invoke();
         }
 
@@ -87,7 +89,7 @@ internal static class CustomAttributeExtensions
         for (var i = 0; i < customAttributeLength; i++)
         {
             var reflector = customAttributeReflectors[i];
-            if (reflector._tokens.Contains(attrToken))
+            if (reflector.Tokens.Contains(attrToken))
                 checkedAttrs[@checked++] = (TAttribute)reflector.Invoke();
         }
 
@@ -124,7 +126,7 @@ internal static class CustomAttributeExtensions
         for (var i = 0; i < customAttributeLength; i++)
         {
             var reflector = customAttributeReflectors[i];
-            if (reflector._tokens.Contains(attrToken))
+            if (reflector.Tokens.Contains(attrToken))
             {
                 return customAttributeReflectors[i].Invoke();
             }
@@ -161,7 +163,7 @@ internal static class CustomAttributeExtensions
         var attrToken = attributeType.TypeHandle;
         for (var i = 0; i < customAttributeLength; i++)
         {
-            if (customAttributeReflectors[i]._tokens.Contains(attrToken))
+            if (customAttributeReflectors[i].Tokens.Contains(attrToken))
             {
                 return true;
             }

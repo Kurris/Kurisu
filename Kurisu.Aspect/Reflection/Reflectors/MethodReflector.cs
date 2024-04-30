@@ -5,7 +5,7 @@ using Kurisu.Aspect.Reflection.Emit;
 using Kurisu.Aspect.Reflection.Extensions;
 using Kurisu.Aspect.Reflection.Factories;
 
-namespace Kurisu.Aspect.Reflection;
+namespace Kurisu.Aspect.Reflection.Reflectors;
 
 internal class MethodReflector : MemberReflector<MethodInfo>, IParameterReflectorProvider
 {
@@ -14,13 +14,18 @@ internal class MethodReflector : MemberReflector<MethodInfo>, IParameterReflecto
     public MethodReflector(MethodInfo reflectionInfo) : base(reflectionInfo)
     {
         DisplayName = GetDisplayName(reflectionInfo);
-        Invoker = CreateInvoker();
+        // ReSharper disable once VirtualMemberCallInConstructor
+        Invoker = CreateInvoker(); //具体实现调用
         ParameterReflectors = reflectionInfo.GetParameters().Select(ParameterReflectorFactory.Create).ToArray();
     }
 
     public override string DisplayName { get; }
     protected Func<object, object[], object> Invoker { get; }
 
+    /// <summary>
+    /// 创建方法调用委托
+    /// </summary>
+    /// <returns></returns>
     protected virtual Func<object, object[], object> CreateInvoker()
     {
         var dynamicMethod = new DynamicMethod($"invoker_{DisplayName}",
@@ -94,6 +99,7 @@ internal class MethodReflector : MemberReflector<MethodInfo>, IParameterReflecto
                 ilGen.EmitCall(OpCodes.Callvirt, _reflectionInfo, null);
 #endif
             callback?.Invoke();
+            
             if (Current.ReturnType == typeof(void)) ilGen.Emit(OpCodes.Ldnull);
             else if (Current.ReturnType.GetTypeInfo().IsValueType)
                 ilGen.EmitConvertToObject(Current.ReturnType);

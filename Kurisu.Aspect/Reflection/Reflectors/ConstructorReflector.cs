@@ -2,10 +2,9 @@
 using System.Reflection.Emit;
 using Kurisu.Aspect.Core.Utils;
 using Kurisu.Aspect.Reflection.Emit;
-using Kurisu.Aspect.Reflection.Extensions;
 using Kurisu.Aspect.Reflection.Factories;
 
-namespace Kurisu.Aspect.Reflection;
+namespace Kurisu.Aspect.Reflection.Reflectors;
 
 internal class ConstructorReflector : MemberReflector<ConstructorInfo>, IParameterReflectorProvider
 {
