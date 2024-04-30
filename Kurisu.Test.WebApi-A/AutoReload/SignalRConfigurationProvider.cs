@@ -1,6 +1,6 @@
 ﻿using System.Data.Common;
 using Microsoft.AspNetCore.SignalR.Client;
-using Serilog;
+//using Serilog;
 
 namespace Kurisu.Test.WebApi_A.AutoReload
 {
@@ -27,7 +27,7 @@ namespace Kurisu.Test.WebApi_A.AutoReload
                 })
                 .ConfigureLogging(builder =>
                 {
-                    builder.AddSerilog();
+                    //builder.AddSerilog();
                     builder.SetMinimumLevel(LogLevel.Debug);
                 })
                 .WithAutomaticReconnect(new RandomRetryPolicy())

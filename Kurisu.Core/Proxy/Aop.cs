@@ -8,9 +8,6 @@ namespace Kurisu.Core.Proxy;
 /// <summary>
 /// Aop代理 -- castle.core.async
 /// </summary>
-/// <remarks>
-/// 
-/// </remarks>
 public abstract class Aop : IAsyncInterceptor
 {
     private static readonly MethodInfo _interceptSynchronousMethodInfo =
@@ -24,6 +21,10 @@ public abstract class Aop : IAsyncInterceptor
 
     private delegate void GenericSynchronousHandler(Aop me, IProxyInvocation invocation);
 
+    /// <summary>
+    /// 拦截同步
+    /// </summary>
+    /// <param name="invocation"></param>
     public void InterceptSynchronous(IProxyInvocation invocation)
     {
         Type returnType = invocation.Method.ReturnType;
@@ -31,18 +32,40 @@ public abstract class Aop : IAsyncInterceptor
         handler(this, invocation);
     }
 
+    /// <summary>
+    /// 拦截异步
+    /// </summary>
+    /// <param name="invocation"></param>
     public void InterceptAsynchronous(IProxyInvocation invocation)
     {
         invocation.ReturnValue = InterceptAsync(invocation, ProceedAsynchronous);
     }
 
+    /// <summary>
+    /// 拦截异步
+    /// </summary>
+    /// <param name="invocation"></param>
+    /// <typeparam name="TResult"></typeparam>
     public void InterceptAsynchronous<TResult>(IProxyInvocation invocation)
     {
         invocation.ReturnValue = InterceptAsync(invocation, ProceedAsynchronous<TResult>);
     }
 
+    /// <summary>
+    /// 拦截异步
+    /// </summary>
+    /// <param name="invocation"></param>
+    /// <param name="proceed"></param>
+    /// <returns></returns>
     protected abstract Task InterceptAsync(IProxyInvocation invocation, Func<IProxyInvocation, Task> proceed);
 
+    /// <summary>
+    /// 拦截异步
+    /// </summary>
+    /// <param name="invocation"></param>
+    /// <param name="proceed"></param>
+    /// <typeparam name="TResult"></typeparam>
+    /// <returns></returns>
     protected abstract Task<TResult> InterceptAsync<TResult>(IProxyInvocation invocation, Func<IProxyInvocation, Task<TResult>> proceed);
 
 

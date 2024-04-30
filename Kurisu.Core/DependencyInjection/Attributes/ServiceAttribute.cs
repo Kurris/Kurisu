@@ -8,6 +8,9 @@ namespace Microsoft.Extensions.DependencyInjection;
 [AttributeUsage(AttributeTargets.Class, Inherited = false)]
 public class ServiceAttribute : Attribute
 {
+    /// <summary>
+    /// ctor
+    /// </summary>
     public ServiceAttribute()
     {
     }

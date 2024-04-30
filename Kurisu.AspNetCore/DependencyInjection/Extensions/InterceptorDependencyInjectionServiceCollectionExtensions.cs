@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using Kurisu.Aspect.Core.Utils;
 using Kurisu.AspNetCore.DependencyInjection;
 using Kurisu.Core.Proxy;
 using Kurisu.Core.Proxy.Abstractions;
@@ -26,6 +27,9 @@ internal static class InterceptorDependencyInjectionServiceCollectionExtensions
             .Where(x => !x.IsAbstract && !x.IsInterface)
             .Where(x => !x.IsDefined(typeof(ServiceAttribute), false));
 
+
+        var proxyUtil = ProxyGeneratorUtils.Instance;
+
         foreach (var service in serviceTypes)
         {
             (ServiceLifetime lifeTime, Type[] interfaceTypes) = DependencyInjectionHelper.GetInterfacesAndLifeTime(service);
@@ -37,23 +41,26 @@ internal static class InterceptorDependencyInjectionServiceCollectionExtensions
             {
                 services.Add(ServiceDescriptor.Describe(interfaceType, sp =>
                 {
-                    var target = sp.GetService(service);
-                    var result = target;
+                    // var target = sp.GetService(service);
+                    // var result = target;
+                    //
+                    // foreach (var interceptorType in interceptorTypes)
+                    // {
+                    //     var i = sp.GetService(interceptorType);
+                    //     var interceptorObject = i switch
+                    //     {
+                    //         IAsyncInterceptor asyncInterceptor => asyncInterceptor.ToInterceptor(),
+                    //         IInterceptor interceptor => interceptor,
+                    //         _ => throw new NotSupportedException(interceptorType.FullName)
+                    //     };
+                    //
+                    //     result = ProxyGenerator.Create(result, interfaceType, interceptorObject);
+                    // }
+                    //
+                    // return result;
 
-                    foreach (var interceptorType in interceptorTypes)
-                    {
-                        var i = sp.GetService(interceptorType);
-                        var interceptorObject = i switch
-                        {
-                            IAsyncInterceptor asyncInterceptor => asyncInterceptor.ToInterceptor(),
-                            IInterceptor interceptor => interceptor,
-                            _ => throw new NotSupportedException(interceptorType.FullName)
-                        };
-
-                        result = ProxyGenerator.Create(result, interfaceType, interceptorObject);
-                    }
-
-                    return result;
+                    var type = proxyUtil.CreateClassProxy(service, service, new[] { interfaceType });
+                    return ActivatorUtilities.CreateInstance(sp, type);
                 }, lifeTime));
             }
 

@@ -8,6 +8,9 @@ namespace Kurisu.AspNetCore.Utils.Extensions;
 /// </summary>
 public static class JsonExtensions
 {
+    /// <summary>
+    /// 默认json配置
+    /// </summary>
     public static readonly JsonSerializerSettings DefaultSetting = new()
     {
         ReferenceLoopHandling = ReferenceLoopHandling.Ignore,

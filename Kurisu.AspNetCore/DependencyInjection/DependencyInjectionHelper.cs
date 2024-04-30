@@ -24,9 +24,7 @@ internal static class DependencyInjectionHelper
     //生命周期类型
     public static readonly Type[] LifeTimeTypes = { typeof(ITransientDependency), typeof(IScopeDependency), typeof(ISingletonDependency) };
 
-    public static readonly IEnumerable<Type> Services = ActiveTypes.Where(x => x is { IsClass: true, IsPublic: true }
-                                                                               && !x.IsAbstract
-                                                                               && !x.IsInterface);
+    public static readonly IEnumerable<Type> Services = ActiveTypes.Where(x => x is { IsClass: true, IsPublic: true, IsAbstract: false, IsInterface: false });
 
     /// <summary>
     /// 命名服务
