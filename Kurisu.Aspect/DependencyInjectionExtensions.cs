@@ -3,7 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Kurisu.Aspect;
 
-public static class DependenceInjectionExtensions
+public static class DependencyInjectionExtensions
 {
     /// <summary>
     /// 启用动态代理
@@ -15,5 +15,6 @@ public static class DependenceInjectionExtensions
         services.AddSingleton<AspectBuilderFactory>();
         services.AddSingleton(typeof(AspectCaching<,>));
         services.AddSingleton<InterceptorCollector>();
+        services.AddSingleton<IProxyTypeGenerator, ProxyTypeGenerator>();
     }
 }

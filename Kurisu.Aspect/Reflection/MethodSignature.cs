@@ -1,6 +1,6 @@
 ﻿using System.Collections.Concurrent;
 using System.Reflection;
-using Kurisu.Aspect.Core.Utils;
+using Kurisu.Aspect.Reflection.Extensions;
 
 namespace Kurisu.Aspect.Reflection;
 

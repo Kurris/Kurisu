@@ -9,12 +9,12 @@ using Kurisu.Aspect.Reflection.Reflectors;
 
 namespace Kurisu.Aspect.Core.Utils;
 
-public class ProxyGeneratorUtils
+internal class ProxyGeneratorUtils
 {
     private readonly object _lock = new();
 
-    const string _proxyNameSpace = "Kurisu.DynamicGenerated";
-    private const string _proxyAssemblyName = "Kurisu.DynamicProxy.Generator";
+    const string _proxyNameSpace = "Aspect.DynamicGenerated";
+    private const string _proxyAssemblyName = "Aspect.DynamicProxy.Generator";
     private readonly ModuleBuilder _moduleBuilder;
     private readonly Dictionary<string, Type> _definedTypes;
 
@@ -380,7 +380,7 @@ public class ProxyGeneratorUtils
             }
         }
 
-        internal static MethodBuilder DefineInterfaceImplMethod(MethodInfo method, TypeBuilder implTypeBuilder)
+        private static MethodBuilder DefineInterfaceImplMethod(MethodInfo method, TypeBuilder implTypeBuilder)
         {
             var methodBuilder = implTypeBuilder.DefineMethod(method.Name, _interfaceMethodAttributes, method.CallingConvention, method.ReturnType, method.GetParameterTypes());
             var ilGen = methodBuilder.GetILGenerator();

@@ -1,8 +1,7 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using Kurisu.Aspect.Core.Utils;
+using Kurisu.Aspect.Core.DynamicProxy;
 using Kurisu.AspNetCore.DependencyInjection;
 using Kurisu.Core.Proxy;
 using Kurisu.Core.Proxy.Abstractions;
@@ -26,9 +25,6 @@ internal static class InterceptorDependencyInjectionServiceCollectionExtensions
             .Where(x => x.IsAssignableTo(typeof(IDependency)))
             .Where(x => !x.IsAbstract && !x.IsInterface)
             .Where(x => !x.IsDefined(typeof(ServiceAttribute), false));
-
-
-        var proxyUtil = ProxyGeneratorUtils.Instance;
 
         foreach (var service in serviceTypes)
         {
@@ -59,8 +55,9 @@ internal static class InterceptorDependencyInjectionServiceCollectionExtensions
                     //
                     // return result;
 
-                    var type = proxyUtil.CreateClassProxy(service, service, new[] { interfaceType });
+                    var type = sp.GetRequiredService<IProxyTypeGenerator>().CreateClassProxyType(service, service);
                     return ActivatorUtilities.CreateInstance(sp, type);
+                    
                 }, lifeTime));
             }
 

@@ -2,7 +2,6 @@
 using System.Reflection;
 using Kurisu.Aspect.Core.DynamicProxy;
 using Kurisu.Aspect.DynamicProxy;
-using Kurisu.Aspect.Reflection;
 using Kurisu.Aspect.Reflection.Extensions;
 using Kurisu.Aspect.Reflection.Reflectors;
 
@@ -30,25 +29,16 @@ internal static class MethodUtils
 
     private static MethodInfo GetMethod<T>(Expression<T> expression)
     {
-        if (expression == null)
-        {
-            throw new ArgumentNullException(nameof(expression));
-        }
+        if (expression == null) throw new ArgumentNullException(nameof(expression));
 
-        if (expression.Body is not MethodCallExpression methodCallExpression)
-        {
-            throw new InvalidCastException("Cannot be converted to MethodCallExpression");
-        }
+        if (expression.Body is not MethodCallExpression methodCallExpression) throw new InvalidCastException("Cannot be converted to MethodCallExpression");
 
         return methodCallExpression.Method;
     }
 
     private static MethodInfo GetMethod<T>(string name)
     {
-        if (name == null)
-        {
-            throw new ArgumentNullException(nameof(name));
-        }
+        if (name == null) throw new ArgumentNullException(nameof(name));
 
         return typeof(T).GetTypeInfo().GetMethod(name, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
     }

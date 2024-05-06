@@ -1,15 +1,14 @@
 ﻿using System.Collections.Concurrent;
 using System.Reflection;
 using System.Runtime.CompilerServices;
-using Kurisu.Aspect.Reflection.Reflectors;
 
 namespace Kurisu.Aspect.Reflection.Extensions;
 
 internal static class TypeExtensions
 {
-    private static readonly ConcurrentDictionary<TypeInfo, bool> isTaskOfTCache = new ConcurrentDictionary<TypeInfo, bool>();
-    private static readonly ConcurrentDictionary<TypeInfo, bool> isValueTaskOfTCache = new ConcurrentDictionary<TypeInfo, bool>();
-    private static readonly Type voidTaskResultType = Type.GetType("System.Threading.Tasks.VoidTaskResult", false);
+    private static readonly ConcurrentDictionary<TypeInfo, bool> _isTaskOfTCache = new();
+    private static readonly ConcurrentDictionary<TypeInfo, bool> _isValueTaskOfTCache = new();
+    private static readonly Type _voidTaskResultType = Type.GetType("System.Threading.Tasks.VoidTaskResult", false);
 
     public static MethodInfo GetMethodBySignature(this TypeInfo typeInfo, MethodSignature signature)
     {
@@ -47,14 +46,7 @@ internal static class TypeExtensions
         {
             case TypeCode.Object:
             case TypeCode.DateTime:
-                if (typeInfo.IsValueType)
-                {
-                    return Activator.CreateInstance(typeInfo.AsType());
-                }
-                else
-                {
-                    return null;
-                }
+                return typeInfo.IsValueType ? Activator.CreateInstance(typeInfo.AsType()) : null;
 
             case TypeCode.Empty:
             case TypeCode.String:
@@ -90,7 +82,7 @@ internal static class TypeExtensions
 
     public static object GetDefaultValue(this Type type)
     {
-        return type?.GetTypeInfo()?.GetDefaultValue();
+        return type?.GetTypeInfo().GetDefaultValue();
     }
 
     public static bool IsVisible(this TypeInfo typeInfo)
@@ -149,7 +141,7 @@ internal static class TypeExtensions
             throw new ArgumentNullException(nameof(typeInfo));
         }
 
-        return isTaskOfTCache.GetOrAdd(typeInfo, Info => Info.IsGenericType && typeof(Task).GetTypeInfo().IsAssignableFrom(Info));
+        return _isTaskOfTCache.GetOrAdd(typeInfo, info => info.IsGenericType && typeof(Task).GetTypeInfo().IsAssignableFrom(info));
     }
 
     public static bool IsTaskWithVoidTaskResult(this TypeInfo typeInfo)
@@ -159,7 +151,7 @@ internal static class TypeExtensions
             throw new ArgumentNullException(nameof(typeInfo));
         }
 
-        return typeInfo.GenericTypeArguments?.Length > 0 && typeInfo.GenericTypeArguments[0] == voidTaskResultType;
+        return typeInfo.GenericTypeArguments.Length > 0 && typeInfo.GenericTypeArguments[0] == _voidTaskResultType;
     }
 
     public static bool IsValueTask(this TypeInfo typeInfo)
@@ -179,7 +171,7 @@ internal static class TypeExtensions
             throw new ArgumentNullException(nameof(typeInfo));
         }
 
-        return isValueTaskOfTCache.GetOrAdd(typeInfo, Info => Info.IsGenericType && Info.GetGenericTypeDefinition() == typeof(ValueTask<>));
+        return _isValueTaskOfTCache.GetOrAdd(typeInfo, info => info.IsGenericType && info.GetGenericTypeDefinition() == typeof(ValueTask<>));
     }
 
     public static bool IsNullableType(this Type type)

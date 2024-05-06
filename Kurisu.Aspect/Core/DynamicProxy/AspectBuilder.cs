@@ -16,20 +16,13 @@ public sealed class AspectBuilder
 
     public void AddAspectDelegate(Func<AspectContext, AspectDelegate, Task> interceptorInvoke)
     {
-        if (interceptorInvoke == null)
-        {
-            throw new ArgumentNullException(nameof(interceptorInvoke));
-        }
-
+        if (interceptorInvoke == null) throw new ArgumentNullException(nameof(interceptorInvoke));
         _delegates.Add(next => context => interceptorInvoke(context, next));
     }
 
     public AspectDelegate Build()
     {
-        if (_aspectDelegate != null)
-        {
-            return _aspectDelegate;
-        }
+        if (_aspectDelegate != null) return _aspectDelegate;
 
         var @delegate = _complete;
         var count = _delegates.Count;

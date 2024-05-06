@@ -1,6 +1,5 @@
 ﻿using System.Reflection;
 using Kurisu.Aspect.Core.DynamicProxy.Extensions;
-using Kurisu.Aspect.Core.Utils;
 using Kurisu.Aspect.DynamicProxy;
 using Kurisu.Aspect.Reflection;
 using Kurisu.Aspect.Reflection.Extensions;
@@ -8,7 +7,7 @@ using Kurisu.Aspect.Reflection.Extensions;
 namespace Kurisu.Aspect.Core.DynamicProxy;
 
 [NonAspect]
-internal sealed class RuntimeAspectContext : AspectContext
+internal sealed class AspectRuntimeContext : AspectContext
 {
     public override IServiceProvider ServiceProvider { get; }
 
@@ -26,7 +25,7 @@ internal sealed class RuntimeAspectContext : AspectContext
 
     public override object Implementation { get; }
 
-    public RuntimeAspectContext(IServiceProvider serviceProvider, MethodInfo serviceMethod, MethodInfo targetMethod, MethodInfo proxyMethod,
+    public AspectRuntimeContext(IServiceProvider serviceProvider, MethodInfo serviceMethod, MethodInfo targetMethod, MethodInfo proxyMethod,
         object targetInstance, object proxyInstance, object[] parameters)
     {
         ServiceProvider = serviceProvider;
@@ -46,7 +45,7 @@ internal sealed class RuntimeAspectContext : AspectContext
             return;
         }
 
-        var reflector = AspectContextRuntimeExtensions.ReflectorTable.GetOrAdd(ImplementationMethod, m => m.GetReflector(m.IsCallvirt() ? CallOptions.Callvirt : CallOptions.Call));
+        var reflector = AspectRuntimeContextExtensions.ReflectorTable.GetOrAdd(ImplementationMethod, m => m.GetReflector(m.IsCallvirt() ? CallOptions.Callvirt : CallOptions.Call));
         var returnValue = reflector.Invoke(Implementation, Parameters);
         await this.AwaitIfAsync();
         ReturnValue = returnValue;
@@ -54,7 +53,10 @@ internal sealed class RuntimeAspectContext : AspectContext
 
     public override Task Break()
     {
-        ReturnValue ??= ServiceMethod.ReturnParameter.ParameterType.GetDefaultValue();
+        if (ServiceMethod.ReturnParameter != null)
+        {
+            ReturnValue ??= ServiceMethod.ReturnParameter.ParameterType.GetDefaultValue();
+        }
 
         return Task.CompletedTask;
     }

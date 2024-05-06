@@ -28,9 +28,9 @@ namespace Kurisu.Aspect.DynamicProxy
             Parameters = parameters;
         }
 
-        internal RuntimeAspectContext ToRuntimeAspectContext(IServiceProvider serviceProvider)
+        internal AspectRuntimeContext ToRuntimeAspectContext(IServiceProvider serviceProvider)
         {
-            return new RuntimeAspectContext(serviceProvider, ServiceMethod, TargetMethod, ProxyMethod, TargetInstance, ProxyInstance, Parameters);
+            return new AspectRuntimeContext(serviceProvider, ServiceMethod, TargetMethod, ProxyMethod, TargetInstance, ProxyInstance, Parameters);
         }
     }
 }

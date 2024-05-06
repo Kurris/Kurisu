@@ -1,7 +1,7 @@
 ﻿using System.Reflection;
 using System.Reflection.Emit;
-using Kurisu.Aspect.Core.Utils;
 using Kurisu.Aspect.Reflection.Emit;
+using Kurisu.Aspect.Reflection.Extensions;
 using Kurisu.Aspect.Reflection.Factories;
 
 namespace Kurisu.Aspect.Reflection.Reflectors;
