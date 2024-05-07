@@ -4,44 +4,35 @@ namespace Kurisu.Aspect.DynamicProxy;
 
 public sealed class ServiceInterceptorAttribute : AbstractInterceptorAttribute, IEquatable<ServiceInterceptorAttribute>
 {
-    private readonly Type _interceptorType;
-
-    public Type InterceptorType => _interceptorType;
+    public Type InterceptorType { get; }
 
     public ServiceInterceptorAttribute(Type interceptorType)
     {
-        if (interceptorType == null)
-        {
-            throw new ArgumentNullException(nameof(interceptorType));
-        }
+        if (interceptorType == null) throw new ArgumentNullException(nameof(interceptorType));
 
         if (!typeof(IInterceptor).GetTypeInfo().IsAssignableFrom(interceptorType.GetTypeInfo()))
         {
             throw new ArgumentException($"{interceptorType} is not an interceptor.", nameof(interceptorType));
         }
 
-        _interceptorType = interceptorType;
+        InterceptorType = interceptorType;
     }
 
     public override Task Invoke(AspectContext context, AspectDelegate next)
     {
-        if (context.ServiceProvider.GetService(_interceptorType) is not IInterceptor instance)
+        if (context.ServiceProvider.GetService(InterceptorType) is not IInterceptor instance)
         {
-            throw new InvalidOperationException($"Cannot resolve type  '{_interceptorType}' of service interceptor.");
+            throw new InvalidOperationException($"Cannot resolve type  '{InterceptorType}' of service interceptor.");
         }
 
-        //return instance.Invoke(context, next);
-        return Task.CompletedTask;
+        return instance.Invoke(context, next);
     }
 
     public bool Equals(ServiceInterceptorAttribute other)
     {
-        if (other == null)
-        {
-            return false;
-        }
+        if (other == null) return false;
 
-        return _interceptorType == other._interceptorType;
+        return InterceptorType == other.InterceptorType;
     }
 
     public override bool Equals(object obj)
@@ -52,6 +43,6 @@ public sealed class ServiceInterceptorAttribute : AbstractInterceptorAttribute, 
 
     public override int GetHashCode()
     {
-        return _interceptorType.GetHashCode();
+        return InterceptorType.GetHashCode();
     }
 }

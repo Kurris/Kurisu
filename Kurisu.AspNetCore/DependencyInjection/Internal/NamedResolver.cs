@@ -1,8 +1,7 @@
 using System;
-using Kurisu.AspNetCore.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace Kurisu.DependencyInjection.Internal;
+namespace Kurisu.AspNetCore.DependencyInjection.Internal;
 
 /// <summary>
 /// 命名服务处理器

@@ -1,7 +1,7 @@
 using System.Linq;
 using System.Reflection;
+using Kurisu.AspNetCore.ConfigurableOptions.Attributes;
 using Kurisu.AspNetCore.DependencyInjection;
-using Kurisu.Core.ConfigurableOptions.Attributes;
 using Microsoft.Extensions.Configuration;
 
 // ReSharper disable once CheckNamespace

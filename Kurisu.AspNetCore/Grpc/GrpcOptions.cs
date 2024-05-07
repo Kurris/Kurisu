@@ -1,5 +1,5 @@
 using System.Collections.Generic;
-using Kurisu.Core.ConfigurableOptions.Attributes;
+using Kurisu.AspNetCore.ConfigurableOptions.Attributes;
 
 namespace Kurisu.AspNetCore.Grpc;
 

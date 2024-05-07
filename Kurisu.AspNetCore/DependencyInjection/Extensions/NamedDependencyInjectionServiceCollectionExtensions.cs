@@ -2,8 +2,7 @@ using System;
 using System.Linq;
 using System.Reflection;
 using Kurisu.AspNetCore.DependencyInjection;
-using Kurisu.DependencyInjection;
-using Kurisu.DependencyInjection.Internal;
+using Kurisu.AspNetCore.DependencyInjection.Internal;
 
 // ReSharper disable once CheckNamespace
 namespace Microsoft.Extensions.DependencyInjection;
@@ -31,7 +30,7 @@ internal static class NamedDependencyInjectionServiceCollectionExtensions
                 throw new NotSupportedException($"不支持泛型类{service.FullName}生成命名服务");
             }
 
-            var serviceAttribute = service.GetCustomAttribute<ServiceAttribute>();
+            var serviceAttribute = service.GetCustomAttribute<ServiceAttribute>()!;
             var typeNamed = serviceAttribute.Named;
 
             if (!string.IsNullOrEmpty(typeNamed))
@@ -52,7 +51,7 @@ internal static class NamedDependencyInjectionServiceCollectionExtensions
     /// </summary>
     /// <param name="services"></param>
     /// <returns></returns>
-    internal static IServiceCollection AddNamedResolver(this IServiceCollection services)
+    private static IServiceCollection AddNamedResolver(this IServiceCollection services)
     {
         services.AddScoped<INamedResolver, NamedResolver>();
         return services;

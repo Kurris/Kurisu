@@ -1,7 +1,7 @@
 ﻿
+using Kurisu.AspNetCore.DataAccess.SqlSugar.Services;
 using Kurisu.AspNetCore.EventBus.Abstractions;
 using Kurisu.AspNetCore.EventBus.Abstractions.Handler;
-using Kurisu.SqlSugar.Services;
 
 namespace Dlhis.External.MealSupplement.Channel;
 

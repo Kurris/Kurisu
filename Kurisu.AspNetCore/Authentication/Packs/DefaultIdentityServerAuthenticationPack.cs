@@ -12,6 +12,9 @@ namespace Kurisu.AspNetCore.Authentication.Packs;
 /// </summary>
 public class DefaultIdentityServerAuthenticationPack : BaseAppPack
 {
+    /// <summary>
+    /// 执行顺序
+    /// </summary>
     public override int Order => 2;
 
     public override bool IsEnable => Configuration.GetSection(nameof(IdentityServerOptions)).Get<IdentityServerOptions>() != null;

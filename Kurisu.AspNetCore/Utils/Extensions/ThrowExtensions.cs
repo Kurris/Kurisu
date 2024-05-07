@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
-using Kurisu.Core.CustomClass;
+using Kurisu.AspNetCore.CustomClass;
 
 namespace Kurisu.AspNetCore.Utils.Extensions;
 

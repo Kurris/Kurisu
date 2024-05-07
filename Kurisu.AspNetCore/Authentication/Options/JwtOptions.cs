@@ -1,8 +1,11 @@
 using System.ComponentModel.DataAnnotations;
-using Kurisu.Core.ConfigurableOptions.Attributes;
+using Kurisu.AspNetCore.ConfigurableOptions.Attributes;
 
 namespace Kurisu.AspNetCore.Authentication.Options;
 
+/// <summary>
+/// jwt配置
+/// </summary>
 [Configuration]
 public class JwtOptions
 {

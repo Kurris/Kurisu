@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
-using Kurisu.Core.ConfigurableOptions.Attributes;
+using Kurisu.AspNetCore.ConfigurableOptions.Attributes;
 
 namespace Kurisu.AspNetCore.Document.Settings;
 

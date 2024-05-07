@@ -3,7 +3,6 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using Kurisu.Core.Proxy;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Kurisu.AspNetCore.DependencyInjection;
@@ -22,9 +21,11 @@ internal static class DependencyInjectionHelper
 
 
     //生命周期类型
-    public static readonly Type[] LifeTimeTypes = { typeof(ITransientDependency), typeof(IScopeDependency), typeof(ISingletonDependency) };
+    private static readonly Type[] _lifeTimeTypes = { typeof(ITransientDependency), typeof(IScopeDependency), typeof(ISingletonDependency) };
 
     public static readonly IEnumerable<Type> Services = ActiveTypes.Where(x => x is { IsClass: true, IsPublic: true, IsAbstract: false, IsInterface: false });
+
+    public static readonly IEnumerable<Type> DependencyServices = ActiveTypes.Where(x => !x.IsAbstract).Where(x => x.IsAssignableTo(typeof(IDependency)));
 
     /// <summary>
     /// 命名服务
@@ -43,7 +44,7 @@ internal static class DependencyInjectionHelper
         var interfaces = type.GetInterfaces();
 
         //获取注册的生命周期类型,不允许多个依赖注入接口
-        var lifeTimeInterfaces = interfaces.Where(x => LifeTimeTypes.Contains(x)).Distinct().ToArray();
+        var lifeTimeInterfaces = interfaces.Where(x => _lifeTimeTypes.Contains(x)).Distinct().ToArray();
         if (lifeTimeInterfaces.Length > 1) throw new ApplicationException($"{type.FullName}不允许存在多个生命周期定义");
 
         //具体的生命周期类型
@@ -52,7 +53,7 @@ internal static class DependencyInjectionHelper
         //能够注册的服务接口
         var serviceInterfaces = interfaces
             .Where(x => !x.IsAssignableFrom(typeof(IDependency)))
-            .Where(x => !LifeTimeTypes.Contains(x));
+            .Where(x => !_lifeTimeTypes.Contains(x));
 
         return (GetRegisterLifetimeType(currentLifeTimeInterface), serviceInterfaces.ToArray());
     }
@@ -64,7 +65,7 @@ internal static class DependencyInjectionHelper
     /// <param name="lifeTimeType"></param>
     /// <returns></returns>
     /// <exception cref="InvalidCastException"></exception>
-    public static ServiceLifetime GetRegisterLifetimeType(MemberInfo lifeTimeType)
+    private static ServiceLifetime GetRegisterLifetimeType(MemberInfo lifeTimeType)
     {
         if (lifeTimeType == null) return ServiceLifetime.Scoped;
 
@@ -143,29 +144,29 @@ internal static class DependencyInjectionHelper
         //添加当前程序集
         activeAssemblies.AddRange(AppDomain.CurrentDomain.GetAssemblies());
 
-        var references = Assembly.GetEntryAssembly().GetReferencedAssemblies();
+        var references = Assembly.GetEntryAssembly()?.GetReferencedAssemblies();
         //添加引用的程序集
         RecursionGetReference(activeAssemblies, references);
 
         var result = activeAssemblies.SelectMany(assembly =>
-          {
-              try
-              {
-                  return assembly.GetTypes()
-                      .Where(type => type.IsPublic)
-                      .Where(type => !type.IsDefined(typeof(SkipScanAttribute)));
-              }
-              catch (Exception)
-              {
-                  return Array.Empty<Type>();
-              }
-          })
-          .Reverse().ToList();
+            {
+                try
+                {
+                    return assembly.GetTypes()
+                        .Where(type => type.IsPublic)
+                        .Where(type => !type.IsDefined(typeof(SkipScanAttribute)));
+                }
+                catch (Exception)
+                {
+                    return Array.Empty<Type>();
+                }
+            })
+            .Reverse().ToList();
 
         return result;
     }
 
-    private static void RecursionGetReference(List<Assembly> activeAssemblies, AssemblyName[] references)
+    private static void RecursionGetReference(List<Assembly> activeAssemblies, IEnumerable<AssemblyName> references)
     {
         foreach (var reference in references)
         {
@@ -176,10 +177,11 @@ internal static class DependencyInjectionHelper
 
             var refAssembly = Assembly.Load(reference);
             var next = refAssembly.GetReferencedAssemblies();
-            if (next.Any() && next.Any(x => x.Name.StartsWith("Kurisu")))
+            if (next.Any() && next.Any(x => x.Name!.StartsWith("Kurisu")))
             {
                 RecursionGetReference(activeAssemblies, next);
             }
+
             activeAssemblies.Add(refAssembly);
         }
     }

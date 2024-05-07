@@ -15,13 +15,24 @@ namespace Kurisu.AspNetCore.Startup;
 [SkipScan]
 public abstract class DefaultStartup
 {
+    /// <summary>
+    /// ctor
+    /// </summary>
+    /// <param name="configuration"></param>
     protected DefaultStartup(IConfiguration configuration)
     {
         Configuration = configuration;
     }
 
-    public IConfiguration Configuration { get; }
+    /// <summary>
+    /// config
+    /// </summary>
+    protected IConfiguration Configuration { get; }
 
+    /// <summary>
+    /// 配置ioc
+    /// </summary>
+    /// <param name="services"></param>
     public virtual void ConfigureServices(IServiceCollection services)
     {
         services.AddHttpContextAccessor();
@@ -44,9 +55,14 @@ public abstract class DefaultStartup
                 options.SerializerSettings.ReferenceLoopHandling = ReferenceLoopHandling.Ignore;
                 options.SerializerSettings.DateFormatString = "yyyy-MM-dd HH:mm:ss";
 
-                var contractResolver = new CamelCasePropertyNamesContractResolver();
-                //优先使用JsonPropertyAttribute
-                contractResolver.NamingStrategy.OverrideSpecifiedNames = false;
+                var contractResolver = new CamelCasePropertyNamesContractResolver
+                {
+                    NamingStrategy =
+                    {
+                        //优先使用JsonPropertyAttribute
+                        OverrideSpecifiedNames = false
+                    }
+                };
                 options.SerializerSettings.ContractResolver = contractResolver;
             });
 
@@ -60,20 +76,15 @@ public abstract class DefaultStartup
         services.AddAppPacks(Configuration);
     }
 
+    /// <summary>
+    /// 配置请求管道
+    /// </summary>
+    /// <param name="app"></param>
+    /// <param name="env"></param>
     public virtual void Configure(IApplicationBuilder app, IWebHostEnvironment env)
     {
         //根服务提供器,应用程序唯一
         InternalApp.RootServices = app.ApplicationServices;
-
-        //处理请求中产生的自定义范围对象
-        app.Use(async (_, next) =>
-        {
-            //默认的管道执行
-            await next();
-
-            //释放当前请求作用域申请的IServiceProvider
-            App.DisposeObjects();
-        });
 
         using (var scope = app.ApplicationServices.CreateScope())
         {

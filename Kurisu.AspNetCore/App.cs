@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using Kurisu.AspNetCore.DependencyInjection;
@@ -18,7 +17,7 @@ public class App
     /// <summary>
     /// 框架应用程序日志
     /// </summary>
-    internal static ILogger<App> Logger => InternalApp.RootServices.GetService<ILogger<App>>();
+    public static ILogger<App> Logger => InternalApp.RootServices.GetService<ILogger<App>>();
 
     /// <summary>
     /// 服务提供器
@@ -31,36 +30,8 @@ public class App
             return InternalApp.RootServices;
         }
 
-        var httpContext = InternalApp.RootServices.GetService<IHttpContextAccessor>().HttpContext;
+        var httpContext = InternalApp.RootServices.GetRequiredService<IHttpContextAccessor>().HttpContext!;
         return httpContext.RequestServices;
-    }
-
-
-    /// <summary>
-    /// 可释放的对象
-    /// </summary>
-    private static readonly ConcurrentBag<IDisposable> _disposables = new();
-
-    /// <summary>
-    /// 添加可释放的对象
-    /// </summary>
-    /// <param name="disposable"></param>
-    private static void AddDisposableObject(IDisposable disposable)
-    {
-        _disposables.Add(disposable);
-    }
-
-    /// <summary>
-    /// 释放对象
-    /// </summary>
-    public static void DisposeObjects()
-    {
-        foreach (var disposable in _disposables)
-        {
-            disposable.Dispose();
-        }
-
-        _disposables.Clear();
     }
 
     /// <summary>
@@ -78,10 +49,12 @@ public class App
             if (_appPacks != null) return _appPacks;
 
             var packTypes = DependencyInjectionHelper.ActiveTypes.Where(x => x.IsSubclassOf(typeof(BaseAppPack)));
-            _appPacks = packTypes.Select(x => Activator.CreateInstance(x) as BaseAppPack).OrderBy(x => x.Order).ToList();
+            _appPacks = packTypes.Select(x => Activator.CreateInstance(x) as BaseAppPack).Where(x => x != null).OrderBy(x => x.Order).ToList();
             return _appPacks;
         }
     }
 
     public static List<Type> ActiveTyps => DependencyInjectionHelper.ActiveTypes;
+
+    public static IEnumerable<Type> DependencyServices => DependencyInjectionHelper.DependencyServices;
 }

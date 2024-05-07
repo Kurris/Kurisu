@@ -202,6 +202,14 @@ public static class ExpressionHelper
         return parameterExpression.GetYourDefine<T>(propertyName, value, Expression.LessThanOrEqual);
     }
 
+    /// <summary>
+    /// equal
+    /// </summary>
+    /// <param name="parameterExpression"></param>
+    /// <param name="propertyName"></param>
+    /// <param name="value"></param>
+    /// <typeparam name="T"></typeparam>
+    /// <returns></returns>
     public static Expression<Func<T, bool>> GetEqual<T>(this ParameterExpression parameterExpression, string propertyName, object value) where T : class
     {
         return parameterExpression.GetYourDefine<T>(propertyName, value, Expression.Equal);

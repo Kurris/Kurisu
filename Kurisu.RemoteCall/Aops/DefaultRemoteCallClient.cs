@@ -1,19 +1,19 @@
 ﻿using Newtonsoft.Json;
 using System.Reflection;
 using Microsoft.Extensions.Configuration;
-using Kurisu.Core.Proxy;
-using Kurisu.Core.Proxy.Abstractions;
 using Kurisu.RemoteCall.Attributes;
 using Mapster;
 using Microsoft.Extensions.Logging;
 using System.ComponentModel.DataAnnotations;
+using Kurisu.RemoteCall.Proxy;
+using Kurisu.RemoteCall.Proxy.Abstractions;
 
 namespace Kurisu.RemoteCall.Aops;
 
 /// <summary>
 /// 默认远程调用
 /// </summary>
-public class DefaultRemoteCallClient : Aop
+internal class DefaultRemoteCallClient : Aop
 {
     private readonly IServiceProvider _serviceProvider;
     private readonly IHttpClientFactory _httpClientFactory;
@@ -55,7 +55,7 @@ public class DefaultRemoteCallClient : Aop
 
         if (type.IsClass && type != typeof(string))
         {
-            result = JsonConvert.DeserializeObject<TResult>(responseJson, InteralHelper.JsonSerializerSettings);
+            result = JsonConvert.DeserializeObject<TResult>(responseJson, InternalHelper.JsonSerializerSettings);
         }
         else
         {
@@ -97,7 +97,7 @@ public class DefaultRemoteCallClient : Aop
         var defineHttpMethodAttribute = invocation.Method.GetCustomAttribute<HttpMethodAttribute>() ?? throw new NullReferenceException("请定义请求方式");
         var defineRemoteClientAttribute = invocation.InterfaceType.GetCustomAttribute<EnableRemoteClientAttribute>()!;
 
-        (HttpMethodEnumType? httpMethodType, string url) = InteralHelper.GetRequestUrl(_configuration, defineRemoteClientAttribute, defineHttpMethodAttribute, methodParameterValues);
+        (HttpMethodEnumType? httpMethodType, string url) = InternalHelper.GetRequestUrl(_configuration, defineRemoteClientAttribute, defineHttpMethodAttribute, methodParameterValues);
 
         //请求方法
         var callMethod = (httpMethodType == HttpMethodEnumType.Get
@@ -110,7 +110,7 @@ public class DefaultRemoteCallClient : Aop
 
         if (httpMethodType != HttpMethodEnumType.Get)
         {
-            var content = await InteralHelper.FixContentAsync(invocation, methodParameterValues);
+            var content = await InternalHelper.FixContentAsync(invocation, methodParameterValues);
             requestParameters.Add(content);
         }
 
@@ -119,7 +119,7 @@ public class DefaultRemoteCallClient : Aop
             : _httpClientFactory.CreateClient(defineRemoteClientAttribute.Name);
 
         //日志
-        if (InteralHelper.UseLog(invocation))
+        if (InternalHelper.UseLog(invocation))
         {
             if (requestParameters.Count > 1)
                 _logger.LogInformation("{method} {url} \r\n Body:{body} .", httpMethodType, url, JsonConvert.SerializeObject(requestParameters.LastOrDefault()));
@@ -128,7 +128,7 @@ public class DefaultRemoteCallClient : Aop
         }
 
         //鉴权
-        if (InteralHelper.UseAuth(_serviceProvider, invocation, out var headerName, out var token))
+        if (InternalHelper.UseAuth(_serviceProvider, invocation, out var headerName, out var token))
         {
             httpClient.DefaultRequestHeaders.Add(headerName, token);
         }
@@ -137,12 +137,12 @@ public class DefaultRemoteCallClient : Aop
         var response = await task.ConfigureAwait(false);
 
         var responseJson = await response.Content.ReadAsStringAsync();
-        if (InteralHelper.UseLog(invocation))
+        if (InternalHelper.UseLog(invocation))
         {
             _logger.LogInformation("Response: {response} .", responseJson);
         }
+
         response.EnsureSuccessStatusCode();
         return responseJson;
-
     }
 }

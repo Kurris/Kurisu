@@ -57,7 +57,7 @@ internal class MethodCallReflector : MethodReflector
             ilGen.Emit(OpCodes.Ldelem_Ref);
             if (parameterTypes[i].IsByRef)
             {
-                var defType = parameterTypes[i].GetElementType();
+                var defType = parameterTypes[i].GetElementType()!;
                 var indexedLocal = new IndexedLocalBuilder(ilGen.DeclareLocal(defType), i);
                 indexedLocals[index++] = indexedLocal;
                 ilGen.EmitConvertFromObject(defType);
@@ -72,12 +72,12 @@ internal class MethodCallReflector : MethodReflector
 
         return CreateDelegate(() =>
         {
-            for (var i = 0; i < indexedLocals.Length; i++)
+            foreach (var t in indexedLocals)
             {
                 ilGen.EmitLoadArgument(1);
-                ilGen.EmitInt(indexedLocals[i].Index);
-                ilGen.Emit(OpCodes.Ldloc, indexedLocals[i].LocalBuilder);
-                ilGen.EmitConvertToObject(indexedLocals[i].LocalType);
+                ilGen.EmitInt(t.Index);
+                ilGen.Emit(OpCodes.Ldloc, t.LocalBuilder);
+                ilGen.EmitConvertToObject(t.LocalType);
                 ilGen.Emit(OpCodes.Stelem_Ref);
             }
         });

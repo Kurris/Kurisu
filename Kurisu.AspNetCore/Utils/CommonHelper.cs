@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Threading.Tasks;
-using Kurisu.Core.CustomClass;
+using Kurisu.AspNetCore.CustomClass;
 using SqlSugar;
 
 namespace Kurisu.AspNetCore.Utils;

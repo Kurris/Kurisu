@@ -1,6 +1,6 @@
-﻿using Kurisu.Core.Proxy.Attributes;
-using Kurisu.RemoteCall.Abstractions;
+﻿using Kurisu.RemoteCall.Abstractions;
 using Kurisu.RemoteCall.Aops;
+using Kurisu.RemoteCall.Proxy.Attributes;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -15,12 +15,8 @@ public sealed class EnableRemoteClientAttribute : AopAttribute
     /// <summary>
     /// ctor
     /// </summary>
-    public EnableRemoteClientAttribute()
+    public EnableRemoteClientAttribute() : base(typeof(DefaultRemoteCallClient))
     {
-        if (Interceptors?.Any() != true)
-        {
-            Interceptors = new[] { typeof(DefaultRemoteCallClient) };
-        }
     }
 
     /// <summary>

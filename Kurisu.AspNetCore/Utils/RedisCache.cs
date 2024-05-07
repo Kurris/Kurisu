@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Threading.Tasks;
-using Kurisu.Core.ConfigurableOptions.Attributes;
+using Kurisu.AspNetCore.ConfigurableOptions.Attributes;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using StackExchange.Redis;
@@ -16,16 +16,6 @@ namespace Kurisu.AspNetCore.Utils;
 public class RedisCache
 {
     /// <summary>
-    /// 连接字符串
-    /// </summary>
-    private readonly string ConnectionString;
-
-    /// <summary>
-    /// 锁
-    /// </summary>
-    private readonly object Locker = new();
-
-    /// <summary>
     /// 数据库
     /// </summary>
     private readonly IDatabase _db;
@@ -34,6 +24,7 @@ public class RedisCache
     /// redis 连接对象
     /// </summary>
     private readonly IConnectionMultiplexer _connectionMultiplexer;
+
     private readonly ILogger<RedisCache> _logger;
 
     /// <summary>
@@ -76,8 +67,7 @@ public class RedisCache
             }
 
             _logger.LogInformation("get {lockKey} fail {retry}. will retry in {interval}ms", lockKey, retry, retryInterval.Value.TotalMilliseconds);
-        }
-        while (!locker.Acquired && retryInterval.HasValue && retry < retryCount);
+        } while (!locker.Acquired && retryInterval.HasValue && retry < retryCount);
 
         return locker;
     }
@@ -109,14 +99,12 @@ public class RedisCache
             }
 
             _logger.LogInformation("get {lockKey} fail {retry}. will retry in {interval}ms", lockKey, retry, retryInterval.Value.TotalMilliseconds);
-        }
-        while (!locker.Acquired && retryInterval.HasValue && retry < retryCount);
+        } while (!locker.Acquired && retryInterval.HasValue && retry < retryCount);
 
         return locker;
     }
 
     #region String 操作
-
 
     /// <summary>
     /// 设置key并保存字符串(如果key已存在,则覆盖值)
@@ -234,7 +222,6 @@ public class RedisCache
         return JsonConvert.DeserializeObject<T>(json);
     }
 
-
     #endregion String 操作
 
     #region Hash 操作
@@ -336,7 +323,6 @@ public class RedisCache
     /// <returns></returns>
     public RedisValue HashGet(RedisKey key, string hashField)
     {
-
         return _db.HashGet(key, hashField);
     }
 
@@ -1034,7 +1020,6 @@ public class RedisCache
         return await sub.PublishAsync(new RedisChannel(channel, RedisChannel.PatternMode.Auto), JsonConvert.SerializeObject(message));
     }
 
-
     #endregion 发布订阅
 
     #region 注册事件
@@ -1081,7 +1066,6 @@ public class RedisCache
     private static void ConnMultiplexer_HashSlotMoved(object sender, HashSlotMovedEventArgs e)
     {
         Console.WriteLine($"{nameof(ConnMultiplexer_HashSlotMoved)}: {nameof(e.OldEndPoint)}-{e.OldEndPoint} To {nameof(e.NewEndPoint)}-{e.NewEndPoint}, ");
-
     }
 
     /// <summary>

@@ -1,6 +1,5 @@
+using Kurisu.AspNetCore.UnifyResultAndValidation.Abstractions;
 using Kurisu.AspNetCore.UnifyResultAndValidation.Filters;
-using Kurisu.Core.Result;
-using Kurisu.Core.Result.Abstractions;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 

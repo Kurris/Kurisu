@@ -1,13 +1,11 @@
 ﻿using Kurisu.Aspect.DynamicProxy;
-using Kurisu.Core.Proxy.Attributes;
-using Kurisu.Test.WebApi_A.Interceptors;
+using Kurisu.Test.WebApi_A.Aops;
 
 namespace Kurisu.Test.WebApi_A.Services;
 
 public interface ITestService : IScopeDependency
 {
-    [Aop(typeof(TestAop))]
-    [ServiceInterceptor(typeof(TestAop1))]
+    [ServiceInterceptor(typeof(TestAop))]
     Task<string> SayAsync();
 
     Task DoAsync();

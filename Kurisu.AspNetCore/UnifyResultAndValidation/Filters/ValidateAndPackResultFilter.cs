@@ -1,9 +1,8 @@
-using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using Kurisu.AspNetCore.UnifyResultAndValidation.Abstractions;
 using Kurisu.AspNetCore.UnifyResultAndValidation.Options;
 using Kurisu.AspNetCore.Utils.Extensions;
-using Kurisu.Core.Result.Abstractions;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.Extensions.DependencyInjection;
@@ -58,14 +57,15 @@ public class ValidateAndPackResultFilter : IAsyncActionFilter, IAsyncResultFilte
         if (!context.ModelState.IsValid)
         {
             var errorResults = context.ModelState.Keys.SelectMany(key =>
-                context.ModelState[key]!.Errors.Where(_ => !string.IsNullOrEmpty(key))
-                    .Select(x => new
-                    {
-                        Field = key,
-                        Message = x.ErrorMessage
-                    }));
+                    context.ModelState[key]!.Errors.Where(_ => !string.IsNullOrEmpty(key))
+                        .Select(x => new
+                        {
+                            Field = key,
+                            Message = x.ErrorMessage
+                        }))
+                .ToList();
 
-            var msg = string.Empty;
+            string msg;
             if (!errorResults.Any())
             {
                 msg = ":参数为空";
@@ -85,16 +85,16 @@ public class ValidateAndPackResultFilter : IAsyncActionFilter, IAsyncResultFilte
             {
                 //实体对象，如果是FileResultContent/IActionResult则不会进入
                 case ObjectResult objectResult:
-                    {
-                        var result = objectResult.Value;
-                        var type = result?.GetType() ?? typeof(object);
-                        //返回值已经包装
-                        if (type.IsGenericType && type.IsAssignableTo(typeof(IApiResult)))
-                            context.Result = new ObjectResult(result);
-                        else
-                            context.Result = new ObjectResult(apiResult.GetDefaultSuccessApiResult(result));
-                        break;
-                    }
+                {
+                    var result = objectResult.Value;
+                    var type = result?.GetType() ?? typeof(object);
+                    //返回值已经包装
+                    if (type.IsGenericType && type.IsAssignableTo(typeof(IApiResult)))
+                        context.Result = new ObjectResult(result);
+                    else
+                        context.Result = new ObjectResult(apiResult.GetDefaultSuccessApiResult(result));
+                    break;
+                }
                 //空task
                 case EmptyResult:
                     context.Result = new ObjectResult(apiResult.GetDefaultSuccessApiResult((object)null));

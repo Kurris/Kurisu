@@ -1,4 +1,4 @@
-﻿using Kurisu.SqlSugar;
+﻿using Kurisu.AspNetCore.DataAccess.SqlSugar;
 using SqlSugar;
 
 namespace Kurisu.Test.WebApi_A.Entity;

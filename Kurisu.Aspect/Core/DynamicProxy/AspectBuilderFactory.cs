@@ -1,5 +1,4 @@
 ﻿using System.Reflection;
-using Kurisu.Aspect.DynamicProxy;
 
 namespace Kurisu.Aspect.Core.DynamicProxy;
 
@@ -14,14 +13,12 @@ internal class AspectBuilderFactory
         _interceptorCollector = interceptorCollector;
     }
 
-    public AspectBuilder Create(AspectContext context)
+    public AspectBuilder Create(MethodInfo serviceMethod, MethodInfo implementationMethod)
     {
-        if (context == null)
-        {
-            throw new ArgumentNullException(nameof(context));
-        }
+        if (serviceMethod == null) throw new ArgumentNullException(nameof(serviceMethod));
+        if (implementationMethod == null) throw new ArgumentNullException(nameof(implementationMethod));
 
-        return _aspectCaching.GetOrAdd(Tuple.Create(context.ServiceMethod, context.ImplementationMethod), tuple =>
+        return _aspectCaching.GetOrAdd(Tuple.Create(serviceMethod, implementationMethod), tuple =>
         {
             var aspectBuilder = new AspectBuilder(@delegate => @delegate.Complete());
 

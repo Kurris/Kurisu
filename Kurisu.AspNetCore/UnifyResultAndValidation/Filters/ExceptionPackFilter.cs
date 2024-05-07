@@ -1,6 +1,6 @@
 using System.Threading.Tasks;
-using Kurisu.Core.CustomClass;
-using Kurisu.Core.Result.Abstractions;
+using Kurisu.AspNetCore.CustomClass;
+using Kurisu.AspNetCore.UnifyResultAndValidation.Abstractions;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.Extensions.DependencyInjection;

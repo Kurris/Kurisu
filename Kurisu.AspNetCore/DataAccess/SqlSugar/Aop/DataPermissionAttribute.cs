@@ -1,10 +1,10 @@
 ﻿using System;
 using System.Linq;
 using System.Threading.Tasks;
-using Kurisu.Core.DataAccess.Entity;
-using Kurisu.Core.User.Abstractions;
-using Kurisu.SqlSugar.Services;
-using Kurisu.SqlSugar.Services.Implements;
+using Kurisu.AspNetCore.Authentication.Abstractions;
+using Kurisu.AspNetCore.DataAccess.Entity;
+using Kurisu.AspNetCore.DataAccess.SqlSugar.Services;
+using Kurisu.AspNetCore.DataAccess.SqlSugar.Services.Implements;
 using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.Extensions.DependencyInjection;
 using SqlSugar;

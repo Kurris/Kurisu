@@ -1,8 +1,8 @@
 using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using Kurisu.AspNetCore.Authentication.Abstractions;
 using Kurisu.AspNetCore.Authentication.Defaults;
-using Kurisu.Core.User.Abstractions;
 using Microsoft.AspNetCore.Http;
 using Xunit;
 

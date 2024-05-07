@@ -1,9 +1,8 @@
 using System.Threading.Tasks;
-using Kurisu.AspNetCore.Startup;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 
-namespace Kurisu.Startup;
+namespace Kurisu.AspNetCore.Startup;
 
 /// <summary>
 /// 启动Host

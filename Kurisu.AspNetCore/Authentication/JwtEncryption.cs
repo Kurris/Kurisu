@@ -8,6 +8,9 @@ using Microsoft.IdentityModel.Tokens;
 
 namespace Kurisu.AspNetCore.Authentication;
 
+/// <summary>
+/// jwt
+/// </summary>
 public static class JwtEncryption
 {
     /// <summary>

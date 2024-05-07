@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Threading.Tasks;
-using Kurisu.SqlSugar.Services;
+using Kurisu.AspNetCore.DataAccess.SqlSugar.Services;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.Extensions.DependencyInjection;
