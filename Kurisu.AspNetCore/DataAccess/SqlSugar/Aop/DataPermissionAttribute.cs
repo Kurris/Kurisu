@@ -18,7 +18,7 @@ namespace Kurisu.AspNetCore.DataAccess.SqlSugar.Aop;
 public class DataPermissionAttribute : Attribute, IAsyncActionFilter
 {
     private readonly bool _useSqlWhere;
-    private readonly string[] _prefixs;
+    private readonly string[] _prefixes;
 
     /// <summary>
     /// 数据权限,使用IQueryable
@@ -36,14 +36,10 @@ public class DataPermissionAttribute : Attribute, IAsyncActionFilter
     public DataPermissionAttribute(bool useSqlWhere, params string[] prefixs)
     {
         _useSqlWhere = useSqlWhere;
-        _prefixs = prefixs;
-        if (_prefixs == null)
-        {
-            _prefixs = Array.Empty<string>();
-        }
+        _prefixes = prefixs ?? Array.Empty<string>();
     }
 
-
+    /// <inheritdoc />
     public async Task OnActionExecutionAsync(ActionExecutingContext context, ActionExecutionDelegate next)
     {
         var dp = context.HttpContext.RequestServices.GetService<DataPermissionService>();
@@ -57,14 +53,14 @@ public class DataPermissionAttribute : Attribute, IAsyncActionFilter
 
             dp.Enable = true;
             dp.UseSqlWhere = _useSqlWhere;
-            if (dp.UseSqlWhere == true)
+            if (dp.UseSqlWhere)
             {
                 var currentUser = context.HttpContext.RequestServices.GetService<ICurrentUser>();
                 var tenantIds = currentUser.GetUserClaim("tenants")?.Split(',').Select(x => $"'{x}'") ?? Array.Empty<string>();
 
-                if (_prefixs.Any())
+                if (_prefixes.Any())
                 {
-                    dp.Wheres.AddRange(_prefixs.ToList().Select(x => $"{x}.`TenantId` in ({string.Join(",", tenantIds)})"));
+                    dp.Wheres.AddRange(_prefixes.ToList().Select(x => $"{x}.`TenantId` in ({string.Join(",", tenantIds)})"));
                 }
                 else
                 {

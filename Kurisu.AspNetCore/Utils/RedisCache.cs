@@ -67,7 +67,7 @@ public class RedisCache
             }
 
             _logger.LogInformation("get {lockKey} fail {retry}. will retry in {interval}ms", lockKey, retry, retryInterval.Value.TotalMilliseconds);
-        } while (!locker.Acquired && retryInterval.HasValue && retry < retryCount);
+        } while (!locker.Acquired && retry < retryCount);
 
         return locker;
     }
@@ -99,7 +99,7 @@ public class RedisCache
             }
 
             _logger.LogInformation("get {lockKey} fail {retry}. will retry in {interval}ms", lockKey, retry, retryInterval.Value.TotalMilliseconds);
-        } while (!locker.Acquired && retryInterval.HasValue && retry < retryCount);
+        } while (!locker.Acquired && retry < retryCount);
 
         return locker;
     }

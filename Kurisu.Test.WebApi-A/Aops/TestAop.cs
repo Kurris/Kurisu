@@ -12,7 +12,9 @@ namespace Kurisu.Test.WebApi_A.Aops
         {
             var logger = context.ServiceProvider.GetService<ILogger<TestAop>>();
             logger.LogInformation("begin");
+            
             await next(context);
+            
             logger.LogInformation("end");
         }
     }

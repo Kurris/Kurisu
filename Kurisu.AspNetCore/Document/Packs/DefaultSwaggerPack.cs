@@ -26,15 +26,18 @@ public class DefaultSwaggerPack : BaseAppPack
 {
     private static List<OpenApiInfo> _apiInfos;
 
+    /// <summary>
+    /// ctor
+    /// </summary>
     public DefaultSwaggerPack()
     {
         Initialize();
     }
 
+    /// <inheritdoc />
     public override int Order => 1;
 
-    public override bool IsBeforeUseRouting => true;
-
+    /// <inheritdoc />
     public override bool IsEnable
     {
         get
@@ -74,7 +77,7 @@ public class DefaultSwaggerPack : BaseAppPack
         }
     }
 
-
+    /// <inheritdoc />
     public override void ConfigureServices(IServiceCollection services)
     {
         var setting = Configuration.GetSection(nameof(SwaggerOptions)).Get<SwaggerOptions>();
@@ -182,6 +185,7 @@ public class DefaultSwaggerPack : BaseAppPack
         });
     }
 
+    /// <inheritdoc />
     public override void Configure(IApplicationBuilder app, IWebHostEnvironment env)
     {
         var setting = Configuration.GetSection(nameof(SwaggerOptions)).Get<SwaggerOptions>();

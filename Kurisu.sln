@@ -23,7 +23,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Kurisu.RemoteCall", "Kurisu
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "demo", "demo", "{33CE951A-78DA-442D-90CC-49F1D754E50A}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Kurisu.Aspect", "Kurisu.Aspect\Kurisu.Aspect.csproj", "{8306ECB8-EF34-4926-8A94-B21CB0A4600E}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Kurisu.Aspect", "Kurisu.Aspect\Kurisu.Aspect.csproj", "{8306ECB8-EF34-4926-8A94-B21CB0A4600E}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

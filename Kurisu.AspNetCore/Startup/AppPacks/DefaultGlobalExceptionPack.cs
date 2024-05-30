@@ -23,8 +23,10 @@ public class DefaultGlobalExceptionPack : BaseAppPack
     /// </summary>
     public override int Order => -1;
 
+    /// <inheritdoc />
     public override bool IsBeforeUseRouting => true;
-
+    
+    /// <inheritdoc />
     public override void Configure(IApplicationBuilder app, IWebHostEnvironment env)
     {
         app.UseMiddleware<GlobalExceptionMiddleware>();
@@ -36,10 +38,18 @@ public class DefaultGlobalExceptionPack : BaseAppPack
 /// </summary>
 public class GlobalExceptionMiddleware : BaseMiddleware
 {
+    /// <summary>
+    /// ctor
+    /// </summary>
+    /// <param name="next"></param>
     public GlobalExceptionMiddleware(RequestDelegate next) : base(next)
     {
     }
 
+    /// <summary>
+    /// invoke
+    /// </summary>
+    /// <param name="context"></param>
     public override async Task Invoke(HttpContext context)
     {
         try

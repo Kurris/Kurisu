@@ -74,7 +74,7 @@ public class DefaultApiResult<T> : IApiResult
         return new DefaultApiResult<object>
         {
             Code = ApiStateCode.ValidateError,
-            Msg = "请求参数有误" + validateMessage,
+            Msg = validateMessage,
         };
     }
 

@@ -12,9 +12,6 @@ namespace Kurisu.AspNetCore.Startup.AppPacks;
 public class AutoRegisterPack : BaseAppPack
 {
     /// <inheritdoc />
-    public override bool IsBeforeUseRouting { get; }
-
-    /// <inheritdoc />
     public override void ConfigureServices(IServiceCollection services)
     {
         var referencedAssemblies = Assembly.GetEntryAssembly()?.GetReferencedAssemblies() ?? Array.Empty<AssemblyName>();
@@ -31,7 +28,7 @@ public class AutoRegisterPack : BaseAppPack
 
             var injector = Assembly.Load(assembly).GetTypes().FirstOrDefault(x => x.Name == extensionsType)!;
             var method = injector.GetMethod(inject)!;
-            method.Invoke(null, new object[] { services });
+            method?.Invoke(null, new object[] { services });
         }
     }
 }

@@ -25,6 +25,21 @@ public static class ThrowExtensions
     }
 
     /// <summary>
+    /// not null异常抛出
+    /// </summary>
+    /// <param name="obj"></param>
+    /// <param name="errorMessage"></param>
+    /// <typeparam name="T"></typeparam>
+    /// <exception cref="UserFriendlyException"></exception>
+    public static void ThrowIfNotNull<T>(this T obj, string errorMessage) where T : class
+    {
+        if (obj != null)
+        {
+            throw new UserFriendlyException(errorMessage);
+        }
+    }
+
+    /// <summary>
     /// true异常抛出 
     /// </summary>
     /// <param name="condition"></param>

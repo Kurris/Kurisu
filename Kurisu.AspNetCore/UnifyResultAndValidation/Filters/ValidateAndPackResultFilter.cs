@@ -65,15 +65,13 @@ public class ValidateAndPackResultFilter : IAsyncActionFilter, IAsyncResultFilte
                         }))
                 .ToList();
 
-            string msg;
+            var msg = "请求参数有误:";
             if (!errorResults.Any())
-            {
-                msg = ":参数为空";
-            }
+                msg += "参数为空";
             else
             {
                 var es = errorResults.Select(x => x.Message).Distinct();
-                msg = ":" + es.Join(",");
+                msg += es.Join(",");
             }
 
             //包装验证错误信息
@@ -83,7 +81,7 @@ public class ValidateAndPackResultFilter : IAsyncActionFilter, IAsyncResultFilte
         {
             switch (context.Result)
             {
-                //实体对象，如果是FileResultContent/IActionResult则不会进入
+                //实体对象，如果是FileResultContent则不会进入
                 case ObjectResult objectResult:
                 {
                     var result = objectResult.Value;

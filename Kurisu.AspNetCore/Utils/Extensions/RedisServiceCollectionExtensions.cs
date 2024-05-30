@@ -23,12 +23,9 @@ public static class RedisServiceCollectionExtensions
         {
             var redisOptions = sp.GetService<IOptions<RedisOptions>>().Value;
 
-            if (!isSentinel)
-            {
-                return ConnectionMultiplexer.Connect(redisOptions.ConnectionString, log);
-            }
-
-            return ConnectionMultiplexer.SentinelConnect(redisOptions.ConnectionString, log);
+            return !isSentinel
+                ? ConnectionMultiplexer.Connect(redisOptions.ConnectionString, log)
+                : ConnectionMultiplexer.SentinelConnect(redisOptions.ConnectionString, log);
         });
 
         services.AddSingleton<RedisCache>();

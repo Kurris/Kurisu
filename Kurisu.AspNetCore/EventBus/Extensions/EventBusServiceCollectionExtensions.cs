@@ -5,13 +5,13 @@ using Microsoft.Extensions.DependencyInjection;
 namespace Kurisu.AspNetCore.EventBus.Extensions;
 
 /// <summary>
-/// 进程内事件总线
+/// di
 /// </summary>
 [SkipScan]
 public static class EventBusServiceCollectionExtensions
 {
     /// <summary>
-    /// 进程内事件总线
+    /// 娣诲姞浜嬩欢鎬荤嚎
     /// </summary>
     /// <param name="services"></param>
     /// <returns></returns>

@@ -14,13 +14,17 @@ namespace Kurisu.AspNetCore.DataAccess.SqlSugar.Aop;
 [AttributeUsage(AttributeTargets.Method | AttributeTargets.Class)]
 public class LogAttribute : Attribute, IAsyncActionFilter
 {
+    /// <summary>
+    /// ctor
+    /// </summary>
+    /// <param name="title"></param>
     public LogAttribute(string title)
     {
         Title = title;
     }
 
     /// <summary>
-    /// 
+    /// 标题
     /// </summary>
     public string Title { get; set; }
 
@@ -29,7 +33,7 @@ public class LogAttribute : Attribute, IAsyncActionFilter
     /// </summary>
     public bool Diff { get; set; }
 
-
+    /// <inheritdoc />
     public async Task OnActionExecutionAsync(ActionExecutingContext context, ActionExecutionDelegate next)
     {
         PreSetting(context.HttpContext);

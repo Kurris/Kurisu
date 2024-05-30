@@ -7,15 +7,15 @@ namespace Kurisu.AspNetCore.Startup.AppPacks;
 /// <summary>
 /// 健康检查
 /// </summary>
-public class DefualtHealthcheckPack : BaseAppPack
+public class DefaultHealthCheckPack : BaseAppPack
 {
-    public override bool IsBeforeUseRouting { get; }
-
+    /// <inheritdoc />
     public override void ConfigureServices(IServiceCollection services)
     {
         services.AddHealthChecks();
     }
 
+    /// <inheritdoc />
     public override void Configure(IApplicationBuilder app, IWebHostEnvironment env)
     {
         app.UseHealthChecks("/healthz");

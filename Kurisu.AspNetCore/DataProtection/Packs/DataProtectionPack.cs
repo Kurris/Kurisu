@@ -12,8 +12,7 @@ namespace Kurisu.AspNetCore.DataProtection.Packs;
 /// </summary>
 public class DataProtectionPack : BaseAppPack
 {
-    public override bool IsBeforeUseRouting { get; }
-
+    /// <inheritdoc />
     public override bool IsEnable
     {
         get
@@ -23,6 +22,7 @@ public class DataProtectionPack : BaseAppPack
         }
     }
 
+    /// <inheritdoc />
     public override void ConfigureServices(IServiceCollection services)
     {
         var setting = Configuration.GetSection(nameof(Settings.DataProtectionOptions)).Get<Settings.DataProtectionOptions>();

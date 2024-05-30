@@ -1,4 +1,3 @@
-using Kurisu.Test.WebApi_A.Apis;
 using Kurisu.Test.WebApi_A.AutoReload;
 using Kurisu.Test.WebApi_A.Services;
 using Microsoft.AspNetCore.Authorization;
@@ -14,30 +13,32 @@ namespace Kurisu.Test.WebApi_A.Controllers;
 public class WeatherForecastController : ControllerBase
 {
     private readonly IConfiguration _configuration;
-    private readonly ITestApi _testApi;
     private readonly ITestService _testService;
 
     public WeatherForecastController(
         IConfiguration configuration,
-        ITestApi testApi,
         ITestService testService)
     {
         _configuration = configuration;
-        _testApi = testApi;
         _testService = testService;
     }
 
     /// <summary>
     /// 测试
     /// </summary>
-    [Authorize]
+    // [Authorize]
     [HttpPost("test")]
     //[Log("测试", Diff = true)]
     //[DataPermission(true, "a")]
-    public async Task<object> Test(TestRequest request)
+    public async Task<FaceResponse> Test(TestRequest request)
     {
-        await _testService.DoAsync();
-        return await _testService.SayAsync();
+        // await _testService.DoAsync();
+        // return await _testService.SayAsync();
+
+        return new FaceResponse()
+        {
+            Face = null
+        };
     }
 
 

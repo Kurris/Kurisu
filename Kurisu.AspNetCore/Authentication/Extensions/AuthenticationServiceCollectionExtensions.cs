@@ -5,8 +5,16 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace Kurisu.AspNetCore.Authentication.Extensions;
 
+/// <summary>
+/// 添加用户获取
+/// </summary>
 public static class AuthenticationServiceCollectionExtensions
 {
+    /// <summary>
+    /// 添加用户获取
+    /// </summary>
+    /// <param name="services"></param>
+    /// <returns></returns>
     public static IServiceCollection AddUserInfo(this IServiceCollection services)
     {
         services.AddHttpContextAccessor();

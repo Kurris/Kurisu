@@ -11,10 +11,10 @@ public class DefaultCorsPack : BaseAppPack
 {
     private const string _cors = "defaultCors";
 
+    /// <inheritdoc />
     public override int Order => 1;
 
-    public override bool IsBeforeUseRouting => false;
-
+    /// <inheritdoc />
     public override void ConfigureServices(IServiceCollection services)
     {
         //添加跨域支持
@@ -30,6 +30,7 @@ public class DefaultCorsPack : BaseAppPack
         });
     }
 
+    /// <inheritdoc />
     public override void Configure(IApplicationBuilder app, IWebHostEnvironment env)
     {
         app.UseCors(_cors);

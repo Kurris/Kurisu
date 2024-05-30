@@ -17,16 +17,17 @@ public class DefaultIdentityServerAuthenticationPack : BaseAppPack
     /// </summary>
     public override int Order => 2;
 
+    /// <inheritdoc />
     public override bool IsEnable => Configuration.GetSection(nameof(IdentityServerOptions)).Get<IdentityServerOptions>() != null;
 
-    public override bool IsBeforeUseRouting => false;
-
+    /// <inheritdoc />
     public override void ConfigureServices(IServiceCollection services)
     {
         var setting = Configuration.GetSection(nameof(IdentityServerOptions)).Get<IdentityServerOptions>();
         services.AddOAuth2Authentication(setting);
     }
 
+    /// <inheritdoc />
     public override void Configure(IApplicationBuilder app, IWebHostEnvironment env)
     {
         app.UseAuthentication();

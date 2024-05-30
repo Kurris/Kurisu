@@ -30,7 +30,6 @@
 
     <ItemGroup>
       <ProjectReference Include="..\Kurisu.AspNetCore\Kurisu.AspNetCore.csproj" />
-      <ProjectReference Include="..\Kurisu.RemoteCall\Kurisu.RemoteCall.csproj" />
     </ItemGroup>
 
     <ItemGroup>

@@ -19,7 +19,7 @@ public sealed class RedisLock : IDisposable, IAsyncDisposable
     private readonly string _lockKey;
     private readonly string _lockValue = Guid.NewGuid().ToString();
     private readonly TimeSpan? _expiry;
-    private readonly int _interval = 0;
+    private readonly int _interval;
 
     /// <summary>
     /// ctor
@@ -39,7 +39,7 @@ public sealed class RedisLock : IDisposable, IAsyncDisposable
         }
         else
         {
-            var interval = expiry.Value.TotalSeconds % 3;
+            var interval = _expiry.Value.TotalSeconds % 3;
             if (interval != 0)
             {
                 throw new ArgumentException(nameof(expiry) + "应该为3的倍数");

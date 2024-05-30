@@ -33,7 +33,7 @@ public class TransactionalAttribute : Attribute, IAsyncActionFilter
         _isolationLevel = isolationLevel;
     }
 
-
+    /// <inheritdoc />
     public async Task OnActionExecutionAsync(ActionExecutingContext context, ActionExecutionDelegate next)
     {
         var dbContext = context.HttpContext.RequestServices.GetRequiredService<ISqlSugarClient>();

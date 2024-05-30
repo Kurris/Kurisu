@@ -15,6 +15,7 @@ namespace Kurisu.AspNetCore.DataAccess.SqlSugar.Aop;
 [AttributeUsage(AttributeTargets.Method | AttributeTargets.Class)]
 public class IgnoreTenantAttribute : Attribute, IAsyncActionFilter
 {
+    /// <inheritdoc />
     public async Task OnActionExecutionAsync(ActionExecutingContext context, ActionExecutionDelegate next)
     {
         var dbContext = context.HttpContext.RequestServices.GetRequiredService<ISqlSugarClient>();

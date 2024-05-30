@@ -12,18 +12,20 @@ namespace Kurisu.AspNetCore.Authentication.Packs;
 /// </summary>
 public class DefaultJwtAuthenticationPack : BaseAppPack
 {
+    /// <inheritdoc />
     public override int Order => 2;
 
+    /// <inheritdoc />
     public override bool IsEnable => Configuration.GetSection(nameof(JwtOptions)).Get<JwtOptions>() != null;
 
-    public override bool IsBeforeUseRouting => false;
-
+    /// <inheritdoc />
     public override void ConfigureServices(IServiceCollection services)
     {
         var setting = Configuration.GetSection(nameof(JwtOptions)).Get<JwtOptions>();
         services.AddKurisuJwtAuthentication(setting, context => { });
     }
 
+    /// <inheritdoc />
     public override void Configure(IApplicationBuilder app, IWebHostEnvironment env)
     {
         app.UseAuthentication();
