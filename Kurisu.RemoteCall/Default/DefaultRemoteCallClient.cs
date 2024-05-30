@@ -1,14 +1,14 @@
-﻿using Newtonsoft.Json;
+﻿using System.ComponentModel.DataAnnotations;
 using System.Reflection;
-using Microsoft.Extensions.Configuration;
 using Kurisu.RemoteCall.Attributes;
-using Mapster;
-using Microsoft.Extensions.Logging;
-using System.ComponentModel.DataAnnotations;
 using Kurisu.RemoteCall.Proxy;
 using Kurisu.RemoteCall.Proxy.Abstractions;
+using Mapster;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
+using Newtonsoft.Json;
 
-namespace Kurisu.RemoteCall.Aops;
+namespace Kurisu.RemoteCall.Default;
 
 /// <summary>
 /// 默认远程调用

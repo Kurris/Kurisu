@@ -1,7 +1,6 @@
 ﻿using Kurisu.RemoteCall.Abstractions;
 using Kurisu.RemoteCall.Attributes;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 using System.Net.Mime;
@@ -9,7 +8,7 @@ using System.Reflection;
 using System.Text;
 using Kurisu.RemoteCall.Proxy.Abstractions;
 using Microsoft.AspNetCore.Http;
-using Microsoft.Net.Http.Headers;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Kurisu.RemoteCall;
 

@@ -1,5 +1,5 @@
 ﻿using Kurisu.RemoteCall.Abstractions;
-using Kurisu.RemoteCall.Aops;
+using Kurisu.RemoteCall.Default;
 using Kurisu.RemoteCall.Proxy.Attributes;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
