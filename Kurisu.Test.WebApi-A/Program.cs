@@ -30,7 +30,7 @@ public class Startup : DefaultStartup
     {
         base.ConfigureServices(services);
 
-        services.AddAop();
+        //services.AddAop();
 
         services.AddSqlSugar(sp =>
         {
@@ -56,6 +56,6 @@ public class Startup : DefaultStartup
         });
 
         services.AddRedis();
-        services.AddEventBus();
+        //services.AddEventBus();
     }
 }

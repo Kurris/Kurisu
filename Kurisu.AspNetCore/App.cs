@@ -55,6 +55,11 @@ public class App
     }
 
     /// <summary>
+    /// 可用类
+    /// </summary>
+    public static List<Type> ActiveTypes => DependencyInjectionHelper.ActiveTypes;
+
+    /// <summary>
     /// 可作为依赖注入的服务类
     /// </summary>
     public static IEnumerable<Type> DependencyServices => DependencyInjectionHelper.DependencyServices;

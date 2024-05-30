@@ -1,4 +1,5 @@
-﻿namespace Kurisu.Test.WebApi_A.Services.Implements;
+﻿
+namespace Kurisu.Test.WebApi_A.Services.Implements;
 
 public class TestService : ITestService
 {
@@ -8,14 +9,14 @@ public class TestService : ITestService
     {
         _logger = logger;
     }
-    
+
     public Task<string> SayAsync()
     {
         _logger.LogInformation("doing");
         return Task.FromResult("hello");
     }
 
-    
+
     public async Task DoAsync()
     {
         Add();

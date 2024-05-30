@@ -11,24 +11,33 @@ namespace Kurisu.AspNetCore.Startup.AppPacks;
 /// </summary>
 public class AutoRegisterPack : BaseAppPack
 {
+    /// <inheritdoc/>
+    public override int Order => 99;
+
     /// <inheritdoc />
     public override void ConfigureServices(IServiceCollection services)
     {
         var referencedAssemblies = Assembly.GetEntryAssembly()?.GetReferencedAssemblies() ?? Array.Empty<AssemblyName>();
-        var packages = new List<string> { "Kurisu.RemoteCall", "Kurisu.Aspect" };
+        referencedAssemblies = referencedAssemblies.Where(x => x.Name!.EndsWith(".Api", StringComparison.InvariantCultureIgnoreCase)).ToArray();
+        var packages = new List<string> { "Kurisu.RemoteCall" };
+
         const string extensionsType = "DependencyInjectionExtensions";
         const string inject = "Inject";
 
-        foreach (var assembly in packages.Select(package => referencedAssemblies.FirstOrDefault(x => x.Name == package)))
+        foreach (var referencedAssembly in referencedAssemblies)
         {
-            if (assembly == null)
+            var currentAssemblyRefs = Assembly.Load(referencedAssembly).GetReferencedAssemblies();
+            foreach (var assembly in packages.Select(package => currentAssemblyRefs.FirstOrDefault(x => x.Name == package)))
             {
-                continue;
-            }
+                if (assembly == null)
+                {
+                    continue;
+                }
 
-            var injector = Assembly.Load(assembly).GetTypes().FirstOrDefault(x => x.Name == extensionsType)!;
-            var method = injector.GetMethod(inject)!;
-            method?.Invoke(null, new object[] { services });
+                var injector = Assembly.Load(assembly).GetTypes().FirstOrDefault(x => x.Name == extensionsType)!;
+                var method = injector.GetMethod(inject)!;
+                method?.Invoke(null, new object[] { services, App.ActiveTypes });
+            }
         }
     }
 }

@@ -29,13 +29,13 @@
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\Kurisu.AspNetCore\Kurisu.AspNetCore.csproj" />
-    </ItemGroup>
-
-    <ItemGroup>
       <Content Update="appsettings.Development.json">
         <DependentUpon>appsettings.json</DependentUpon>
       </Content>
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\Kurisu.AspNetCore\Kurisu.AspNetCore.csproj" />
     </ItemGroup>
 
 </Project>

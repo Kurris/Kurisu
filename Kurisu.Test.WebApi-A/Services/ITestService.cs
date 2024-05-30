@@ -4,7 +4,7 @@ using Kurisu.Test.WebApi_A.Aops;
 namespace Kurisu.Test.WebApi_A.Services;
 
 
-public interface ITestService : IScopeDependency
+public interface ITestService 
 {
 
     [ServiceInterceptor(typeof(TestAop))]
