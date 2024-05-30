@@ -32,6 +32,7 @@ public static class DependencyInjectionExtensions
                     var generator = sp.GetRequiredService<IProxyTypeGenerator>();
                     var type = generator.CreateClassProxyType(toReplace.Service, toReplace.Service);
                     return ActivatorUtilities.CreateInstance(sp, type);
+                    
                 }, toReplace.Lifetime));
             }
         }
