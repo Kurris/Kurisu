@@ -43,7 +43,7 @@ public class DefaultSwaggerPack : BaseAppPack
         get
         {
             var setting = Configuration.GetSection(nameof(SwaggerOptions)).Get<SwaggerOptions>();
-            return setting != null && setting.Enable;
+            return setting is { Enable: true };
         }
     }
 
@@ -118,7 +118,7 @@ public class DefaultSwaggerPack : BaseAppPack
             //加载运行目录下xml注释文件
             Directory.GetFiles(AppDomain.CurrentDomain.BaseDirectory, "*.xml")
                 .ToList()
-                .ForEach(file => c.IncludeXmlComments(file));
+                .ForEach(file => c.IncludeXmlComments(file, true));
 
 
             //************************************************* Bearer Token *****************************************************//
@@ -133,9 +133,9 @@ public class DefaultSwaggerPack : BaseAppPack
             c.AddSecurityRequirement(new OpenApiSecurityRequirement
             {
                 {
-                    new OpenApiSecurityScheme()
+                    new OpenApiSecurityScheme
                     {
-                        Reference = new OpenApiReference()
+                        Reference = new OpenApiReference
                         {
                             Type = ReferenceType.SecurityScheme,
                             Id = JwtBearerDefaults.AuthenticationScheme
@@ -147,7 +147,8 @@ public class DefaultSwaggerPack : BaseAppPack
 
 
             c.OperationFilter<AddResponseHeadersFilter>();
-            c.OperationFilter<AppendAuthorizeToSummaryOperationFilter>(); //lock 图标
+            c.OperationFilter<AppendAuthorizeToSummaryOperationFilter>();
+            c.OperationFilter<SecurityRequirementsOperationFilter>(JwtBearerDefaults.AuthenticationScheme);
 
             //************************************************* OAuth2.0 Token *****************************************************//
 
@@ -180,7 +181,7 @@ public class DefaultSwaggerPack : BaseAppPack
                     }
                 }
             });
-
+            
             c.OperationFilter<SecurityRequirementsOperationFilter>();
         });
     }
@@ -195,7 +196,7 @@ public class DefaultSwaggerPack : BaseAppPack
         }
 
         var virtualPath = Configuration.GetValue("VirtualPath", string.Empty);
-        
+
         app.UseSwagger();
         app.UseSwaggerUI(c =>
         {

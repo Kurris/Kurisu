@@ -27,6 +27,8 @@ public static class OAuth2AuthenticationServiceCollectionExtensions
     public static IServiceCollection AddOAuth2Authentication(this IServiceCollection services, IdentityServerOptions options)
     {
         services.AddUserInfo();
+
+        //授权后端使用的HttpClient, 不校验SSL安全,并且发送X-Requested-Internal标识内部网络请求
         services.AddHttpClient("AuthenticationBackchannel", (sp, httpClient) =>
             {
                 if (sp.GetService<IWebHostEnvironment>().IsProduction())
@@ -44,12 +46,10 @@ public static class OAuth2AuthenticationServiceCollectionExtensions
 
                 return handler;
             });
-
+        
+        //使用配置的HttpClient
         services.AddOptions<JwtBearerOptions>(JwtBearerDefaults.AuthenticationScheme)
-            .Configure<IHttpClientFactory>((configureOptions, httpClientFactory) =>
-            {
-                configureOptions.Backchannel = httpClientFactory.CreateClient("AuthenticationBackchannel");
-            });
+            .Configure<IHttpClientFactory>((configureOptions, httpClientFactory) => { configureOptions.Backchannel = httpClientFactory.CreateClient("AuthenticationBackchannel"); });
 
         var builder = services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             .AddJwtBearer(configureOptions =>
