@@ -23,7 +23,7 @@ public static class DependencyInjectionExtensions
     {
         services.AddSingleton<DefaultRemoteCallClient>();
 
-        var interfaceTypes = (activeTypes.Where(x => x.IsInterface && x.IsDefined(typeof(EnableRemoteClientAttribute), false)) ?? Array.Empty<Type>()).ToList();
+        var interfaceTypes = activeTypes.Where(x => x.IsInterface && x.IsDefined(typeof(EnableRemoteClientAttribute), false)).ToList();
         foreach (var item in interfaceTypes)
         {
             item.GetCustomAttributes<EnableRemoteClientAttribute>().ToList().ForEach(aop => aop.ConfigureServices(services));
@@ -55,5 +55,16 @@ public static class DependencyInjectionExtensions
         }
 
         return services;
+    }
+
+    /// <summary>
+    /// 添加远程调用
+    /// </summary>
+    /// <param name="services"></param>
+    /// <param name="activeTypes"></param>
+    /// <returns></returns>
+    public static IServiceCollection AddRemoteCall(this IServiceCollection services, IEnumerable<Type> activeTypes)
+    {
+        return services.Inject(activeTypes);
     }
 }

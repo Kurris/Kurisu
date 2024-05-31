@@ -137,7 +137,6 @@ internal static class InternalHelper
 
         token = serviceProvider.GetRequiredService<IHttpContextAccessor>()!.HttpContext!.Request.Headers[headerName].FirstOrDefault();
         return true;
-
     }
 
     /// <summary>
@@ -210,30 +209,27 @@ internal static class InternalHelper
 
             return content;
         }
-        else
+
+        var body = "{}";
+
+        //MediaTypeAttribute
+        string mediaType = invocation.Method.GetCustomAttribute<RequestMediaTypeAttribute>()?.ContentType ?? MediaTypeNames.Application.Json;
+        if (mediaType == MediaTypeNames.Application.Json)
         {
-            var body = "{}";
-
-            //MediaTypeAttribute
-            string mediaType = invocation.Method.GetCustomAttribute<RequestMediaTypeAttribute>()?.ContentType ?? MediaTypeNames.Application.Json;
-            if (mediaType == MediaTypeNames.Application.Json)
+            if (parameters.Any() && parameters[0].Key.ParameterType != typeof(string))
             {
-                if (parameters.Any() && parameters[0].Key.ParameterType != typeof(string))
-                {
-                    body = JsonConvert.SerializeObject(parameters[0].Value, JsonSerializerSettings);
-                }
+                body = JsonConvert.SerializeObject(parameters[0].Value, JsonSerializerSettings);
             }
-            else if (mediaType == "application/x-www-form-urlencoded")
-            {
-                if (parameters.Any() && parameters[0].Key.ParameterType != typeof(string))
-                {
-                    var d = JsonConvert.DeserializeObject<Dictionary<string, string>>(JsonConvert.SerializeObject(parameters[0].Value, JsonSerializerSettings))!;
-                    body = string.Join("&", d.Select(pair => $"{pair.Key}={pair.Value}"));
-                }
-            }
-
-            var content = new StringContent(body, Encoding.UTF8, mediaType);
-            return content;
         }
+        else if (mediaType == "application/x-www-form-urlencoded")
+        {
+            if (parameters.Any() && parameters[0].Key.ParameterType != typeof(string))
+            {
+                var d = JsonConvert.DeserializeObject<Dictionary<string, string>>(JsonConvert.SerializeObject(parameters[0].Value, JsonSerializerSettings))!;
+                body = string.Join("&", d.Select(pair => $"{pair.Key}={pair.Value}"));
+            }
+        }
+
+        return new StringContent(body, Encoding.UTF8, mediaType);
     }
 }

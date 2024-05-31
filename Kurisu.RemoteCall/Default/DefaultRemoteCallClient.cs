@@ -107,10 +107,10 @@ internal class DefaultRemoteCallClient : Aop
 
         //请求方法的参数
         var requestParameters = new List<object>(2) { url };
-
+        HttpContent content = null;
         if (httpMethodType != HttpMethodEnumType.Get)
         {
-            var content = await InternalHelper.FixContentAsync(invocation, methodParameterValues);
+            content = await InternalHelper.FixContentAsync(invocation, methodParameterValues);
             requestParameters.Add(content);
         }
 
@@ -122,7 +122,7 @@ internal class DefaultRemoteCallClient : Aop
         if (InternalHelper.UseLog(invocation))
         {
             if (requestParameters.Count > 1)
-                _logger.LogInformation("{method} {url} \r\n Body:{body} .", httpMethodType, url, JsonConvert.SerializeObject(requestParameters.LastOrDefault()));
+                _logger.LogInformation("{method} {url} \r\n Body:{body} .", httpMethodType, url, await content!.ReadAsStringAsync());
             else
                 _logger.LogInformation("{method} {url} .", httpMethodType, url);
         }
@@ -141,7 +141,7 @@ internal class DefaultRemoteCallClient : Aop
         {
             _logger.LogInformation("Response: {response} .", responseJson);
         }
-
+        
         response.EnsureSuccessStatusCode();
         return responseJson;
     }
