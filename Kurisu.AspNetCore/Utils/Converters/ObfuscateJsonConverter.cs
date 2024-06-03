@@ -38,6 +38,7 @@ public class ObfuscateJsonConverter : JsonConverter
                 vc[i] = '*';
             }
         }
+
         vc.Reverse();
         v = string.Join("", vc);
 
@@ -55,7 +56,7 @@ public class ObfuscateJsonConverter : JsonConverter
     /// <exception cref="NotImplementedException"></exception>
     public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
     {
-        throw new NotImplementedException();
+        return reader.Value;
     }
 
     /// <summary>
