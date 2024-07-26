@@ -30,7 +30,7 @@ public static class SqlSugarServiceCollectionExtensions
     public static void AddSqlSugar(this IServiceCollection services, Func<IServiceProvider, List<ConnectionConfig>> configOtherConnections = null)
     {
         services.AddScoped<ISqlSugarOptionsService, SqlSugarOptionsService>();
-        services.AddScoped<DataPermissionService>();
+        services.AddScoped<QueryableSettingService>();
         services.AddScoped<IDbContext, DbContext>();
         services.AddScoped(typeof(ISqlSugarClient), sp =>
         {
@@ -38,7 +38,6 @@ public static class SqlSugarServiceCollectionExtensions
             var logger = sp.GetService<ILogger<SqlSugarClient>>();
             var currentUser = sp.GetService<ICurrentUser>();
             var sugarOptions = sp.GetService<ISqlSugarOptionsService>();
-            var dataPermission = sp.GetService<DataPermissionService>();
 
             var configs = new List<ConnectionConfig>
             {
@@ -116,15 +115,10 @@ public static class SqlSugarServiceCollectionExtensions
 
             //操作数据权限
 
-            db.Aop.OnExecutingChangeSql = (sql, parameters) =>
-            {
-                if (dataPermission.Enable && dataPermission.UseSqlWhere)
-                {
-                    sql += $"\r\n and ({string.Join(" and ", dataPermission.Wheres)})";
-                }
-
-                return new KeyValuePair<string, SugarParameter[]>(sql, parameters);
-            };
+            // db.Aop.OnExecutingChangeSql = (sql, parameters) =>
+            // {
+            //     return new KeyValuePair<string, SugarParameter[]>(sql, parameters);
+            // };
 
 
             //增删改
@@ -133,7 +127,7 @@ public static class SqlSugarServiceCollectionExtensions
                 if (sugarOptions.IgnoreTenant == false //启用租户
                     && currentUser != null //用户信息存在
                     && model.PropertyName == nameof(ITenantId.TenantId) //当前为租户字段
-                    && typeof(ITenantId).IsAssignableFrom(model.EntityValue.GetType())) //继承ITenantId
+                    && model.EntityValue is ITenantId) //继承ITenantId
                 {
                     var tenant = currentUser.GetStringTenantId();
                     model.SetValue(tenant);
@@ -182,13 +176,12 @@ public static class SqlSugarServiceCollectionExtensions
             //对查询后的数据处理(加解密处理)
             //db.Aop.DataExecuted = (result, entity) =>
             //{
-
             //};
 
             if (options.Diff?.Enable == true && options.Diff?.Commands?.Any() == true)
             {
                 //数据差异
-                db.Aop.OnDiffLogEvent = (diffModel) =>
+                db.Aop.OnDiffLogEvent = diffModel =>
                 {
                     var changes = ColumnsChangeHelper.GetChanges(sp, diffModel);
                     if (changes.Any())

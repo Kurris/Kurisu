@@ -1,13 +1,12 @@
 using System.Linq;
+using System.Text.Json;
 using System.Threading.Tasks;
 using Kurisu.AspNetCore.UnifyResultAndValidation.Abstractions;
-using Kurisu.AspNetCore.UnifyResultAndValidation.Options;
 using Kurisu.AspNetCore.Utils.Extensions;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 
 namespace Kurisu.AspNetCore.UnifyResultAndValidation.Filters;
 
@@ -18,6 +17,8 @@ namespace Kurisu.AspNetCore.UnifyResultAndValidation.Filters;
 // ReSharper disable once ClassNeverInstantiated.Global
 public class ValidateAndPackResultFilter : IAsyncActionFilter, IAsyncResultFilter
 {
+    private string _parameters;
+
     /// <summary>
     /// 请求参数处理
     /// </summary>
@@ -26,18 +27,7 @@ public class ValidateAndPackResultFilter : IAsyncActionFilter, IAsyncResultFilte
     /// <returns></returns>
     public async Task OnActionExecutionAsync(ActionExecutingContext context, ActionExecutionDelegate next)
     {
-        //默认开启日志
-        var filterOptions = context.HttpContext.RequestServices.GetService<IOptions<FilterOptions>>().Value;
-        if (filterOptions == null || filterOptions.EnableApiRequestLog)
-        {
-            //var desc = context.ActionDescriptor as ControllerActionDescriptor;
-            var path = context.HttpContext.Request.Path;
-            var method = context.HttpContext.Request.Method;
-            var parameters = context.ActionArguments.ToJson(JsonExtensions.DefaultSetting);
-            var logger = context.HttpContext.RequestServices.GetService<ILogger<ValidateAndPackResultFilter>>();
-            logger.LogInformation("[ApiLog] Request: {method} {path} \r\nParams:{params}", method, path, parameters);
-        }
-
+        _parameters = JsonSerializer.Serialize(context.ActionArguments);
         //请求前
         await next();
         //请求后
@@ -67,11 +57,19 @@ public class ValidateAndPackResultFilter : IAsyncActionFilter, IAsyncResultFilte
 
             var msg = "请求参数有误:";
             if (!errorResults.Any())
-                msg += "参数为空";
+                msg += "参数为空或不合法";
             else
             {
-                var es = errorResults.Select(x => x.Message).Distinct();
-                msg += es.Join(",");
+                if (errorResults.Count > 1)
+                {
+                    var es = errorResults.Select(x => x.Message);
+                    msg += "\r\n" + es.Join("\r\n");
+                }
+                else
+                {
+                    var es = errorResults.Select(x => x.Message).Distinct();
+                    msg += es.Join(",");
+                }
             }
 
             //包装验证错误信息
@@ -83,21 +81,33 @@ public class ValidateAndPackResultFilter : IAsyncActionFilter, IAsyncResultFilte
             {
                 //实体对象，如果是FileResultContent则不会进入
                 case ObjectResult objectResult:
-                {
-                    var result = objectResult.Value;
-                    var type = result?.GetType() ?? typeof(object);
-                    //返回值已经包装
-                    if (type.IsGenericType && type.IsAssignableTo(typeof(IApiResult)))
-                        context.Result = new ObjectResult(result);
-                    else
-                        context.Result = new ObjectResult(apiResult.GetDefaultSuccessApiResult(result));
-                    break;
-                }
+                    {
+                        var result = objectResult.Value;
+                        var type = result?.GetType() ?? typeof(object);
+                        //返回值已经包装
+                        if (type.IsGenericType && type.IsAssignableTo(typeof(IApiResult)))
+                            context.Result = new ObjectResult(result);
+                        else
+                            context.Result = new ObjectResult(apiResult.GetDefaultSuccessApiResult(result));
+                        break;
+                    }
                 //空task
                 case EmptyResult:
                     context.Result = new ObjectResult(apiResult.GetDefaultSuccessApiResult((object)null));
                     break;
             }
+        }
+
+        //日志
+        var setting = context.HttpContext.RequestServices.GetService<ApiRequestSettingService>();
+        if (setting.EnableApiRequestLog)
+        {
+            var path = context.HttpContext.Request.Path;
+            var method = context.HttpContext.Request.Method;
+
+            var response = (context.Result as ObjectResult)?.Value?.ToJson();
+            var logger = context.HttpContext.RequestServices.GetService<ILogger<ValidateAndPackResultFilter>>();
+            logger.LogInformation("{method} {path}\r\nRequest:{params}\r\nResponse:{response}", method, path, _parameters, response);
         }
 
         await next();

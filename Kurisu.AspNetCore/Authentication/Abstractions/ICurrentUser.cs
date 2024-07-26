@@ -51,4 +51,10 @@ public interface ICurrentUser : ICurrentTenant
     /// <param name="claimType"></param>
     /// <returns></returns>
     string GetUserClaim(string claimType);
+
+    /// <summary>
+    /// 获取角色
+    /// </summary>
+    /// <returns></returns>
+    string GetRole();
 }

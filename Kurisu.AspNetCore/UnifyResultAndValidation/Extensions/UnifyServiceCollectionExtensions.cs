@@ -19,6 +19,8 @@ public static class UnifyServiceCollectionExtensions
     /// <returns></returns>
     public static IServiceCollection AddUnifyResult(this IServiceCollection services, bool wrapException = true)
     {
+        services.AddScoped<ApiRequestSettingService>();
+        
         services.TryAddSingleton(typeof(IApiResult), typeof(DefaultApiResult<object>));
         services.AddMvcFilter<ValidateAndPackResultFilter>();
 

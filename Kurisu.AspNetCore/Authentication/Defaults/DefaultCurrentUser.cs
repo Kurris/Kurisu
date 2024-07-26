@@ -83,10 +83,19 @@ public class DefaultCurrentUser : DefaultCurrentTenant, ICurrentUser
     {
         var value = _httpContextAccessor?
             .HttpContext?
-            .User?.Claims?
-            .FirstOrDefault(x => x.Type == claimType)?
-            .Value;
+            .User.Claims.FirstOrDefault(x => x.Type == claimType)?.Value;
 
         return value;
+    }
+
+        
+    /// <summary>
+    /// 获取角色
+    /// </summary>
+    /// <returns></returns>
+    public string GetRole()
+    {
+        var role = _httpContextAccessor?.HttpContext?.User.FindFirst(ClaimTypes.Role)?.Value;
+        return role;
     }
 }

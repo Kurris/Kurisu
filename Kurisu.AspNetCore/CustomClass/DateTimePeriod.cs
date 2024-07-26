@@ -17,3 +17,19 @@ public class DateTimePeriod
     /// </summary>
     public DateTime? End { get; set; }
 }
+
+/// <summary>
+/// DateTimePeriodExtensions
+/// </summary>
+public static class DateTimePeriodExtensions
+{
+    /// <summary>
+    /// 存在值
+    /// </summary>
+    /// <param name="period"></param>
+    /// <returns></returns>
+    public static bool HasValue(this DateTimePeriod period)
+    {
+        return period is { Start: not null, End: not null };
+    }
+}

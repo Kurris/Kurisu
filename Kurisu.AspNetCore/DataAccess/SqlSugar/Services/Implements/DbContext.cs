@@ -6,6 +6,7 @@ using System.Linq.Expressions;
 using System.Threading.Tasks;
 using Kurisu.AspNetCore.Authentication.Abstractions;
 using Kurisu.AspNetCore.DataAccess.Entity;
+using Kurisu.AspNetCore.DataAccess.SqlSugar.Attributes;
 using Microsoft.Extensions.DependencyInjection;
 using SqlSugar;
 
@@ -27,25 +28,46 @@ internal class DbContext : IDbContext
 
     public ISugarQueryable<T> Queryable<T>()
     {
-        var dataPermission = _serviceProvider.GetService<DataPermissionService>();
-        if (dataPermission.Enable && !dataPermission.UseSqlWhere && typeof(T).IsAssignableTo(typeof(ITenantId)))
+        var type = typeof(T);
+
+        var query = Client.Queryable<T>();
+
+        var setting = _serviceProvider.GetService<QueryableSettingService>();
+
+        if (setting.EnableCrossTenant && !setting.CrossTenantIgnoreTypes.Contains(type))
         {
             var tenantIds = _serviceProvider.GetService<ICurrentUser>().GetUserClaim("tenants").Split(",").ToList();
 
-            var parameterExpression = Expression.Parameter(typeof(T));
-            var prop = Expression.Property(parameterExpression, nameof(ITenantId.TenantId));
-            var eq = typeof(List<string>).GetMethod("Contains", new[] { typeof(string) })!;
-            var constant = Expression.Constant(tenantIds, typeof(List<string>));
-            var containsExp = Expression.Call(constant, eq, prop);
+            if (typeof(T).IsAssignableTo(typeof(ITenantId)))
+            {
+                query = query.Where(GetWhereExpression<T, string>(nameof(ITenantId.TenantId), tenantIds));
+            }
 
-            var where = Expression.Lambda<Func<T, bool>>(containsExp, parameterExpression);
-
-            return Client.Queryable<T>().Where(where);
+            var tenantIdField = typeof(T).GetProperties().FirstOrDefault(x => x.IsDefined(typeof(TenantIdAttribute), false));
+            if (tenantIdField != null)
+            {
+                query = query.Where(GetWhereExpression<T, string>(tenantIdField.Name, tenantIds));
+            }
         }
-        else
+
+        if (setting.EnableDataPermission && !setting.DataPermissionIgnoreTypes.Contains(type))
         {
-            return Client.Queryable<T>();
+            var permissionData = _serviceProvider.GetRequiredService<IGetDataPermissions>().GetData<T>();
+            query = permissionData.Aggregate(query, (current, item) => current.Where(GetWhereExpression<T, Guid>(item.Key, item.Value)));
         }
+
+        return query;
+    }
+
+    private static Expression<Func<T, bool>> GetWhereExpression<T, TType>(string property, List<TType> ls)
+    {
+        var parameterExpression = Expression.Parameter(typeof(T));
+        var prop = Expression.Property(parameterExpression, property);
+        var eq = typeof(List<TType>).GetMethod("Contains", new[] { typeof(TType) })!;
+        var constant = Expression.Constant(ls, typeof(List<TType>));
+        var containsExp = Expression.Call(constant, eq, prop);
+
+        return Expression.Lambda<Func<T, bool>>(containsExp, parameterExpression);
     }
 
     public IDbContext ChangeDb(string dbId)
