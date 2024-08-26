@@ -54,15 +54,11 @@ internal class DefaultRemoteCallClient : Aop
         var type = typeof(TResult);
 
         if (type.IsClass && type != typeof(string))
-        {
             result = JsonConvert.DeserializeObject<TResult>(responseJson, InternalHelper.JsonSerializerSettings);
-        }
         else
-        {
             result = responseJson.Adapt<TResult>();
-        }
 
-        return await Task.FromResult(result);
+        return result;
     }
 
     /// <summary>
@@ -128,7 +124,8 @@ internal class DefaultRemoteCallClient : Aop
         }
 
         //鉴权
-        if (InternalHelper.UseAuth(_serviceProvider, invocation, out var headerName, out var token))
+        var (useAuth, headerName, token) = await InternalHelper.UseAuthAsync(_serviceProvider, invocation);
+        if (useAuth)
         {
             httpClient.DefaultRequestHeaders.Add(headerName, token);
         }
@@ -141,7 +138,7 @@ internal class DefaultRemoteCallClient : Aop
         {
             _logger.LogInformation("Response: {response} .", responseJson);
         }
-        
+
         response.EnsureSuccessStatusCode();
         return responseJson;
     }

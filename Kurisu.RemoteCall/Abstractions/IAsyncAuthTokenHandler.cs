@@ -3,12 +3,12 @@
 /// <summary>
 /// 授权token处理
 /// </summary>
-public interface IAuthTokenHandler
+public interface IAsyncAuthTokenHandler
 {
     /// <summary>
     /// 获取token
     /// </summary>
     /// <param name="serviceProvider"></param>
     /// <returns></returns>
-    string GetToken(IServiceProvider serviceProvider);
+    Task<string> GetTokenAsync(IServiceProvider serviceProvider);
 }

@@ -24,7 +24,7 @@ public class AuthAttribute : Attribute
     public string HeaderName { get; set; } = "Authorization";
 
     /// <summary>
-    /// <see cref="IAuthTokenHandler"/>
+    /// <see cref="IAsyncAuthTokenHandler"/>
     /// </summary>
     public Type TokenHandler { get; set; }
 }

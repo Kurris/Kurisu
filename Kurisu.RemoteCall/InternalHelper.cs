@@ -114,29 +114,25 @@ internal static class InternalHelper
     /// </summary>
     /// <param name="serviceProvider"></param>
     /// <param name="invocation"></param>
-    /// <param name="headerName"></param>
-    /// <param name="token"></param>
     /// <returns></returns>
-    public static bool UseAuth(IServiceProvider serviceProvider, IProxyInvocation invocation, out string headerName, out string token)
+    public static async Task<(bool, string, string)> UseAuthAsync(IServiceProvider serviceProvider, IProxyInvocation invocation)
     {
-        headerName = string.Empty;
-        token = string.Empty;
-
         var authAttribute = invocation.Method.GetCustomAttribute<AuthAttribute>() ?? invocation.InterfaceType.GetCustomAttribute<AuthAttribute>();
         if (authAttribute == null)
         {
-            return false;
+            return (false, string.Empty, string.Empty);
         }
 
-        headerName = authAttribute.HeaderName;
-        if (authAttribute.TokenHandler != null && authAttribute.TokenHandler.IsAssignableTo(typeof(IAuthTokenHandler)))
+        var headerName = authAttribute.HeaderName;
+        string token;
+        if (authAttribute.TokenHandler != null && authAttribute.TokenHandler.IsAssignableTo(typeof(IAsyncAuthTokenHandler)))
         {
-            token = ((IAuthTokenHandler)Activator.CreateInstance(authAttribute.TokenHandler))!.GetToken(serviceProvider);
-            return true;
+            token = await ((IAsyncAuthTokenHandler)Activator.CreateInstance(authAttribute.TokenHandler))!.GetTokenAsync(serviceProvider);
+            return (true, headerName, token);
         }
 
         token = serviceProvider.GetRequiredService<IHttpContextAccessor>()!.HttpContext!.Request.Headers[headerName].FirstOrDefault();
-        return true;
+        return (true, headerName, token);
     }
 
     /// <summary>
