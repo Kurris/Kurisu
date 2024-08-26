@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Kurisu.AspNetCore.DataAccess.Entity;
 using Microsoft.Extensions.DependencyInjection;
 using SqlSugar;
+
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
 
 namespace Kurisu.AspNetCore.DataAccess.SqlSugar.Services;
@@ -50,7 +51,9 @@ public interface IDbContext
 
     Task<int> InsertAsync<T>(List<T> obj) where T : class, new();
     int Insert<T>(List<T> obj) where T : class, new();
-
+    
+    Task<int> SaveAsync<T>(T obj) where T : SugarBaseEntity, new();
+    int Save<T>(T obj) where T : SugarBaseEntity, new();
 
     Task<int> DeleteAsync<T>(T obj) where T : class, ISoftDeleted, new();
     int Delete<T>(T obj) where T : class, ISoftDeleted, new();

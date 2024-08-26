@@ -29,7 +29,7 @@ public class DataPermissionAttribute : Attribute, IAsyncActionFilter
         var setting = context.HttpContext.RequestServices.GetService<QueryableSettingService>();
 
         setting.EnableDataPermission = true;
-        setting.DataPermissionIgnoreTypes = _ignoreTypes;
+        setting.DataPermissionIgnoreTypes = _ignoreTypes ?? Array.Empty<Type>();
         await next();
     }
 }

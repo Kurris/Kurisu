@@ -15,12 +15,14 @@ namespace Kurisu.AspNetCore.DataAccess.SqlSugar.Services.Implements;
 internal class DbContext : IDbContext
 {
     private readonly IServiceProvider _serviceProvider;
+    private readonly ICurrentUser _currentUser;
     private readonly ISqlSugarOptionsService _sqlSugarOptionsService;
 
-    public DbContext(ISqlSugarClient db, IServiceProvider serviceProvider)
+    public DbContext(ISqlSugarClient db, IServiceProvider serviceProvider, ICurrentUser currentUser)
     {
         Client = db;
         _serviceProvider = serviceProvider;
+        _currentUser = currentUser;
         _sqlSugarOptionsService = serviceProvider.GetService<ISqlSugarOptionsService>();
     }
 
@@ -73,7 +75,7 @@ internal class DbContext : IDbContext
     public IDbContext ChangeDb(string dbId)
     {
         var client = ((SqlSugarClient)Client).GetConnection(dbId);
-        return new DbContext(client, _serviceProvider);
+        return new DbContext(client, _serviceProvider, _currentUser);
     }
 
     #region insert
@@ -118,6 +120,20 @@ internal class DbContext : IDbContext
         return Client.Insertable(obj).ExecuteCommand();
     }
 
+    public async Task<int> SaveAsync<T>(T obj) where T : SugarBaseEntity, new()
+    {
+        return obj.Id == 0
+            ? await this.InsertAsync(obj)
+            : await this.UpdateAsync(obj);
+    }
+
+    public int Save<T>(T obj) where T : SugarBaseEntity, new()
+    {
+        return obj.Id == 0
+            ? this.Insert(obj)
+            : this.Update(obj);
+    }
+
     #endregion
 
 
@@ -126,20 +142,20 @@ internal class DbContext : IDbContext
     public async Task<int> DeleteAsync<T>(T obj) where T : class, ISoftDeleted, new()
     {
         obj.IsDeleted = true;
-        return await Client.Updateable(obj).ExecuteCommandAsync();
+        return await this.UpdateAsync(obj);
     }
 
     public async Task<int> DeleteAsync<T>(T[] obj) where T : class, ISoftDeleted, new()
     {
         var list = obj.ToList();
         list.ForEach(x => x.IsDeleted = true);
-        return await Client.Updateable(list).ExecuteCommandAsync();
+        return await this.UpdateAsync(list);
     }
 
     public async Task<int> DeleteAsync<T>(List<T> obj) where T : class, ISoftDeleted, new()
     {
         obj.ForEach(x => x.IsDeleted = true);
-        return await Client.Updateable(obj).ExecuteCommandAsync();
+        return await this.UpdateAsync(obj);
     }
 
     public async Task<int> DeleteReallyAsync<T>(T obj) where T : class, new()
@@ -161,20 +177,20 @@ internal class DbContext : IDbContext
     public int Delete<T>(T obj) where T : class, ISoftDeleted, new()
     {
         obj.IsDeleted = true;
-        return Update(obj);
+        return this.Update(obj);
     }
 
     public int Delete<T>(T[] obj) where T : class, ISoftDeleted, new()
     {
         var list = obj.ToList();
         list.ForEach(x => x.IsDeleted = true);
-        return Update(obj);
+        return this.Update(list);
     }
 
     public int Delete<T>(List<T> obj) where T : class, ISoftDeleted, new()
     {
         obj.ForEach(x => x.IsDeleted = true);
-        return Update(obj);
+        return this.Update(obj);
     }
 
     public IDeleteable<T> Deleteable<T>() where T : class, new()

@@ -61,29 +61,23 @@ public class TimePeriod
                 {
                     return true;
                 }
-                else
-                {
-                    return period.Start > End && period.End < Start;
-                }
+
+                return period.Start > End && period.End < Start;
             }
-            else
+
+            if (period.IsCrossDay())
             {
-                if (period.IsCrossDay())
-                {
-                    return period.Start > End && period.End < Start;
-                }
-                else
-                {
-                    return period.Start > End || period.End < Start;
-                }
+                return period.Start > End && period.End < Start;
             }
+
+            return period.Start > End || period.End < Start;
         }
     }
 
     /// <summary>
     /// 当前时间在区间内
     /// </summary>
-    /// <param name="dateTime"></param>
+    /// <param name="dateTime">当前时间</param>
     /// <returns></returns>
     public bool IsPresent(DateTime dateTime)
     {

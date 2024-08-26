@@ -32,4 +32,26 @@ public static class DateTimePeriodExtensions
     {
         return period is { Start: not null, End: not null };
     }
+
+    /// <summary>
+    /// 初始化end
+    /// </summary>
+    /// <param name="period"></param>
+    public static void InitEndDateTimeRange(this DateTimePeriod period)
+    {
+        if (period.HasValue())
+        {
+            period.End = period.End!.Value.AddDays(1).AddSeconds(-1);
+        }
+    }
+    
+    /// <summary>
+    /// 获取相隔天数
+    /// </summary>
+    /// <param name="period"></param>
+    /// <returns></returns>
+    public static int GetDays(this DateTimePeriod period)
+    {
+        return period.HasValue() ? (period.End - period.Start)!.Value.Days : 0;
+    }
 }

@@ -45,7 +45,7 @@ public class CrossTenantAttribute : Attribute, IAsyncActionFilter
         await dbContext.IgnoreAsync<ITenantId>(async () =>
         {
             setting.EnableCrossTenant = true;
-            setting.CrossTenantIgnoreTypes = _ignoreTypes;
+            setting.CrossTenantIgnoreTypes = _ignoreTypes ?? Array.Empty<Type>();
             await next();
         });
     }
