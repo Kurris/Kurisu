@@ -1,6 +1,7 @@
 using System;
 using System.Text;
 using System.Threading.Tasks;
+using Kurisu.AspNetCore.Authentication.Extensions;
 using Kurisu.AspNetCore.Authentication.Options;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
@@ -23,6 +24,8 @@ public static class JwtAuthenticationServiceCollectionExtensions
     /// <returns></returns>
     public static IServiceCollection AddKurisuJwtAuthentication(this IServiceCollection services, JwtOptions jwtSetting, Action<MessageReceivedContext> onMessageReceived)
     {
+        services.AddUserInfo();
+        
         services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             .AddJwtBearer(options =>
             {
