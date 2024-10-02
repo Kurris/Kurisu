@@ -1,6 +1,7 @@
 using System.ComponentModel;
 using Kurisu.AspNetCore.CustomClass;
 using Kurisu.AspNetCore.UnifyResultAndValidation.Abstractions;
+using Kurisu.AspNetCore.Utils.Extensions;
 using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json;
 
@@ -119,6 +120,35 @@ public class DefaultApiResult<T> : IApiResult
 /// </summary>
 public class DefaultApiResult : DefaultApiResult<object>
 {
+    /// <summary>
+    /// 成功
+    /// </summary>
+    /// <param name="data"></param>
+    /// <returns></returns>
+    public static DefaultApiResult Success(object data)
+    {
+        return new DefaultApiResult
+        {
+            Msg = ApiStateCode.Success.GetDescription(),
+            Data = data,
+            Code = ApiStateCode.Success
+        };
+    }
+
+    /// <summary>
+    /// 异常
+    /// </summary>
+    /// <param name="msg"></param>
+    /// <returns></returns>
+    public static DefaultApiResult Error(string msg)
+    {
+        return new DefaultApiResult
+        {
+            Msg = msg,
+            Data = null,
+            Code = ApiStateCode.Error
+        };
+    }
 }
 
 /// <summary>

@@ -55,9 +55,9 @@ public class ValidateAndPackResultFilter : IAsyncActionFilter, IAsyncResultFilte
                         }))
                 .ToList();
 
-            var msg = "请求参数有误:";
+            var msg = string.Empty;
             if (!errorResults.Any())
-                msg += "参数为空或不合法";
+                msg += "None Body Request";
             else
             {
                 if (errorResults.Count > 1)
