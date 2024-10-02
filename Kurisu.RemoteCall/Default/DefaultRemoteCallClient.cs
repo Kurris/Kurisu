@@ -109,7 +109,6 @@ internal class DefaultRemoteCallClient : Aop
             content = await InternalHelper.FixContentAsync(invocation, methodParameterValues);
             requestParameters.Add(content);
         }
-
         var httpClient = string.IsNullOrEmpty(defineRemoteClientAttribute.Name)
             ? _httpClientFactory.CreateClient()
             : _httpClientFactory.CreateClient(defineRemoteClientAttribute.Name);
@@ -124,7 +123,7 @@ internal class DefaultRemoteCallClient : Aop
         }
 
         //鉴权
-        var (useAuth, headerName, token) = await InternalHelper.UseAuthAsync(_serviceProvider, invocation);
+        (bool useAuth, string headerName, string token) = await InternalHelper.UseAuthAsync(_serviceProvider, invocation);
         if (useAuth)
         {
             httpClient.DefaultRequestHeaders.Add(headerName, token);
