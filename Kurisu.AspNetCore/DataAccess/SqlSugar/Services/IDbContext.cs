@@ -51,7 +51,7 @@ public interface IDbContext
 
     Task<int> InsertAsync<T>(List<T> obj) where T : class, new();
     int Insert<T>(List<T> obj) where T : class, new();
-    
+
     Task<int> SaveAsync<T>(T obj) where T : SugarBaseEntity, new();
     int Save<T>(T obj) where T : SugarBaseEntity, new();
 

@@ -1,12 +1,12 @@
 ﻿using System;
 using System.Data;
 using System.Threading.Tasks;
+using Kurisu.AspNetCore.DataAccess.SqlSugar.Services;
 using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.Extensions.DependencyInjection;
 using SqlSugar;
 
 namespace Kurisu.AspNetCore.DataAccess.SqlSugar.Aop;
-
 
 /// <summary>
 /// 事务
@@ -14,14 +14,13 @@ namespace Kurisu.AspNetCore.DataAccess.SqlSugar.Aop;
 [AttributeUsage(AttributeTargets.Method | AttributeTargets.Class)]
 public class TransactionalAttribute : Attribute, IAsyncActionFilter
 {
-    private readonly IsolationLevel _isolationLevel;
+    private IsolationLevel? _isolationLevel;
 
     /// <summary>
     /// 开启事务
     /// </summary>
     public TransactionalAttribute()
     {
-        _isolationLevel = IsolationLevel.RepeatableRead;
     }
 
     /// <summary>
@@ -37,7 +36,8 @@ public class TransactionalAttribute : Attribute, IAsyncActionFilter
     public async Task OnActionExecutionAsync(ActionExecutingContext context, ActionExecutionDelegate next)
     {
         var dbContext = context.HttpContext.RequestServices.GetRequiredService<ISqlSugarClient>();
-        await dbContext.Ado.BeginTranAsync(_isolationLevel);
+        _isolationLevel ??= context.HttpContext.RequestServices.GetService<IIsolationLevelService>().Get();
+        await dbContext.Ado.BeginTranAsync(_isolationLevel.Value);
         try
         {
             var result = await next();
@@ -45,10 +45,8 @@ public class TransactionalAttribute : Attribute, IAsyncActionFilter
             {
                 throw result.Exception;
             }
-            else
-            {
-                await dbContext.Ado.CommitTranAsync();
-            }
+
+            await dbContext.Ado.CommitTranAsync();
         }
         catch (Exception)
         {

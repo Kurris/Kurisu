@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Linq;
 using Kurisu.AspNetCore.Authentication.Abstractions;
 using Kurisu.AspNetCore.DataAccess.Entity;
@@ -12,6 +13,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using SqlSugar;
+using DbType = SqlSugar.DbType;
 
 namespace Kurisu.AspNetCore.DataAccess.SqlSugar.Extensions;
 
@@ -23,21 +25,54 @@ public static class SqlSugarServiceCollectionExtensions
     private const string _infoTemplate = "ExecuteCommand[{ms}] Timeout[{timeout}] \r\n {sql}";
 
     /// <summary>
-    /// 添加sqlsugar
+    /// 添加SQLSugar
     /// </summary>
     /// <param name="services"></param>
+    public static void AddSqlSugar(this IServiceCollection services)
+    {
+        services.AddSqlSugar(DbType.MySqlConnector);
+    }
+
+    /// <summary>
+    /// 添加SQLSugar
+    /// </summary>
+    /// <param name="services"></param>
+    /// <param name="dbType"></param>
+    public static void AddSqlSugar(this IServiceCollection services, DbType dbType)
+    {
+        services.AddSqlSugar(dbType, null);
+    }
+
+    /// <summary>
+    /// 添加SQLSugar
+    /// </summary>
+    /// <param name="services"></param>
+    /// <param name="dbType"></param>
     /// <param name="configOtherConnections"></param>
-    public static void AddSqlSugar(this IServiceCollection services, Func<IServiceProvider, List<ConnectionConfig>> configOtherConnections = null)
+    public static void AddSqlSugar(this IServiceCollection services, DbType dbType, Func<IServiceProvider, List<ConnectionConfig>> configOtherConnections)
     {
         services.AddScoped<ISqlSugarOptionsService, SqlSugarOptionsService>();
         services.AddScoped<QueryableSettingService>();
         services.AddScoped<IDbContext, DbContext>();
+        services.AddSingleton<IIsolationLevelService, IsolationLevelService>();
+
         services.AddScoped(typeof(ISqlSugarClient), sp =>
         {
             var options = sp.GetService<IOptions<SqlSugarOptions>>().Value;
             var logger = sp.GetService<ILogger<SqlSugarClient>>();
             var currentUser = sp.GetService<ICurrentUser>();
             var sugarOptions = sp.GetService<ISqlSugarOptionsService>();
+            var isolationLevel = sp.GetService<IIsolationLevelService>();
+
+            switch (dbType)
+            {
+                case DbType.MySql or DbType.MySqlConnector:
+                    isolationLevel.Set(IsolationLevel.RepeatableRead);
+                    break;
+                case DbType.SqlServer:
+                    isolationLevel.Set(IsolationLevel.ReadCommitted);
+                    break;
+            }
 
             var configs = new List<ConnectionConfig>
             {
@@ -46,7 +81,7 @@ public static class SqlSugarServiceCollectionExtensions
                     ConfigId = "db-main",
 
                     ConnectionString = options.DefaultConnectionString,
-                    DbType = DbType.MySqlConnector,
+                    DbType = dbType,
                     InitKeyType = InitKeyType.Attribute,
                     IsAutoCloseConnection = true,
 
@@ -61,7 +96,10 @@ public static class SqlSugarServiceCollectionExtensions
                             if (!p.IsPrimarykey && c.PropertyType.IsGenericType && c.PropertyType.GetGenericTypeDefinition() == typeof(Nullable<>)
                                 || (!p.IsPrimarykey && p.PropertyInfo.PropertyType == typeof(string)))
                             {
-                                p.IsNullable = true;
+                                if (p.IsNullable)
+                                {
+                                    p.IsNullable = true;
+                                }
                             }
                         }
                     }
@@ -103,7 +141,6 @@ public static class SqlSugarServiceCollectionExtensions
 
             //软删除
             db.QueryFilter.AddTableFilter<ISoftDeleted>(x => x.IsDeleted == false);
-
 
             //#if DEBUG
             //SQL执行前
