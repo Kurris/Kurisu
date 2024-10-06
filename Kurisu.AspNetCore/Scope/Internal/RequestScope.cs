@@ -2,7 +2,6 @@ using System;
 using System.Threading.Tasks;
 using Kurisu.AspNetCore.Scope.Abstractions;
 using Microsoft.AspNetCore.Http;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace Kurisu.AspNetCore.Scope.Internal;
 
@@ -20,8 +19,8 @@ internal class RequestScope : IScope
     /// <param name="handler">异步方法</param>
     public async Task CreateAsync(Func<IServiceProvider, Task> handler)
     {
-        await using var scope = App.GetServiceProvider().CreateAsyncScope();
-        await handler.Invoke(scope.ServiceProvider);
+        var sp = App.GetServiceProvider();
+        await handler.Invoke(sp);
     }
 
     /// <summary>
@@ -30,8 +29,8 @@ internal class RequestScope : IScope
     /// <param name="handler">同步方法</param>
     public void Create(Action<IServiceProvider> handler)
     {
-        using var scope = App.GetServiceProvider().CreateScope();
-        handler.Invoke(scope.ServiceProvider);
+        var sp = App.GetServiceProvider();
+        handler.Invoke(sp);
     }
 
     /// <summary>
@@ -42,8 +41,8 @@ internal class RequestScope : IScope
     /// <returns></returns>
     public TResult Create<TResult>(Func<IServiceProvider, TResult> handler)
     {
-        using var scope = App.GetServiceProvider().CreateScope();
-        return handler.Invoke(scope.ServiceProvider);
+        var sp = App.GetServiceProvider();
+        return handler.Invoke(sp);
     }
 
 
@@ -55,7 +54,7 @@ internal class RequestScope : IScope
     /// <returns></returns>
     public async Task<TResult> CreateAsync<TResult>(Func<IServiceProvider, Task<TResult>> handler)
     {
-        await using var scope = App.GetServiceProvider().CreateAsyncScope();
-        return await handler.Invoke(scope.ServiceProvider);
+        var sp = App.GetServiceProvider();
+        return await handler.Invoke(sp);
     }
 }

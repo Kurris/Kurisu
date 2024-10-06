@@ -22,10 +22,13 @@ public sealed class EnableRemoteClientAttribute : AopAttribute
     /// <summary>
     /// client name
     /// </summary>
+    /// <remarks>
+    /// 如果为空,使用default-client
+    /// </remarks>
     public string Name { get; set; }
 
     /// <summary>
-    /// BaseUrl , 支持从<see cref="IConfiguration"/>中获取:$(Path)
+    /// BaseUrl,支持从<see cref="IConfiguration"/>中获取,如$(Path)
     /// </summary>
     public string BaseUrl { get; set; }
 
@@ -38,13 +41,10 @@ public sealed class EnableRemoteClientAttribute : AopAttribute
     /// <inheritdoc/>
     public override void ConfigureServices(IServiceCollection services)
     {
-        //默认HttpClient
-        services.AddHttpClient();
-
         //命名client
         if (string.IsNullOrEmpty(Name))
         {
-            return;
+            Name = "default-client";
         }
 
         var builder = services.AddHttpClient(Name);
