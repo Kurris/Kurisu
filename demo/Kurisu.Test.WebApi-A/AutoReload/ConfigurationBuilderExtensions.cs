@@ -13,7 +13,6 @@ public static class ConfigurationBuilderExtensions
             .AddJsonFile($"appsettings.{x.HostingEnvironment.EnvironmentName}.json")
             .Build();
 
-
             var options = configuration.GetSection("ReloadConfigOptions").Get<SignalROptions>();
             builder.Add(new SignalRConfigurationSource(options));
         });

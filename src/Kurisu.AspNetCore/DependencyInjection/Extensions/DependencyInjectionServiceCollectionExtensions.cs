@@ -37,7 +37,7 @@ public static class DependencyInjectionServiceCollectionExtensions
             (ServiceLifetime lifeTime, Type[] interfaceTypes) = DependencyInjectionHelper.GetInterfacesAndLifeTime(service);
 
             //注册服务
-            if (interfaceTypes.Any())
+            if (interfaceTypes.Length != 0)
             {
                 //注册所有接口
                 foreach (var interfaceType in interfaceTypes)

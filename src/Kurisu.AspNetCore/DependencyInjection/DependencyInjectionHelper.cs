@@ -122,7 +122,10 @@ internal static class DependencyInjectionHelper
         //非模板`1的接口
         if (type.GenericTypeArguments.Length > 0)
         {
-            return type;
+            if (!type.GenericTypeArguments.First().IsGenericParameter)
+            {
+                return type;
+            }
         }
 
         var interfaceFullName = type.Namespace + "." + type.Name;

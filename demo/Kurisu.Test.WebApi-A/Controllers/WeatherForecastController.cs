@@ -1,3 +1,5 @@
+using Kurisu.Test.Framework.DI.Dependencies.Abstractions;
+using Kurisu.Test.Framework.DI.Dtos;
 using Kurisu.Test.WebApi_A.AutoReload;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -12,10 +14,12 @@ namespace Kurisu.Test.WebApi_A.Controllers;
 public class WeatherForecastController : ControllerBase
 {
     private readonly IConfiguration _configuration;
+    private readonly IGenericsGet<Dog> _dogService;
 
-    public WeatherForecastController(IConfiguration configuration)
+    public WeatherForecastController(IConfiguration configuration, IGenericsGet<Dog> dogService)
     {
         _configuration = configuration;
+        _dogService = dogService;
     }
 
     /// <summary>

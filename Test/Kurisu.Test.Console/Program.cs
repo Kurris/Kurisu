@@ -1,11 +1,8 @@
-﻿
+﻿using System.Diagnostics;
 using Kurisu.Test.Console;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
 
 //
-// var sw = Stopwatch.StartNew();
+var sw = Stopwatch.StartNew();
 // var token = JwtEncryption.GenerateToken(new Claim[]
 //     {
 //         new(JwtClaimTypes.Subject, "1"),
@@ -69,17 +66,3 @@ using Microsoft.Extensions.Logging;
 // }
 //
 // Console.WriteLine($"反射方法耗时:{sw.Elapsed}");
-
-
-var services = new ServiceCollection();
-services.AddRemoteCall(new List<Type> { typeof(ITestApi) });
-services.AddSingleton<IConfiguration>((_) => new ConfigurationBuilder().Build());
-services.AddLogging(x =>
-{
-    x.AddConsole();
-
-});
-
-var sp = services.BuildServiceProvider();
-var api = sp.GetService<ITestApi>();
-var r = await api.GetStringAsync();

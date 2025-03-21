@@ -15,11 +15,11 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Kurisu.AspNetCore", "src\Ku
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Kurisu.Aspect", "src\Kurisu.Aspect\Kurisu.Aspect.csproj", "{AE57F67F-AD48-4438-B7D6-BE7196328FD5}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Kurisu.Test.Framework.DI", "test\Kurisu.Test.Framework.DI\Kurisu.Test.Framework.DI.csproj", "{106C128A-97C6-4906-8A72-B3C1405D75F8}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Kurisu.Test.Framework.DependencyInjection", "test\Kurisu.Test.Framework.DependencyInjection\Kurisu.Test.Framework.DependencyInjection.csproj", "{106C128A-97C6-4906-8A72-B3C1405D75F8}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Kurisu.Test.Console", "test\Kurisu.Test.Console\Kurisu.Test.Console.csproj", "{207F7991-2F8D-4CCD-B318-21AF624D0783}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Kurisu.Test.Framework.CurrentUserResolver", "test\Kurisu.Test.Framework.CurrentUserResolver\Kurisu.Test.Framework.CurrentUserResolver.csproj", "{A1F92009-F740-4C66-92D0-849D350D8C55}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Kurisu.Test.Framework.Authentication", "test\Kurisu.Test.Framework.Authentication\Kurisu.Test.Framework.Authentication.csproj", "{A1F92009-F740-4C66-92D0-849D350D8C55}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Kurisu.Test.Framework.Configurations", "test\Kurisu.Test.Framework.Configurations\Kurisu.Test.Framework.Configurations.csproj", "{33E5B838-8D1D-499A-8629-D9861356D5B5}"
 EndProject

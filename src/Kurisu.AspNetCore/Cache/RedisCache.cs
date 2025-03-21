@@ -41,10 +41,10 @@ public class RedisCache
     /// <summary>
     /// lock
     /// </summary>
-    /// <param name="lockKey"></param>
-    /// <param name="expiry"></param>
-    /// <param name="retryInterval"></param>
-    /// <param name="retryCount"></param>
+    /// <param name="lockKey">key</param>
+    /// <param name="expiry">过期时间</param>
+    /// <param name="retryInterval">重试间隔</param>
+    /// <param name="retryCount">重试次数</param>
     /// <returns></returns>
     public async Task<RedisLock> LockAsync(string lockKey, TimeSpan? expiry = null, TimeSpan? retryInterval = null, int retryCount = 3)
     {

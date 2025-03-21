@@ -42,7 +42,7 @@ public class DefaultSwaggerPack : BaseAppPack
     {
         get
         {
-            var setting = Configuration.GetSection(nameof(SwaggerOptions)).Get<SwaggerOptions>();
+            var setting = Configuration.GetSection(nameof(DocumentOptions)).Get<DocumentOptions>();
             return setting is { Enable: true };
         }
     }
@@ -80,7 +80,7 @@ public class DefaultSwaggerPack : BaseAppPack
     /// <inheritdoc />
     public override void ConfigureServices(IServiceCollection services)
     {
-        var setting = Configuration.GetSection(nameof(SwaggerOptions)).Get<SwaggerOptions>();
+        var setting = Configuration.GetSection(nameof(DocumentOptions)).Get<DocumentOptions>();
         if (setting?.Enable != true)
         {
             return;
@@ -189,7 +189,7 @@ public class DefaultSwaggerPack : BaseAppPack
     /// <inheritdoc />
     public override void Configure(IApplicationBuilder app, IWebHostEnvironment env)
     {
-        var setting = Configuration.GetSection(nameof(SwaggerOptions)).Get<SwaggerOptions>();
+        var setting = Configuration.GetSection(nameof(DocumentOptions)).Get<DocumentOptions>();
         if (setting?.Enable != true)
         {
             return;

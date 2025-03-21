@@ -15,6 +15,11 @@ namespace Kurisu.AspNetCore;
 public class App
 {
     /// <summary>
+    /// 启动项配置
+    /// </summary>
+    public StartupOptions Options { get; set; }
+
+    /// <summary>
     /// 框架应用程序日志
     /// </summary>
     public static ILogger<App> Logger => InternalApp.RootServices.GetService<ILogger<App>>();

@@ -16,15 +16,20 @@ public static class JwtEncryption
     /// <summary>
     /// 生成token
     /// </summary>
-    /// <param name="user"></param>
-    /// <param name="claims"></param>
-    /// <param name="key"></param>
-    /// <param name="iss"></param>
-    /// <param name="aud"></param>
-    /// <param name="exp"></param>
+    /// <param name="user">用户信息</param>
+    /// <param name="claims">额外信息</param>
+    /// <param name="key">密钥</param>
+    /// <param name="iss">颁发</param>
+    /// <param name="aud">受众</param>
+    /// <param name="exp">过期时间(sec)</param>
     /// <returns></returns>
     public static string GenerateToken(IEnumerable<Claim> user, IEnumerable<Claim> claims, string key, string iss, string aud, int exp = 7200)
     {
+        if (key.Length < 15)
+        {
+            key = key.PadRight(15 + 1, '0');
+        }
+
         var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(key));
 
         var dtNow = DateTime.Now;

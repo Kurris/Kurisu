@@ -40,8 +40,6 @@
 
     <ItemGroup>
       <ProjectReference Include="..\..\src\Kurisu.AspNetCore\Kurisu.AspNetCore.csproj" />
-        <ProjectReference Include="..\..\src\Kurisu.OpenApi\Kurisu.OpenApi.csproj" />
-      <ProjectReference Include="..\..\src\Kurisu.RemoteCall\Kurisu.RemoteCall.csproj" />
     </ItemGroup>
 
 </Project>

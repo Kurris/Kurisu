@@ -1,9 +1,9 @@
 ﻿using System.Threading.Tasks;
+using Kurisu.AspNetCore.Startup;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Serilog;
-using Kurisu.AspNetCore.Startup;
 
 // ReSharper disable once CheckNamespace
 namespace Microsoft.Extensions.DependencyInjection;

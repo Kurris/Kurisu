@@ -19,7 +19,7 @@ public class TestValidation
     [Fact]
     public void QuerySwaggerSetting_WithNoClientId_Return_OptionsValidationException()
     {
-        var swaggerOptions = _serviceProvider.GetService<IOptions<SwaggerOptions>>();
+        var swaggerOptions = _serviceProvider.GetService<IOptions<DocumentOptions>>();
         Assert.Throws<OptionsValidationException>(() => { _ = swaggerOptions.Value; });
     }
 }

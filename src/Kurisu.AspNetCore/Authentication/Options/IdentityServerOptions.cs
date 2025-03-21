@@ -4,7 +4,7 @@ using Kurisu.AspNetCore.ConfigurableOptions.Attributes;
 namespace Kurisu.AspNetCore.Authentication.Options;
 
 /// <summary>
-/// identity server 配置
+/// OAuth2.0配置
 /// </summary>
 [Configuration]
 public class IdentityServerOptions

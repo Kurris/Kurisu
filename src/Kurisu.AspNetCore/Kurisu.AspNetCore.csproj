@@ -1,7 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <TargetFrameworks>net6.0;net8.0</TargetFrameworks>
         <LangVersion>latestmajor</LangVersion>
         <PackageVersion>0.9.38</PackageVersion>
         <Description>see more : https://github.com/Kurris/Kurisu</Description>
@@ -14,6 +13,7 @@
         <Authors>ligy</Authors>
         <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
         <GenerateDocumentationFile>True</GenerateDocumentationFile>
+        <TargetFramework>net6.0</TargetFramework>
     </PropertyGroup>
 
     <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">

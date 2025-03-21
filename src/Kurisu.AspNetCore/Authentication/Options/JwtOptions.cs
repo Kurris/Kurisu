@@ -13,7 +13,6 @@ public class JwtOptions
     /// 密钥
     /// </summary>
     [Required(ErrorMessage = "{0}密钥不可为空")]
-    [MinLength(15, ErrorMessage = "{0}密钥不能小于15位")]
     public string SecretKey { get; set; }
 
     /// <summary>

@@ -22,7 +22,7 @@ internal class InternalEventBus : IEventBus
     public Task NotifyAsync<TNotification>(TNotification notification) where TNotification : INotifyMessage
     {
         //todo pipeline
-        return Scoped.Request.Value.CreateAsync(sp =>
+        return Scoped.Request.Value.InvokeAsync(sp =>
         {
             var notifications = sp.GetServices<IAsyncNotificationHandler<TNotification>>();
             var tasks = notifications.Select(x => x.InvokeAsync(notification)).ToArray();
@@ -35,7 +35,7 @@ internal class InternalEventBus : IEventBus
     public Task NotifySequenceAsync<TNotification>(TNotification notification) where TNotification : INotifyMessage
     {
         //todo pipeline
-        return Scoped.Request.Value.CreateAsync(async sp =>
+        return Scoped.Request.Value.InvokeAsync(async sp =>
         {
             var notifications = sp.GetServices<IAsyncNotificationHandler<TNotification>>();
             foreach (IAsyncNotificationHandler<TNotification> asyncNotificationHandler in notifications)

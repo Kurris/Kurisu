@@ -2,6 +2,9 @@
 
 namespace Kurisu.AspNetCore.UnifyResultAndValidation;
 
+/// <summary>
+/// 请求配置
+/// </summary>
 internal class ApiRequestSettingService
 {
     private readonly ILogger<App> _logger;

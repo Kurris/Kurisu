@@ -9,31 +9,30 @@ namespace Kurisu.AspNetCore.Scope.Abstractions;
 public interface IScope
 {
     /// <summary>
-    /// 创建作用域范围
-    /// </summary>
-    /// <param name="handler">异步方法</param>
-    Task CreateAsync(Func<IServiceProvider, Task> handler);
-
-    /// <summary>
-    /// 创建作用域范围
+    /// 处理
     /// </summary>
     /// <param name="handler">同步方法</param>
-    void Create(Action<IServiceProvider> handler);
+    void Invoke(Action<IServiceProvider> handler);
+    
+    /// <summary>
+    /// 处理
+    /// </summary>
+    /// <param name="handler">异步方法</param>
+    Task InvokeAsync(Func<IServiceProvider, Task> handler);
 
     /// <summary>
-    /// 创建作用域范围,带有返回值
+    /// 处理,带有返回值
     /// </summary>
     /// <param name="handler">同步方法</param>
     /// <typeparam name="TResult">返回值类型,不可为Scope创建的对象</typeparam>
     /// <returns></returns>
-    TResult Create<TResult>(Func<IServiceProvider, TResult> handler);
-
-
+    TResult Invoke<TResult>(Func<IServiceProvider, TResult> handler);
+    
     /// <summary>
-    /// 创建作用域范围,带有返回值
+    /// 处理,带有返回值
     /// </summary>
     /// <param name="handler">异步方法</param>
     /// <typeparam name="TResult">返回值类型,不可为Scope创建的对象</typeparam>
     /// <returns></returns>
-    Task<TResult> CreateAsync<TResult>(Func<IServiceProvider, Task<TResult>> handler);
+    Task<TResult> InvokeAsync<TResult>(Func<IServiceProvider, Task<TResult>> handler);
 }

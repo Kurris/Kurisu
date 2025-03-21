@@ -57,7 +57,7 @@ internal static class AsyncChannelContext<TMessage> where TMessage : IAsyncChann
 
                 _ = Task.Run(() =>
                 {
-                    return Scoped.Temp.Value.Create(sp =>
+                    return Scoped.Temp.Value.Invoke(sp =>
                     {
                         var handlers = sp.GetServices<IAsyncChannelHandler<TMessage>>().ToArray();
                         return handlers.Any()

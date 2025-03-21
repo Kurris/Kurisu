@@ -22,7 +22,7 @@ public static class ConfigurationServiceCollectionExtensions
     public static IServiceCollection AddConfiguration(this IServiceCollection services, IConfiguration configuration)
     {
         var typesNeedToMapping = DependencyInjectionHelper.ActiveTypes.Where(x => x.IsDefined(typeof(ConfigurationAttribute))).ToArray();
-        if (!typesNeedToMapping.Any()) return services;
+        if (typesNeedToMapping.Length == 0) return services;
 
         //Configure
         var configureMethod = typeof(OptionsConfigurationServiceCollectionExtensions).GetRuntimeMethod(nameof(OptionsConfigurationServiceCollectionExtensions.Configure),

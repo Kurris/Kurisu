@@ -22,7 +22,10 @@ internal static class NamedDependencyInjectionServiceCollectionExtensions
     {
         services.AddNamedResolver();
 
-        var serviceTypes = DependencyInjectionHelper.Services.Where(x => !x.IsAbstract).Where(x => x.IsDefined(typeof(ServiceAttribute), false));
+        var serviceTypes = DependencyInjectionHelper.Services
+            .Where(x => !x.IsAbstract)
+            .Where(x => x.IsDefined(typeof(ServiceAttribute), false));
+        
         foreach (var service in serviceTypes)
         {
             if (service.IsGenericType)

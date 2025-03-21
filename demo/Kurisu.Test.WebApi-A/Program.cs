@@ -2,6 +2,7 @@ using Kurisu.AspNetCore;
 using Kurisu.AspNetCore.DataAccess.SqlSugar.Extensions;
 using Kurisu.AspNetCore.Startup;
 using Kurisu.AspNetCore.Utils.Extensions;
+using Kurisu.Test.WebApi_A.AutoReload;
 using Microsoft.IdentityModel.Logging;
 
 namespace Kurisu.Test.WebApi_A;
@@ -26,7 +27,7 @@ public class Startup : DefaultStartup
     public override void ConfigureServices(IServiceCollection services)
     {
         base.ConfigureServices(services);
-        services.AddRemoteCall(App.ActiveTypes);
+        //services.AddRemoteCall(App.ActiveTypes);
         services.AddSqlSugar();
     }
 
