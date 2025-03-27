@@ -141,7 +141,7 @@ public static class SqlSugarServiceCollectionExtensions
             //ITenantId租户处理
             if (currentUser != null)
             {
-                var tenantId = currentUser.GetStringTenantId();
+                var tenantId = currentUser.GetTenantId();
                 db.QueryFilter.AddTableFilter<ITenantId>(x => x.TenantId == tenantId);
             }
 
@@ -164,7 +164,7 @@ public static class SqlSugarServiceCollectionExtensions
                     && model.PropertyName == nameof(ITenantId.TenantId) //当前为租户字段
                     && model.EntityValue is ITenantId) //继承ITenantId
                 {
-                    var tenant = currentUser.GetStringTenantId();
+                    var tenant = currentUser.GetTenantId();
                     model.SetValue(tenant);
                 }
 
@@ -182,7 +182,7 @@ public static class SqlSugarServiceCollectionExtensions
                         {
                             if ((int)model.EntityColumnInfo.PropertyInfo.GetValue(model.EntityValue)! == 0)
                             {
-                                model.SetValue(currentUser.GetStringSubjectId());
+                                model.SetValue(currentUser.GetUserId());
                             }
                         }
 
@@ -197,7 +197,7 @@ public static class SqlSugarServiceCollectionExtensions
 
                         if (currentUser != null && model.IsAnyAttribute<UpdateUserGenerationAttribute>())
                         {
-                            model.SetValue(currentUser.GetStringSubjectId());
+                            model.SetValue(currentUser.GetUserId());
                         }
 
                         break;
@@ -213,7 +213,7 @@ public static class SqlSugarServiceCollectionExtensions
             db.Aop.OnError = exception =>
             {
                 logger.LogError(exception, "DbError:{message}", exception.Message);
-                throw new UserFriendlyException("30000:SystemError");
+                throw new UserFriendlyException($"DbError:{exception.Message}");
             };
 
             if (options.Diff?.Enable == true && options.Diff?.Commands?.Any() == true)

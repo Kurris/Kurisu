@@ -2,7 +2,6 @@ using System;
 using System.Linq;
 using System.Security.Claims;
 using Kurisu.AspNetCore.Authentication.Abstractions;
-using Mapster;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Net.Http.Headers;
 
@@ -29,11 +28,11 @@ public class DefaultCurrentUser : DefaultCurrentTenant, ICurrentUser
     /// 获取用户id
     /// </summary>
     /// <returns></returns>
-    public virtual T GetSubjectId<T>()
+    public virtual int GetUserId()
     {
         //microsoft identity model框架对值token claim的key进行了转换
         var subject = _httpContextAccessor?.HttpContext?.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        return string.IsNullOrEmpty(subject) ? default : subject.Adapt<T>();
+        return string.IsNullOrEmpty(subject) ? 0 : Convert.ToInt32(subject);
     }
 
     /// <summary>
@@ -45,24 +44,6 @@ public class DefaultCurrentUser : DefaultCurrentTenant, ICurrentUser
         var token = _httpContextAccessor.HttpContext!.Request.Headers[HeaderNames.Authorization].FirstOrDefault();
         return token;
     }
-
-    /// <summary>
-    /// 获取user id
-    /// </summary>
-    /// <returns></returns>
-    public Guid GetUidSubjectId() => GetSubjectId<Guid>();
-
-    /// <summary>
-    /// 获取user id
-    /// </summary>
-    /// <returns></returns>
-    public string GetStringSubjectId() => GetSubjectId<string>();
-
-    /// <summary>
-    /// 获取user id
-    /// </summary>
-    /// <returns></returns>
-    public int GetIntSubjectId() => GetSubjectId<int>();
 
     /// <summary>
     /// 获取user name
@@ -88,7 +69,7 @@ public class DefaultCurrentUser : DefaultCurrentTenant, ICurrentUser
         return value;
     }
 
-        
+
     /// <summary>
     /// 获取角色
     /// </summary>

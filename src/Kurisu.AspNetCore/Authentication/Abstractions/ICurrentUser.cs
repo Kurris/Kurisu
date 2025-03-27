@@ -1,4 +1,3 @@
-using System;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Kurisu.AspNetCore.Authentication.Abstractions;
@@ -13,25 +12,7 @@ public interface ICurrentUser : ICurrentTenant
     /// 获取用户id
     /// </summary>
     /// <returns></returns>
-    T GetSubjectId<T>();
-
-    /// <summary>
-    /// uid类型subject id
-    /// </summary>
-    /// <returns></returns>
-    Guid GetUidSubjectId();
-
-    /// <summary>
-    /// string类型subject id
-    /// </summary>
-    /// <returns></returns>
-    string GetStringSubjectId();
-
-    /// <summary>
-    /// int类型subject id
-    /// </summary>
-    /// <returns></returns>
-    int GetIntSubjectId();
+    int GetUserId();
 
     /// <summary>
     /// 获取用户名名称
@@ -46,15 +27,15 @@ public interface ICurrentUser : ICurrentTenant
     string GetToken();
 
     /// <summary>
+    /// 获取角色
+    /// </summary>
+    /// <returns></returns>
+    string GetRole();
+    
+    /// <summary>
     /// 获取用户声明
     /// </summary>
     /// <param name="claimType"></param>
     /// <returns></returns>
     string GetUserClaim(string claimType);
-
-    /// <summary>
-    /// 获取角色
-    /// </summary>
-    /// <returns></returns>
-    string GetRole();
 }

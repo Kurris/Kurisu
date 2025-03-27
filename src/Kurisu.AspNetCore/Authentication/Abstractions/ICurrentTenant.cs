@@ -1,4 +1,3 @@
-using System;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Kurisu.AspNetCore.Authentication.Abstractions;
@@ -18,23 +17,5 @@ public interface ICurrentTenant
     /// 获取租户id
     /// </summary>
     /// <returns></returns>
-    T GetTenantId<T>();
-
-    /// <summary>
-    /// uid类型
-    /// </summary>
-    /// <returns></returns>
-    Guid GetUidTenantId();
-
-    /// <summary>
-    /// string类型
-    /// </summary>
-    /// <returns></returns>
-    string GetStringTenantId();
-
-    /// <summary>
-    /// int类型
-    /// </summary>
-    /// <returns></returns>
-    int GetIntTenantId();
+    string GetTenantId();
 }

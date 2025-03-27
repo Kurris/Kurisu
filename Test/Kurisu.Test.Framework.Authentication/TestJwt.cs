@@ -28,21 +28,24 @@ public class TestJwt
             new List<Claim>()
             {
                 new("sub", "3"),
+                new("role", "admin"),
                 new("preferred_username", "ligy"),
                 new("userType", "normal"),
-                new("code", "DL001")
+               
             },
             new List<Claim>()
             {
+                new("code", "DL001")
             },
             jwtOptions.SecretKey, jwtOptions.Issuer, jwtOptions.Audience, 3600);
 
         Assert.NotNull(token);
 
         var user = TestHelper.GetResolver(token);
-        Assert.Equal(3, user.GetSubjectId<int>());
+        Assert.Equal(3, user.GetUserId());
         Assert.Equal("ligy", user.GetName());
         Assert.Equal("normal", user.GetUserClaim("userType"));
         Assert.Equal("DL001", user.GetUserClaim("code"));
+        Assert.Equal("admin", user.GetRole());
     }
 }

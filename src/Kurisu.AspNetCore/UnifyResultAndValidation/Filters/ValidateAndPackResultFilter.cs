@@ -1,5 +1,4 @@
 using System.Linq;
-using System.Text.Json;
 using System.Threading.Tasks;
 using Kurisu.AspNetCore.Authentication.Abstractions;
 using Kurisu.AspNetCore.UnifyResultAndValidation.Abstractions;
@@ -33,7 +32,7 @@ public class ValidateAndPackResultFilter : IAsyncActionFilter, IAsyncResultFilte
             setting.Path = context.HttpContext.Request.Path;
             setting.Method = context.HttpContext.Request.Method;
             setting.Parameters = JsonConvert.SerializeObject(context.ActionArguments);
-            setting.UserId = context.HttpContext.RequestServices.GetService<ICurrentUser>()?.GetIntSubjectId();
+            setting.UserId = context.HttpContext.RequestServices.GetService<ICurrentUser>()?.GetUserId();
         }
 
         //请求前

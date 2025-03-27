@@ -129,7 +129,7 @@ public class DefaultApiResult : DefaultApiResult<object>
     {
         return new DefaultApiResult
         {
-            Msg = ApiStateCode.Success.GetDescription(),
+            Msg = ApiStateCode.Success.GetDisplay(),
             Data = data,
             Code = ApiStateCode.Success
         };

@@ -1,5 +1,5 @@
 ﻿using System;
-using System.ComponentModel;
+using System.Linq;
 using System.Reflection;
 using Kurisu.AspNetCore.CustomClass;
 
@@ -11,30 +11,16 @@ namespace Kurisu.AspNetCore.Utils.Extensions;
 public static class EnumExtensions
 {
     /// <summary>
-    /// 获取<see cref="DescriptionAttribute"/>描述
+    /// 获取<see cref="LangAttribute"/>描述
     /// </summary>
     /// <param name="value"></param>
+    /// <param name="lang"></param>
     /// <returns></returns>
-    public static string GetDescription(this Enum value)
+    public static string GetDisplay(this Enum value, string lang = "cn")
     {
-        var t = value.GetType();
-        var f = t.GetField(value.ToString(), BindingFlags.Public | BindingFlags.Static);
-        return f!.IsDefined(typeof(DescriptionAttribute), false)
-            ? f.GetCustomAttribute<DescriptionAttribute>()!.Description
-            : value.ToString();
-    }
-
-    /// <summary>
-    /// 获取<see cref="DescriptionEnAttribute"/>描述
-    /// </summary>
-    /// <param name="value"></param>
-    /// <returns></returns>
-    public static string GetDescriptionEn(this Enum value)
-    {
-        var t = value.GetType();
-        var f = t.GetField(value.ToString(), BindingFlags.Public | BindingFlags.Static);
-        return f!.IsDefined(typeof(DescriptionEnAttribute), false)
-            ? f.GetCustomAttribute<DescriptionEnAttribute>()!.Description
+        var f = value.GetType().GetField(value.ToString(), BindingFlags.Public | BindingFlags.Static)!;
+        return f.IsDefined(typeof(LangAttribute))
+            ? f.GetCustomAttributes<LangAttribute>().FirstOrDefault(x => x.Lang == lang)?.Display
             : value.ToString();
     }
 
@@ -42,24 +28,12 @@ public static class EnumExtensions
     /// 获取Description
     /// </summary>
     /// <param name="value"></param>
+    /// <param name="lang"></param>
     /// <returns></returns>
-    public static string GetDescription(this Type value)
+    public static string GetDisplay(this Type value, string lang = "cn")
     {
-        return value!.IsDefined(typeof(DescriptionAttribute), false) 
-            ? value.GetCustomAttribute<DescriptionAttribute>()!.Description 
-            : value.Name;
-    }
-
-
-    /// <summary>
-    /// 获取Description
-    /// </summary>
-    /// <param name="value"></param>
-    /// <returns></returns>
-    public static string GetDescriptionEn(this Type value)
-    {
-        return value!.IsDefined(typeof(DescriptionEnAttribute), false) 
-            ? value.GetCustomAttribute<DescriptionEnAttribute>()!.Description 
+        return value.IsDefined(typeof(LangAttribute))
+            ? value.GetCustomAttributes<LangAttribute>().FirstOrDefault(x => x.Lang == lang)?.Display
             : value.Name;
     }
 }

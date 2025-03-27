@@ -10,8 +10,7 @@ public class TestCurrentUserInfo
     [Fact]
     public void GetSubject_Return_3()
     {
-        var sub = TestHelper.GetResolver(_token).GetSubjectId<int>();
-
+        var sub = TestHelper.GetResolver(_token).GetUserId();
         Assert.Equal(3, sub);
     }
 

@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data;
-using System.Linq.Expressions;
 using System.Threading.Tasks;
 using Kurisu.AspNetCore.DataAccess.Entity;
 using Microsoft.Extensions.DependencyInjection;
@@ -56,29 +55,16 @@ public interface IDbContext
     Task<int> SaveAsync<T>(T obj) where T : SugarBaseEntity, new();
     int Save<T>(T obj) where T : SugarBaseEntity, new();
 
-    Task<int> DeleteAsync<T>(T obj) where T : class, ISoftDeleted, new();
-    int Delete<T>(T obj) where T : class, ISoftDeleted, new();
+    Task<int> DeleteAsync<T>(T obj, bool isReally = false) where T : class, new();
+    int Delete<T>(T obj, bool isReally = false) where T : class, new();
 
-    Task<int> DeleteAsync<T>(T[] obj) where T : class, ISoftDeleted, new();
-    int Delete<T>(T[] obj) where T : class, ISoftDeleted, new();
+    Task<int> DeleteAsync<T>(T[] obj, bool isReally = false) where T : class, new();
+    int Delete<T>(T[] obj, bool isReally = false) where T : class, new();
 
-    Task<int> DeleteAsync<T>(List<T> obj) where T : class, ISoftDeleted, new();
-    int Delete<T>(List<T> obj) where T : class, ISoftDeleted, new();
+    Task<int> DeleteAsync<T>(List<T> obj, bool isReally = false) where T : class, new();
+    int Delete<T>(List<T> obj, bool isReally = false) where T : class, new();
 
     IDeleteable<T> Deleteable<T>() where T : class, new();
-
-    Task<int> DeleteReallyAsync<T>(T obj) where T : class, new();
-
-    Task<int> DeleteReallyAsync<T>(Expression<Func<T, bool>> expression) where T : class, new();
-
-    Task<int> DeleteReallyAsync<T>(List<T> obj) where T : class, new();
-
-
-    int DeleteReally<T>(T obj) where T : class, new();
-
-    int DeleteReally<T>(Expression<Func<T, bool>> expression) where T : class, new();
-
-    int DeleteReally<T>(List<T> obj) where T : class, new();
 
 
     Task<int> UpdateAsync<T>(T obj) where T : class, new();

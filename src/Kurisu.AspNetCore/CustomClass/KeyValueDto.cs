@@ -5,7 +5,7 @@
 /// </summary>
 /// <typeparam name="TKey"></typeparam>
 /// <typeparam name="TValue"></typeparam>
-public class KeyValueDto<TKey, TValue>
+public struct KeyValueDto<TKey, TValue>
 {
     /// <summary>
     /// key

@@ -128,11 +128,11 @@ internal class ColumnsChangeHelper
                     KeyValue = FixWhere(model.DiffType, model.Sql, model.Parameters),
                     Changes = changeInfos,
                     CreateTime = optionsService.RaiseTime,
-                    CreatedBy = currentUser?.GetIntSubjectId() == 0 ? 1 : currentUser.GetIntSubjectId(),
+                    CreatedBy = currentUser?.GetUserId() == 0 ? 1 : currentUser.GetUserId(),
                     CreatedByName = currentUser?.GetName() ?? "管理员",
-                    ModifiedBy = currentUser?.GetIntSubjectId() == 0 ? 1 : currentUser.GetIntSubjectId(),
+                    ModifiedBy = currentUser?.GetUserId() == 0 ? 1 : currentUser.GetUserId(),
                     ModifiedTime = optionsService.RaiseTime,
-                    TenantId = currentUser.GetStringTenantId(),
+                    TenantId = currentUser.GetTenantId(),
                 });
             }
         }
@@ -149,11 +149,11 @@ internal class ColumnsChangeHelper
                 KeyValue = FixWhere(model.DiffType, model.Sql, model.Parameters),
                 Changes = new List<ColumnChangesDetail>(),
                 CreateTime = optionsService.RaiseTime,
-                CreatedBy = currentUser?.GetIntSubjectId() == 0 ? 1 : currentUser.GetIntSubjectId(),
+                CreatedBy = currentUser?.GetUserId() == 0 ? 1 : currentUser.GetUserId(),
                 CreatedByName = currentUser?.GetName() ?? "管理员",
-                ModifiedBy = currentUser?.GetIntSubjectId() == 0 ? 1 : currentUser.GetIntSubjectId(),
+                ModifiedBy = currentUser?.GetUserId() == 0 ? 1 : currentUser.GetUserId(),
                 ModifiedTime = optionsService.RaiseTime,
-                TenantId = currentUser.GetStringTenantId(),
+                TenantId = currentUser.GetTenantId(),
             });
         }
 

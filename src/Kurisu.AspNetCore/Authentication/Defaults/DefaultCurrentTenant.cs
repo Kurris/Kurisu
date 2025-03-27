@@ -1,6 +1,4 @@
-using System;
 using Kurisu.AspNetCore.Authentication.Abstractions;
-using Mapster;
 using Microsoft.AspNetCore.Http;
 
 namespace Kurisu.AspNetCore.Authentication.Defaults;
@@ -33,27 +31,8 @@ public class DefaultCurrentTenant : ICurrentTenant
     /// </summary>
     /// <typeparam name="T"></typeparam>
     /// <returns></returns>
-    public virtual T GetTenantId<T>()
+    public virtual string GetTenantId()
     {
-        var v = _httpContextAccessor?.HttpContext?.User.FindFirst(TenantKey)?.Value;
-        return string.IsNullOrEmpty(v) ? default : v.Adapt<T>();
+        return _httpContextAccessor?.HttpContext?.User.FindFirst(TenantKey)?.Value;
     }
-
-    /// <summary>
-    /// 获取tenant id
-    /// </summary>
-    /// <returns></returns>
-    public Guid GetUidTenantId() => GetTenantId<Guid>();
-
-    /// <summary>
-    /// 获取tenant id
-    /// </summary>
-    /// <returns></returns>
-    public string GetStringTenantId() => GetTenantId<string>();
-
-    /// <summary>
-    /// 获取tenant id
-    /// </summary>
-    /// <returns></returns>
-    public int GetIntTenantId() => GetTenantId<int>();
 }

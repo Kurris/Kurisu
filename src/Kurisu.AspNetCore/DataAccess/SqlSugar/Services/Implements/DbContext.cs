@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using Kurisu.AspNetCore.Authentication.Abstractions;
 using Kurisu.AspNetCore.DataAccess.Entity;
 using Kurisu.AspNetCore.DataAccess.SqlSugar.Attributes;
+using Kurisu.AspNetCore.Utils.Extensions;
 using Microsoft.Extensions.DependencyInjection;
 using SqlSugar;
 
@@ -146,78 +147,89 @@ internal class DbContext : IDbContext
 
     #region delete
 
-    public async Task<int> DeleteAsync<T>(T obj) where T : class, ISoftDeleted, new()
+    public async Task<int> DeleteAsync<T>(T obj, bool isReally = false) where T : class, new()
     {
-        obj.IsDeleted = true;
+        if (isReally || !typeof(T).IsAssignableTo(typeof(ISoftDeleted)))
+        {
+            return await this.Deleteable(obj).ExecuteCommandAsync();
+        }
+
+        obj.SetPropertyValue(nameof(ISoftDeleted.IsDeleted), true);
         return await this.UpdateAsync(obj);
     }
 
-    public async Task<int> DeleteAsync<T>(T[] obj) where T : class, ISoftDeleted, new()
+    public async Task<int> DeleteAsync<T>(T[] obj, bool isReally = false) where T : class, new()
     {
         var list = obj.ToList();
-        list.ForEach(x => x.IsDeleted = true);
+
+        if (isReally || !typeof(T).IsAssignableTo(typeof(ISoftDeleted)))
+        {
+            return await this.Deleteable(list).ExecuteCommandAsync();
+        }
+
+        list.ForEach(x => x.SetPropertyValue(nameof(ISoftDeleted.IsDeleted), true));
         return await this.UpdateAsync(list);
     }
 
-    public async Task<int> DeleteAsync<T>(List<T> obj) where T : class, ISoftDeleted, new()
+    public async Task<int> DeleteAsync<T>(List<T> list, bool isReally = false) where T : class, new()
     {
-        obj.ForEach(x => x.IsDeleted = true);
-        return await this.UpdateAsync(obj);
+        if (isReally || !typeof(T).IsAssignableTo(typeof(ISoftDeleted)))
+        {
+            return await this.Deleteable(list).ExecuteCommandAsync();
+        }
+
+        list.ForEach(x => x.SetPropertyValue(nameof(ISoftDeleted.IsDeleted), true));
+        return await this.UpdateAsync(list);
     }
 
-    public async Task<int> DeleteReallyAsync<T>(T obj) where T : class, new()
+    public int Delete<T>(T obj, bool isReally = false) where T : class, new()
     {
-        return await Client.Deleteable(obj).EnableDiffLogEventIF(_sqlSugarOptionsService.Diff).ExecuteCommandAsync();
-    }
+        if (isReally || !typeof(T).IsAssignableTo(typeof(ISoftDeleted)))
+        {
+            return this.Deleteable(obj).ExecuteCommand();
+        }
 
-    public async Task<int> DeleteReallyAsync<T>(Expression<Func<T, bool>> expression) where T : class, new()
-    {
-        return await Client.Deleteable(expression).EnableDiffLogEventIF(_sqlSugarOptionsService.Diff).ExecuteCommandAsync();
-    }
-
-    public async Task<int> DeleteReallyAsync<T>(List<T> obj) where T : class, new()
-    {
-        return await Client.Deleteable(obj).EnableDiffLogEventIF(_sqlSugarOptionsService.Diff).ExecuteCommandAsync();
-    }
-
-
-    public int Delete<T>(T obj) where T : class, ISoftDeleted, new()
-    {
-        obj.IsDeleted = true;
+        obj.SetPropertyValue(nameof(ISoftDeleted.IsDeleted), true);
         return this.Update(obj);
     }
 
-    public int Delete<T>(T[] obj) where T : class, ISoftDeleted, new()
+    public int Delete<T>(T[] obj, bool isReally = false) where T : class, new()
     {
         var list = obj.ToList();
-        list.ForEach(x => x.IsDeleted = true);
+
+        if (isReally || !typeof(T).IsAssignableTo(typeof(ISoftDeleted)))
+        {
+            return this.Deleteable(list).ExecuteCommand();
+        }
+
+        list.ForEach(x => x.SetPropertyValue(nameof(ISoftDeleted.IsDeleted), true));
         return this.Update(list);
     }
 
-    public int Delete<T>(List<T> obj) where T : class, ISoftDeleted, new()
+    public int Delete<T>(List<T> list, bool isReally = false) where T : class, new()
     {
-        obj.ForEach(x => x.IsDeleted = true);
-        return this.Update(obj);
+        if (isReally || !typeof(T).IsAssignableTo(typeof(ISoftDeleted)))
+        {
+            return this.Deleteable(list).ExecuteCommand();
+        }
+
+        list.ForEach(x => x.SetPropertyValue(nameof(ISoftDeleted.IsDeleted), true));
+        return this.Update(list);
     }
 
     public IDeleteable<T> Deleteable<T>() where T : class, new()
     {
-        return Client.Deleteable<T>();
+        return Client.Deleteable<T>().EnableDiffLogEventIF(_sqlSugarOptionsService.Diff);
     }
 
-    public int DeleteReally<T>(T obj) where T : class, new()
+    public IDeleteable<T> Deleteable<T>(T obj) where T : class, new()
     {
-        return Client.Deleteable(obj).EnableDiffLogEventIF(_sqlSugarOptionsService.Diff).ExecuteCommand();
+        return Client.Deleteable(obj).EnableDiffLogEventIF(_sqlSugarOptionsService.Diff);
     }
 
-    public int DeleteReally<T>(Expression<Func<T, bool>> expression) where T : class, new()
+    public IDeleteable<T> Deleteable<T>(List<T> list) where T : class, new()
     {
-        return Client.Deleteable(expression).EnableDiffLogEventIF(_sqlSugarOptionsService.Diff).ExecuteCommand();
-    }
-
-    public int DeleteReally<T>(List<T> obj) where T : class, new()
-    {
-        return Client.Deleteable(obj).EnableDiffLogEventIF(_sqlSugarOptionsService.Diff).ExecuteCommand();
+        return Client.Deleteable(list).EnableDiffLogEventIF(_sqlSugarOptionsService.Diff);
     }
 
     #endregion

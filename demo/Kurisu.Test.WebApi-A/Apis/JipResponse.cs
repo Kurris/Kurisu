@@ -1,4 +1,4 @@
-﻿namespace Kurisu.Test.WebApi_A;
+﻿namespace Kurisu.Test.WebApi_A.Apis;
 
 public class JipResponse
 {
