@@ -1,9 +1,6 @@
-using System.ComponentModel;
 using Kurisu.AspNetCore.CustomClass;
 using Kurisu.AspNetCore.UnifyResultAndValidation.Abstractions;
 using Kurisu.AspNetCore.Utils.Extensions;
-using Microsoft.Extensions.DependencyInjection;
-using Newtonsoft.Json;
 
 namespace Kurisu.AspNetCore.UnifyResultAndValidation;
 
@@ -12,7 +9,7 @@ namespace Kurisu.AspNetCore.UnifyResultAndValidation;
 /// </summary>
 /// <typeparam name="T">数据类型</typeparam>
 [SkipScan]
-public class DefaultApiResult<T> : IApiResult
+public sealed class ApiResult<T> : IApiResult
 {
     /// <summary>
     /// 数据结果返回模型
@@ -22,8 +19,11 @@ public class DefaultApiResult<T> : IApiResult
     /// Data = Default(T)
     /// </code>
     /// </summary>
-    public DefaultApiResult()
+    public ApiResult()
     {
+        Msg = "执行异常";
+        Data = default;
+        Code = ApiStateCode.Error;
     }
 
     /// <summary>
@@ -32,7 +32,7 @@ public class DefaultApiResult<T> : IApiResult
     /// <param name="msg">信息</param>
     /// <param name="data">数据</param>
     /// <param name="state">状态</param>
-    public DefaultApiResult(string msg, T data, ApiStateCode state)
+    public ApiResult(string msg, T data, ApiStateCode state)
     {
         Msg = msg;
         Data = data;
@@ -42,26 +42,27 @@ public class DefaultApiResult<T> : IApiResult
     /// <summary>
     /// 信息
     /// </summary>
-    [JsonProperty(Order = 1)]
     public string Msg { get; set; }
 
     /// <summary>
     /// 结果内容
     /// </summary>
-    [JsonProperty(Order = 2)]
     public T Data { get; set; }
 
     /// <summary>
     /// 状态
     /// </summary>
-    [JsonProperty(Order = 0)]
     public ApiStateCode Code { get; set; }
 
-
-    /// <inheritdoc/>
-    public virtual IApiResult GetDefaultSuccessApiResult<TResult>(TResult apiResult)
+    /// <summary>
+    /// 成功结果
+    /// </summary>
+    /// <param name="apiResult"></param>
+    /// <typeparam name="TResult"></typeparam>
+    /// <returns></returns>
+    public IApiResult GetDefaultSuccessApiResult<TResult>(TResult apiResult)
     {
-        return new DefaultApiResult<TResult>
+        return new ApiResult<TResult>
         {
             Code = ApiStateCode.Success,
             Msg = "操作成功",
@@ -69,65 +70,77 @@ public class DefaultApiResult<T> : IApiResult
         };
     }
 
-    /// <inheritdoc/>
-    public virtual IApiResult GetDefaultValidateApiResult(string validateMessage)
+    /// <summary>
+    /// 校验结果
+    /// </summary>
+    /// <param name="validateMessage"></param>
+    /// <returns></returns>
+    public IApiResult GetDefaultValidateApiResult(string validateMessage)
     {
-        return new DefaultApiResult<object>
+        return new ApiResult<object>
         {
             Code = ApiStateCode.ValidateError,
             Msg = validateMessage,
         };
     }
 
-    /// <inheritdoc/>
-    public virtual IApiResult GetDefaultForbiddenApiResult()
+    /// <summary>
+    /// 校验结果
+    /// </summary>
+    /// <param name="validateMessage"></param>
+    /// <param name="data"></param>
+    /// <returns></returns>
+    public IApiResult GetDefaultValidateApiResult(string validateMessage, object data)
     {
-        return new DefaultApiResult<object>
+        return new ApiResult<object>
+        {
+            Code = ApiStateCode.ValidateError,
+            Msg = validateMessage,
+            Data = data
+        };
+    }
+
+    /// <summary>
+    /// 无权操作结果
+    /// </summary>
+    /// <returns></returns>
+    public IApiResult GetDefaultForbiddenApiResult()
+    {
+        return new ApiResult<object>
         {
             Code = ApiStateCode.Forbidden,
             Msg = "无权操作"
         };
     }
 
-    /// <inheritdoc/>
-    public virtual IApiResult GetDefaultErrorApiResult(string errorMessage)
+    /// <summary>
+    /// 错误结果
+    /// </summary>
+    /// <param name="errorMessage"></param>
+    /// <returns></returns>
+    public IApiResult GetDefaultErrorApiResult(string errorMessage)
     {
-        return new DefaultApiResult<object>
+        return new ApiResult<object>
         {
             Code = ApiStateCode.Error,
             Msg = errorMessage
         };
-    }
-
-    /// <summary>
-    /// 确保成功状态
-    /// </summary>
-    /// <returns></returns>
-    /// <exception cref="UserFriendlyException"></exception>
-    public T EnsureSuccessStatusCode()
-    {
-        if (Code != ApiStateCode.Success)
-        {
-            throw new UserFriendlyException(Msg);
-        }
-
-        return Data;
     }
 }
 
 /// <summary>
 /// 默认Api结果结构
 /// </summary>
-public class DefaultApiResult : DefaultApiResult<object>
+public class DefaultApiResult
 {
     /// <summary>
     /// 成功
     /// </summary>
     /// <param name="data"></param>
     /// <returns></returns>
-    public static DefaultApiResult Success(object data)
+    public static IApiResult Success<T>(T data)
     {
-        return new DefaultApiResult
+        return new ApiResult<T>
         {
             Msg = ApiStateCode.Success.GetDisplay(),
             Data = data,
@@ -140,13 +153,58 @@ public class DefaultApiResult : DefaultApiResult<object>
     /// </summary>
     /// <param name="msg"></param>
     /// <returns></returns>
-    public static DefaultApiResult Error(string msg)
+    public static IApiResult Error(string msg)
     {
-        return new DefaultApiResult
+        return new ApiResult<object>
         {
             Msg = msg,
             Data = null,
             Code = ApiStateCode.Error
+        };
+    }
+
+    /// <summary>
+    /// 未授权
+    /// </summary>
+    /// <param name="msg"></param>
+    /// <returns></returns>
+    public static IApiResult Unauthorized(string msg)
+    {
+        return new ApiResult<object>
+        {
+            Msg = msg,
+            Data = null,
+            Code = ApiStateCode.Unauthorized
+        };
+    }
+
+    /// <summary>
+    /// 无权操作
+    /// </summary>
+    /// <param name="msg"></param>
+    /// <returns></returns>
+    public static IApiResult Forbidden(string msg)
+    {
+        return new ApiResult<object>
+        {
+            Msg = msg,
+            Data = null,
+            Code = ApiStateCode.Forbidden
+        };
+    }
+
+    /// <summary>
+    /// 404
+    /// </summary>
+    /// <param name="msg"></param>
+    /// <returns></returns>
+    public static IApiResult NotFound(string msg)
+    {
+        return new ApiResult<object>
+        {
+            Msg = msg,
+            Data = null,
+            Code = ApiStateCode.NotFound
         };
     }
 }
@@ -159,36 +217,36 @@ public enum ApiStateCode
     /// <summary>
     /// 操作成功
     /// </summary>
-    [Description("操作成功")]
+    [Lang("操作成功")]
     Success = 200,
 
     /// <summary>
     /// 鉴权失败
     /// </summary>
-    [Description("鉴权失败")]
+    [Lang("鉴权失败")]
     Unauthorized = 401,
 
     /// <summary>
     /// 无权操作
     /// </summary>
-    [Description("无权操作")]
+    [Lang("无权操作")]
     Forbidden = 403,
 
     /// <summary>
     /// 资源不存在
     /// </summary>
-    [Description("资源不存在")]
+    [Lang("资源不存在")]
     NotFound = 404,
 
     /// <summary>
     /// 请求参数有误
     /// </summary>
-    [Description("请求参数有误")]
+    [Lang("请求参数有误")]
     ValidateError = 400,
 
     /// <summary>
     /// 执行异常
     /// </summary>
-    [Description("执行异常")]
+    [Lang("执行异常")]
     Error = 500
 }

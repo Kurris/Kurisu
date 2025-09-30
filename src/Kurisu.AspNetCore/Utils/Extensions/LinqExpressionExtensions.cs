@@ -273,6 +273,11 @@ public class ExpressionReplace : ExpressionVisitor
         return Visit(expression);
     }
 
+    /// <summary>
+    /// 访问参数表达式并替换为当前的表达式参数
+    /// </summary>
+    /// <param name="node"></param>
+    /// <returns></returns>
     protected override Expression VisitParameter(ParameterExpression node)
     {
         return ParameterExpression;

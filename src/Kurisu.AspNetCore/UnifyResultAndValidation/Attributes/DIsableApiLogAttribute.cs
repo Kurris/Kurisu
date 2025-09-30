@@ -1,0 +1,25 @@
+﻿using System;
+using System.Threading.Tasks;
+using Microsoft.AspNetCore.Mvc.Filters;
+using Microsoft.Extensions.DependencyInjection;
+
+namespace Kurisu.AspNetCore.UnifyResultAndValidation.Attributes;
+
+/// <summary>
+/// 取消API请求日志
+/// </summary>
+[AttributeUsage(AttributeTargets.Method | AttributeTargets.Class)]
+public class DisableApiLogAttribute : Attribute, IAsyncActionFilter
+{
+    /// <summary>
+    /// 拦截执行
+    /// </summary>
+    /// <param name="context"></param>
+    /// <param name="next"></param>
+    public async Task OnActionExecutionAsync(ActionExecutingContext context, ActionExecutionDelegate next)
+    {
+        var setting = context.HttpContext.RequestServices.GetService<ApiRequestSettingService>();
+        setting.EnableApiRequestLog = false;
+        await next();
+    }
+}

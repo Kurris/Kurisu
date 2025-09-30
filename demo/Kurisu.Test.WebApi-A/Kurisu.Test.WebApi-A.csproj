@@ -2,7 +2,7 @@
 
     <PropertyGroup>
         <TargetFramework>net6.0</TargetFramework>
-        <Nullable>disable</Nullable>
+        <Nullable>enable</Nullable>
         <ImplicitUsings>enable</ImplicitUsings>
         <RootNamespace>Kurisu.Test.WebApi_A</RootNamespace>
         <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
@@ -26,10 +26,6 @@
 
     <ItemGroup>
       <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="6.0.28" />
-      <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="6.0.35">
-        <PrivateAssets>all</PrivateAssets>
-        <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-      </PackageReference>
     </ItemGroup>
 
     <ItemGroup>

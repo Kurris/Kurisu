@@ -1,3 +1,5 @@
+using System.Diagnostics.CodeAnalysis;
+
 namespace Kurisu.AspNetCore.Utils.Extensions;
 
 /// <summary>
@@ -20,7 +22,7 @@ public static class StringExtensions
     /// </summary>
     /// <param name="str"></param>
     /// <returns></returns>
-    public static bool IsPresent(this string str)
+    public static bool IsPresent([NotNullWhen(true)] this string str)
     {
         return !str.IsEmpty();
     }

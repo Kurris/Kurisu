@@ -8,7 +8,7 @@ namespace Kurisu.AspNetCore.EventBus.Abstractions.Handler;
 /// channel 消息处理
 /// </summary>
 /// <typeparam name="TMessage"></typeparam>
-public interface IAsyncChannelHandler<in TMessage> : ISingletonDependency where TMessage : IAsyncChannelMessage
+public interface IAsyncChannelHandler<in TMessage>
 {
     /// <summary>
     /// 执行
@@ -16,5 +16,13 @@ public interface IAsyncChannelHandler<in TMessage> : ISingletonDependency where 
     /// <param name="serviceProvider"></param>
     /// <param name="message"></param>
     /// <returns></returns>
-    Task InvokeAsync(IServiceProvider serviceProvider, TMessage message);
+    Task TodoAsync(IServiceProvider serviceProvider, TMessage message);
+}
+
+/// <summary>
+/// channel message
+/// </summary>
+public interface IAsyncChannelMessage
+{
+    
 }

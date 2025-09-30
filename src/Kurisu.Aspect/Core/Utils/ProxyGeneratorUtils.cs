@@ -41,7 +41,7 @@ internal class ProxyGeneratorUtils
         lock (_lock)
         {
             var name = _proxyNameUtils.GetInterfaceImplTypeFullName(interfaceType);
-            if (_definedTypes.TryGetValue(name, out Type type))
+            if (_definedTypes.TryGetValue(name, out var type))
             {
                 return type;
             }

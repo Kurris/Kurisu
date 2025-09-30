@@ -18,11 +18,6 @@ public interface ISqlSugarOptionsService
     public string RoutePath { get; set; }
 
     /// <summary>
-    /// 是否记录差异
-    /// </summary>
-    public bool Diff { get; set; }
-
-    /// <summary>
     /// 批次号
     /// </summary>
     public Guid BatchNo { get; set; }

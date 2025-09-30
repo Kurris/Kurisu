@@ -1,4 +1,5 @@
 using Kurisu.AspNetCore.Cache.Extensions;
+using Kurisu.AspNetCore.DataAccess.SqlSugar.Extensions;
 using Kurisu.AspNetCore.DataProtection.Packs;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -18,6 +19,8 @@ public class Startup
         services.AddDependencyInjection();
         services.AddRedis();
 
+        services.AddSqlSugar();
+        
         var pack = new DataProtectionPack
         {
             Configuration = configuration

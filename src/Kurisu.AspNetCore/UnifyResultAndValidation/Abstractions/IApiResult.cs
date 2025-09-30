@@ -35,4 +35,12 @@ public interface IApiResult
     /// <param name="validateMessage"></param>
     /// <returns></returns>
     IApiResult GetDefaultValidateApiResult(string validateMessage);
+
+    /// <summary>
+    /// 获取默认验证错误结果
+    /// </summary>
+    /// <param name="validateMessage"></param>
+    /// <param name="data"></param>
+    /// <returns></returns>
+    IApiResult GetDefaultValidateApiResult(string validateMessage, object data);
 }

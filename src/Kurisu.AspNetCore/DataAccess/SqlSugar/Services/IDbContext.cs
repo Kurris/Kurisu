@@ -85,7 +85,9 @@ public interface IDbContext
 
     void UseTransaction(Action action, IsolationLevel isolationLevel = IsolationLevel.RepeatableRead);
 
-    Task IgnoreAsync<T>(Func<Task> func);
+    Task IgnoreTenantAsync(Func<Task> func);
+    void IgnoreTenant(Action func);
 
-    void Ignore<T>(Action action);
+    Task IgnoreSoftDeletedAsync(Func<Task> func);
+    void IgnoreSoftDeleted(Action func);
 }

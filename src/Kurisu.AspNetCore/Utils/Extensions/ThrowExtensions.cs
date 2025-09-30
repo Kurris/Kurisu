@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
-using Kurisu.AspNetCore.CustomClass;
+using Kurisu.AspNetCore.UnifyResultAndValidation.Exceptions;
 
 namespace Kurisu.AspNetCore.Utils.Extensions;
 
@@ -16,7 +17,8 @@ public static class ThrowExtensions
     /// <param name="obj"></param>
     /// <param name="errorMessage"></param>
     /// <exception cref="UserFriendlyException"></exception>
-    public static void ThrowIfNull<T>(this T obj, string errorMessage) where T : class
+    [MemberNotNull]
+    public static void ThrowIfNull<T>([NotNull] this T obj, string errorMessage) where T : class
     {
         if (obj == null)
         {
@@ -68,13 +70,13 @@ public static class ThrowExtensions
     }
 
     /// <summary>
-    /// notfound异常抛出
+    /// NotFound异常抛出
     /// </summary>
     /// <typeparam name="T"></typeparam>
     /// <param name="values"></param>
     /// <param name="errorMessage"></param>
     /// <exception cref="UserFriendlyException"></exception>
-    public static void ThrowIfEmpty<T>(this IEnumerable<T> values, string errorMessage)
+    public static void ThrowIfEmpty<T>([NotNull] this IEnumerable<T> values, string errorMessage)
     {
         if (values?.Any() != true)
         {

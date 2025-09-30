@@ -1,16 +1,27 @@
 ﻿using System;
+using Kurisu.AspNetCore.CustomClass.Periods.Abstractions;
 
 namespace Kurisu.AspNetCore.CustomClass.Periods;
 
 /// <summary>
 /// 时分段
 /// </summary>
-public struct TimePeriod : IDateTimeComparable<TimeOnly, TimePeriod>
+public class TimePeriod : IPeriod<TimeOnly>, IPeriodComparable<TimeOnly, TimePeriod>
 {
     /// <summary>
     /// ctor
     /// </summary>
     public TimePeriod()
+    {
+    }
+
+    /// <summary>
+    /// ctor
+    /// </summary>
+    /// <param name="start"></param>
+    /// <param name="end"></param>
+    public TimePeriod(string start, string end)
+        : this(TimeOnly.Parse(start), TimeOnly.Parse(end))
     {
     }
 
@@ -26,14 +37,10 @@ public struct TimePeriod : IDateTimeComparable<TimeOnly, TimePeriod>
     }
 
     /// <inheritdoc />
-    public TimeOnly? Start { get; set; }
+    public TimeOnly Start { get;init; }
 
     /// <inheritdoc />
-    public TimeOnly? End { get; set; }
-    
-    
-    /// <inheritdoc />
-    public bool HasValue => Start.HasValue && End.HasValue;
+    public TimeOnly End { get; init; }
 
     /// <inheritdoc />
     public bool IsCrossDay => End < Start;
@@ -41,8 +48,8 @@ public struct TimePeriod : IDateTimeComparable<TimeOnly, TimePeriod>
     /// <inheritdoc />
     public bool IsPresent(TimeOnly value)
     {
-        var s = Start!.Value;
-        var e = End!.Value;
+        var s = Start!;
+        var e = End!;
         if (IsCrossDay)
         {
             return value >= s || value <= e;
@@ -93,25 +100,25 @@ public struct TimePeriod : IDateTimeComparable<TimeOnly, TimePeriod>
         if (IsCrossDay)
         {
             //period = [22:00:00,03:00:00]
-            var currentStart = dateTime.Date.Add(Start!.Value.ToTimeSpan());
+            var currentStart = dateTime.Date.Add(Start.ToTimeSpan());
             var endOfDay = dateTime.Date.AddDays(1).AddSeconds(-1);
 
             //assume is left range . then currentStart is 2024-04-16 22:00:00 and endOfDay is 2024-04-16 23:59:59
             if (dateTime >= currentStart && dateTime <= endOfDay)
             {
                 start = currentStart; //2024-04-16 22:00:00
-                end = dateTime.Date.AddDays(1).Add(End!.Value.ToTimeSpan()); //2024-04-17 03:00:00
+                end = dateTime.Date.AddDays(1).Add(End.ToTimeSpan()); //2024-04-17 03:00:00
             }
             else
             {
-                start = dateTime.Date.AddDays(-1).Add(Start!.Value.ToTimeSpan());
-                end = dateTime.Date.Add(End!.Value.ToTimeSpan());
+                start = dateTime.Date.AddDays(-1).Add(Start.ToTimeSpan());
+                end = dateTime.Date.Add(End.ToTimeSpan());
             }
         }
         else
         {
-            start = dateTime.Date.Add(Start!.Value.ToTimeSpan());
-            end = dateTime.Date.Add(End!.Value.ToTimeSpan());
+            start = dateTime.Date.Add(Start.ToTimeSpan());
+            end = dateTime.Date.Add(End.ToTimeSpan());
         }
 
         return dateTime >= start && dateTime <= end;

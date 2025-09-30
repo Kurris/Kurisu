@@ -3,82 +3,48 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using Kurisu.AspNetCore.ConfigurableOptions.Attributes;
+using Kurisu.AspNetCore.DependencyInjection.Attributes;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 
 namespace Kurisu.AspNetCore.DependencyInjection;
 
 internal static class DependencyInjectionHelper
 {
-    private static List<Type> _activeTypes;
+    /// <summary>
+    /// 命名服务
+    /// </summary>
+    internal static readonly ConcurrentDictionary<Tuple<Type, string>, Type> NamedServices = new();
 
     /// <summary>
     /// 应用程序有效类型
     /// </summary>
-    public static List<Type> ActiveTypes
-    {
-        get { return _activeTypes ??= LoadActiveTypes(); }
-    }
-
-
-    //生命周期类型
-    private static readonly Type[] _lifeTimeTypes = { typeof(ITransientDependency), typeof(IScopeDependency), typeof(ISingletonDependency) };
-
-    public static readonly IEnumerable<Type> Services = ActiveTypes.Where(x => x is { IsClass: true, IsPublic: true, IsAbstract: false, IsInterface: false });
-
-    public static readonly IEnumerable<Type> DependencyServices = ActiveTypes.Where(x => !x.IsAbstract).Where(x => x.IsAssignableTo(typeof(IDependency)));
+    public static readonly Lazy<List<Type>> ActiveTypes = new(LoadActiveTypes);
 
     /// <summary>
-    /// 命名服务
+    /// 依赖注入类
     /// </summary>
-    public static readonly ConcurrentDictionary<string, Type> NamedServices = new();
+    public static readonly Lazy<List<Type>> DependencyServices = new(() =>
+    {
+        return ActiveTypes.Value
+            .Where(x => x is { IsClass: true, IsPublic: true, IsAbstract: false, IsInterface: false })
+            .Where(x => x.IsDefined(typeof(DiInjectAttribute), false))
+            .ToList();
+    });
 
     /// <summary>
-    /// 获取类的接口和IOC生命周期
+    /// 配置类
     /// </summary>
-    /// <param name="type"></param>
-    /// <returns></returns>
-    /// <exception cref="ApplicationException"></exception>
-    public static (ServiceLifetime lifeTime, Type[] interfaceTypes) GetInterfacesAndLifeTime(Type type)
+    public static readonly Lazy<List<Type>> Configurations = new(() => { return ActiveTypes.Value.Where(x => x.IsDefined(typeof(ConfigurationAttribute))).ToList(); });
+
+
+    public static (string named, ServiceLifetime lifeTime, Type[] interfaceTypes) GetInjectInfos(Type type)
     {
-        //获取服务的所有接口
         var interfaces = type.GetInterfaces();
-
-        //获取注册的生命周期类型,不允许多个依赖注入接口
-        var lifeTimeInterfaces = interfaces.Where(x => _lifeTimeTypes.Contains(x)).Distinct().ToArray();
-        if (lifeTimeInterfaces.Length > 1) throw new ApplicationException($"{type.FullName}不允许存在多个生命周期定义");
-
-        //具体的生命周期类型
-        var currentLifeTimeInterface = lifeTimeInterfaces.FirstOrDefault();
-
-        //能够注册的服务接口
-        var serviceInterfaces = interfaces
-            .Where(x => !x.IsAssignableFrom(typeof(IDependency)))
-            .Where(x => !_lifeTimeTypes.Contains(x));
-
-        return (GetRegisterLifetimeType(currentLifeTimeInterface), serviceInterfaces.ToArray());
+        var info = type.GetCustomAttribute<DiInjectAttribute>()!;
+        return (info.Named, info.Lifetime, interfaces);
     }
-
-
-    /// <summary>
-    /// 判断生命周期
-    /// </summary>
-    /// <param name="lifeTimeType"></param>
-    /// <returns></returns>
-    /// <exception cref="InvalidCastException"></exception>
-    private static ServiceLifetime GetRegisterLifetimeType(MemberInfo lifeTimeType)
-    {
-        if (lifeTimeType == null) return ServiceLifetime.Scoped;
-
-        //判断注册方式
-        return lifeTimeType.Name switch
-        {
-            nameof(ITransientDependency) => ServiceLifetime.Transient,
-            nameof(ISingletonDependency) => ServiceLifetime.Singleton,
-            nameof(IScopeDependency) => ServiceLifetime.Scoped,
-            _ => ServiceLifetime.Scoped
-        };
-    }
-
 
     /// <summary>
     /// 注册IOC
@@ -93,11 +59,15 @@ internal static class DependencyInjectionHelper
         service = GetGenericRealType(service);
 
         if (interfaceType == null)
+        {
             services.Add(ServiceDescriptor.Describe(service, service, lifetime));
+            App.Logger.LogDebug("注册{lifetime}服务: {service}", lifetime.ToString(), service.Name);
+        }
         else
         {
             interfaceType = GetGenericRealType(interfaceType);
             services.Add(ServiceDescriptor.Describe(interfaceType, service, lifetime));
+            App.Logger.LogDebug("注册{lifetime}服务: {service} => {interfaceType}", lifetime.ToString(), service.Name, interfaceType.Name);
         }
     }
 
@@ -110,9 +80,7 @@ internal static class DependencyInjectionHelper
     private static Type GetGenericRealType(Type type)
     {
         if (type == null)
-        {
             throw new ArgumentNullException(nameof(type));
-        }
 
         if (!type.IsGenericType)
         {
@@ -130,10 +98,7 @@ internal static class DependencyInjectionHelper
 
         var interfaceFullName = type.Namespace + "." + type.Name;
         type = type.Assembly.GetType(interfaceFullName);
-        if (type == null)
-            throw new NullReferenceException(nameof(interfaceFullName));
-
-        return type;
+        return type ?? throw new NullReferenceException(nameof(interfaceFullName));
     }
 
     /// <summary>
@@ -141,51 +106,68 @@ internal static class DependencyInjectionHelper
     /// </summary>
     private static List<Type> LoadActiveTypes()
     {
-        //所有程序集
+        // 所有程序集去重，使用FullName+Location唯一标识
         var activeAssemblies = new List<Assembly>();
+        var assemblyKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var asm in AppDomain.CurrentDomain.GetAssemblies())
+        {
+            var key = asm.FullName + "|" + (asm.IsDynamic ? "dynamic" : asm.Location);
+            if (assemblyKeys.Add(key))
+                activeAssemblies.Add(asm);
+        }
 
-        //添加当前程序集
-        activeAssemblies.AddRange(AppDomain.CurrentDomain.GetAssemblies());
-
-        var references = Assembly.GetEntryAssembly()?.GetReferencedAssemblies();
-        //添加引用的程序集
-        RecursionGetReference(activeAssemblies, references);
+        var entryAssembly = Assembly.GetEntryAssembly();
+        if (entryAssembly != null)
+        {
+            var references = entryAssembly.GetReferencedAssemblies();
+            RecursionGetReference(activeAssemblies, assemblyKeys, references);
+        }
 
         var result = activeAssemblies.SelectMany(assembly =>
+        {
+            try
             {
-                try
-                {
-                    return assembly.GetTypes()
-                        .Where(type => type.IsPublic)
-                        .Where(type => !type.IsDefined(typeof(SkipScanAttribute)));
-                }
-                catch (Exception)
-                {
-                    return Array.Empty<Type>();
-                }
-            })
-            .Reverse().ToList();
+                return assembly.GetTypes().Where(type => type.IsPublic).Where(type => !type.IsDefined(typeof(SkipScanAttribute)));
+            }
+            catch
+            {
+                return [];
+            }
+        }).ToList();
 
         return result;
     }
 
-    private static void RecursionGetReference(List<Assembly> activeAssemblies, IEnumerable<AssemblyName> references)
+    // 优化后的递归收集引用程序集方法，结构更清晰，去重逻辑更优雅
+    private static void RecursionGetReference(List<Assembly> activeAssemblies, HashSet<string> assemblyKeys, IEnumerable<AssemblyName> references)
     {
         foreach (var reference in references)
         {
-            if (activeAssemblies.Exists(x => x.FullName!.Equals(reference.FullName, StringComparison.OrdinalIgnoreCase)))
+            try
             {
-                continue;
-            }
+                var refAssembly = Assembly.Load(reference);
+                string location;
+                try
+                {
+                    location = refAssembly.IsDynamic ? "dynamic" : refAssembly.Location;
+                }
+                catch
+                {
+                    continue;
+                }
 
-            var refAssembly = Assembly.Load(reference);
-            var next = refAssembly.GetReferencedAssemblies();
-            if (next.Any() && next.Any(x => x.Name!.StartsWith("Kurisu")))
+                var key = refAssembly.FullName + "|" + location;
+                if (!assemblyKeys.Add(key))
+                    continue;
+                activeAssemblies.Add(refAssembly);
+                var next = refAssembly.GetReferencedAssemblies();
+                if (next.Length > 0)
+                    RecursionGetReference(activeAssemblies, assemblyKeys, next);
+            }
+            catch
             {
-                RecursionGetReference(activeAssemblies, next);
+                //ignore
             }
-
-            activeAssemblies.Add(refAssembly);
         }
     }
 }

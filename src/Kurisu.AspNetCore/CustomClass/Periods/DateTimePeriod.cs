@@ -1,20 +1,28 @@
 ﻿using System;
+using Kurisu.AspNetCore.CustomClass.Periods.Abstractions;
 
 namespace Kurisu.AspNetCore.CustomClass.Periods;
 
 /// <summary>
-/// 日期时分段
+/// 表示一个日期时间区间。
 /// </summary>
-public struct DateTimePeriod : IDateTimeComparable<DateTime, DateTimePeriod>
+public class DateTimePeriod : IPeriod<DateTime>, IPeriodComparable<DateTime, DateTimePeriod>
 {
-    public DateTimePeriod()
+    /// <summary>
+    /// 使用起始和结束时间字符串初始化 <see cref="DateTimePeriod"/> 类的新实例。
+    /// </summary>
+    /// <param name="start">起始时间字符串。</param>
+    /// <param name="end">结束时间字符串。</param>
+    public DateTimePeriod(string start, string end)
+        : this(DateTime.Parse(start), DateTime.Parse(end))
     {
     }
 
-    public DateTimePeriod(string start, string end) : this(DateTime.Parse(start), DateTime.Parse(end))
-    {
-    }
-
+    /// <summary>
+    /// 使用起始和结束时间初始化 <see cref="DateTimePeriod"/> 类的新实例。
+    /// </summary>
+    /// <param name="start">起始时间。</param>
+    /// <param name="end">结束时间。</param>
     public DateTimePeriod(DateTime start, DateTime end)
     {
         Start = start;
@@ -22,14 +30,14 @@ public struct DateTimePeriod : IDateTimeComparable<DateTime, DateTimePeriod>
     }
 
     /// <summary>
-    /// 开始时间
+    /// 获取或设置区间的起始时间。
     /// </summary>
-    public DateTime? Start { get; set; }
+    public DateTime Start { get; init; }
 
     /// <summary>
-    /// 结束日期
+    /// 获取或设置区间的结束时间。
     /// </summary>
-    public DateTime? End { get; set; }
+    public DateTime End { get; init; }
 
     /// <inheritdoc />
     public bool IsPresent(DateTime value)
@@ -38,7 +46,7 @@ public struct DateTimePeriod : IDateTimeComparable<DateTime, DateTimePeriod>
     }
 
     /// <inheritdoc />
-    public bool IsCrossDay => Start!.Value.Date != End!.Value.Date;
+    public bool IsCrossDay => Start.Date != End.Date;
 
     /// <inheritdoc />
     public bool IsOverlap(DateTimePeriod period)
@@ -46,62 +54,59 @@ public struct DateTimePeriod : IDateTimeComparable<DateTime, DateTimePeriod>
         return !(period.Start > End || period.End < Start);
     }
 
-    /// <inheritdoc />
-    public bool HasValue => Start.HasValue && End.HasValue;
-
     /// <summary>
     /// 天
     /// </summary>
-    public int Days => this.HasValue ? (End!.Value - Start!.Value).Days : 0;
-    
+    public int Days => (End - Start).Days;
+
     /// <summary>
     /// 小时
     /// </summary>
-    public int Hours => this.HasValue ? (End!.Value - Start!.Value).Hours : 0;
-    
+    public int Hours => (End - Start).Hours;
+
     /// <summary>
     /// 分钟
     /// </summary>
-    public int Minutes => this.HasValue ? (End!.Value - Start!.Value).Minutes : 0;
-    
+    public int Minutes => (End - Start).Minutes;
+
     /// <summary>
     /// 秒
     /// </summary>
-    public int Seconds => this.HasValue ? (End!.Value - Start!.Value).Seconds : 0;
-    
+    public int Seconds => (End - Start).Seconds;
+
     /// <summary>
     /// 毫秒
     /// </summary>
-    public int Milliseconds => this.HasValue ? (End!.Value - Start!.Value).Milliseconds : 0;
-    
+    public int Milliseconds => (End - Start).Milliseconds;
+
     /// <summary>
     /// 总天
     /// </summary>
-    public double TotalDays => this.HasValue ? (End!.Value - Start!.Value).TotalDays : 0;
-    
+    public double TotalDays => (End - Start).TotalDays;
+
     /// <summary>
     /// 总小时
     /// </summary>
-    public double TotalHours => this.HasValue ? (End!.Value - Start!.Value).TotalHours : 0;
-    
+    public double TotalHours => (End - Start).TotalHours;
+
     /// <summary>
     /// 总分钟
     /// </summary>
-    public double TotalMinutes => this.HasValue ? (End!.Value - Start!.Value).TotalMinutes : 0;
-    
+    public double TotalMinutes => (End - Start).TotalMinutes;
+
     /// <summary>
     /// 总秒
     /// </summary>
-    public double TotalSeconds => this.HasValue ? (End!.Value - Start!.Value).TotalSeconds : 0;
-    
+    public double TotalSeconds => (End - Start).TotalSeconds;
+
     /// <summary>
     /// 总毫秒
     /// </summary>
-    public double TotalMilliseconds => this.HasValue ? (End!.Value - Start!.Value).TotalMilliseconds : 0;
-    
-    
+    public double TotalMilliseconds => (End - Start).TotalMilliseconds;
+
+
     /// <summary>
     /// tick
     /// </summary>
-    public long Ticks => this.HasValue ? (End!.Value - Start!.Value).Ticks : 0;
+    public long Ticks => (End - Start).Ticks;
 }

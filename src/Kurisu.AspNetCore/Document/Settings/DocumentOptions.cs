@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
+using Kurisu.AspNetCore.ConfigurableOptions;
 using Kurisu.AspNetCore.ConfigurableOptions.Attributes;
 
 namespace Kurisu.AspNetCore.Document.Settings;
@@ -9,13 +10,8 @@ namespace Kurisu.AspNetCore.Document.Settings;
 /// openapi文档oauth2.0 配置
 /// </summary>
 [Configuration]
-public class DocumentOptions : IValidatableObject
+public class DocumentOptions : IValidatableObject, IStartupConfigure<DocumentOptions>
 {
-    /// <summary>
-    /// 是否启用
-    /// </summary>
-    public bool Enable { get; set; }
-
     /// <summary>
     /// 授权地址
     /// </summary>
@@ -34,7 +30,12 @@ public class DocumentOptions : IValidatableObject
     /// <summary>
     /// 授权作用域
     /// </summary>
-    public Dictionary<string, string> Scopes { get; set; }
+    public IDictionary<string, string> Scopes { get; set; }
+
+    /// <summary>
+    /// 使用pkce
+    /// </summary>
+    public bool UsePkce { get; set; }
 
     /// <summary>
     /// 验证
@@ -43,27 +44,30 @@ public class DocumentOptions : IValidatableObject
     /// <returns></returns>
     public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
     {
-        if (!Enable)
-            yield break;
-
         if (string.IsNullOrEmpty(Authority))
         {
-            yield return new ValidationResult("授权地址不能为空", new[] { nameof(Authority) });
+            yield return new ValidationResult("授权地址不能为空", [nameof(Authority)]);
         }
 
         if (string.IsNullOrEmpty(ClientId))
         {
-            yield return new ValidationResult("客户端不能为空", new[] { nameof(ClientId) });
+            yield return new ValidationResult("客户端不能为空", [nameof(ClientId)]);
         }
 
         if (string.IsNullOrEmpty(ClientSecret))
         {
-            yield return new ValidationResult("客户端密钥不能为空", new[] { nameof(ClientSecret) });
+            yield return new ValidationResult("客户端密钥不能为空", [nameof(ClientSecret)]);
         }
 
         if (Scopes?.Any() != true || !Scopes.ContainsKey("openid"))
         {
-            yield return new ValidationResult("授权作用域必须包括openid", new[] { nameof(Scopes) });
+            yield return new ValidationResult("授权作用域必须包括openid", [nameof(Scopes)]);
         }
+    }
+
+    /// <inheritdoc />
+    public void StartupConfigure(DocumentOptions value)
+    {
+        App.StartupOptions.DocumentOptions = value;
     }
 }

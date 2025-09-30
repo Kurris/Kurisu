@@ -22,7 +22,7 @@ public class DefaultJwtAuthenticationPack : BaseAppPack
     public override void ConfigureServices(IServiceCollection services)
     {
         var setting = Configuration.GetSection(nameof(JwtOptions)).Get<JwtOptions>();
-        services.AddKurisuJwtAuthentication(setting, context => { });
+        services.AddKurisuJwtAuthentication(setting);
     }
 
     /// <inheritdoc />

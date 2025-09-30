@@ -16,7 +16,6 @@ namespace Kurisu.AspNetCore.EventBus.Internal;
 [SkipScan]
 internal static class AsyncChannelContext<TMessage> where TMessage : IAsyncChannelMessage
 {
-
     internal static async Task PublishAsync(TMessage message)
     {
         await _boundedChannel.Value.Writer.WriteAsync(message);
@@ -59,9 +58,10 @@ internal static class AsyncChannelContext<TMessage> where TMessage : IAsyncChann
                 {
                     return Scoped.Temp.Value.Invoke(sp =>
                     {
+                        Console.WriteLine(message.ToString());
                         var handlers = sp.GetServices<IAsyncChannelHandler<TMessage>>().ToArray();
                         return handlers.Any()
-                            ? Task.WhenAll(handlers.Select(x => x.InvokeAsync(sp, message)).ToArray())
+                            ? Task.WhenAll(handlers.Select(x => x.TodoAsync(sp, message)).ToArray())
                             : Task.CompletedTask;
                     });
                 });

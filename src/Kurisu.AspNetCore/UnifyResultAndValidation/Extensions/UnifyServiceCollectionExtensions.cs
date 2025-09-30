@@ -20,8 +20,8 @@ public static class UnifyServiceCollectionExtensions
     public static IServiceCollection AddUnifyResult(this IServiceCollection services, bool wrapException = true)
     {
         services.AddScoped<ApiRequestSettingService>();
-        
-        services.TryAddSingleton(typeof(IApiResult), typeof(DefaultApiResult<object>));
+
+        services.TryAddSingleton(typeof(IApiResult), typeof(ApiResult<object>));
         services.AddMvcFilter<ValidateAndPackResultFilter>();
 
         if (wrapException)

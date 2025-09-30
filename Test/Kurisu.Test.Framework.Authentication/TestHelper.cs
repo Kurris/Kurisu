@@ -27,7 +27,7 @@ public class TestHelper
                 : claim);
         }
 
-        var principal = new ClaimsPrincipal(new ClaimsIdentity(claims));
+        var principal = new ClaimsPrincipal(new ClaimsIdentity(claims, "jwt"));
 
         var httpContext = new DefaultHttpContext();
         // var type = Assembly.Load("Microsoft.AspNetCore.Http").GetType("Microsoft.AspNetCore.Http.DefaultHttpRequest");

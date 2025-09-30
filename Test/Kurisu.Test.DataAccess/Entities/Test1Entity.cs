@@ -5,7 +5,7 @@ using SqlSugar;
 namespace Kurisu.Test.DataAccess.Entities;
 
 [SugarTable("test1")]
-public class Test1Entity : SugarBaseEntity
+public class Test1Entity : SugarBaseEntity , ITenantId
 {
     [SugarColumn(IsPrimaryKey = true, IsIdentity = true)]
     public new int Id { get; set; }
@@ -13,6 +13,9 @@ public class Test1Entity : SugarBaseEntity
     public string Name { get; set; }
     public string Type { get; set; }
     public int Age { get; set; }
+
+    /// <inheritdoc />
+    public string TenantId { get; set; }
 }
 
 [SugarTable("test1WithSoftDelete")]

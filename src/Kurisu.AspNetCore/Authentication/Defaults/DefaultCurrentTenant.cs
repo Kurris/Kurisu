@@ -9,7 +9,10 @@ namespace Kurisu.AspNetCore.Authentication.Defaults;
 // ReSharper disable once ClassWithVirtualMembersNeverInherited.Global
 public class DefaultCurrentTenant : ICurrentTenant
 {
-    private readonly IHttpContextAccessor _httpContextAccessor;
+    /// <summary>
+    /// HttpContextAccessor
+    /// </summary>
+    protected IHttpContextAccessor HttpContextAccessor { get; }
 
     /// <summary>
     /// ctor
@@ -17,7 +20,7 @@ public class DefaultCurrentTenant : ICurrentTenant
     /// <param name="httpContextAccessor"></param>
     public DefaultCurrentTenant(IHttpContextAccessor httpContextAccessor)
     {
-        _httpContextAccessor = httpContextAccessor;
+        HttpContextAccessor = httpContextAccessor;
     }
 
     /// <summary>
@@ -29,10 +32,9 @@ public class DefaultCurrentTenant : ICurrentTenant
     /// <summary>
     /// 获取tenant id
     /// </summary>
-    /// <typeparam name="T"></typeparam>
     /// <returns></returns>
     public virtual string GetTenantId()
     {
-        return _httpContextAccessor?.HttpContext?.User.FindFirst(TenantKey)?.Value;
+        return HttpContextAccessor.HttpContext?.User.FindFirst(TenantKey)?.Value;
     }
 }

@@ -1,39 +1,31 @@
 ﻿using System;
 
-namespace Kurisu.AspNetCore.CustomClass;
+    namespace Kurisu.AspNetCore.CustomClass;
 
-/// <summary>
-/// 多语言描述
-/// </summary>
-[AttributeUsage(AttributeTargets.All, AllowMultiple = true, Inherited = false)]
-public class LangAttribute : Attribute
-{
     /// <summary>
-    /// 语言描述
+    /// 用于为目标添加多语言描述的特性。
     /// </summary>
-    /// <param name="display"></param>
-    public LangAttribute(string display) : this(display, "cn")
+    [AttributeUsage(AttributeTargets.All, AllowMultiple = true, Inherited = false)]
+    public class LangAttribute : Attribute
     {
+        /// <summary>
+        /// 初始化 <see cref="LangAttribute"/> 类的新实例。
+        /// </summary>
+        /// <param name="display">描述文本。</param>
+        /// <param name="lang">语言代码，默认为 "cn"。</param>
+        public LangAttribute(string display, string lang = "cn")
+        {
+            Lang = lang;
+            Description = display;
+        }
+
+        /// <summary>
+        /// 获取描述文本。
+        /// </summary>
+        public string Description { get; }
+
+        /// <summary>
+        /// 获取语言代码。
+        /// </summary>
+        public string Lang { get; }
     }
-
-    /// <summary>
-    /// 语言描述
-    /// </summary>
-    /// <param name="display"></param>
-    /// <param name="lang"></param>
-    public LangAttribute(string display, string lang)
-    {
-        Lang = lang;
-        Display = display;
-    }
-
-    /// <summary>
-    /// 描述
-    /// </summary>
-    public string Display { get; }
-
-    /// <summary>
-    /// 语言
-    /// </summary>
-    public string Lang { get; }
-}

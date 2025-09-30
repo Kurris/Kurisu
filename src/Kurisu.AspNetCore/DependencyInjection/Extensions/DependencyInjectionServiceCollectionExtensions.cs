@@ -1,6 +1,10 @@
 using System;
 using System.Linq;
+using System.Reflection;
+using Kurisu.AspNetCore;
 using Kurisu.AspNetCore.DependencyInjection;
+using Kurisu.AspNetCore.DependencyInjection.Internal;
+using Microsoft.Extensions.Logging;
 
 // ReSharper disable once CheckNamespace
 namespace Microsoft.Extensions.DependencyInjection;
@@ -19,7 +23,6 @@ public static class DependencyInjectionServiceCollectionExtensions
     public static IServiceCollection AddDependencyInjection(this IServiceCollection services)
     {
         services.RegisterServices();
-        services.RegisterNamedServices();
         return services;
     }
 
@@ -30,18 +33,34 @@ public static class DependencyInjectionServiceCollectionExtensions
     /// <exception cref="ApplicationException"></exception>
     private static void RegisterServices(this IServiceCollection services)
     {
-        var serviceTypes = DependencyInjectionHelper.DependencyServices;
+        services.AddScoped<INamedResolver, NamedResolver>();
+        var serviceTypes = DependencyInjectionHelper.DependencyServices.Value;
 
         foreach (var service in serviceTypes)
         {
-            (ServiceLifetime lifeTime, Type[] interfaceTypes) = DependencyInjectionHelper.GetInterfacesAndLifeTime(service);
+            var (named, lifeTime, interfaceTypes) = DependencyInjectionHelper.GetInjectInfos(service);
 
             //注册服务
             if (interfaceTypes.Length != 0)
             {
-                //注册所有接口
                 foreach (var interfaceType in interfaceTypes)
-                    DependencyInjectionHelper.Register(services, lifeTime, service, interfaceType);
+                {
+                    if (!string.IsNullOrEmpty(named))
+                    {
+                        if (DependencyInjectionHelper.NamedServices.TryAdd(new Tuple<Type, string>(interfaceType, named), service))
+                        {
+                            DependencyInjectionHelper.Register(services, lifeTime, service);
+                        }
+                        else
+                        {
+                            throw new ArgumentException($"命名服务注册失败，接口：{interfaceType.FullName}，命名：{named} 已存在");
+                        }
+                    }
+                    else
+                    {
+                        DependencyInjectionHelper.Register(services, lifeTime, service, interfaceType);
+                    }
+                }
             }
             else
             {

@@ -32,7 +32,7 @@ internal class ApiRequestSettingService
 
     public bool IsGlobal { get; set; }
 
-    public int? UserId { get; set; }
+    public string UserId { get; set; }
 
     public void Log()
     {

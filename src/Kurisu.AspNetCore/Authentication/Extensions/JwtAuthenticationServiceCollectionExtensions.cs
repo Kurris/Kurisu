@@ -19,24 +19,15 @@ public static class JwtAuthenticationServiceCollectionExtensions
     /// </summary>
     /// <param name="services"></param>
     /// <param name="jwtSetting"></param>
-    /// <param name="onMessageReceived"></param>
     /// <exception cref="ArgumentNullException"></exception>
     /// <returns></returns>
-    public static IServiceCollection AddKurisuJwtAuthentication(this IServiceCollection services, JwtOptions jwtSetting, Action<MessageReceivedContext> onMessageReceived)
+    public static IServiceCollection AddKurisuJwtAuthentication(this IServiceCollection services, JwtOptions jwtSetting)
     {
         services.AddUserInfo();
         
         services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             .AddJwtBearer(options =>
             {
-                options.Events = new JwtBearerEvents
-                {
-                    OnMessageReceived = context =>
-                    {
-                        onMessageReceived?.Invoke(context);
-                        return Task.CompletedTask;
-                    }
-                };
                 options.TokenValidationParameters = new TokenValidationParameters
                 {
                     ValidateIssuer = !string.IsNullOrEmpty(jwtSetting.Issuer),

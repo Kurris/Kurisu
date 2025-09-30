@@ -1,15 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data;
-using System.Linq;
 using Kurisu.AspNetCore.Authentication.Abstractions;
-using Kurisu.AspNetCore.CustomClass;
 using Kurisu.AspNetCore.DataAccess.Entity;
 using Kurisu.AspNetCore.DataAccess.SqlSugar.Attributes;
-using Kurisu.AspNetCore.DataAccess.SqlSugar.DiffLog;
 using Kurisu.AspNetCore.DataAccess.SqlSugar.Options;
 using Kurisu.AspNetCore.DataAccess.SqlSugar.Services;
 using Kurisu.AspNetCore.DataAccess.SqlSugar.Services.Implements;
+using Kurisu.AspNetCore.UnifyResultAndValidation.Exceptions;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -19,12 +17,10 @@ using DbType = SqlSugar.DbType;
 namespace Kurisu.AspNetCore.DataAccess.SqlSugar.Extensions;
 
 /// <summary>
-/// sqlsugar ioc 注入
+/// SqlSugar Ioc 注入
 /// </summary>
 public static class SqlSugarServiceCollectionExtensions
 {
-    private const string _infoTemplate = "ExecuteCommand[{ms}] Timeout[{timeout}]\r\n{sql}";
-
     /// <summary>
     /// 添加SQLSugar
     /// </summary>
@@ -41,7 +37,17 @@ public static class SqlSugarServiceCollectionExtensions
     /// <param name="dbType"></param>
     public static void AddSqlSugar(this IServiceCollection services, DbType dbType)
     {
-        services.AddSqlSugar(dbType, null);
+        services.AddSqlSugar(dbType, null, null);
+    }
+
+    public static void AddSqlSugar(this IServiceCollection services, DbType dbType, Func<IServiceProvider, List<ConnectionConfig>> configOtherConnections)
+    {
+        services.AddSqlSugar(dbType, configOtherConnections, null);
+    }
+
+    public static void AddSqlSugar(this IServiceCollection services, DbType dbType, Action<ISqlSugarClient> configDb)
+    {
+        services.AddSqlSugar(dbType, null, configDb);
     }
 
     /// <summary>
@@ -50,190 +56,180 @@ public static class SqlSugarServiceCollectionExtensions
     /// <param name="services"></param>
     /// <param name="dbType"></param>
     /// <param name="configOtherConnections"></param>
-    public static void AddSqlSugar(this IServiceCollection services, DbType dbType, Func<IServiceProvider, List<ConnectionConfig>> configOtherConnections)
+    /// <param name="configDb"></param>
+    public static void AddSqlSugar(this IServiceCollection services, DbType dbType, Func<IServiceProvider, List<ConnectionConfig>> configOtherConnections, Action<ISqlSugarClient> configDb)
     {
+        services.AddSqlSugarCore();
+        services.AddScoped(typeof(ISqlSugarClient), sp => SqlSugarServiceCollectionExtensionsHelper.ConfigDb(sp, dbType, configOtherConnections, configDb));
+    }
+
+    private static void AddSqlSugarCore(this IServiceCollection services)
+    {
+        services.AddScoped<IDbConnectionFactory, DefaultConnectionHandler>();
         services.AddScoped<ISqlSugarOptionsService, SqlSugarOptionsService>();
         services.AddScoped<IQueryableSetting, QueryableSetting>();
         services.AddScoped<IDbContext, DbContext>();
         services.AddSingleton<IIsolationLevelService, IsolationLevelService>();
-        services.AddSingleton(_ =>
+        services.AddSingleton(_ => SqlSugarServiceCollectionExtensionsHelper.ConfigExternal());
+    }
+}
+
+internal static class SqlSugarServiceCollectionExtensionsHelper
+{
+    private const string InfoTemplate = "ExecuteCommand[{ms}] Timeout[{timeout}]\r\n{sql}";
+
+    public static ConfigureExternalServices ConfigExternal()
+    {
+        return new ConfigureExternalServices
         {
-            return new ConfigureExternalServices
+            EntityService = (c, p) =>
             {
-                EntityService = (c, p) =>
+                if (!p.IsPrimarykey && c.PropertyType.IsGenericType && c.PropertyType.GetGenericTypeDefinition() == typeof(Nullable<>)
+                    || (!p.IsPrimarykey && p.PropertyInfo.PropertyType == typeof(string)))
                 {
-                    if (!p.IsPrimarykey && c.PropertyType.IsGenericType && c.PropertyType.GetGenericTypeDefinition() == typeof(Nullable<>)
-                        || (!p.IsPrimarykey && p.PropertyInfo.PropertyType == typeof(string)))
+                    if (p.IsNullable)
                     {
-                        if (p.IsNullable)
-                        {
-                            p.IsNullable = true;
-                        }
+                        p.IsNullable = true;
                     }
                 }
-            };
-        });
+            }
+        };
+    }
 
-        services.AddScoped(typeof(ISqlSugarClient), sp =>
+
+    public static ISqlSugarClient ConfigDb(IServiceProvider sp, DbType dbType,
+        Func<IServiceProvider, List<ConnectionConfig>> configOtherConnections,
+        Action<ISqlSugarClient> configDb)
+    {
+        var options = sp.GetService<IOptions<SqlSugarOptions>>().Value;
+        var logger = sp.GetService<ILogger<SqlSugarClient>>();
+        var currentUser = sp.GetService<ICurrentUser>();
+        var sugarOptions = sp.GetService<ISqlSugarOptionsService>();
+        var isolationLevel = sp.GetService<IIsolationLevelService>();
+        var configureExternalServices = sp.GetService<ConfigureExternalServices>();
+        var connectionHandler = sp.GetService<IDbConnectionFactory>();
+
+        switch (dbType)
         {
-            var options = sp.GetService<IOptions<SqlSugarOptions>>().Value;
-            var logger = sp.GetService<ILogger<SqlSugarClient>>();
-            var currentUser = sp.GetService<ICurrentUser>();
-            var sugarOptions = sp.GetService<ISqlSugarOptionsService>();
-            var isolationLevel = sp.GetService<IIsolationLevelService>();
-            var configureExternalServices = sp.GetService<ConfigureExternalServices>();
+            case DbType.MySql or DbType.MySqlConnector:
+                isolationLevel.Set(IsolationLevel.RepeatableRead);
+                break;
+            case DbType.SqlServer:
+                isolationLevel.Set(IsolationLevel.ReadCommitted);
+                break;
+        }
 
-            switch (dbType)
+        var configs = new List<ConnectionConfig>
+        {
+            new()
             {
-                case DbType.MySql or DbType.MySqlConnector:
-                    isolationLevel.Set(IsolationLevel.RepeatableRead);
-                    break;
-                case DbType.SqlServer:
-                    isolationLevel.Set(IsolationLevel.ReadCommitted);
-                    break;
+                ConfigId = "default",
+                ConnectionString = connectionHandler.GetConnectionString(),
+                DbType = dbType,
+                InitKeyType = InitKeyType.Attribute,
+                IsAutoCloseConnection = true,
+
+                MoreSettings = new ConnMoreSettings
+                {
+                    DisableNvarchar = true
+                },
+                ConfigureExternalServices = configureExternalServices
+            }
+        };
+
+        //添加外部连接
+        var otherConfigs = configOtherConnections?.Invoke(sp);
+        if (otherConfigs != null)
+        {
+            configs.AddRange(otherConfigs);
+        }
+
+        ISqlSugarClient db = new SqlSugarClient(configs);
+
+        db.Ado.CommandTimeOut = options.Timeout;
+
+        db.Aop.OnLogExecuted = (sql, parameters) =>
+        {
+            var ms = db.Ado.SqlExecutionTime.Milliseconds;
+
+            //警告慢sql
+            if (ms >= options.SlowSqlTime * 1000)
+                logger.LogWarning(message: InfoTemplate, ms, options.Timeout, sql);
+
+            if (options.EnableSqlLog)
+            {
+                sql = UtilMethods.GetSqlString(dbType, sql, parameters);
+                logger.LogInformation(message: InfoTemplate, ms, options.Timeout, sql);
+            }
+        };
+
+        //ITenantId租户处理
+        if (currentUser != null)
+        {
+            var tenantId = currentUser.GetTenantId();
+            db.QueryFilter.AddTableFilter<ITenantId>(x => x.TenantId == tenantId);
+        }
+
+        //软删除
+        db.QueryFilter.AddTableFilter<ISoftDeleted>(x => x.IsDeleted == false);
+
+        db.Aop.DataExecuting = (_, model) =>
+        {
+            if (!sugarOptions.IgnoreTenant //启用租户
+                && currentUser != null //用户信息存在
+                && model.PropertyName == nameof(ITenantId.TenantId) //当前为租户字段
+                && model.EntityValue is ITenantId) //继承ITenantId
+            {
+                var tenant = currentUser.GetTenantId();
+                model.SetValue(tenant);
             }
 
-            var configs = new List<ConnectionConfig>
+            //处理人员和时间字段
+            switch (model.OperationType)
             {
-                new()
+                case DataFilterType.InsertByObject:
                 {
-                    ConfigId = "db-main",
-
-                    ConnectionString = options.DefaultConnectionString,
-                    DbType = dbType,
-                    InitKeyType = InitKeyType.Attribute,
-                    IsAutoCloseConnection = true,
-
-                    MoreSettings = new ConnMoreSettings
+                    if (model.IsAnyAttribute<InsertDateTimeGenerationAttribute>())
                     {
-                        DisableNvarchar = true
-                    },
-                    ConfigureExternalServices = configureExternalServices
-                }
-            };
-
-            //添加外部连接
-            var otherConfigs = configOtherConnections?.Invoke(sp);
-            if (otherConfigs != null)
-            {
-                configs.AddRange(otherConfigs);
-            }
-
-            ISqlSugarClient db = new SqlSugarClient(configs);
-
-            db.Ado.CommandTimeOut = options.Timeout;
-
-            db.Aop.OnLogExecuted = (sql, parameters) =>
-            {
-                var ms = db.Ado.SqlExecutionTime.Milliseconds;
-
-                //警告慢sql
-                if (ms >= options.SlowSqlTime * 1000)
-                    logger.LogWarning(message: _infoTemplate, ms, options.Timeout, sql);
-
-                if (options.EnableSqlLog)
-                {
-                    sql = UtilMethods.GetSqlString(DbType.MySql, sql, parameters);
-                    logger.LogInformation(message: _infoTemplate, ms, options.Timeout, sql);
-                }
-            };
-
-            //ITenantId租户处理
-            if (currentUser != null)
-            {
-                var tenantId = currentUser.GetTenantId();
-                db.QueryFilter.AddTableFilter<ITenantId>(x => x.TenantId == tenantId);
-            }
-
-            //软删除
-            db.QueryFilter.AddTableFilter<ISoftDeleted>(x => x.IsDeleted == false);
-
-            //#if DEBUG
-            //SQL执行前
-            //db.Aop.OnLogExecuting = (sql, parameters) =>
-            //{
-            //    logger.LogInformation(UtilMethods.GetSqlString(DbType.SqlServer, sql, parameters));
-            //};
-            //#endif
-
-            //增删改
-            db.Aop.DataExecuting = (_, model) =>
-            {
-                if (sugarOptions.IgnoreTenant == false //启用租户
-                    && currentUser != null //用户信息存在
-                    && model.PropertyName == nameof(ITenantId.TenantId) //当前为租户字段
-                    && model.EntityValue is ITenantId) //继承ITenantId
-                {
-                    var tenant = currentUser.GetTenantId();
-                    model.SetValue(tenant);
-                }
-
-                //处理人员和时间字段
-                switch (model.OperationType)
-                {
-                    case DataFilterType.InsertByObject:
-                    {
-                        if (model.IsAnyAttribute<InsertDateTimeGenerationAttribute>())
-                        {
-                            model.SetValue(DateTime.Now);
-                        }
-
-                        if (currentUser != null && model.IsAnyAttribute<InsertUserGenerationAttribute>())
-                        {
-                            if ((int)model.EntityColumnInfo.PropertyInfo.GetValue(model.EntityValue)! == 0)
-                            {
-                                model.SetValue(currentUser.GetUserId());
-                            }
-                        }
-
-                        break;
+                        model.SetValue(DateTime.Now);
                     }
-                    case DataFilterType.UpdateByObject:
-                    {
-                        if (model.IsAnyAttribute<UpdateDateTimeGenerationAttribute>())
-                        {
-                            model.SetValue(DateTime.Now);
-                        }
 
-                        if (currentUser != null && model.IsAnyAttribute<UpdateUserGenerationAttribute>())
+                    if (currentUser != null && model.IsAnyAttribute<InsertUserGenerationAttribute>())
+                    {
+                        var v = model.EntityColumnInfo.PropertyInfo.GetValue(model.EntityValue);
+                        if (v == null || (string)v == string.Empty || v.Equals(Guid.Empty) || v.Equals(0))
                         {
                             model.SetValue(currentUser.GetUserId());
                         }
-
-                        break;
                     }
+
+                    break;
                 }
-            };
-
-            //对查询后的数据处理(加解密处理)
-            //db.Aop.DataExecuted = (result, entity) =>
-            //{
-            //};
-
-            db.Aop.OnError = exception =>
-            {
-                logger.LogError(exception, "DbError:{message}", exception.Message);
-                throw new UserFriendlyException($"DbError:{exception.Message}");
-            };
-
-            if (options.Diff?.Enable == true && options.Diff?.Commands?.Any() == true)
-            {
-                //数据差异
-                db.Aop.OnDiffLogEvent = diffModel =>
+                case DataFilterType.UpdateByObject:
                 {
-                    var changes = ColumnsChangeHelper.GetChanges(sp, diffModel);
-                    if (changes.Any())
+                    if (model.IsAnyAttribute<UpdateDateTimeGenerationAttribute>())
                     {
-                        var diffDb = sp.CreateScope().ServiceProvider.GetService<IDbContext>();
-                        diffDb.Client.Ado.Connection.ConnectionString = options.Diff.LogConnectionString;
-                        diffDb.Client.CodeFirst.InitTables<TableRowChangeEntity>();
-
-                        diffDb.Client.Insertable(changes).ExecuteCommand();
+                        model.SetValue(DateTime.Now);
                     }
-                };
-            }
 
-            return db;
-        });
+                    if (currentUser != null && model.IsAnyAttribute<UpdateUserGenerationAttribute>())
+                    {
+                        model.SetValue(currentUser.GetUserId());
+                    }
+
+                    break;
+                }
+            }
+        };
+
+        db.Aop.OnError = exception =>
+        {
+            logger.LogError(exception, "DbError:{message}", exception.Message);
+            throw new UserFriendlyException($"DbError:{exception.Message}");
+        };
+
+        configDb?.Invoke(db);
+
+        return db;
     }
 }

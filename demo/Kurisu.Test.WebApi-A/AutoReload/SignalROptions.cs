@@ -1,4 +1,6 @@
-﻿namespace Kurisu.Test.WebApi_A.AutoReload
+﻿using Newtonsoft.Json;
+
+namespace Kurisu.Test.WebApi_A.AutoReload
 {
     public class SignalROptions
     {
@@ -11,6 +13,8 @@
 
         public string Service { get; set; }
 
+        
+        [JsonProperty("AAAAENV")]
         public string Env { get; set; }
     }
 }

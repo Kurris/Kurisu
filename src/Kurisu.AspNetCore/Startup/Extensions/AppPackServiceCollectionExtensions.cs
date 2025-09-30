@@ -43,7 +43,7 @@ public static class AppPackServiceCollectionExtensions
     /// <returns></returns>
     public static IApplicationBuilder UseAppPacks(this IApplicationBuilder app, IWebHostEnvironment env, IServiceProvider serviceProvider, bool isBeforeUseRouting)
     {
-        var configuration = serviceProvider.GetService<IConfiguration>();
+        var configuration = serviceProvider.GetRequiredService<IConfiguration>();
         foreach (var appPack in App.AppPacks.Where(x => x.IsBeforeUseRouting == isBeforeUseRouting))
         {
             appPack.Configuration = configuration;

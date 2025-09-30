@@ -11,16 +11,16 @@ public interface INamedResolver
     /// <summary>
     /// 获取服务对象
     /// </summary>
-    /// <param name="type">对象类型</param>
-    /// <param name="serviceName">服务名称</param>
+    /// <param name="interfaceType">对象类型</param>
+    /// <param name="named">服务名称</param>
     /// <returns></returns>
-    object GetService(Type type, string serviceName);
+    object GetService(Type interfaceType, string named);
 
     /// <summary>
     /// 获取服务实例
     /// </summary>
-    /// <param name="serviceName">服务名称</param>
-    /// <typeparam name="TService">服务类型</typeparam>
+    /// <param name="named">服务名称</param>
+    /// <typeparam name="TInterface">服务类型</typeparam>
     /// <returns></returns>
-    TService GetService<TService>(string serviceName) where TService : class;
+    TInterface GetService<TInterface>(string named) where TInterface : class;
 }

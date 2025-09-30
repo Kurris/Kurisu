@@ -3,7 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Kurisu.Test.Framework.DI.Dependencies.Abstractions;
 
-public interface IGenericsGet<TAnimal> : IScopeDependency where TAnimal : Animal
+public interface IGenericsGet<TAnimal> where TAnimal : Animal
 {
     public TAnimal Animal { get; set; }
     

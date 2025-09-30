@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Threading.Tasks;
-using Kurisu.AspNetCore.CustomClass;
+using Kurisu.AspNetCore.UnifyResultAndValidation.Exceptions;
 using SqlSugar;
 
 namespace Kurisu.AspNetCore.Utils;
@@ -20,7 +20,7 @@ public class CommonHelper
     /// <exception cref="UserFriendlyException"></exception>
     public static async Task RetryAsync(Func<Task> func, int retry = 3, string errorMessage = null)
     {
-        for (int i = 0; i < retry; i++)
+        for (var i = 0; i < retry; i++)
         {
             try
             {
@@ -30,10 +30,6 @@ public class CommonHelper
             catch (Exception ex) when (ex is VersionExceptions)
             {
                 await Task.Delay(50);
-            }
-            catch (Exception)
-            {
-                throw;
             }
         }
 
@@ -60,10 +56,6 @@ public class CommonHelper
             catch (Exception ex) when (ex is VersionExceptions)
             {
                 await Task.Delay(50);
-            }
-            catch (Exception)
-            {
-                throw;
             }
         }
 

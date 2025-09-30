@@ -1,10 +1,8 @@
 using System.Threading.Tasks;
 using Kurisu.AspNetCore.CustomClass;
-using Kurisu.AspNetCore.UnifyResultAndValidation.Abstractions;
-using Microsoft.AspNetCore.Mvc;
+using Kurisu.AspNetCore.UnifyResultAndValidation.Exceptions;
 using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.Extensions.DependencyInjection;
-using Newtonsoft.Json;
 
 namespace Kurisu.AspNetCore.UnifyResultAndValidation.Filters;
 
@@ -20,23 +18,16 @@ public class ExceptionPackFilter : IAsyncExceptionFilter
     /// </summary>
     /// <param name="context"></param>
     /// <returns></returns>
-    public Task OnExceptionAsync(ExceptionContext context)
+    public async Task OnExceptionAsync(ExceptionContext context)
     {
-        if (context.Exception is not UserFriendlyException)
-            return Task.CompletedTask;
-
-        var apiResult = context.HttpContext.RequestServices.GetService<IApiResult>()!;
-        var errorData = apiResult.GetDefaultErrorApiResult(context.Exception.Message);
-        context.Result = new ObjectResult(errorData);
-        context.ExceptionHandled = true;
-
-        var setting = context.HttpContext.RequestServices.GetService<ApiRequestSettingService>();
-        if (setting.EnableApiRequestLog)
+        if (context.Exception is UserFriendlyException ex)
         {
-            setting.Response = JsonConvert.SerializeObject(errorData);
-            setting.Log();
+            ex.ExceptionContext = context;
+            var exceptionHandlers = context.HttpContext.RequestServices.GetRequiredService<IFrameworkExceptionHandlers>();
+            if (await exceptionHandlers.HandleAsync(ex))
+            {
+                context.ExceptionHandled = true;
+            } 
         }
-
-        return Task.CompletedTask;
     }
 }

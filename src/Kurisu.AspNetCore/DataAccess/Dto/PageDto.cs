@@ -25,7 +25,6 @@ public class PageDto
         PageSize = pageSize;
     }
 
-
     /// <summary>
     /// index
     /// </summary>
@@ -42,4 +41,9 @@ public class PageDto
     /// 模糊搜索
     /// </summary>
     public string Search { get; set; }
+
+    /// <summary>
+    /// 是否导出
+    /// </summary>
+    public bool IsExport { get; set; }
 }

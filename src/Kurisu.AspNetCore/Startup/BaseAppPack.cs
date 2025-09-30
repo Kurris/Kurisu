@@ -31,7 +31,7 @@ public abstract class BaseAppPack : IAppPack
     /// 在Startup Configure请求管道中,以UseRouting分割添加自定义AppPack
     /// </summary>
     public virtual bool IsBeforeUseRouting { get; }
-
+    
     /// <summary>
     /// 执行2
     /// </summary>
@@ -46,6 +46,7 @@ public abstract class BaseAppPack : IAppPack
     /// <param name="services"></param>
     public virtual void ConfigureServices(IServiceCollection services)
     {
+      
     }
 
     /// <summary>

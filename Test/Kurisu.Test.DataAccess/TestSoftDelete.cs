@@ -1,6 +1,8 @@
-﻿using Kurisu.AspNetCore.DataAccess.Entity;
+﻿using System.Diagnostics.CodeAnalysis;
+using Kurisu.AspNetCore.DataAccess.Entity;
 using Kurisu.AspNetCore.DataAccess.SqlSugar.Services;
 using Kurisu.Test.DataAccess.Entities;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Kurisu.Test.DataAccess;
 
@@ -9,9 +11,10 @@ public class TestSoftDelete
 {
     private readonly IDbContext _dbContext;
 
-    public TestSoftDelete(IDbContext dbContext)
+    [ExcludeFromCodeCoverage]
+    public TestSoftDelete()
     {
-        _dbContext = dbContext;
+        _dbContext = TestHelper.GetServiceProvider().GetRequiredService<IDbContext>();
     }
 
     [Fact]

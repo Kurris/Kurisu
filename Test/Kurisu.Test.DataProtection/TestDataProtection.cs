@@ -1,6 +1,8 @@
 using Kurisu.AspNetCore.Cache;
+using Kurisu.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.Extensions.Options;
+using DataProtectionOptions = Kurisu.AspNetCore.DataProtection.Settings.DataProtectionOptions;
 
 namespace Kurisu.Test.DataProtection;
 
@@ -9,9 +11,9 @@ public class TestDataProtection
 {
     private readonly IDataProtectionProvider _dataProtectionProvider;
     private readonly RedisCache _redisCache;
-    private readonly Kurisu.AspNetCore.DataProtection.Settings.DataProtectionOptions _dataProtectionOptions;
+    private readonly DataProtectionOptions _dataProtectionOptions;
 
-    public TestDataProtection(IDataProtectionProvider dataProtectionProvider, RedisCache redisCache, IOptions<Kurisu.AspNetCore.DataProtection.Settings.DataProtectionOptions> options)
+    public TestDataProtection(IDataProtectionProvider dataProtectionProvider, RedisCache redisCache, IOptions<DataProtectionOptions> options)
     {
         _dataProtectionProvider = dataProtectionProvider;
         _redisCache = redisCache;
@@ -27,8 +29,14 @@ public class TestDataProtection
         var decryptText = protector.Unprotect(encryptText);
 
         Assert.Equal("123", decryptText);
-        
-        var list = _redisCache.ListRange(_dataProtectionOptions.Key);
-        Assert.NotEmpty(list);
+
+        if (_dataProtectionOptions.Provider == DataProtectionProviderType.Db)
+        {
+        }
+        else if (_dataProtectionOptions.Provider == DataProtectionProviderType.Redis)
+        {
+            var list = _redisCache.ListRange("DataProtection-Keys");
+            Assert.NotEmpty(list);
+        }
     }
 }

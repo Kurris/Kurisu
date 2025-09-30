@@ -1,6 +1,10 @@
 ﻿
+
+using Kurisu.AspNetCore.DependencyInjection.Attributes;
+
 namespace Kurisu.Test.WebApi_A.Services.Implements;
 
+[DiInject]
 public class TestService : ITestService
 {
     private readonly ILogger<TestService> _logger;
@@ -9,7 +13,7 @@ public class TestService : ITestService
     {
         _logger = logger;
     }
-
+    
     public Task<string> SayAsync()
     {
         _logger.LogInformation("doing");

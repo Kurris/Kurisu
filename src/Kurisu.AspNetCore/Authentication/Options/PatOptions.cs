@@ -1,10 +1,13 @@
 // ReSharper disable ClassNeverInstantiated.Global
 
+using Kurisu.AspNetCore.ConfigurableOptions.Attributes;
+
 namespace Kurisu.AspNetCore.Authentication.Options;
 
 /// <summary>
 /// 个人访问token配置
 /// </summary>
+[Configuration("IdentityServerOptions:Pat")]
 public class PatOptions
 {
     /// <summary>

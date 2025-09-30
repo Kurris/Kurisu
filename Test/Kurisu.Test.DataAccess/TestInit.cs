@@ -1,5 +1,6 @@
 using Kurisu.AspNetCore.DataAccess.SqlSugar.Services;
 using Kurisu.Test.DataAccess.Entities;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Kurisu.Test.DataAccess;
 
@@ -8,9 +9,9 @@ public class TestInit
 {
     private readonly IDbContext _dbContext;
 
-    public TestInit(IDbContext dbContext)
+    public TestInit( )
     {
-        _dbContext = dbContext;
+        _dbContext = TestHelper.GetServiceProvider().GetRequiredService<IDbContext>();
     }
     
     [Fact]

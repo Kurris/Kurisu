@@ -28,7 +28,7 @@ public static class SnowFlakeApplicationBuilderExtensions
         var cache = app.ApplicationServices.GetService<RedisCache>();
         var logger = app.ApplicationServices.GetService<ILogger<SnowFlakeHelper>>();
         var lifetime = app.ApplicationServices.GetService<IHostApplicationLifetime>();
-        
+
         using var handler = cache.Lock("snowflake-initialize", TimeSpan.FromSeconds(3), TimeSpan.FromMilliseconds(500), 6);
         if (!handler.Acquired)
         {
@@ -46,6 +46,7 @@ public static class SnowFlakeApplicationBuilderExtensions
             var pr = cache.ListLeftPush(key, item);
             SnowFlakeHelper.Initialize(1, item);
             logger.LogInformation("雪花workerId初始化完成:{workerId}.结果:{result}", item, pr);
+            
             lifetime.ApplicationStopping.Register(() =>
             {
                 var rr = cache.ListRemove(key, item.ToString());

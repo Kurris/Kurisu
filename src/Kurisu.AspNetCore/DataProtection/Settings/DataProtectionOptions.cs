@@ -1,11 +1,8 @@
-﻿using Kurisu.AspNetCore.ConfigurableOptions.Attributes;
-
-namespace Kurisu.AspNetCore.DataProtection.Settings;
+﻿namespace Kurisu.AspNetCore.DataProtection.Settings;
 
 /// <summary>
 /// 数据保存配置
 /// </summary>
-[Configuration]
 public class DataProtectionOptions
 {
     /// <summary>
@@ -19,7 +16,7 @@ public class DataProtectionOptions
     public string AppName { get; set; }
 
     /// <summary>
-    /// 缓存key
+    /// 持续化提供器
     /// </summary>
-    public string Key { get; set; } = "DataProtection-Keys";
+    public DataProtectionProviderType Provider { get; set; }
 }

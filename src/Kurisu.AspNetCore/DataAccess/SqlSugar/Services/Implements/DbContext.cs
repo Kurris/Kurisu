@@ -13,25 +13,13 @@ using SqlSugar;
 
 namespace Kurisu.AspNetCore.DataAccess.SqlSugar.Services.Implements;
 
-internal class DbContext : IDbContext
+internal class DbContext(ISqlSugarClient db, IServiceProvider serviceProvider) : IDbContext
 {
-    private readonly IServiceProvider _serviceProvider;
-    private readonly ISqlSugarOptionsService _sqlSugarOptionsService;
+    private readonly ISqlSugarOptionsService _sqlSugarOptionsService = serviceProvider.GetRequiredService<ISqlSugarOptionsService>();
 
-    public DbContext(ISqlSugarClient db, IServiceProvider serviceProvider)
-    {
-        Client = db;
-        _serviceProvider = serviceProvider;
-        _sqlSugarOptionsService = serviceProvider.GetService<ISqlSugarOptionsService>();
-    }
+    public ISqlSugarClient Client { get; } = db;
 
-    public ISqlSugarClient Client { get; }
-
-    /// <inheritdoc />
-    public IQueryableSetting GetQueryableSetting()
-    {
-        return _serviceProvider.GetService<IQueryableSetting>();
-    }
+    public IQueryableSetting GetQueryableSetting() => serviceProvider.GetRequiredService<IQueryableSetting>();
 
 
     public ISugarQueryable<T> Queryable<T>()
@@ -44,23 +32,29 @@ internal class DbContext : IDbContext
 
         if (setting.GetEnableCrossTenant<T>())
         {
-            var tenantIds = _serviceProvider.GetRequiredService<ICurrentUser>().GetUserClaim("tenants").Split(",").ToList();
+            var tenantIdName =
+                type.IsAssignableTo(typeof(ITenantId))
+                    ? nameof(ITenantId.TenantId)
+                    : type.GetProperties().Any(x => x.IsDefined(typeof(TenantIdAttribute), false))
+                        ? type.GetProperties().First(x => x.IsDefined(typeof(TenantIdAttribute), false)).Name
+                        : string.Empty;
 
-            if (type.IsAssignableTo(typeof(ITenantId)))
+            if (tenantIdName.IsPresent())
             {
-                query = query.Where(GetWhereExpression<T, string>(nameof(ITenantId.TenantId), tenantIds));
-            }
-
-            var tenantIdField = type.GetProperties().FirstOrDefault(x => x.IsDefined(typeof(TenantIdAttribute), false));
-            if (tenantIdField != null)
-            {
-                query = query.Where(GetWhereExpression<T, string>(tenantIdField.Name, tenantIds));
+                var currentUser = serviceProvider.GetRequiredService<ICurrentUser>();
+                var tenantsStr = currentUser.GetUserClaim("tenants");
+                if (tenantsStr.IsPresent())
+                {
+                    var tenantIds = tenantsStr.Split(",").ToList();
+                    query = query.Where(GetWhereExpression<T, string>(tenantIdName, tenantIds));
+                }
             }
         }
 
+        // ReSharper disable once InvertIf
         if (setting.GetEnableDataPermission<T>())
         {
-            var permissionData = _serviceProvider.GetRequiredService<IGetDataPermissions>().GetData<T>();
+            var permissionData = serviceProvider.GetRequiredService<IGetDataPermissions>().GetData<T>();
             query = permissionData.Aggregate(query, (current, item) => current.Where(GetWhereExpression<T, Guid>(item.Key, item.Value)));
         }
 
@@ -82,7 +76,7 @@ internal class DbContext : IDbContext
     public IDbContext ChangeDb(string dbId)
     {
         var client = ((SqlSugarClient)Client).GetConnection(dbId);
-        return new DbContext(client, _serviceProvider);
+        return new DbContext(client, serviceProvider);
     }
 
 
@@ -219,17 +213,17 @@ internal class DbContext : IDbContext
 
     public IDeleteable<T> Deleteable<T>() where T : class, new()
     {
-        return Client.Deleteable<T>().EnableDiffLogEventIF(_sqlSugarOptionsService.Diff);
+        return Client.Deleteable<T>();
     }
 
     public IDeleteable<T> Deleteable<T>(T obj) where T : class, new()
     {
-        return Client.Deleteable(obj).EnableDiffLogEventIF(_sqlSugarOptionsService.Diff);
+        return Client.Deleteable(obj);
     }
 
     public IDeleteable<T> Deleteable<T>(List<T> list) where T : class, new()
     {
-        return Client.Deleteable(list).EnableDiffLogEventIF(_sqlSugarOptionsService.Diff);
+        return Client.Deleteable(list);
     }
 
     #endregion
@@ -239,38 +233,38 @@ internal class DbContext : IDbContext
 
     public async Task<int> UpdateAsync<T>(T obj) where T : class, new()
     {
-        return await Client.Updateable(obj).EnableDiffLogEventIF(_sqlSugarOptionsService.Diff).ExecuteCommandAsync();
+        return await Client.Updateable(obj).ExecuteCommandAsync();
     }
 
     public async Task<int> UpdateAsync<T>(T[] obj) where T : class, new()
     {
-        return await Client.Updateable(obj).EnableDiffLogEventIF(_sqlSugarOptionsService.Diff).ExecuteCommandAsync();
+        return await Client.Updateable(obj).ExecuteCommandAsync();
     }
 
     public async Task<int> UpdateAsync<T>(List<T> obj) where T : class, new()
     {
-        return await Client.Updateable(obj).EnableDiffLogEventIF(_sqlSugarOptionsService.Diff).ExecuteCommandAsync();
+        return await Client.Updateable(obj).ExecuteCommandAsync();
     }
 
     public IUpdateable<T> Updateable<T>() where T : class, new()
     {
-        return Client.Updateable<T>().EnableDiffLogEventIF(_sqlSugarOptionsService.Diff);
+        return Client.Updateable<T>();
     }
 
 
     public int Update<T>(T obj) where T : class, new()
     {
-        return Client.Updateable(obj).EnableDiffLogEventIF(_sqlSugarOptionsService.Diff).ExecuteCommand();
+        return Client.Updateable(obj).ExecuteCommand();
     }
 
     public int Update<T>(T[] obj) where T : class, new()
     {
-        return Client.Updateable(obj).EnableDiffLogEventIF(_sqlSugarOptionsService.Diff).ExecuteCommand();
+        return Client.Updateable(obj).ExecuteCommand();
     }
 
     public int Update<T>(List<T> obj) where T : class, new()
     {
-        return Client.Updateable(obj).EnableDiffLogEventIF(_sqlSugarOptionsService.Diff).ExecuteCommand();
+        return Client.Updateable(obj).ExecuteCommand();
     }
 
     #endregion
@@ -305,36 +299,61 @@ internal class DbContext : IDbContext
         }
     }
 
-
-    public async Task IgnoreAsync<T>(Func<Task> func)
+    /// <inheritdoc />
+    public async Task IgnoreTenantAsync(Func<Task> func)
     {
         try
         {
-            Client.QueryFilter.ClearAndBackup<T>();
-            if (typeof(T) == typeof(ITenantId)) _sqlSugarOptionsService.IgnoreTenant = true;
-
+            Client.QueryFilter.ClearAndBackup<ITenantId>();
+            _sqlSugarOptionsService.IgnoreTenant = true;
             await func();
         }
         finally
         {
             Client.QueryFilter.Restore();
-            if (typeof(T) == typeof(ITenantId)) _sqlSugarOptionsService.IgnoreTenant = false;
+            _sqlSugarOptionsService.IgnoreTenant = false;
         }
     }
 
-    public void Ignore<T>(Action action)
+    /// <inheritdoc />
+    public void IgnoreTenant(Action action)
     {
         try
         {
-            Client.QueryFilter.ClearAndBackup<T>();
-            if (typeof(T) == typeof(ITenantId)) _sqlSugarOptionsService.IgnoreTenant = true;
-
+            Client.QueryFilter.ClearAndBackup<ITenantId>();
+            _sqlSugarOptionsService.IgnoreTenant = true;
             action();
         }
         finally
         {
             Client.QueryFilter.Restore();
-            if (typeof(T) == typeof(ITenantId)) _sqlSugarOptionsService.IgnoreTenant = false;
+            _sqlSugarOptionsService.IgnoreTenant = false;
+        }
+    }
+
+    public async Task IgnoreSoftDeletedAsync(Func<Task> func)
+    {
+        try
+        {
+            Client.QueryFilter.ClearAndBackup<ISoftDeleted>();
+            await func();
+        }
+        finally
+        {
+            Client.QueryFilter.Restore();
+        }
+    }
+
+    public void IgnoreSoftDeleted(Action action)
+    {
+        try
+        {
+            Client.QueryFilter.ClearAndBackup<ISoftDeleted>();
+            action();
+        }
+        finally
+        {
+            Client.QueryFilter.Restore();
         }
     }
 }

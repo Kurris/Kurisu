@@ -23,17 +23,44 @@ public static class DependencyInjectionExtensions
     {
         services.Inject();
         
-        foreach (var toReplace in toReplaces)
+        foreach (var item in toReplaces)
         {
-            foreach (var @interface in toReplace.Service.GetInterfaces().Where(x => x.GetMethods().Length > 0))
+            //注册服务
+            if (item.InterfaceTypes.Length != 0)
             {
-                services.Replace(new ServiceDescriptor(@interface, sp =>
+                foreach (var interfaceType in item.InterfaceTypes)
+                {
+                    if (!string.IsNullOrEmpty(item.Named))
+                    {
+                        services.Replace(new ServiceDescriptor(item.Service, sp =>
+                        {
+                            var generator = sp.GetRequiredService<IProxyTypeGenerator>();
+                            var type = generator.CreateClassProxyType(item.Service, item.Service);
+                            return ActivatorUtilities.CreateInstance(sp, type);
+                    
+                        }, item.Lifetime));
+                    }
+                    else
+                    {
+                        services.Replace(new ServiceDescriptor(interfaceType, sp =>
+                        {
+                            var generator = sp.GetRequiredService<IProxyTypeGenerator>();
+                            var type = generator.CreateClassProxyType(item.Service, item.Service);
+                            return ActivatorUtilities.CreateInstance(sp, type);
+                    
+                        }, item.Lifetime));
+                    }
+                }
+            }
+            else
+            {
+                services.Replace(new ServiceDescriptor(item.Service, sp =>
                 {
                     var generator = sp.GetRequiredService<IProxyTypeGenerator>();
-                    var type = generator.CreateClassProxyType(toReplace.Service, toReplace.Service);
+                    var type = generator.CreateClassProxyType(item.Service, item.Service);
                     return ActivatorUtilities.CreateInstance(sp, type);
                     
-                }, toReplace.Lifetime));
+                }, item.Lifetime));
             }
         }
     }

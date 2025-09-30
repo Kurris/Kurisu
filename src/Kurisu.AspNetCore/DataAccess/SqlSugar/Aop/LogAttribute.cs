@@ -27,12 +27,7 @@ public class LogAttribute : Attribute, IAsyncActionFilter
     /// 标题
     /// </summary>
     public string Title { get; set; }
-
-    /// <summary>
-    /// 是否处理差异
-    /// </summary>
-    public bool Diff { get; set; }
-
+    
     /// <inheritdoc />
     public async Task OnActionExecutionAsync(ActionExecutingContext context, ActionExecutionDelegate next)
     {
@@ -45,7 +40,6 @@ public class LogAttribute : Attribute, IAsyncActionFilter
         var options = httpContext.RequestServices.GetService<ISqlSugarOptionsService>();
 
         options.Title = Title;
-        options.Diff = Diff;
         options.BatchNo = Guid.NewGuid();
         options.RoutePath = httpContext.Request.Path.Value;
         options.RaiseTime = DateTime.Now;

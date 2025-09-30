@@ -6,7 +6,9 @@ using Kurisu.AspNetCore.Authentication.Options;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Options;
 using Microsoft.Net.Http.Headers;
 
 // ReSharper disable once CheckNamespace
@@ -28,8 +30,10 @@ public static class OAuth2AuthenticationServiceCollectionExtensions
     {
         services.AddUserInfo();
 
+
+        const string clientName = "AuthenticationBackchannel";
         //授权后端使用的HttpClient, 不校验SSL安全,并且发送X-Requested-Internal标识内部网络请求
-        services.AddHttpClient("AuthenticationBackchannel", (sp, httpClient) =>
+        services.AddHttpClient(clientName, (sp, httpClient) =>
             {
                 if (sp.GetService<IWebHostEnvironment>().IsProduction())
                 {
@@ -46,10 +50,10 @@ public static class OAuth2AuthenticationServiceCollectionExtensions
 
                 return handler;
             });
-        
+
         //使用配置的HttpClient
         services.AddOptions<JwtBearerOptions>(JwtBearerDefaults.AuthenticationScheme)
-            .Configure<IHttpClientFactory>((configureOptions, httpClientFactory) => { configureOptions.Backchannel = httpClientFactory.CreateClient("AuthenticationBackchannel"); });
+            .Configure<IHttpClientFactory>((configureOptions, httpClientFactory) => { configureOptions.Backchannel = httpClientFactory.CreateClient(clientName); });
 
         var builder = services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             .AddJwtBearer(configureOptions =>
@@ -63,28 +67,10 @@ public static class OAuth2AuthenticationServiceCollectionExtensions
                 configureOptions.TokenValidationParameters.ValidateAudience = !string.IsNullOrEmpty(options.Audience);
                 configureOptions.TokenValidationParameters.ValidAudience = options.Audience;
 
-                configureOptions.TokenValidationParameters.ValidTypes = new[] { "at+jwt" };
-
-
-                //configureOptions.Events.OnMessageReceived = context =>
-                //{
-                //    context.Token
-                //};
-
-                //person access token
-                if (options.Pat.Enable)
-                {
-                    configureOptions.ForwardDefaultSelector = context =>
-                    {
-                        (string scheme, string token) = GetBearerValueTuple(context);
-                        //如果不是bearer则转到pat的scheme进行验证
-                        return scheme.Equals(JwtBearerDefaults.AuthenticationScheme, StringComparison.OrdinalIgnoreCase) && !token.Contains('.') ? options.Pat.Scheme : null;
-                    };
-                }
+                configureOptions.TokenValidationParameters.ValidTypes = ["at+jwt"];
             });
 
-
-        if (options.Pat.Enable)
+        if (options.Pat is { Enable: true })
         {
             builder.AddOAuth2Introspection(options.Pat.Scheme, configureOptions =>
             {
@@ -95,11 +81,31 @@ public static class OAuth2AuthenticationServiceCollectionExtensions
                 configureOptions.ClientId = options.Pat.ClientId;
                 configureOptions.ClientSecret = options.Pat.ClientSecret;
             });
+
+            builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<IPostConfigureOptions<JwtBearerOptions>>(new PatConfigureJwtBearerOptions(options.Pat.Scheme)));
         }
 
         return services;
     }
+}
 
+internal class PatConfigureJwtBearerOptions(string specificScheme) : IPostConfigureOptions<JwtBearerOptions>
+{
+    public void PostConfigure(string name, JwtBearerOptions options)
+    {
+        var before = options.ForwardDefaultSelector;
+
+        options.ForwardDefaultSelector = context =>
+        {
+            before?.Invoke(context);
+
+            var (scheme, token) = GetBearerValueTuple(context);
+            //如果不是bearer则转到pat的scheme进行验证
+            return scheme.Equals(JwtBearerDefaults.AuthenticationScheme, StringComparison.OrdinalIgnoreCase) && !token.Contains('.')
+                ? specificScheme
+                : null;
+        };
+    }
 
     /// <summary>
     /// 获取Authorization=Bearer value

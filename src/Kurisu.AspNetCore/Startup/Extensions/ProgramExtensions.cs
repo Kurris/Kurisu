@@ -1,5 +1,4 @@
 ﻿using System.Threading.Tasks;
-using Kurisu.AspNetCore.Startup;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -19,7 +18,7 @@ public static class ProgramExtensions
     /// </summary>
     /// <param name="hostBuilder"></param>
     /// <typeparam name="TStartup"></typeparam>
-    public static void RunKurisu<TStartup>(this IHostBuilder hostBuilder) where TStartup : DefaultStartup
+    public static void RunKurisu<TStartup>(this IHostBuilder hostBuilder) where TStartup : class
     {
         hostBuilder.RunKurisuAsync<TStartup>().Wait();
     }
@@ -30,16 +29,16 @@ public static class ProgramExtensions
     /// <typeparam name="TStartup"></typeparam>
     /// <param name="hostBuilder"></param>
     /// <returns></returns>
-    public static async Task RunKurisuAsync<TStartup>(this IHostBuilder hostBuilder) where TStartup : DefaultStartup
+    public static async Task RunKurisuAsync<TStartup>(this IHostBuilder hostBuilder) where TStartup : class
     {
         var host = hostBuilder
-        .ConfigureLogging(builder =>
-        {
-            builder.ClearProviders();
-            builder.AddSerilog();
-        })
-        .UseSerilog((context, configuration) => configuration.ReadFrom.Configuration(context.Configuration))
-        .ConfigureWebHostDefaults(webBuilder => { webBuilder.UseStartup<TStartup>(); });
+            .ConfigureLogging(builder =>
+            {
+                builder.ClearProviders();
+                builder.AddSerilog();
+            })
+            .UseSerilog((context, configuration) => configuration.ReadFrom.Configuration(context.Configuration))
+            .ConfigureWebHostDefaults(webBuilder => { webBuilder.UseStartup<TStartup>(); });
 
         await host.Build().RunAsync();
     }

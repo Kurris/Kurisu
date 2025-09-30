@@ -60,6 +60,4 @@ public class Pagination<T>
 /// <summary>
 /// 分页
 /// </summary>
-public class Pagination : Pagination<object>
-{
-}
+public class Pagination : Pagination<object>;

@@ -10,82 +10,98 @@ using Newtonsoft.Json.Serialization;
 namespace Kurisu.AspNetCore.Startup;
 
 /// <summary>
-/// 默认启动类
+/// 默认启动类，提供应用程序的基础启动配置。
+/// 继承此类可自定义服务注册和请求管道配置。
 /// </summary>
 [SkipScan]
 public abstract class DefaultStartup
 {
     /// <summary>
-    /// ctor
+    /// 构造函数，注入全局配置。
     /// </summary>
-    /// <param name="configuration"></param>
+    /// <param name="configuration">应用程序配置接口</param>
     protected DefaultStartup(IConfiguration configuration)
     {
         Configuration = configuration;
     }
 
     /// <summary>
-    /// config
+    /// 全局配置对象，供子类和方法使用。
     /// </summary>
+    // ReSharper disable once MemberCanBePrivate.Global
     protected IConfiguration Configuration { get; }
 
     /// <summary>
-    /// 配置ioc
+    /// 配置启动项，供子类重写以自定义启动参数。
     /// </summary>
-    /// <param name="services"></param>
+    /// <param name="options">启动选项</param>
+    protected virtual void ConfigureStartupOptions(StartupOptions options)
+    {
+        // 可在此处自定义启动选项
+    }
+
+    /// <summary>
+    /// 配置依赖注入容器，注册服务。
+    /// </summary>
+    /// <param name="services">服务集合</param>
     public virtual void ConfigureServices(IServiceCollection services)
     {
-        services.AddHttpContextAccessor();
-
-        //映射配置文件
+        // 映射配置文件
         services.AddConfiguration(Configuration);
 
-        //依赖注入
+        // 配置启动项
+        this.ConfigureStartupOptions(App.StartupOptions);
+
+        // 注入 HttpContextAccessor
+        services.AddHttpContextAccessor();
+
+        // 依赖注入
         services.AddDependencyInjection();
 
-        //路由小写
-        services.AddRouting(options => { options.LowercaseUrls = true; });
+        // 路由配置
+        services.AddRouting(App.StartupOptions.RouteOptions);
 
-        //处理api响应时,循环序列化问题
-        //返回json为驼峰命名
-        //时间格式
-        services.AddControllers(options => options.SuppressImplicitRequiredAttributeForNonNullableReferenceTypes = true)
+        // 控制器与 JSON 配置
+        services.AddControllers()
             .AddNewtonsoftJson(options =>
             {
                 options.SerializerSettings.ReferenceLoopHandling = ReferenceLoopHandling.Ignore;
                 options.SerializerSettings.DateFormatString = "yyyy-MM-dd HH:mm:ss";
 
-                var contractResolver = new CamelCasePropertyNamesContractResolver
+                options.SerializerSettings.ContractResolver = new DefaultContractResolver()
                 {
-                    NamingStrategy =
+                    NamingStrategy = new CamelCaseNamingStrategy
                     {
-                        //优先使用JsonPropertyAttribute
                         OverrideSpecifiedNames = false
                     }
                 };
-                options.SerializerSettings.ContractResolver = contractResolver;
             });
+        
+        //.ConfigureApplicationPartManager(manager => { manager.FeatureProviders.Add(App.StartupOptions.DynamicApiOptions.ControllerFeatureProvider); });
+        // MVC 约定配置
+        //services.Configure<MvcOptions>(options => options.Conventions.Add(App.StartupOptions.DynamicApiOptions.ModelConvention));
 
-        //响应,异常格式统一
+        // 响应与异常格式统一
         services.AddUnifyResult();
 
-        //对象关系映射
+        // 对象关系映射
         services.AddObjectMapper();
 
-        //注入自定义pack
+        // 注入自定义 pack
         services.AddAppPacks(Configuration);
     }
 
     /// <summary>
-    /// 配置请求管道
+    /// 配置请求处理管道。
     /// </summary>
-    /// <param name="app"></param>
-    /// <param name="env"></param>
+    /// <param name="app">应用程序构建器</param>
+    /// <param name="env">主机环境</param>
     public virtual void Configure(IApplicationBuilder app, IWebHostEnvironment env)
     {
-        //根服务提供器,应用程序唯一
+        // 设置根服务提供器，应用程序唯一
         InternalApp.RootServices = app.ApplicationServices;
 
+        // 创建作用域，初始化 pack
         using (var scope = app.ApplicationServices.CreateScope())
         {
             app.UseAppPacks(env, scope.ServiceProvider, true);
@@ -93,6 +109,7 @@ public abstract class DefaultStartup
             app.UseAppPacks(env, scope.ServiceProvider, false);
         }
 
+        // 映射控制器路由
         app.UseEndpoints(endpoints => { endpoints.MapControllers(); });
     }
 }

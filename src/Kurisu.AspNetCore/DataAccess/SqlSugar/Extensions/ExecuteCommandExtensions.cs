@@ -2,6 +2,7 @@
 using System.Threading.Tasks;
 using Kurisu.AspNetCore.CustomClass;
 using Kurisu.AspNetCore.DataAccess.Entity;
+using Kurisu.AspNetCore.UnifyResultAndValidation.Exceptions;
 using SqlSugar;
 
 namespace Kurisu.AspNetCore.DataAccess.SqlSugar.Extensions;
@@ -106,10 +107,6 @@ public static class ExecuteCommandExtensions
             {
                 await Task.Delay(50);
             }
-            catch (Exception)
-            {
-                throw;
-            }
         }
 
         throw new UserFriendlyException(errorMessage ?? "操作失败,请重试");
@@ -128,10 +125,6 @@ public static class ExecuteCommandExtensions
             catch (Exception ex) when (ex is VersionExceptions)
             {
                 Task.Delay(50).Wait();
-            }
-            catch (Exception)
-            {
-                throw;
             }
         }
 

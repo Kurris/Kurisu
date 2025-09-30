@@ -7,36 +7,29 @@ namespace Kurisu.AspNetCore.DependencyInjection.Internal;
 /// 命名服务处理器
 /// </summary>
 [SkipScan]
-internal class NamedResolver : INamedResolver
+internal class NamedResolver(IServiceProvider serviceProvider) : INamedResolver
 {
-    private readonly IServiceProvider _serviceProvider;
-
-    public NamedResolver(IServiceProvider serviceProvider)
-    {
-        _serviceProvider = serviceProvider;
-    }
-
     /// <summary>
     /// 获取服务
     /// </summary>
-    /// <param name="type">服务类型</param>
-    /// <param name="serviceName">服务命名</param>
+    /// <param name="interfaceType">服务类型</param>
+    /// <param name="named">服务命名</param>
     /// <returns></returns>
-    public object GetService(Type type, string serviceName)
+    public object GetService(Type interfaceType, string named)
     {
-        return DependencyInjectionHelper.NamedServices.TryGetValue(serviceName, out type)
-            ? _serviceProvider.GetService(type)
+        return DependencyInjectionHelper.NamedServices.TryGetValue(new Tuple<Type, string>(interfaceType, named), out var findType) 
+            ? serviceProvider.GetService(findType) 
             : null;
     }
 
     /// <summary>
     /// 获取命名服务
     /// </summary>
-    /// <param name="serviceName">服务命名</param>
-    /// <typeparam name="TService">服务类型</typeparam>
+    /// <param name="named">服务命名</param>
+    /// <typeparam name="TInterface">服务类型</typeparam>
     /// <returns></returns>
-    public TService GetService<TService>(string serviceName) where TService : class
+    public TInterface GetService<TInterface>(string named) where TInterface : class
     {
-        return GetService(typeof(TService), serviceName) as TService;
+        return GetService(typeof(TInterface), named) as TInterface;
     }
 }

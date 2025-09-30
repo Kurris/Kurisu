@@ -36,7 +36,7 @@ public class AutoRegisterPack : BaseAppPack
 
                 var injector = Assembly.Load(assembly).GetTypes().FirstOrDefault(x => x.Name == extensionsType)!;
                 var method = injector.GetMethod(inject)!;
-                method?.Invoke(null, new object[] { services, App.ActiveTypes });
+                method.Invoke(null, [services, App.ActiveTypes]);
             }
         }
     }

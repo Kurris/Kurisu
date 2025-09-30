@@ -35,17 +35,10 @@ public class DefaultSwaggerPack : BaseAppPack
     }
 
     /// <inheritdoc />
-    public override int Order => 1;
+    public override int Order => 0;
 
     /// <inheritdoc />
-    public override bool IsEnable
-    {
-        get
-        {
-            var setting = Configuration.GetSection(nameof(DocumentOptions)).Get<DocumentOptions>();
-            return setting is { Enable: true };
-        }
-    }
+    public override bool IsEnable => App.StartupOptions.DocumentOptions != null;
 
 
     /// <summary>
@@ -53,11 +46,14 @@ public class DefaultSwaggerPack : BaseAppPack
     /// </summary>
     private static void Initialize()
     {
+        //var other = new DefaultControllerSelector();
+
         //获取用户自定义分组的API
         var assembly = Assembly.GetEntryAssembly()!;
         var controllers = assembly.GetTypes().Where(x =>
-            x.IsAssignableTo(typeof(ControllerBase))
-            && x.IsDefined(typeof(ApiDefinitionAttribute))).ToArray();
+            x.GetCustomAttribute<RouteAttribute>() != null
+            && x.IsDefined(typeof(ApiDefinitionAttribute))
+        ).ToArray();
 
         _apiInfos = new List<OpenApiInfo>(controllers.Length);
 
@@ -80,11 +76,7 @@ public class DefaultSwaggerPack : BaseAppPack
     /// <inheritdoc />
     public override void ConfigureServices(IServiceCollection services)
     {
-        var setting = Configuration.GetSection(nameof(DocumentOptions)).Get<DocumentOptions>();
-        if (setting?.Enable != true)
-        {
-            return;
-        }
+        var setting = App.StartupOptions.DocumentOptions;
 
         services.AddSwaggerGen(c =>
         {
@@ -92,7 +84,7 @@ public class DefaultSwaggerPack : BaseAppPack
             c.SwaggerDoc("v1", new OpenApiInfo
             {
                 Version = "v1",
-                Title = "Api Document",
+                Title = "default",
                 Description = "当前为默认无分组api",
             });
 
@@ -153,35 +145,38 @@ public class DefaultSwaggerPack : BaseAppPack
             //************************************************* OAuth2.0 Token *****************************************************//
 
             //eg:配置文件appsettings.json的key如果存在":"，那么解析将会失败
-            var needFixeScopes = setting.Scopes
-                .Where(x => x.Key.Contains('|'))
-                .ToDictionary(x => x.Key, x => x.Value);
-
-            //移除｜相关key
-            foreach (var scope in needFixeScopes)
-                setting.Scopes.Remove(scope.Key);
-
-            //修改正确的key，
-            foreach ((string key, string value) in needFixeScopes)
+            if (setting.Scopes != null)
             {
-                setting.Scopes.TryAdd(key.Replace("|", ":"), value);
+                var needFixeScopes = setting.Scopes
+                    .Where(x => x.Key.Contains('|'))
+                    .ToDictionary(x => x.Key, x => x.Value);
+
+                //移除｜相关key
+                foreach (var scope in needFixeScopes)
+                    setting.Scopes.Remove(scope.Key);
+
+                //修改正确的key，
+                foreach ((string key, string value) in needFixeScopes)
+                {
+                    setting.Scopes.TryAdd(key.Replace("|", ":"), value);
+                }
+
+                c.AddSecurityDefinition("oauth2", new OpenApiSecurityScheme
+                {
+                    Type = SecuritySchemeType.OAuth2,
+                    In = ParameterLocation.Header,
+                    Flows = new OpenApiOAuthFlows
+                    {
+                        AuthorizationCode = new OpenApiOAuthFlow
+                        {
+                            AuthorizationUrl = new Uri($"{setting.Authority}/connect/authorize"),
+                            TokenUrl = new Uri($"{setting.Authority}/connect/token"),
+                            Scopes = setting.Scopes,
+                        }
+                    }
+                });
             }
 
-            c.AddSecurityDefinition("oauth2", new OpenApiSecurityScheme
-            {
-                Type = SecuritySchemeType.OAuth2,
-                In = ParameterLocation.Header,
-                Flows = new OpenApiOAuthFlows
-                {
-                    AuthorizationCode = new OpenApiOAuthFlow
-                    {
-                        AuthorizationUrl = new Uri($"{setting.Authority}/connect/authorize"),
-                        TokenUrl = new Uri($"{setting.Authority}/connect/token"),
-                        Scopes = setting.Scopes,
-                    }
-                }
-            });
-            
             c.OperationFilter<SecurityRequirementsOperationFilter>();
         });
     }
@@ -189,24 +184,21 @@ public class DefaultSwaggerPack : BaseAppPack
     /// <inheritdoc />
     public override void Configure(IApplicationBuilder app, IWebHostEnvironment env)
     {
-        var setting = Configuration.GetSection(nameof(DocumentOptions)).Get<DocumentOptions>();
-        if (setting?.Enable != true)
-        {
-            return;
-        }
-
+        var setting = App.StartupOptions.DocumentOptions;
         var virtualPath = Configuration.GetValue("VirtualPath", string.Empty);
 
         app.UseSwagger();
         app.UseSwaggerUI(c =>
         {
             //默认没分组
-            c.SwaggerEndpoint($"{virtualPath}/swagger/v1/swagger.json", "Api Document");
+            c.SwaggerEndpoint($"{virtualPath}/swagger/v1/swagger.json", "default");
             _apiInfos.ForEach(info => { c.SwaggerEndpoint($"{virtualPath}/swagger/{info.Title}/swagger.json", info.Title); });
 
             c.OAuthClientId(setting.ClientId);
             c.OAuthClientSecret(setting.ClientSecret);
-            c.OAuthUsePkce();
+
+            if (setting.UsePkce)
+                c.OAuthUsePkce();
         });
     }
 }

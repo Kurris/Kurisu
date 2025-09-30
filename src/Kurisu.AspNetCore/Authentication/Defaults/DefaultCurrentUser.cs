@@ -1,7 +1,8 @@
-using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
 using Kurisu.AspNetCore.Authentication.Abstractions;
+using Mapster;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Net.Http.Headers;
 
@@ -13,45 +14,56 @@ namespace Kurisu.AspNetCore.Authentication.Defaults;
 // ReSharper disable once ClassWithVirtualMembersNeverInherited.Global
 public class DefaultCurrentUser : DefaultCurrentTenant, ICurrentUser
 {
-    private readonly IHttpContextAccessor _httpContextAccessor;
-
     /// <summary>
     /// ctor
     /// </summary>
     /// <param name="httpContextAccessor"></param>
     public DefaultCurrentUser(IHttpContextAccessor httpContextAccessor) : base(httpContextAccessor)
     {
-        _httpContextAccessor = httpContextAccessor!;
     }
 
     /// <summary>
     /// 获取用户id
     /// </summary>
     /// <returns></returns>
-    public virtual int GetUserId()
+    public virtual string GetUserId()
     {
-        //microsoft identity model框架对值token claim的key进行了转换
-        var subject = _httpContextAccessor?.HttpContext?.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        return string.IsNullOrEmpty(subject) ? 0 : Convert.ToInt32(subject);
+        //microsoft identity model框架对值token claim.key进行了转换
+        return HttpContextAccessor.HttpContext?.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+    }
+
+    /// <summary>
+    /// 获取用户id
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <returns></returns>
+    public virtual T GetUserId<T>()
+    {
+        var userId = GetUserId();
+        if (string.IsNullOrWhiteSpace(userId))
+        {
+            return default;
+        }
+
+        return userId.Adapt<T>();
     }
 
     /// <summary>
     /// 获取用户请求token
     /// </summary>
     /// <returns></returns>
-    public virtual string GetToken()
+    public virtual string GetAccessToken()
     {
-        var token = _httpContextAccessor.HttpContext!.Request.Headers[HeaderNames.Authorization].FirstOrDefault();
-        return token;
+        return HttpContextAccessor.HttpContext?.Request.Headers[HeaderNames.Authorization].FirstOrDefault();
     }
 
     /// <summary>
     /// 获取user name
     /// </summary>
     /// <returns></returns>
-    public string GetName()
+    public string GetName(string userClaim = "name")
     {
-        var name = GetUserClaim("preferred_username");
+        var name = GetUserClaim(userClaim);
         return name;
     }
 
@@ -62,7 +74,7 @@ public class DefaultCurrentUser : DefaultCurrentTenant, ICurrentUser
     /// <returns></returns>
     public string GetUserClaim(string claimType)
     {
-        var value = _httpContextAccessor?
+        var value = HttpContextAccessor
             .HttpContext?
             .User.Claims.FirstOrDefault(x => x.Type == claimType)?.Value;
 
@@ -71,12 +83,14 @@ public class DefaultCurrentUser : DefaultCurrentTenant, ICurrentUser
 
 
     /// <summary>
-    /// 获取角色
+    /// 获取所有角色
     /// </summary>
-    /// <returns></returns>
-    public string GetRole()
+    /// <returns>所有角色集合，如无则为空集合</returns>
+    public IEnumerable<string> GetRoles()
     {
-        var role = _httpContextAccessor?.HttpContext?.User.FindFirst(ClaimTypes.Role)?.Value;
-        return role;
+        return HttpContextAccessor.HttpContext?
+                   .User.FindAll(ClaimTypes.Role)
+                   .Select(c => c.Value)
+               ?? [];
     }
 }

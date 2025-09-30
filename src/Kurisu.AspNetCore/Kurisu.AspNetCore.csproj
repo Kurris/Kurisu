@@ -2,7 +2,7 @@
 
     <PropertyGroup>
         <LangVersion>latestmajor</LangVersion>
-        <PackageVersion>0.9.38</PackageVersion>
+        <PackageVersion>0.9.39</PackageVersion>
         <Description>see more : https://github.com/Kurris/Kurisu</Description>
         <Copyright>Kurisu Copyright</Copyright>
         <RepositoryUrl>https://github.com/Kurris/Kurisu</RepositoryUrl>
@@ -23,18 +23,13 @@
     <ItemGroup>
         <PackageReference Include="IdentityModel" Version="7.0.0" />
         <PackageReference Include="IdentityModel.AspNetCore.OAuth2Introspection" Version="6.2.0" />
-        <PackageReference Include="Mapster" Version="7.4.0" />
         <PackageReference Include="Mapster.DependencyInjection" Version="1.0.1" />
         <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="6.0.20" />
-        <PackageReference Include="Microsoft.AspNetCore.DataProtection.StackExchangeRedis" Version="6.0.28" />
         <PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="6.0.20" />
-        <PackageReference Include="Microsoft.CodeAnalysis.Common" Version="4.6.0" />
-        <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.6.0" />
+        <PackageReference Include="Microsoft.AspNetCore.DataProtection.StackExchangeRedis" Version="6.0.28" />
         <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks" Version="6.0.25" />
         <PackageReference Include="MySqlConnector" Version="2.3.7" />
         <PackageReference Include="Serilog.AspNetCore" Version="6.1.0" />
-        <PackageReference Include="Serilog.Sinks.Async" Version="1.5.0" />
-        <PackageReference Include="Serilog.Sinks.MySQL" Version="5.0.0" />
         <PackageReference Include="SqlSugarCoreNoDrive" Version="5.1.4.154" />
         <PackageReference Include="StackExchange.Redis" Version="2.7.17" />
         <PackageReference Include="Swashbuckle.AspNetCore" Version="6.5.0" />
@@ -43,9 +38,5 @@
 
     <ItemGroup>
         <FrameworkReference Include="Microsoft.AspNetCore.App" />
-    </ItemGroup>
-
-    <ItemGroup>
-      <ProjectReference Include="..\Kurisu.Aspect\Kurisu.Aspect.csproj" />
     </ItemGroup>
 </Project>

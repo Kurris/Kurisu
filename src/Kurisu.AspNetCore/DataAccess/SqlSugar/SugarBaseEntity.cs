@@ -8,7 +8,7 @@ namespace Kurisu.AspNetCore.DataAccess.SqlSugar;
 /// <summary>
 /// SqlSugar Base实体
 /// </summary>
-public class SugarBaseEntity : BaseEntity<long, int>
+public class SugarBaseEntity : BaseEntity<long, string>
 {
     /// <summary>
     /// 主键id
@@ -20,13 +20,14 @@ public class SugarBaseEntity : BaseEntity<long, int>
     /// 创建人
     /// </summary>
     [InsertUserGeneration]
-    public override int CreatedBy { get; set; }
+    public override string CreatedBy { get; set; } = string.Empty;
 
     /// <summary>
     /// 创建时间
     /// </summary>
-    [SugarColumn(IndexGroupNameList = new[] { "idx_CreateTime" })]
+    [SugarColumn(IndexGroupNameList = ["idx_CreateTime"])]
     [InsertDateTimeGeneration]
+
     public override DateTime CreateTime { get; set; }
 
     /// <summary>
@@ -34,7 +35,7 @@ public class SugarBaseEntity : BaseEntity<long, int>
     /// </summary>
     [UpdateUserGeneration]
     [InsertUserGeneration]
-    public override int ModifiedBy { get; set; }
+    public override string ModifiedBy { get; set; } = string.Empty;
 
     /// <summary>
     /// 修改时间

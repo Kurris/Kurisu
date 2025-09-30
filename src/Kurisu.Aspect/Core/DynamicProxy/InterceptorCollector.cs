@@ -32,6 +32,6 @@ internal sealed class InterceptorCollector
 
     private static IEnumerable<IInterceptor> CollectFromService(MethodInfo serviceMethod)
     {
-        return serviceMethod.GetCustomAttributes<ServiceInterceptorAttribute>().Select(x => (IInterceptor)Activator.CreateInstance(x.InterceptorType, Array.Empty<object>()));
+        return serviceMethod.GetCustomAttributes<AbstractInterceptorAttribute>().Select(x => x);
     }
 }

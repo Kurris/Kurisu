@@ -1,3 +1,4 @@
+using System;
 using System.ComponentModel.DataAnnotations;
 using Kurisu.AspNetCore.ConfigurableOptions.Attributes;
 
@@ -10,15 +11,15 @@ namespace Kurisu.AspNetCore.Authentication.Options;
 public class IdentityServerOptions
 {
     /// <summary>
-    /// 是否需要https
-    /// </summary>
-    public bool RequireHttpsMetadata { get; set; }
-
-    /// <summary>
     /// 授权地址
     /// </summary>
     [Required(ErrorMessage = "{0}授权地址不能为空")]
     public string Authority { get; set; }
+
+    /// <summary>
+    /// 是否需要https
+    /// </summary>
+    public bool RequireHttpsMetadata => Authority.StartsWith("https", StringComparison.OrdinalIgnoreCase);
 
     /// <summary>
     /// 签发人

@@ -2,7 +2,6 @@
 using System.Threading.Tasks;
 using Kurisu.AspNetCore.DataAccess.Entity;
 using Kurisu.AspNetCore.DataAccess.SqlSugar.Services;
-using Kurisu.AspNetCore.DataAccess.SqlSugar.Services.Implements;
 using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -42,7 +41,7 @@ public class CrossTenantAttribute : Attribute, IAsyncActionFilter
         var setting = context.HttpContext.RequestServices.GetService<IQueryableSetting>();
         var dbContext = context.HttpContext.RequestServices.GetRequiredService<IDbContext>();
 
-        await dbContext.IgnoreAsync<ITenantId>(async () =>
+        await dbContext.IgnoreTenantAsync(async () =>
         {
             setting.EnableCrossTenant = true;
             setting.CrossTenantIgnoreTypes = _ignoreTypes ?? Array.Empty<Type>();

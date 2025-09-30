@@ -9,7 +9,7 @@ namespace Kurisu.AspNetCore.Startup.AppPacks;
 /// </summary>
 public class DefaultCorsPack : BaseAppPack
 {
-    private const string _cors = "defaultCors";
+    private const string Cors = "defaultCors";
 
     /// <inheritdoc />
     public override int Order => 1;
@@ -20,12 +20,12 @@ public class DefaultCorsPack : BaseAppPack
         //添加跨域支持
         services.AddCors(options =>
         {
-            options.AddPolicy(_cors, builder =>
+            options.AddPolicy(Cors, builder =>
             {
                 builder.SetIsOriginAllowed(_ => true)
                     .AllowAnyHeader()
                     .AllowAnyMethod()
-                    .AllowCredentials();
+                    .DisallowCredentials();
             });
         });
     }
@@ -33,6 +33,6 @@ public class DefaultCorsPack : BaseAppPack
     /// <inheritdoc />
     public override void Configure(IApplicationBuilder app, IWebHostEnvironment env)
     {
-        app.UseCors(_cors);
+        app.UseCors(Cors);
     }
 }

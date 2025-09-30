@@ -11,14 +11,14 @@ public class TestCurrentUserInfo
     public void GetSubject_Return_3()
     {
         var sub = TestHelper.GetResolver(_token).GetUserId();
-        Assert.Equal(3, sub);
+        Assert.Equal("3", sub);
     }
 
 
     [Fact]
     public void GetBearerToken()
     {
-        var accessToken = TestHelper.GetResolver(_token).GetToken();
+        var accessToken = TestHelper.GetResolver(_token).GetAccessToken();
         Assert.Equal("Bearer " + _token, accessToken);
     }
 }

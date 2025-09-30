@@ -6,6 +6,8 @@ using Kurisu.AspNetCore.Startup;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Serilog;
+using ILogger = Microsoft.Extensions.Logging.ILogger;
 
 namespace Kurisu.AspNetCore;
 
@@ -17,12 +19,20 @@ public class App
     /// <summary>
     /// 启动项配置
     /// </summary>
-    public StartupOptions Options { get; set; }
+    public static StartupOptions StartupOptions { get; } = new();
 
     /// <summary>
     /// 框架应用程序日志
     /// </summary>
-    public static ILogger<App> Logger => InternalApp.RootServices.GetService<ILogger<App>>();
+    public static ILogger Logger { get; } = LoggerFactory.Create(builder =>
+        {
+            builder.AddSerilog(new LoggerConfiguration()
+                .WriteTo.Console(outputTemplate: "[{Timestamp:yyyy-MM-dd HH:mm:ss} {Level:u3}] {Prefix} [{SourceContext}] {Message:lj}{NewLine}{Exception}")
+                .MinimumLevel.Debug()
+                .CreateLogger()
+            );
+        })
+        .CreateLogger("Kurisu.AspNetCore.App");
 
     /// <summary>
     /// 服务提供器
@@ -40,6 +50,16 @@ public class App
     }
 
     /// <summary>
+    /// 根服务
+    /// </summary>
+    public static IServiceProvider RootServices => GetServiceProvider(true);
+
+    /// <summary>
+    /// 请求的服务
+    /// </summary>
+    public static IServiceProvider RequestServices => GetServiceProvider();
+
+    /// <summary>
     /// 自定义应用pack
     /// </summary>
     private static List<BaseAppPack> _appPacks;
@@ -53,8 +73,8 @@ public class App
         {
             if (_appPacks != null) return _appPacks;
 
-            var packTypes = DependencyInjectionHelper.ActiveTypes.Where(x => x.IsSubclassOf(typeof(BaseAppPack)));
-            _appPacks = packTypes.Select(x => Activator.CreateInstance(x) as BaseAppPack).Where(x => x != null).OrderBy(x => x.Order).ToList();
+            var packTypes = DependencyInjectionHelper.ActiveTypes.Value.Where(x => x.IsSubclassOf(typeof(BaseAppPack)));
+            _appPacks = packTypes.Select(x => (BaseAppPack)Activator.CreateInstance(x)!).OrderBy(x => x.Order).ToList();
             return _appPacks;
         }
     }
@@ -62,10 +82,10 @@ public class App
     /// <summary>
     /// 可用类
     /// </summary>
-    public static List<Type> ActiveTypes => DependencyInjectionHelper.ActiveTypes;
+    public static List<Type> ActiveTypes => DependencyInjectionHelper.ActiveTypes.Value;
 
     /// <summary>
     /// 可作为依赖注入的服务类
     /// </summary>
-    public static IEnumerable<Type> DependencyServices => DependencyInjectionHelper.DependencyServices;
+    public static IEnumerable<Type> DependencyServices => DependencyInjectionHelper.DependencyServices.Value;
 }
