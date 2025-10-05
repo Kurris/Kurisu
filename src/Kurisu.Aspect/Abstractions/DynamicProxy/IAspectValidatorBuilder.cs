@@ -1,8 +1,7 @@
-﻿namespace AspectCore.DynamicProxy
+﻿namespace AspectCore.DynamicProxy;
+
+[NonAspect]
+public interface IAspectValidatorBuilder
 {
-    [NonAspect]
-    public interface IAspectValidatorBuilder
-    {
-        IAspectValidator Build();
-    }
+    IAspectValidator Build();
 }

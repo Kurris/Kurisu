@@ -1,36 +1,35 @@
 ﻿using AspectCore.Utils;
 
-namespace AspectCore.DynamicProxy.Parameters
+namespace AspectCore.DynamicProxy.Parameters;
+
+internal class ParameterAspectInvoker
 {
-    internal class ParameterAspectInvoker
+    private readonly IList<Func<ParameterAspectDelegate, ParameterAspectDelegate>> delegates = new List<Func<ParameterAspectDelegate, ParameterAspectDelegate>>();
+
+    public void AddDelegate(Func<ParameterAspectContext, ParameterAspectDelegate, Task> parameterAspectDelegate)
     {
-        private readonly IList<Func<ParameterAspectDelegate, ParameterAspectDelegate>> delegates = new List<Func<ParameterAspectDelegate, ParameterAspectDelegate>>();
+        delegates.Add(next => ctx => parameterAspectDelegate(ctx, next));
+    }
 
-        public void AddDelegate(Func<ParameterAspectContext, ParameterAspectDelegate, Task> parameterAspectDelegate)
+    private ParameterAspectDelegate Build()
+    {
+        ParameterAspectDelegate invoke = ctx => TaskUtils.CompletedTask;
+
+        foreach (var next in delegates.Reverse())
         {
-            delegates.Add(next => ctx => parameterAspectDelegate(ctx, next));
+            invoke = next(invoke);
         }
 
-        private ParameterAspectDelegate Build()
-        {
-            ParameterAspectDelegate invoke = ctx => TaskUtils.CompletedTask;
+        return invoke;
+    }
 
-            foreach (var next in delegates.Reverse())
-            {
-                invoke = next(invoke);
-            }
+    public Task Invoke(ParameterAspectContext context)
+    {
+        return Build()(context);
+    }
 
-            return invoke;
-        }
-
-        public Task Invoke(ParameterAspectContext context)
-        {
-            return Build()(context);
-        }
-
-        public void Reset()
-        {
-            delegates.Clear();
-        }
+    public void Reset()
+    {
+        delegates.Clear();
     }
 }

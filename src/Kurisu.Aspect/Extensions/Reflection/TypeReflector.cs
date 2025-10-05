@@ -1,93 +1,92 @@
 ﻿using System.Reflection;
 
-namespace AspectCore.Extensions.Reflection
+namespace AspectCore.Extensions.Reflection;
+
+public class TypeReflector : MemberReflector<TypeInfo>
 {
-    public class TypeReflector : MemberReflector<TypeInfo>
+    private readonly string _displayName;
+    private readonly string _fullDisplayName;
+
+    private TypeReflector(TypeInfo typeInfo) : base(typeInfo)
     {
-        private readonly string _displayName;
-        private readonly string _fullDisplayName;
+        _displayName = GetDisplayName(typeInfo);
+        _fullDisplayName = GetFullDisplayName(typeInfo);
+    }
 
-        private TypeReflector(TypeInfo typeInfo) : base(typeInfo)
+    public override string DisplayName => _displayName;
+
+    public virtual string FullDisplayName => _fullDisplayName;
+
+    private static string GetDisplayName(TypeInfo typeInfo)
+    {
+        var name = typeInfo.Name.Replace('+', '.');
+        if (typeInfo.IsGenericParameter)
         {
-            _displayName = GetDisplayName(typeInfo);
-            _fullDisplayName = GetFullDisplayName(typeInfo);
-        }
-
-        public override string DisplayName => _displayName;
-
-        public virtual string FullDisplayName => _fullDisplayName;
-
-        private static string GetDisplayName(TypeInfo typeInfo)
-        {
-            var name = typeInfo.Name.Replace('+', '.');
-            if (typeInfo.IsGenericParameter)
-            {
-                return name;
-            }
-
-            if (typeInfo.IsGenericType)
-            {
-                var arguments = typeInfo.IsGenericTypeDefinition
-                    ? typeInfo.GenericTypeParameters
-                    : typeInfo.GenericTypeArguments;
-                name = name.Replace("`", "").Replace(arguments.Length.ToString(), "");
-                name += $"<{GetDisplayName(arguments[0].GetTypeInfo())}";
-                for (var i = 1; i < arguments.Length; i++)
-                {
-                    name = name + "," + GetDisplayName(arguments[i].GetTypeInfo());
-                }
-
-                name += ">";
-            }
-
-            if (!typeInfo.IsNested)
-                return name;
-            return $"{GetDisplayName(typeInfo.DeclaringType.GetTypeInfo())}.{name}";
-        }
-
-        private static string GetFullDisplayName(TypeInfo typeInfo)
-        {
-            var name = typeInfo.Name.Replace('+', '.');
-            if (typeInfo.IsGenericParameter)
-            {
-                return name;
-            }
-
-            if (!typeInfo.IsNested)
-            {
-                name = $"{typeInfo.Namespace}." + name;
-            }
-            else
-            {
-                name = $"{GetFullDisplayName(typeInfo.DeclaringType.GetTypeInfo())}.{name}";
-            }
-
-            if (typeInfo.IsGenericType)
-            {
-                var arguments = typeInfo.IsGenericTypeDefinition
-                    ? typeInfo.GenericTypeParameters
-                    : typeInfo.GenericTypeArguments;
-                name = name.Replace("`", "").Replace(arguments.Length.ToString(), "");
-                name += $"<{GetFullDisplayName(arguments[0].GetTypeInfo())}";
-                for (var i = 1; i < arguments.Length; i++)
-                {
-                    name += "," + GetFullDisplayName(arguments[i].GetTypeInfo());
-                }
-
-                name += ">";
-            }
-
             return name;
         }
 
-        internal static TypeReflector Create(TypeInfo typeInfo)
+        if (typeInfo.IsGenericType)
         {
-            if (typeInfo == null)
+            var arguments = typeInfo.IsGenericTypeDefinition
+                ? typeInfo.GenericTypeParameters
+                : typeInfo.GenericTypeArguments;
+            name = name.Replace("`", "").Replace(arguments.Length.ToString(), "");
+            name += $"<{GetDisplayName(arguments[0].GetTypeInfo())}";
+            for (var i = 1; i < arguments.Length; i++)
             {
-                throw new ArgumentNullException(nameof(typeInfo));
+                name = name + "," + GetDisplayName(arguments[i].GetTypeInfo());
             }
 
-            return ReflectorCacheUtils<TypeInfo, TypeReflector>.GetOrAdd(typeInfo, info => new TypeReflector(info));
+            name += ">";
         }
+
+        if (!typeInfo.IsNested)
+            return name;
+        return $"{GetDisplayName(typeInfo.DeclaringType.GetTypeInfo())}.{name}";
+    }
+
+    private static string GetFullDisplayName(TypeInfo typeInfo)
+    {
+        var name = typeInfo.Name.Replace('+', '.');
+        if (typeInfo.IsGenericParameter)
+        {
+            return name;
+        }
+
+        if (!typeInfo.IsNested)
+        {
+            name = $"{typeInfo.Namespace}." + name;
+        }
+        else
+        {
+            name = $"{GetFullDisplayName(typeInfo.DeclaringType.GetTypeInfo())}.{name}";
+        }
+
+        if (typeInfo.IsGenericType)
+        {
+            var arguments = typeInfo.IsGenericTypeDefinition
+                ? typeInfo.GenericTypeParameters
+                : typeInfo.GenericTypeArguments;
+            name = name.Replace("`", "").Replace(arguments.Length.ToString(), "");
+            name += $"<{GetFullDisplayName(arguments[0].GetTypeInfo())}";
+            for (var i = 1; i < arguments.Length; i++)
+            {
+                name += "," + GetFullDisplayName(arguments[i].GetTypeInfo());
+            }
+
+            name += ">";
+        }
+
+        return name;
+    }
+
+    internal static TypeReflector Create(TypeInfo typeInfo)
+    {
+        if (typeInfo == null)
+        {
+            throw new ArgumentNullException(nameof(typeInfo));
+        }
+
+        return ReflectorCacheUtils<TypeInfo, TypeReflector>.GetOrAdd(typeInfo, info => new TypeReflector(info));
     }
 }

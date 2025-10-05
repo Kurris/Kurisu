@@ -1,8 +1,7 @@
-﻿namespace AspectCore.Extensions.Reflection
+﻿namespace AspectCore.Extensions.Reflection;
+
+public enum CallOptions
 {
-    public enum CallOptions
-    {
-        Call,
-        Callvirt
-    }
+    Call,
+    Callvirt
 }

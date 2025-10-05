@@ -1,21 +1,29 @@
-﻿namespace AspectCore.Configuration
+﻿using AspectCore.DynamicProxy;
+using AspectCore.DynamicProxy.Parameters;
+
+namespace AspectCore.Configuration;
+
+[NonAspect]
+public sealed class AspectConfiguration
 {
-    public sealed class AspectConfiguration : IAspectConfiguration
+    public AspectValidationHandlerCollection ValidationHandlers { get; }
+
+    public InterceptorCollection Interceptors { get; }
+
+    public Type PropertyEnableInjectAttributeType { get; set; }
+
+    public bool ThrowAspectException { get; set; }
+
+    public AspectConfiguration()
     {
-        public AspectValidationHandlerCollection ValidationHandlers { get; }
+        ThrowAspectException = false;
 
-        public InterceptorCollection Interceptors { get; }
+        ValidationHandlers = new AspectValidationHandlerCollection()
+            .Add(new OverwriteAspectValidationHandler())
+            .Add(new AttributeAspectValidationHandler())
+            .Add(new CacheAspectValidationHandler());
 
-        public NonAspectPredicateCollection NonAspectPredicates { get; }
-
-        public bool ThrowAspectException { get; set; }
-
-        public AspectConfiguration()
-        {
-            ThrowAspectException = false;
-            ValidationHandlers = new AspectValidationHandlerCollection().AddDefault(this);
-            Interceptors = new InterceptorCollection();
-            NonAspectPredicates = new NonAspectPredicateCollection().AddDefault();
-        }
+        Interceptors = new InterceptorCollection()
+            .Add(new TypeInterceptorFactory(typeof(EnableParameterAspectInterceptor), Array.Empty<object>()));
     }
 }

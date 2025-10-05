@@ -1,9 +1,8 @@
 ﻿using System.Reflection;
 
-namespace AspectCore.DynamicProxy.Parameters
+namespace AspectCore.DynamicProxy.Parameters;
+
+public interface IParameterInterceptorSelector
 {
-    public interface IParameterInterceptorSelector
-    {
-        IParameterInterceptor[] Select(ParameterInfo parameter);
-    }
+    IParameterInterceptor[] Select(ParameterInfo parameter);
 }

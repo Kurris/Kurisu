@@ -1,42 +1,44 @@
-﻿namespace AspectCore.DynamicProxy
+﻿namespace AspectCore.DynamicProxy;
+
+[NonAspect]
+public sealed class AspectBuilder : IAspectBuilder
 {
-    [NonAspect]
-    public sealed class AspectBuilder : IAspectBuilder
+    private readonly IList<Func<AspectDelegate, AspectDelegate>> _delegates;
+    private readonly AspectDelegate _complete;
+    private AspectDelegate _aspectDelegate;
+
+    public AspectBuilder(AspectDelegate complete, IList<Func<AspectDelegate, AspectDelegate>> delegates)
     {
-        private readonly IList<Func<AspectDelegate, AspectDelegate>> _delegates;
-        private readonly AspectDelegate _complete;
-        private AspectDelegate _aspectDelegate;
+        _complete = complete ?? throw new ArgumentNullException(nameof(complete));
+        _delegates = delegates ?? new List<Func<AspectDelegate, AspectDelegate>>();
+    }
 
-        public AspectBuilder(AspectDelegate complete, IList<Func<AspectDelegate, AspectDelegate>> delegates)
+    public IEnumerable<Func<AspectDelegate, AspectDelegate>> Delegates => _delegates;
+
+    public void AddAspectDelegate(Func<AspectContext, AspectDelegate, Task> interceptorInvoke)
+    {
+        if (interceptorInvoke == null)
         {
-            _complete = complete ?? throw new ArgumentNullException(nameof(complete));
-            _delegates = delegates ?? new List<Func<AspectDelegate, AspectDelegate>>();
+            throw new ArgumentNullException(nameof(interceptorInvoke));
         }
 
-        public IEnumerable<Func<AspectDelegate, AspectDelegate>> Delegates => _delegates;
+        _delegates.Add(next => context => interceptorInvoke(context, next));
+    }
 
-        public void AddAspectDelegate(Func<AspectContext, AspectDelegate, Task> interceptorInvoke)
+    public AspectDelegate Build()
+    {
+        if (_aspectDelegate != null)
         {
-            if (interceptorInvoke == null)
-            {
-                throw new ArgumentNullException(nameof(interceptorInvoke));
-            }
-            _delegates.Add(next => context => interceptorInvoke(context, next));
+            return _aspectDelegate;
         }
 
-        public AspectDelegate Build()
+        AspectDelegate invoke = _complete;
+        var count = _delegates.Count;
+        for (var i = count - 1; i > -1; i--)
         {
-            if (_aspectDelegate != null)
-            {
-                return _aspectDelegate;
-            }
-            AspectDelegate invoke = _complete;
-            var count = _delegates.Count;
-            for (var i = count - 1; i > -1; i--)
-            {
-                invoke = _delegates[i](invoke);
-            }
-            return (_aspectDelegate = invoke);
+            invoke = _delegates[i](invoke);
         }
+
+        return (_aspectDelegate = invoke);
     }
 }

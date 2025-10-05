@@ -2,128 +2,127 @@
 using System.Reflection.Emit;
 using AspectCore.Extensions.Reflection.Emit;
 
-namespace AspectCore.Extensions.Reflection
+namespace AspectCore.Extensions.Reflection;
+
+public class ConstructorReflector : MemberReflector<ConstructorInfo>, IParameterReflectorProvider
 {
-    public class ConstructorReflector : MemberReflector<ConstructorInfo>, IParameterReflectorProvider
+    private readonly Func<object[], object> _invoker;
+    private readonly ParameterReflector[] _parameterReflectors;
+
+    public ParameterReflector[] ParameterReflectors => _parameterReflectors;
+
+    private ConstructorReflector(ConstructorInfo constructorInfo) : base(constructorInfo)
     {
-        private readonly Func<object[], object> _invoker;
-        private readonly ParameterReflector[] _parameterReflectors;
+        _invoker = CreateInvoker();
+        _parameterReflectors = constructorInfo.GetParameters().Select(ParameterReflector.Create).ToArray();
+    }
 
-        public ParameterReflector[] ParameterReflectors => _parameterReflectors;
+    protected virtual Func<object[], object> CreateInvoker()
+    {
+        var dynamicMethod = new DynamicMethod($"invoker-{Guid.NewGuid()}", typeof(object), new Type[] { typeof(object[]) }, _reflectionInfo.Module, true);
+        var ilGen = dynamicMethod.GetILGenerator();
 
-        private ConstructorReflector(ConstructorInfo constructorInfo) : base(constructorInfo)
+        var parameterTypes = _reflectionInfo.GetParameterTypes();
+        if (parameterTypes.Length == 0)
         {
-            _invoker = CreateInvoker();
-            _parameterReflectors = constructorInfo.GetParameters().Select(x => ParameterReflector.Create(x)).ToArray();
+            ilGen.Emit(OpCodes.Newobj, _reflectionInfo);
+            return CreateDelegate();
         }
 
-        protected virtual Func<object[], object> CreateInvoker()
+        var refParameterCount = parameterTypes.Count(x => x.IsByRef);
+        if (refParameterCount == 0)
         {
-            var dynamicMethod = new DynamicMethod($"invoker-{Guid.NewGuid()}", typeof(object), new Type[] { typeof(object[]) }, _reflectionInfo.Module, true);
-            var ilGen = dynamicMethod.GetILGenerator();
-
-            var parameterTypes = _reflectionInfo.GetParameterTypes();
-            if (parameterTypes.Length == 0)
-            {
-                ilGen.Emit(OpCodes.Newobj, _reflectionInfo);
-                return CreateDelegate();
-            }
-
-            var refParameterCount = parameterTypes.Count(x => x.IsByRef);
-            if (refParameterCount == 0)
-            {
-                for (var i = 0; i < parameterTypes.Length; i++)
-                {
-                    ilGen.EmitLoadArg(0);
-                    ilGen.EmitInt(i);
-                    ilGen.Emit(OpCodes.Ldelem_Ref);
-                    ilGen.EmitConvertFromObject(parameterTypes[i]);
-                }
-
-                ilGen.Emit(OpCodes.Newobj, _reflectionInfo);
-                return CreateDelegate();
-            }
-
-            var indexedLocals = new IndexedLocalBuilder[refParameterCount];
-            var index = 0;
             for (var i = 0; i < parameterTypes.Length; i++)
             {
                 ilGen.EmitLoadArg(0);
                 ilGen.EmitInt(i);
                 ilGen.Emit(OpCodes.Ldelem_Ref);
-                if (parameterTypes[i].IsByRef)
-                {
-                    var defType = parameterTypes[i].GetElementType();
-                    var indexedLocal = new IndexedLocalBuilder(ilGen.DeclareLocal(defType), i);
-                    indexedLocals[index++] = indexedLocal;
-                    ilGen.EmitConvertFromObject(defType);
-                    ilGen.Emit(OpCodes.Stloc, indexedLocal.LocalBuilder);
-                    ilGen.Emit(OpCodes.Ldloca, indexedLocal.LocalBuilder);
-                }
-                else
-                {
-                    ilGen.EmitConvertFromObject(parameterTypes[i]);
-                }
+                ilGen.EmitConvertFromObject(parameterTypes[i]);
             }
 
             ilGen.Emit(OpCodes.Newobj, _reflectionInfo);
-            for (var i = 0; i < indexedLocals.Length; i++)
-            {
-                ilGen.EmitLoadArg(0);
-                ilGen.EmitInt(indexedLocals[i].Index);
-                ilGen.Emit(OpCodes.Ldloc, indexedLocals[i].LocalBuilder);
-                ilGen.EmitConvertToObject(indexedLocals[i].LocalType);
-                ilGen.Emit(OpCodes.Stelem_Ref);
-            }
-
             return CreateDelegate();
-
-            Func<object[], object> CreateDelegate()
-            {
-                if (_reflectionInfo.DeclaringType.GetTypeInfo().IsValueType)
-                    ilGen.EmitConvertToObject(_reflectionInfo.DeclaringType);
-                ilGen.Emit(OpCodes.Ret);
-                return (Func<object[], object>)dynamicMethod.CreateDelegate(typeof(Func<object[], object>));
-            }
         }
 
-        public virtual object Invoke(params object[] args)
+        var indexedLocals = new IndexedLocalBuilder[refParameterCount];
+        var index = 0;
+        for (var i = 0; i < parameterTypes.Length; i++)
         {
-            if (args == null)
+            ilGen.EmitLoadArg(0);
+            ilGen.EmitInt(i);
+            ilGen.Emit(OpCodes.Ldelem_Ref);
+            if (parameterTypes[i].IsByRef)
             {
-                throw new ArgumentNullException(nameof(args));
+                var defType = parameterTypes[i].GetElementType();
+                var indexedLocal = new IndexedLocalBuilder(ilGen.DeclareLocal(defType), i);
+                indexedLocals[index++] = indexedLocal;
+                ilGen.EmitConvertFromObject(defType);
+                ilGen.Emit(OpCodes.Stloc, indexedLocal.LocalBuilder);
+                ilGen.Emit(OpCodes.Ldloca, indexedLocal.LocalBuilder);
             }
-
-            return _invoker(args);
+            else
+            {
+                ilGen.EmitConvertFromObject(parameterTypes[i]);
+            }
         }
 
-        private class OpenGenericConstructorReflector : ConstructorReflector
+        ilGen.Emit(OpCodes.Newobj, _reflectionInfo);
+        for (var i = 0; i < indexedLocals.Length; i++)
         {
-            public OpenGenericConstructorReflector(ConstructorInfo constructorInfo) : base(constructorInfo)
-            {
-            }
-
-            protected override Func<object[], object> CreateInvoker() => null;
-
-            public override object Invoke(params object[] args) => throw new InvalidOperationException($"Cannot create an instance of {_reflectionInfo.DeclaringType} because Type.ContainsGenericParameters is true.");
+            ilGen.EmitLoadArg(0);
+            ilGen.EmitInt(indexedLocals[i].Index);
+            ilGen.Emit(OpCodes.Ldloc, indexedLocals[i].LocalBuilder);
+            ilGen.EmitConvertToObject(indexedLocals[i].LocalType);
+            ilGen.Emit(OpCodes.Stelem_Ref);
         }
 
-        internal static ConstructorReflector Create(ConstructorInfo constructorInfo)
+        return CreateDelegate();
+
+        Func<object[], object> CreateDelegate()
         {
-            if (constructorInfo == null)
+            if (_reflectionInfo.DeclaringType.GetTypeInfo().IsValueType)
+                ilGen.EmitConvertToObject(_reflectionInfo.DeclaringType);
+            ilGen.Emit(OpCodes.Ret);
+            return (Func<object[], object>)dynamicMethod.CreateDelegate(typeof(Func<object[], object>));
+        }
+    }
+
+    public virtual object Invoke(params object[] args)
+    {
+        if (args == null)
+        {
+            throw new ArgumentNullException(nameof(args));
+        }
+
+        return _invoker(args);
+    }
+
+    private class OpenGenericConstructorReflector : ConstructorReflector
+    {
+        public OpenGenericConstructorReflector(ConstructorInfo constructorInfo) : base(constructorInfo)
+        {
+        }
+
+        protected override Func<object[], object> CreateInvoker() => null;
+
+        public override object Invoke(params object[] args) => throw new InvalidOperationException($"Cannot create an instance of {_reflectionInfo.DeclaringType} because Type.ContainsGenericParameters is true.");
+    }
+
+    internal static ConstructorReflector Create(ConstructorInfo constructorInfo)
+    {
+        if (constructorInfo == null)
+        {
+            throw new ArgumentNullException(nameof(constructorInfo));
+        }
+
+        return ReflectorCacheUtils<ConstructorInfo, ConstructorReflector>.GetOrAdd(constructorInfo, info =>
+        {
+            if (info.DeclaringType.GetTypeInfo().ContainsGenericParameters)
             {
-                throw new ArgumentNullException(nameof(constructorInfo));
+                return new OpenGenericConstructorReflector(info);
             }
 
-            return ReflectorCacheUtils<ConstructorInfo, ConstructorReflector>.GetOrAdd(constructorInfo, info =>
-            {
-                if (info.DeclaringType.GetTypeInfo().ContainsGenericParameters)
-                {
-                    return new OpenGenericConstructorReflector(info);
-                }
-
-                return new ConstructorReflector(info);
-            });
-        }
+            return new ConstructorReflector(info);
+        });
     }
 }

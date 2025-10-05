@@ -1,8 +1,7 @@
-﻿namespace AspectCore.DynamicProxy.Parameters
+﻿namespace AspectCore.DynamicProxy.Parameters;
+
+[NonAspect]
+public interface IParameterInterceptor
 {
-    [NonAspect]
-    public interface IParameterInterceptor
-    {
-        Task Invoke(ParameterAspectContext context, ParameterAspectDelegate next);
-    }
+    Task Invoke(ParameterAspectContext context, ParameterAspectDelegate next);
 }

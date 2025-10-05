@@ -1,8 +1,7 @@
-﻿namespace AspectCore.DynamicProxy
+﻿namespace AspectCore.DynamicProxy;
+
+[NonAspect]
+public interface IAspectBuilderFactory
 {
-    [NonAspect]
-    public interface IAspectBuilderFactory
-    {
-        IAspectBuilder Create(AspectContext context);
-    }
+    IAspectBuilder Create(AspectContext context);
 }

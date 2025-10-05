@@ -1,41 +1,40 @@
-﻿namespace AspectCore.Core.Utils
+﻿namespace AspectCore.Core.Utils;
+
+internal static class NoSyncContextScope
 {
-    internal static class NoSyncContextScope
+    // See: https://stackoverflow.com/questions/28305968/use-task-run-in-synchronous-method-to-avoid-deadlock-waiting-on-async-method
+    private static IDisposable Enter()
     {
-        // See: https://stackoverflow.com/questions/28305968/use-task-run-in-synchronous-method-to-avoid-deadlock-waiting-on-async-method
-        private static IDisposable Enter()
+        var context = SynchronizationContext.Current;
+        SynchronizationContext.SetSynchronizationContext(null);
+        return new Disposable(context);
+    }
+
+    private struct Disposable : IDisposable
+    {
+        private readonly SynchronizationContext _synchronizationContext;
+
+        public Disposable(SynchronizationContext synchronizationContext)
         {
-            var context = SynchronizationContext.Current;
-            SynchronizationContext.SetSynchronizationContext(null);
-            return new Disposable(context);
+            _synchronizationContext = synchronizationContext;
         }
 
-        private struct Disposable : IDisposable
+        public void Dispose() => SynchronizationContext.SetSynchronizationContext(_synchronizationContext);
+    }
+
+    public static void Run(Task task)
+    {
+        using (Enter())
         {
-            private readonly SynchronizationContext _synchronizationContext;
-
-            public Disposable(SynchronizationContext synchronizationContext)
-            {
-                _synchronizationContext = synchronizationContext;
-            }
-
-            public void Dispose() => SynchronizationContext.SetSynchronizationContext(_synchronizationContext);
+            task.GetAwaiter().GetResult();
         }
+    }
 
-        public static void Run(Task task)
+    public static T Run<T>(Task<T> task)
+    {
+        using (Enter())
         {
-            using (Enter())
-            {
-                task.GetAwaiter().GetResult();
-            }
-        }
-
-        public static T Run<T>(Task<T> task)
-        {
-            using (Enter())
-            {
-                return task.GetAwaiter().GetResult();
-            }
+            return task.GetAwaiter().GetResult();
         }
     }
 }

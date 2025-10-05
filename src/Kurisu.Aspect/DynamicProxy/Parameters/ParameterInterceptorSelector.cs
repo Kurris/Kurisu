@@ -1,45 +1,28 @@
 ﻿using System.Reflection;
 using AspectCore.Extensions.Reflection;
-using AspectCore.DependencyInjection;
-using AspectCore.Utils;
 
-namespace AspectCore.DynamicProxy.Parameters
+namespace AspectCore.DynamicProxy.Parameters;
+
+public sealed class ParameterInterceptorSelector : IParameterInterceptorSelector
 {
-    public sealed class ParameterInterceptorSelector : IParameterInterceptorSelector
+    private readonly AspectCaching<ParameterInterceptorSelector, IParameterInterceptor[]> _aspectCaching;
+
+    public ParameterInterceptorSelector(AspectCaching<ParameterInterceptorSelector, IParameterInterceptor[]> aspectCaching)
     {
-        private readonly IPropertyInjectorFactory _propertyInjectorFactory;
-        private readonly IAspectCaching _aspectCaching;
+        _aspectCaching = aspectCaching;
+    }
 
-        public ParameterInterceptorSelector(IPropertyInjectorFactory propertyInjectorFactory, IAspectCachingProvider aspectCachingProvider)
+    public IParameterInterceptor[] Select(ParameterInfo parameter)
+    {
+        if (parameter == null)
         {
-            if (aspectCachingProvider == null)
-            {
-                throw new ArgumentNullException(nameof(aspectCachingProvider));
-            }
-            _propertyInjectorFactory = propertyInjectorFactory ?? throw new ArgumentNullException(nameof(propertyInjectorFactory));
-            _aspectCaching = aspectCachingProvider.GetAspectCaching(nameof(ParameterInterceptorSelector));
+            throw new ArgumentNullException(nameof(parameter));
         }
 
-        public IParameterInterceptor[] Select(ParameterInfo parameter)
+        return _aspectCaching.GetOrAdd(parameter, info =>
         {
-            if (parameter == null)
-            {
-                throw new ArgumentNullException(nameof(parameter));
-            }
-
-            return (IParameterInterceptor[])_aspectCaching.GetOrAdd(parameter, info =>
-             {
-                 var interceptors = ((ParameterInfo)info).GetReflector().GetCustomAttributes().OfType<IParameterInterceptor>().ToArray();
-                 for (var i = 0; i < interceptors.Length; i++)
-                 {
-                     var interceptor = interceptors[i];
-                     if (PropertyInjectionUtils.Required(interceptor))
-                     {
-                         _propertyInjectorFactory.Create(interceptor.GetType()).Invoke(interceptor);
-                     }
-                 }
-                 return interceptors;
-             });
-        }
+            var interceptors = ((ParameterInfo)info).GetReflector().GetCustomAttributes().OfType<IParameterInterceptor>().ToArray();
+            return interceptors;
+        });
     }
 }

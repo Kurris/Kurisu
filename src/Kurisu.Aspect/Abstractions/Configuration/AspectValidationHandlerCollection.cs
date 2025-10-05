@@ -1,47 +1,46 @@
 ﻿using System.Collections;
 using AspectCore.DynamicProxy;
 
-namespace AspectCore.Configuration
+namespace AspectCore.Configuration;
+
+public class AspectValidationHandlerCollection : IEnumerable<IAspectValidationHandler>
 {
-    public class AspectValidationHandlerCollection : IEnumerable<IAspectValidationHandler>
+    private readonly HashSet<IAspectValidationHandler> _sets = new HashSet<IAspectValidationHandler>(new ValidationHandlerEqualityComparer());
+
+    public AspectValidationHandlerCollection Add(IAspectValidationHandler aspectValidationHandler)
     {
-        private readonly HashSet<IAspectValidationHandler> _sets = new HashSet<IAspectValidationHandler>(new ValidationHandlerEqualityComparer());
-
-        public AspectValidationHandlerCollection Add(IAspectValidationHandler aspectValidationHandler)
+        if (aspectValidationHandler == null)
         {
-            if (aspectValidationHandler == null)
-            {
-                throw new ArgumentNullException(nameof(aspectValidationHandler));
-            }
-
-            _sets.Add(aspectValidationHandler);
-            return this;
+            throw new ArgumentNullException(nameof(aspectValidationHandler));
         }
 
-        public int Count => _sets.Count;
+        _sets.Add(aspectValidationHandler);
+        return this;
+    }
 
-        public IEnumerator<IAspectValidationHandler> GetEnumerator()
+    public int Count => _sets.Count;
+
+    public IEnumerator<IAspectValidationHandler> GetEnumerator()
+    {
+        return _sets.GetEnumerator();
+    }
+
+    IEnumerator IEnumerable.GetEnumerator()
+    {
+        return GetEnumerator();
+    }
+
+    private class ValidationHandlerEqualityComparer : IEqualityComparer<IAspectValidationHandler>
+    {
+        public bool Equals(IAspectValidationHandler x, IAspectValidationHandler y)
         {
-            return _sets.GetEnumerator();
+            if (x == null || y == null) return false;
+            return x.GetType() == y.GetType();
         }
 
-        IEnumerator IEnumerable.GetEnumerator()
+        public int GetHashCode(IAspectValidationHandler obj)
         {
-            return GetEnumerator();
-        }
-
-        private class ValidationHandlerEqualityComparer : IEqualityComparer<IAspectValidationHandler>
-        {
-            public bool Equals(IAspectValidationHandler x, IAspectValidationHandler y)
-            {
-                if (x == null || y == null) return false;
-                return x.GetType() == y.GetType();
-            }
-
-            public int GetHashCode(IAspectValidationHandler obj)
-            {
-                return obj.GetType().GetHashCode();
-            }
+            return obj.GetType().GetHashCode();
         }
     }
 }

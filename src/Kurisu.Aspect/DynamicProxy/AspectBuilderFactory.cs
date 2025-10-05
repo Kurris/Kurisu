@@ -1,47 +1,44 @@
 ﻿using System.Reflection;
 
-namespace AspectCore.DynamicProxy
+namespace AspectCore.DynamicProxy;
+
+[NonAspect]
+public sealed class AspectBuilderFactory : IAspectBuilderFactory
 {
-    [NonAspect]
-    public sealed class AspectBuilderFactory : IAspectBuilderFactory
+    private readonly IInterceptorCollector _interceptorCollector;
+    private readonly AspectCaching<AspectBuilderFactory, IAspectBuilder> _aspectCaching;
+
+    public AspectBuilderFactory(IInterceptorCollector interceptorCollector,
+        AspectCaching<AspectBuilderFactory, IAspectBuilder> aspectCaching)
     {
-        private readonly IInterceptorCollector _interceptorCollector;
-        private readonly IAspectCaching _aspectCaching;
+        _interceptorCollector = interceptorCollector;
+        _aspectCaching = aspectCaching;
+    }
 
-        public AspectBuilderFactory(IInterceptorCollector interceptorCollector,
-            IAspectCachingProvider aspectCachingProvider)
+    public IAspectBuilder Create(AspectContext context)
+    {
+        if (context == null)
         {
-            if (aspectCachingProvider == null)
-            {
-                throw new ArgumentNullException(nameof(aspectCachingProvider));
-            }
-            _interceptorCollector =
-                interceptorCollector ?? throw new ArgumentNullException(nameof(interceptorCollector));
-            _aspectCaching = aspectCachingProvider.GetAspectCaching(nameof(AspectBuilderFactory));
+            throw new ArgumentNullException(nameof(context));
         }
 
-        public IAspectBuilder Create(AspectContext context)
-        {
-            if (context == null)
-            {
-                throw new ArgumentNullException(nameof(context));
-            }
-            return (IAspectBuilder)_aspectCaching.GetOrAdd(GetKey(context.ServiceMethod, context.ImplementationMethod), key => Create((Tuple<MethodInfo, MethodInfo>)key));
-        }
+        return _aspectCaching.GetOrAdd(GetKey(context.ServiceMethod, context.ImplementationMethod), key =>
+            Create((Tuple<MethodInfo, MethodInfo>)key)
+        );
+    }
 
-        private IAspectBuilder Create(Tuple<MethodInfo, MethodInfo> tuple)
-        {
-            var aspectBuilder = new AspectBuilder(context => context.Complete(), null);
+    private IAspectBuilder Create(Tuple<MethodInfo, MethodInfo> tuple)
+    {
+        var aspectBuilder = new AspectBuilder(context => context.Complete(), null);
 
-            foreach (var interceptor in _interceptorCollector.Collect(tuple.Item1, tuple.Item2))
-                aspectBuilder.AddAspectDelegate(interceptor.Invoke);
+        foreach (var interceptor in _interceptorCollector.Collect(tuple.Item1, tuple.Item2))
+            aspectBuilder.AddAspectDelegate(interceptor.Invoke);
 
-            return aspectBuilder;
-        }
+        return aspectBuilder;
+    }
 
-        private object GetKey(MethodInfo serviceMethod, MethodInfo implementationMethod)
-        {
-            return Tuple.Create(serviceMethod, implementationMethod);
-        }
+    private static object GetKey(MethodInfo serviceMethod, MethodInfo implementationMethod)
+    {
+        return Tuple.Create(serviceMethod, implementationMethod);
     }
 }

@@ -1,8 +1,7 @@
-﻿namespace AspectCore.DynamicProxy.Parameters
+﻿namespace AspectCore.DynamicProxy.Parameters;
+
+[AttributeUsage(AttributeTargets.Parameter, AllowMultiple = false, Inherited = false)]
+public abstract class ParameterInterceptorAttribute : Attribute, IParameterInterceptor
 {
-    [AttributeUsage(AttributeTargets.Parameter, AllowMultiple = false, Inherited = false)]
-    public abstract class ParameterInterceptorAttribute : Attribute, IParameterInterceptor
-    {
-        public abstract Task Invoke(ParameterAspectContext context, ParameterAspectDelegate next);
-    }
+    public abstract Task Invoke(ParameterAspectContext context, ParameterAspectDelegate next);
 }

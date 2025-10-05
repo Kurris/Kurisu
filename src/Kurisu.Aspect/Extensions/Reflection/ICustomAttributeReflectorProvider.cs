@@ -1,7 +1,6 @@
-﻿namespace AspectCore.Extensions.Reflection
+﻿namespace AspectCore.Extensions.Reflection;
+
+public interface ICustomAttributeReflectorProvider
 {
-    public interface ICustomAttributeReflectorProvider
-    {
-        CustomAttributeReflector[] CustomAttributeReflectors { get; }
-    }
+    CustomAttributeReflector[] CustomAttributeReflectors { get; }
 }

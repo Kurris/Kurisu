@@ -1,23 +1,26 @@
 ﻿using System.Reflection;
 using AspectCore.Extensions.Reflection;
 
-namespace AspectCore.DynamicProxy
+namespace AspectCore.DynamicProxy;
+
+/// <summary>
+/// 特性拦截器选择器
+/// </summary>
+[NonAspect]
+public sealed class AttributeInterceptorSelector : IInterceptorSelector
 {
-    [NonAspect]
-    public sealed class AttributeInterceptorSelector : IInterceptorSelector
+    public IEnumerable<IInterceptor> Select(MethodInfo method)
     {
-        public IEnumerable<IInterceptor> Select(MethodInfo method)
+        foreach (var attribute in method.DeclaringType!.GetTypeInfo().GetReflector().GetCustomAttributes())
         {
-            foreach(var attribute in method.DeclaringType.GetTypeInfo().GetReflector().GetCustomAttributes())
-            {
-                if (attribute is IInterceptor interceptor)
-                    yield return interceptor;
-            }
-            foreach (var attribute in method.GetReflector().GetCustomAttributes())
-            {
-                if (attribute is IInterceptor interceptor)
-                    yield return interceptor;
-            }
+            if (attribute is IInterceptor interceptor)
+                yield return interceptor;
+        }
+
+        foreach (var attribute in method.GetReflector().GetCustomAttributes())
+        {
+            if (attribute is IInterceptor interceptor)
+                yield return interceptor;
         }
     }
 }

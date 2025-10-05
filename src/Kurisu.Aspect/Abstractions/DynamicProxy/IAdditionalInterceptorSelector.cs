@@ -1,10 +1,9 @@
 ﻿using System.Reflection;
 
-namespace AspectCore.DynamicProxy
+namespace AspectCore.DynamicProxy;
+
+[NonAspect]
+public interface IAdditionalInterceptorSelector
 {
-    [NonAspect]
-    public interface IAdditionalInterceptorSelector
-    {
-        IEnumerable<IInterceptor> Select(MethodInfo serviceMethod, MethodInfo implementationMethod);
-    }
+    IEnumerable<IInterceptor> Select(MethodInfo serviceMethod, MethodInfo implementationMethod);
 }

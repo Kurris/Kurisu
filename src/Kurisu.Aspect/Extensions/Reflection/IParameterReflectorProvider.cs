@@ -1,7 +1,6 @@
-﻿namespace AspectCore.Extensions.Reflection
+﻿namespace AspectCore.Extensions.Reflection;
+
+public interface IParameterReflectorProvider
 {
-    public interface IParameterReflectorProvider
-    {
-        ParameterReflector[] ParameterReflectors { get; }
-    }
+    ParameterReflector[] ParameterReflectors { get; }
 }

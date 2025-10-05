@@ -1,12 +1,11 @@
-﻿namespace AspectCore.DynamicProxy
+﻿namespace AspectCore.DynamicProxy;
+
+[NonAspect]
+public interface IAspectActivator
 {
-    [NonAspect]
-    public interface IAspectActivator
-    {
-        TResult Invoke<TResult>(AspectActivatorContext activatorContext);
+    TResult Invoke<TResult>(AspectActivatorContext activatorContext);
 
-        Task<TResult> InvokeTask<TResult>(AspectActivatorContext activatorContext);
+    Task<TResult> InvokeTask<TResult>(AspectActivatorContext activatorContext);
 
-        ValueTask<TResult> InvokeValueTask<TResult>(AspectActivatorContext activatorContext);
-    }
+    ValueTask<TResult> InvokeValueTask<TResult>(AspectActivatorContext activatorContext);
 }

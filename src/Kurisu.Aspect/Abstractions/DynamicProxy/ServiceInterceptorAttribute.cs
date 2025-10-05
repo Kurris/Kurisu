@@ -1,58 +1,56 @@
 ﻿using System.Reflection;
 
-namespace AspectCore.DynamicProxy
+namespace AspectCore.DynamicProxy;
+
+public sealed class ServiceInterceptorAttribute : AbstractInterceptorAttribute, IEquatable<ServiceInterceptorAttribute>
 {
-    public sealed class ServiceInterceptorAttribute : AbstractInterceptorAttribute, IEquatable<ServiceInterceptorAttribute>
+    private readonly Type _interceptorType;
+
+    public override bool AllowMultiple { get; } = true;
+
+    public ServiceInterceptorAttribute(Type interceptorType)
     {
-        private readonly Type _interceptorType;
-
-        public override bool AllowMultiple { get; } = true;
-
-        public ServiceInterceptorAttribute(Type interceptorType)
+        if (interceptorType == null)
         {
-            if (interceptorType == null)
-            {
-                throw new ArgumentNullException(nameof(interceptorType));
-            }
-
-            if (!typeof(IInterceptor).GetTypeInfo().IsAssignableFrom(interceptorType.GetTypeInfo()))
-            {
-                throw new ArgumentException($"{interceptorType} is not an interceptor.", nameof(interceptorType));
-            }
-
-            _interceptorType = interceptorType;
+            throw new ArgumentNullException(nameof(interceptorType));
         }
 
-        public override Task Invoke(AspectContext context, AspectDelegate next)
+        if (!typeof(IInterceptor).GetTypeInfo().IsAssignableFrom(interceptorType.GetTypeInfo()))
         {
-            var instance = context.ServiceProvider.GetService(_interceptorType) as IInterceptor;
-            if (instance == null)
-            {
-                throw new InvalidOperationException($"Cannot resolve type  '{_interceptorType}' of service interceptor.");
-            }
-
-            return instance.Invoke(context, next);
+            throw new ArgumentException($"{interceptorType} is not an interceptor.", nameof(interceptorType));
         }
 
-        public bool Equals(ServiceInterceptorAttribute other)
-        {
-            if (other == null)
-            {
-                return false;
-            }
+        _interceptorType = interceptorType;
+    }
 
-            return _interceptorType == other._interceptorType;
+    public override Task Invoke(AspectContext context, AspectDelegate next)
+    {
+        if (context.ServiceProvider.GetService(_interceptorType) is not IInterceptor instance)
+        {
+            throw new InvalidOperationException($"Cannot resolve type  '{_interceptorType}' of service interceptor.");
         }
 
-        public override bool Equals(object obj)
+        return instance.Invoke(context, next);
+    }
+
+    public bool Equals(ServiceInterceptorAttribute other)
+    {
+        if (other == null)
         {
-            var other = obj as ServiceInterceptorAttribute;
-            return Equals(other);
+            return false;
         }
 
-        public override int GetHashCode()
-        {
-            return _interceptorType.GetHashCode();
-        }
+        return _interceptorType == other._interceptorType;
+    }
+
+    public override bool Equals(object obj)
+    {
+        var other = obj as ServiceInterceptorAttribute;
+        return Equals(other);
+    }
+
+    public override int GetHashCode()
+    {
+        return _interceptorType.GetHashCode();
     }
 }

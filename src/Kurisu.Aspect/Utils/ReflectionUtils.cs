@@ -1,275 +1,274 @@
 ﻿using System.Reflection;
 using AspectCore.Extensions.Reflection;
 
-namespace AspectCore.DynamicProxy
+namespace AspectCore.DynamicProxy;
+
+public static class ReflectionUtils
 {
-    public static class ReflectionUtils
+    public static bool IsProxy(this object instance)
     {
-        public static bool IsProxy(this object instance)
+        if (instance == null)
         {
-            if (instance == null)
-            {
-                return false;
-            }
-
-            return instance.GetType().GetTypeInfo().IsProxyType();
+            return false;
         }
 
-        public static bool IsProxyType(this TypeInfo typeInfo)
-        {
-            if (typeInfo == null)
-            {
-                throw new ArgumentNullException(nameof(typeInfo));
-            }
+        return instance.GetType().GetTypeInfo().IsProxyType();
+    }
 
-            return typeInfo.GetReflector().IsDefined(typeof(DynamicallyAttribute));
+    public static bool IsProxyType(this TypeInfo typeInfo)
+    {
+        if (typeInfo == null)
+        {
+            throw new ArgumentNullException(nameof(typeInfo));
         }
 
-        public static bool CanInherited(this TypeInfo typeInfo)
+        return typeInfo.GetReflector().IsDefined(typeof(DynamicallyAttribute));
+    }
+
+    public static bool CanInherited(this TypeInfo typeInfo)
+    {
+        if (typeInfo == null)
         {
-            if (typeInfo == null)
-            {
-                throw new ArgumentNullException(nameof(typeInfo));
-            }
-
-            if (typeInfo.IsValueType || typeInfo.IsEnum || typeInfo.IsSealed || typeInfo.IsProxyType())
-            {
-                return false;
-            }
-
-            return typeInfo.IsVisible();
+            throw new ArgumentNullException(nameof(typeInfo));
         }
 
-        internal static Type[] GetParameterTypes(this MethodInfo method)
+        if (typeInfo.IsValueType || typeInfo.IsEnum || typeInfo.IsSealed || typeInfo.IsProxyType())
         {
-            if (method == null)
-            {
-                throw new ArgumentNullException(nameof(method));
-            }
-
-            return method.GetParameters().Select(parame => parame.ParameterType).ToArray();
+            return false;
         }
 
-        public static bool IsNonAspect(this TypeInfo typeInfo)
-        {
-            if (typeInfo == null)
-            {
-                throw new ArgumentNullException(nameof(typeInfo));
-            }
+        return typeInfo.IsVisible();
+    }
 
-            return typeInfo.GetReflector().IsDefined(typeof(NonAspectAttribute));
+    internal static Type[] GetParameterTypes(this MethodInfo method)
+    {
+        if (method == null)
+        {
+            throw new ArgumentNullException(nameof(method));
         }
 
-        public static bool IsNonAspect(this MethodInfo methodInfo)
+        return method.GetParameters().Select(parame => parame.ParameterType).ToArray();
+    }
+
+    public static bool IsNonAspect(this TypeInfo typeInfo)
+    {
+        if (typeInfo == null)
         {
-            if (methodInfo == null)
-            {
-                throw new ArgumentNullException(nameof(methodInfo));
-            }
-
-            if (methodInfo.GetReflector().IsDefined(typeof(NonAspectAttribute)))
-            {
-                return true;
-            }
-
-            if (methodInfo.DeclaringType == null)
-            {
-                throw new NullReferenceException(nameof(methodInfo.DeclaringType));
-            }
-
-            return methodInfo.DeclaringType.GetTypeInfo().IsNonAspect();
+            throw new ArgumentNullException(nameof(typeInfo));
         }
 
+        return typeInfo.GetReflector().IsDefined(typeof(NonAspectAttribute));
+    }
 
-        /// <summary>
-        ///  判断方法调用指令是否为 callvirt。
-        ///  一般情况下，接口方法调用和显式接口实现方法调用会使用 callvirt 指令，
-        ///  而类的虚方法调用会使用 call 指令
-        /// </summary>
-        /// <param name="methodInfo"></param>
-        /// <returns></returns>
-        /// <exception cref="ArgumentNullException"></exception>
-        /// <exception cref="NullReferenceException"></exception>
-        internal static bool IsCallvirt(this MethodInfo methodInfo)
+    public static bool IsNonAspect(this MethodInfo methodInfo)
+    {
+        if (methodInfo == null)
         {
-            if (methodInfo == null)
-            {
-                throw new ArgumentNullException(nameof(methodInfo));
-            }
+            throw new ArgumentNullException(nameof(methodInfo));
+        }
 
-            if (methodInfo.IsExplicit())
-            {
-                return true;
-            }
-
-            if (methodInfo.DeclaringType == null)
-            {
-                throw new NullReferenceException(nameof(methodInfo.DeclaringType));
-            }
-
-            var typeInfo = methodInfo.DeclaringType.GetTypeInfo();
-            if (typeInfo.IsClass)
-            {
-                return false;
-            }
-
+        if (methodInfo.GetReflector().IsDefined(typeof(NonAspectAttribute)))
+        {
             return true;
         }
 
-
-        /// <summary>
-        /// 判断方法是否为显式接口实现。
-        /// 显式接口实现方法通常具有 Private、Final 和 Virtual 修饰符。
-        ///
-        ///  参考资料：
-        /// - [C# Programming Guide - Explicit Interface Implementation](https://learn.microsoft.com/en-us/dotnet/csharp/programming-guide/interfaces/explicit-interface-implementation)
-        /// </summary>
-        internal static bool IsExplicit(this MethodInfo methodInfo)
+        if (methodInfo.DeclaringType == null)
         {
-            if (methodInfo == null)
-            {
-                throw new ArgumentNullException(nameof(methodInfo));
-            }
-
-            return methodInfo.IsPrivate && methodInfo.IsFinal && methodInfo.IsVirtual;
-            // return methodInfo.Attributes.HasFlag(MethodAttributes.Private | MethodAttributes.Final | MethodAttributes.Virtual);
+            throw new NullReferenceException(nameof(methodInfo.DeclaringType));
         }
 
-        internal static bool IsVoid(this MethodInfo methodInfo)
+        return methodInfo.DeclaringType.GetTypeInfo().IsNonAspect();
+    }
+
+
+    /// <summary>
+    ///  判断方法调用指令是否为 callvirt。
+    ///  一般情况下，接口方法调用和显式接口实现方法调用会使用 callvirt 指令，
+    ///  而类的虚方法调用会使用 call 指令
+    /// </summary>
+    /// <param name="methodInfo"></param>
+    /// <returns></returns>
+    /// <exception cref="ArgumentNullException"></exception>
+    /// <exception cref="NullReferenceException"></exception>
+    internal static bool IsCallvirt(this MethodInfo methodInfo)
+    {
+        if (methodInfo == null)
         {
-            return methodInfo.ReturnType == typeof(void);
+            throw new ArgumentNullException(nameof(methodInfo));
         }
 
-        internal static string GetDisplayName(this PropertyInfo member)
+        if (methodInfo.IsExplicit())
         {
-            if (member == null)
-            {
-                throw new ArgumentNullException(nameof(member));
-            }
-
-            var declaringType = member.DeclaringType.GetTypeInfo();
-            if (declaringType.IsInterface)
-            {
-                return $"{declaringType.Namespace}.{declaringType.GetReflector().DisplayName}.{member.Name}";
-            }
-
-            return member.Name;
+            return true;
         }
 
-        internal static string GetName(this MethodInfo member)
+        if (methodInfo.DeclaringType == null)
         {
-            if (member == null)
-            {
-                throw new ArgumentNullException(nameof(member));
-            }
-
-            var declaringType = member.DeclaringType.GetTypeInfo();
-            if (declaringType.IsInterface)
-            {
-                return $"{declaringType.Namespace}.{declaringType.GetReflector().DisplayName}.{member.Name}";
-            }
-
-            return member.Name;
+            throw new NullReferenceException(nameof(methodInfo.DeclaringType));
         }
 
-        internal static string GetDisplayName(this MethodInfo member)
+        var typeInfo = methodInfo.DeclaringType.GetTypeInfo();
+        if (typeInfo.IsClass)
         {
-            if (member == null)
-            {
-                throw new ArgumentNullException(nameof(member));
-            }
-
-            var declaringType = member.DeclaringType.GetTypeInfo();
-            return
-                $"{declaringType.Namespace}.{declaringType.GetReflector().DisplayName}.{member.GetReflector().DisplayName}";
+            return false;
         }
 
-        public static bool IsReturnTask(this MethodInfo methodInfo)
-        {
-            if (methodInfo == null)
-            {
-                throw new ArgumentNullException(nameof(methodInfo));
-            }
+        return true;
+    }
 
-            var returnType = methodInfo.ReturnType.GetTypeInfo();
-            return returnType.IsTaskWithResult();
+
+    /// <summary>
+    /// 判断方法是否为显式接口实现。
+    /// 显式接口实现方法通常具有 Private、Final 和 Virtual 修饰符。
+    ///
+    ///  参考资料：
+    /// - [C# Programming Guide - Explicit Interface Implementation](https://learn.microsoft.com/en-us/dotnet/csharp/programming-guide/interfaces/explicit-interface-implementation)
+    /// </summary>
+    internal static bool IsExplicit(this MethodInfo methodInfo)
+    {
+        if (methodInfo == null)
+        {
+            throw new ArgumentNullException(nameof(methodInfo));
         }
 
-        public static bool IsReturnValueTask(this MethodInfo methodInfo)
-        {
-            if (methodInfo == null)
-            {
-                throw new ArgumentNullException(nameof(methodInfo));
-            }
+        return methodInfo.IsPrivate && methodInfo.IsFinal && methodInfo.IsVirtual;
+        // return methodInfo.Attributes.HasFlag(MethodAttributes.Private | MethodAttributes.Final | MethodAttributes.Virtual);
+    }
 
-            var returnType = methodInfo.ReturnType.GetTypeInfo();
-            return returnType.IsValueTaskWithResult();
+    internal static bool IsVoid(this MethodInfo methodInfo)
+    {
+        return methodInfo.ReturnType == typeof(void);
+    }
+
+    internal static string GetDisplayName(this PropertyInfo member)
+    {
+        if (member == null)
+        {
+            throw new ArgumentNullException(nameof(member));
         }
 
-        public static bool IsVisibleAndVirtual(this PropertyInfo property)
+        var declaringType = member.DeclaringType.GetTypeInfo();
+        if (declaringType.IsInterface)
         {
-            if (property == null)
-            {
-                throw new ArgumentNullException(nameof(property));
-            }
-
-            return (property.CanRead && property.GetMethod.IsVisibleAndVirtual()) ||
-                   (property.CanWrite && property.GetMethod.IsVisibleAndVirtual());
+            return $"{declaringType.Namespace}.{declaringType.GetReflector().DisplayName}.{member.Name}";
         }
 
-        public static bool IsVisibleAndVirtual(this MethodInfo method)
+        return member.Name;
+    }
+
+    internal static string GetName(this MethodInfo member)
+    {
+        if (member == null)
         {
-            if (method == null)
-            {
-                throw new ArgumentNullException(nameof(method));
-            }
-
-            if (method.IsStatic || method.IsFinal)
-            {
-                return false;
-            }
-
-            return method.IsVirtual &&
-                   (method.IsPublic || method.IsFamily || method.IsFamilyOrAssembly);
+            throw new ArgumentNullException(nameof(member));
         }
 
-        public static MethodInfo GetMethodBySignature(this TypeInfo typeInfo, MethodInfo method)
+        var declaringType = member.DeclaringType.GetTypeInfo();
+        if (declaringType.IsInterface)
         {
-            if (typeInfo == null)
-            {
-                throw new ArgumentNullException(nameof(typeInfo));
-            }
-
-            if (method == null)
-            {
-                throw new ArgumentNullException(nameof(method));
-            }
-
-            var methods = typeInfo.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
-            var displayName = method.GetReflector().DisplayName;
-            var invocation = methods.FirstOrDefault(x => x.GetReflector().DisplayName.Equals(displayName, StringComparison.Ordinal));
-            if (invocation != null)
-            {
-                return invocation;
-            }
-
-            var declaringType = method.DeclaringType;
-            displayName = $"{declaringType.GetReflector().FullDisplayName}.{displayName.Split(' ').Last()}";
-            invocation = methods.FirstOrDefault(x => x.GetReflector().DisplayName.Split(' ').Last().Equals(displayName, StringComparison.Ordinal));
-            if (invocation != null)
-            {
-                return invocation;
-            }
-
-            invocation = typeInfo.GetMethodBySignature(new MethodSignature(method));
-            if (invocation != null)
-            {
-                return invocation;
-            }
-
-            displayName = $"{declaringType.GetReflector().FullDisplayName}.{method.Name}";
-            return typeInfo.GetMethodBySignature(
-                new MethodSignature(method, displayName));
+            return $"{declaringType.Namespace}.{declaringType.GetReflector().DisplayName}.{member.Name}";
         }
+
+        return member.Name;
+    }
+
+    internal static string GetDisplayName(this MethodInfo member)
+    {
+        if (member == null)
+        {
+            throw new ArgumentNullException(nameof(member));
+        }
+
+        var declaringType = member.DeclaringType.GetTypeInfo();
+        return
+            $"{declaringType.Namespace}.{declaringType.GetReflector().DisplayName}.{member.GetReflector().DisplayName}";
+    }
+
+    public static bool IsReturnTask(this MethodInfo methodInfo)
+    {
+        if (methodInfo == null)
+        {
+            throw new ArgumentNullException(nameof(methodInfo));
+        }
+
+        var returnType = methodInfo.ReturnType.GetTypeInfo();
+        return returnType.IsTaskWithResult();
+    }
+
+    public static bool IsReturnValueTask(this MethodInfo methodInfo)
+    {
+        if (methodInfo == null)
+        {
+            throw new ArgumentNullException(nameof(methodInfo));
+        }
+
+        var returnType = methodInfo.ReturnType.GetTypeInfo();
+        return returnType.IsValueTaskWithResult();
+    }
+
+    public static bool IsVisibleAndVirtual(this PropertyInfo property)
+    {
+        if (property == null)
+        {
+            throw new ArgumentNullException(nameof(property));
+        }
+
+        return (property.CanRead && property.GetMethod.IsVisibleAndVirtual()) ||
+               (property.CanWrite && property.GetMethod.IsVisibleAndVirtual());
+    }
+
+    public static bool IsVisibleAndVirtual(this MethodInfo method)
+    {
+        if (method == null)
+        {
+            throw new ArgumentNullException(nameof(method));
+        }
+
+        if (method.IsStatic || method.IsFinal)
+        {
+            return false;
+        }
+
+        return method.IsVirtual &&
+               (method.IsPublic || method.IsFamily || method.IsFamilyOrAssembly);
+    }
+
+    public static MethodInfo GetMethodBySignature(this TypeInfo typeInfo, MethodInfo method)
+    {
+        if (typeInfo == null)
+        {
+            throw new ArgumentNullException(nameof(typeInfo));
+        }
+
+        if (method == null)
+        {
+            throw new ArgumentNullException(nameof(method));
+        }
+
+        var methods = typeInfo.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+        var displayName = method.GetReflector().DisplayName;
+        var invocation = methods.FirstOrDefault(x => x.GetReflector().DisplayName.Equals(displayName, StringComparison.Ordinal));
+        if (invocation != null)
+        {
+            return invocation;
+        }
+
+        var declaringType = method.DeclaringType;
+        displayName = $"{declaringType.GetReflector().FullDisplayName}.{displayName.Split(' ').Last()}";
+        invocation = methods.FirstOrDefault(x => x.GetReflector().DisplayName.Split(' ').Last().Equals(displayName, StringComparison.Ordinal));
+        if (invocation != null)
+        {
+            return invocation;
+        }
+
+        invocation = typeInfo.GetMethodBySignature(new MethodSignature(method));
+        if (invocation != null)
+        {
+            return invocation;
+        }
+
+        displayName = $"{declaringType.GetReflector().FullDisplayName}.{method.Name}";
+        return typeInfo.GetMethodBySignature(
+            new MethodSignature(method, displayName));
     }
 }

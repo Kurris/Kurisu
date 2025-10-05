@@ -1,10 +1,9 @@
 ﻿using System.Reflection;
 
-namespace AspectCore.DynamicProxy
+namespace AspectCore.DynamicProxy;
+
+[NonAspect]
+public interface IAspectValidator
 {
-    [NonAspect]
-    public interface IAspectValidator
-    {
-        bool Validate(MethodInfo method, bool isStrictValidation);
-    }
+    bool Validate(MethodInfo method, bool isStrictValidation);
 }

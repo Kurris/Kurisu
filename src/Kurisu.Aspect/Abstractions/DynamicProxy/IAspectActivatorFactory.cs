@@ -1,8 +1,7 @@
-﻿namespace AspectCore.DynamicProxy
+﻿namespace AspectCore.DynamicProxy;
+
+[NonAspect]
+public interface IAspectActivatorFactory
 {
-    [NonAspect]
-    public interface IAspectActivatorFactory
-    {
-        IAspectActivator Create();
-    }
+    IAspectActivator Create();
 }

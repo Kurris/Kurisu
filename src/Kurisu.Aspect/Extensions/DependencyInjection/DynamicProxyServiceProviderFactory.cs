@@ -1,37 +1,36 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 
-namespace AspectCore.Extensions.DependencyInjection
+namespace AspectCore.Extensions.DependencyInjection;
+
+public class DynamicProxyServiceProviderFactory : IServiceProviderFactory<IServiceCollection>
 {
-    public class DynamicProxyServiceProviderFactory : IServiceProviderFactory<IServiceCollection>
+    private readonly ServiceProviderOptions _serviceProviderOptions;
+
+
+    public DynamicProxyServiceProviderFactory()
+        : this(null)
     {
-        private ServiceProviderOptions _serviceProviderOptions;
+    }
 
+    public DynamicProxyServiceProviderFactory(bool validateScopes)
+        : this(new ServiceProviderOptions { ValidateScopes = validateScopes })
+    {
+    }
 
-        public DynamicProxyServiceProviderFactory()
-            : this(null)
-        {
-        }
+    public DynamicProxyServiceProviderFactory(ServiceProviderOptions serviceProviderOptions)
+    {
+        _serviceProviderOptions = serviceProviderOptions;
+    }
 
-        public DynamicProxyServiceProviderFactory(bool validateScopes)
-            : this(new ServiceProviderOptions() {ValidateScopes = validateScopes})
-        {
-        }
+    public IServiceCollection CreateBuilder(IServiceCollection services)
+    {
+        return services;
+    }
 
-        public DynamicProxyServiceProviderFactory(ServiceProviderOptions serviceProviderOptions)
-        {
-            _serviceProviderOptions = serviceProviderOptions;
-        }
-
-        public IServiceCollection CreateBuilder(IServiceCollection services)
-        {
-            return services;
-        }
-
-        public IServiceProvider CreateServiceProvider(IServiceCollection containerBuilder)
-        {
-            return _serviceProviderOptions == null
-                ? containerBuilder.BuildDynamicProxyProvider()
-                : containerBuilder.BuildDynamicProxyProvider(_serviceProviderOptions);
-        }
+    public IServiceProvider CreateServiceProvider(IServiceCollection containerBuilder)
+    {
+        return _serviceProviderOptions == null
+            ? containerBuilder.BuildDynamicProxyProvider()
+            : containerBuilder.BuildDynamicProxyProvider(_serviceProviderOptions);
     }
 }

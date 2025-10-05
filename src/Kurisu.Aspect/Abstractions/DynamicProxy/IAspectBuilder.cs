@@ -1,10 +1,9 @@
-﻿namespace AspectCore.DynamicProxy
-{
-    [NonAspect]
-    public interface IAspectBuilder
-    {
-        IEnumerable<Func<AspectDelegate, AspectDelegate>> Delegates { get; }
+﻿namespace AspectCore.DynamicProxy;
 
-        AspectDelegate Build();
-    }
+[NonAspect]
+public interface IAspectBuilder
+{
+    IEnumerable<Func<AspectDelegate, AspectDelegate>> Delegates { get; }
+
+    AspectDelegate Build();
 }

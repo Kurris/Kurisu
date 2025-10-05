@@ -1,4 +1,3 @@
-﻿namespace AspectCore.DynamicProxy
-{
-    public delegate Task AspectDelegate(AspectContext context);
-}
+﻿namespace AspectCore.DynamicProxy;
+
+public delegate Task AspectDelegate(AspectContext context);

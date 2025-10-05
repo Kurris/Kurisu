@@ -1,34 +1,35 @@
 ﻿using System.Reflection;
 using AspectCore.DynamicProxy;
 
-namespace AspectCore.Configuration
+namespace AspectCore.Configuration;
+
+/// <summary>
+/// 创建类型拦截器
+/// </summary>
+public sealed class TypeInterceptorFactory : InterceptorFactory
 {
-    public sealed class TypeInterceptorFactory : InterceptorFactory
+    private static readonly object[] emptyArgs = Array.Empty<object>();
+    private readonly object[] _args;
+    private readonly Type _interceptorType;
+
+    public TypeInterceptorFactory(Type interceptorType, object[] args)
     {
-        private static readonly object[] emptyArgs = Array.Empty<object>();
-        private readonly object[] _args;
-        private readonly Type _interceptorType;
-
-        public TypeInterceptorFactory(Type interceptorType, object[] args, params AspectPredicate[] predicates)
-            : base(predicates)
+        if (interceptorType == null)
         {
-            if (interceptorType == null)
-            {
-                throw new ArgumentNullException(nameof(interceptorType));
-            }
-
-            if (!typeof(IInterceptor).GetTypeInfo().IsAssignableFrom(interceptorType.GetTypeInfo()))
-            {
-                throw new ArgumentException($"{interceptorType} is not an interceptor type.", nameof(interceptorType));
-            }
-
-            _interceptorType = interceptorType;
-            _args = args ?? emptyArgs;
+            throw new ArgumentNullException(nameof(interceptorType));
         }
 
-        public override IInterceptor CreateInstance(IServiceProvider serviceProvider)
+        if (!typeof(IInterceptor).GetTypeInfo().IsAssignableFrom(interceptorType.GetTypeInfo()))
         {
-            return (IInterceptor)Activator.CreateInstance(_interceptorType, _args);
+            throw new ArgumentException($"{interceptorType} is not an interceptor type.", nameof(interceptorType));
         }
+
+        _interceptorType = interceptorType;
+        _args = args ?? emptyArgs;
+    }
+
+    public override IInterceptor CreateInstance(IServiceProvider serviceProvider)
+    {
+        return (IInterceptor)Activator.CreateInstance(_interceptorType, _args);
     }
 }

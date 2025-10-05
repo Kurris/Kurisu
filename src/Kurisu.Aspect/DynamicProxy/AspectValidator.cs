@@ -1,57 +1,58 @@
 ﻿using System.Reflection;
 using AspectCore.Extensions.Reflection;
 
-namespace AspectCore.DynamicProxy
-{
-    [NonAspect]
-    public sealed class AspectValidator : IAspectValidator
-    {
-        private readonly AspectValidationDelegate _aspectValidationDelegate;
+namespace AspectCore.DynamicProxy;
 
-        public AspectValidator(AspectValidationDelegate aspectValidationDelegate)
+[NonAspect]
+public sealed class AspectValidator : IAspectValidator
+{
+    private readonly IServiceProvider _serviceProvider;
+    private readonly AspectValidationDelegate _aspectValidationDelegate;
+
+    public AspectValidator(IServiceProvider serviceProvider, AspectValidationDelegate aspectValidationDelegate)
+    {
+        _serviceProvider = serviceProvider;
+        _aspectValidationDelegate = aspectValidationDelegate;
+    }
+
+    public bool Validate(MethodInfo method, bool isStrictValidation)
+    {
+        if (method == null)
         {
-            _aspectValidationDelegate = aspectValidationDelegate;
+            return false;
         }
 
-        public bool Validate(MethodInfo method, bool isStrictValidation)
+        var context = new AspectValidationContext { Method = method, StrictValidation = isStrictValidation, ServiceProvider = _serviceProvider };
+        if (_aspectValidationDelegate(context))
         {
-            if (method == null)
-            {
-                return false;
-            }
+            return true;
+        }
 
-            var context = new AspectValidationContext { Method = method, StrictValidation = isStrictValidation };
-            if (_aspectValidationDelegate(context))
-            {
-                return true;
-            }
+        var declaringTypeInfo = method.DeclaringType!.GetTypeInfo();
+        if (!declaringTypeInfo.IsClass)
+        {
+            return false;
+        }
 
-            var declaringTypeInfo = method.DeclaringType.GetTypeInfo();
-            if (!declaringTypeInfo.IsClass)
+        foreach (var interfaceTypeInfo in declaringTypeInfo.GetInterfaces().Select(x => x.GetTypeInfo()))
+        {
+            var interfaceMethod = interfaceTypeInfo.GetMethodBySignature(new MethodSignature(method));
+            if (interfaceMethod != null)
             {
-                return false;
-            }
-
-            foreach (var interfaceTypeInfo in declaringTypeInfo.GetInterfaces().Select(x => x.GetTypeInfo()))
-            {
-                var interfaceMethod = interfaceTypeInfo.GetMethodBySignature(new MethodSignature(method));
-                if (interfaceMethod != null)
+                if (Validate(interfaceMethod, isStrictValidation))
                 {
-                    if (Validate(interfaceMethod, isStrictValidation))
-                    {
-                        return true;
-                    }
+                    return true;
                 }
             }
-
-            var baseType = declaringTypeInfo.BaseType;
-            if (baseType == typeof(object) || baseType == null)
-            {
-                return false;
-            }
-
-            var baseMethod = baseType.GetTypeInfo().GetMethodBySignature(new MethodSignature(method));
-            return baseMethod != null && Validate(baseMethod, isStrictValidation);
         }
+
+        var baseType = declaringTypeInfo.BaseType;
+        if (baseType == typeof(object) || baseType == null)
+        {
+            return false;
+        }
+
+        var baseMethod = baseType.GetTypeInfo().GetMethodBySignature(new MethodSignature(method));
+        return baseMethod != null && Validate(baseMethod, isStrictValidation);
     }
 }

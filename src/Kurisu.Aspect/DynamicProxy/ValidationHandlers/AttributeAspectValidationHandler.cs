@@ -1,27 +1,32 @@
 ﻿using System.Reflection;
+using AspectCore.DynamicProxy.Parameters;
+using Microsoft.Extensions.DependencyInjection;
 
-namespace AspectCore.DynamicProxy
+namespace AspectCore.DynamicProxy;
+
+[NonAspect]
+public sealed class AttributeAspectValidationHandler : IAspectValidationHandler
 {
-    [NonAspect]
-    public sealed class AttributeAspectValidationHandler : IAspectValidationHandler
+    public int Order { get; } = 13;
+
+    public bool Invoke(AspectValidationContext context, AspectValidationDelegate next)
     {
-        public int Order { get; } = 13;
-
-        public bool Invoke(AspectValidationContext context, AspectValidationDelegate next)
+        var declaringType = context.Method.DeclaringType!.GetTypeInfo();
+        var parameterInfos = context.Method.GetParameters();
+        var parameterInterceptorSelector = context.ServiceProvider.GetRequiredService<IParameterInterceptorSelector>();
+        
+        if (IsAttributeAspect(declaringType) || IsAttributeAspect(context.Method) || parameterInfos.Any(p => parameterInterceptorSelector.Select(p).Length > 0))
         {
-            var declaringType = context.Method.DeclaringType.GetTypeInfo();
-
-            if (IsAttributeAspect(declaringType) || IsAttributeAspect(context.Method))
-            {
-                return true;
-            }
-
-            return next(context);
+            return true;
         }
 
-        private bool IsAttributeAspect(MemberInfo member)
-        {
-            return member.CustomAttributes.Any(data => typeof(IInterceptor).GetTypeInfo().IsAssignableFrom(data.AttributeType));
-        }
+        return next(context);
+    }
+
+    private bool IsAttributeAspect(MemberInfo member)
+    {
+        return member.CustomAttributes
+            .Any(data => typeof(IInterceptor).GetTypeInfo()
+                .IsAssignableFrom(data.AttributeType));
     }
 }

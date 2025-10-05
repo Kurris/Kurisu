@@ -1,55 +1,26 @@
-﻿using System.Collections;
-using System.Collections.Concurrent;
+﻿using System.Collections.Concurrent;
 
-namespace AspectCore.DynamicProxy
+namespace AspectCore.DynamicProxy;
+
+[NonAspect]
+public class AspectCaching<TBelong, TValue>
 {
-    [NonAspect]
-    internal class AspectCaching : IAspectCaching
+    private readonly ConcurrentDictionary<object, TValue> _dictionary = new();
+
+    public string Name => typeof(TBelong).Name;
+
+    public TValue Get(object key)
     {
-        private readonly ConcurrentDictionary<object, object> _dictionary;
+        return _dictionary[key];
+    }
 
-        public AspectCaching(string name)
-        {
-            Name = name;
-            _dictionary = new ConcurrentDictionary<object, object>();
-        }
+    public TValue GetOrAdd(object key, Func<object, TValue> factory)
+    {
+        return _dictionary.GetOrAdd(key, factory);
+    }
 
-        public string Name { get; }
-
-        public void Dispose()
-        {
-            foreach (var key in _dictionary.Keys.ToArray())
-            {
-                if (_dictionary.TryRemove(key, out var value))
-                {
-                    var enumerbale = value as IEnumerable;
-                    if (enumerbale != null)
-                    {
-                        foreach (var item in enumerbale)
-                        {
-                            var d = item as IDisposable;
-                            d?.Dispose();
-                        }
-                    }
-                    var disposable = value as IDisposable;
-                    disposable?.Dispose();
-                }
-            }
-        }
-
-        public object Get(object key)
-        {
-            return _dictionary[key];
-        }
-
-        public object GetOrAdd(object key, Func<object, object> factory)
-        {
-            return _dictionary.GetOrAdd(key, factory);
-        }
-
-        public void Set(object key, object value)
-        {
-            _dictionary[key] = value;
-        }
+    public void Set(object key, TValue value)
+    {
+        _dictionary[key] = value;
     }
 }

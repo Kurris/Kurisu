@@ -1,31 +1,30 @@
 ﻿using System.Collections;
 
-namespace AspectCore.Configuration
+namespace AspectCore.Configuration;
+
+public sealed class InterceptorCollection : IEnumerable<InterceptorFactory>
 {
-    public sealed class InterceptorCollection : IEnumerable<InterceptorFactory>
+    private readonly ICollection<InterceptorFactory> _collection = new List<InterceptorFactory>();
+
+    public InterceptorCollection Add(InterceptorFactory interceptorFactory)
     {
-        private readonly ICollection<InterceptorFactory> _collection = new List<InterceptorFactory>();
-
-        public InterceptorCollection Add(InterceptorFactory interceptorFactory)
+        if (interceptorFactory == null)
         {
-            if (interceptorFactory == null)
-            {
-                throw new ArgumentNullException(nameof(interceptorFactory));
-            }
-            _collection.Add(interceptorFactory);
-            return this;
+            throw new ArgumentNullException(nameof(interceptorFactory));
         }
+        _collection.Add(interceptorFactory);
+        return this;
+    }
 
-        public int Count => _collection.Count;
+    public int Count => _collection.Count;
 
-        public IEnumerator<InterceptorFactory> GetEnumerator()
-        {
-            return _collection.GetEnumerator();
-        }
+    public IEnumerator<InterceptorFactory> GetEnumerator()
+    {
+        return _collection.GetEnumerator();
+    }
 
-        IEnumerator IEnumerable.GetEnumerator()
-        {
-            return GetEnumerator();
-        }
+    IEnumerator IEnumerable.GetEnumerator()
+    {
+        return GetEnumerator();
     }
 }

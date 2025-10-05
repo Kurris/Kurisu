@@ -1,10 +1,9 @@
-﻿namespace AspectCore.DynamicProxy
-{
-    [NonAspect]
-    public interface IAspectContextFactory
-    {
-        AspectContext CreateContext(AspectActivatorContext activatorContext);
+﻿namespace AspectCore.DynamicProxy;
 
-        void ReleaseContext(AspectContext aspectContext);
-    }
+[NonAspect]
+public interface IAspectContextFactory
+{
+    AspectContext CreateContext(AspectActivatorContext activatorContext);
+
+    void ReleaseContext(AspectContext aspectContext);
 }

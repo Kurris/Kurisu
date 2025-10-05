@@ -1,105 +1,109 @@
-﻿using AspectCore.DependencyInjection;
+﻿namespace AspectCore.DynamicProxy;
 
-namespace AspectCore.DynamicProxy
+[NonAspect]
+public sealed class ProxyGenerator : IProxyGenerator
 {
-    [NonAspect]
-    public sealed class ProxyGenerator : IProxyGenerator
+    private readonly IProxyTypeGenerator _proxyTypeGenerator;
+    private readonly IAspectActivatorFactory _aspectActivatorFactory;
+
+    public ProxyGenerator(IProxyTypeGenerator proxyTypeGenerator, IAspectActivatorFactory aspectActivatorFactory)
     {
-        private readonly IProxyTypeGenerator _proxyTypeGenerator;
-        private readonly IAspectActivatorFactory _aspectActivatorFactory;
-
-        public ProxyGenerator(IProxyTypeGenerator proxyTypeGenerator, IAspectActivatorFactory aspectActivatorFactory)
-        {
-            _proxyTypeGenerator = proxyTypeGenerator ?? throw new ArgumentNullException(nameof(proxyTypeGenerator));
-            _aspectActivatorFactory = aspectActivatorFactory ?? throw new ArgumentNullException(nameof(aspectActivatorFactory));
-        }
-
-        public IProxyTypeGenerator TypeGenerator => _proxyTypeGenerator;
-
-        public object CreateClassProxy(Type serviceType, Type implementationType, object[] args)
-        {
-            if (serviceType == null)
-            {
-                throw new ArgumentNullException(nameof(serviceType));
-            }
-            if (implementationType == null)
-            {
-                throw new ArgumentNullException(nameof(implementationType));
-            }
-            if (args == null)
-            {
-                throw new ArgumentNullException(nameof(args));
-            }
-            var proxyType = _proxyTypeGenerator.CreateClassProxyType(serviceType, implementationType);
-            var proxyArgs = new object[args.Length + 1];
-            proxyArgs[0] = _aspectActivatorFactory;
-            for (var i = 0; i < args.Length; i++)
-            {
-                proxyArgs[i + 1] = args[i];
-            }
-            return Activator.CreateInstance(proxyType, proxyArgs);
-        }
-
-        public object CreateInterfaceProxy(Type serviceType)
-        {
-            if (serviceType == null)
-            {
-                throw new ArgumentNullException(nameof(serviceType));
-            }
-            var proxyType = _proxyTypeGenerator.CreateInterfaceProxyType(serviceType);
-            return Activator.CreateInstance(proxyType, _aspectActivatorFactory);
-        }
-
-        public object CreateInterfaceProxy(Type serviceType, object implementationInstance)
-        {
-            if (serviceType == null)
-            {
-                throw new ArgumentNullException(nameof(serviceType));
-            }
-            if (implementationInstance == null)
-            {
-                return CreateInterfaceProxy(serviceType);
-            }
-            var proxyType = _proxyTypeGenerator.CreateInterfaceProxyType(serviceType, implementationInstance.GetType());
-            return Activator.CreateInstance(proxyType, _aspectActivatorFactory, implementationInstance);
-        }
-
-        public void Dispose()
-        {
-        }
+        _proxyTypeGenerator = proxyTypeGenerator ?? throw new ArgumentNullException(nameof(proxyTypeGenerator));
+        _aspectActivatorFactory = aspectActivatorFactory ?? throw new ArgumentNullException(nameof(aspectActivatorFactory));
     }
 
-    internal sealed class DisposedProxyGenerator : IProxyGenerator
+    public IProxyTypeGenerator TypeGenerator => _proxyTypeGenerator;
+
+    public object CreateClassProxy(Type serviceType, Type implementationType, object[] args)
     {
-        private readonly IServiceResolver _serviceResolver;
-        private readonly IProxyGenerator _proxyGenerator;
-
-        public DisposedProxyGenerator(IServiceResolver serviceResolver)
+        if (serviceType == null)
         {
-            _serviceResolver = serviceResolver;
-            _proxyGenerator = serviceResolver.ResolveRequired<IProxyGenerator>();
+            throw new ArgumentNullException(nameof(serviceType));
         }
 
-        public IProxyTypeGenerator TypeGenerator => _proxyGenerator.TypeGenerator;
-
-        public object CreateClassProxy(Type serviceType, Type implementationType, object[] args)
+        if (implementationType == null)
         {
-            return _proxyGenerator.CreateClassProxy(serviceType, implementationType, args);
+            throw new ArgumentNullException(nameof(implementationType));
         }
 
-        public object CreateInterfaceProxy(Type serviceType)
+        if (args == null)
         {
-            return _proxyGenerator.CreateInterfaceProxy(serviceType);
+            throw new ArgumentNullException(nameof(args));
         }
 
-        public object CreateInterfaceProxy(Type serviceType, object implementationInstance)
+        var proxyType = _proxyTypeGenerator.CreateClassProxyType(serviceType, implementationType);
+        var proxyArgs = new object[args.Length + 1];
+        proxyArgs[0] = _aspectActivatorFactory;
+        for (var i = 0; i < args.Length; i++)
         {
-            return _proxyGenerator.CreateInterfaceProxy(serviceType, implementationInstance);
+            proxyArgs[i + 1] = args[i];
         }
 
-        public void Dispose()
+        return Activator.CreateInstance(proxyType, proxyArgs);
+    }
+
+    public object CreateInterfaceProxy(Type serviceType)
+    {
+        if (serviceType == null)
         {
-            _serviceResolver.Dispose();
+            throw new ArgumentNullException(nameof(serviceType));
         }
+
+        var proxyType = _proxyTypeGenerator.CreateInterfaceProxyType(serviceType);
+        return Activator.CreateInstance(proxyType, _aspectActivatorFactory);
+    }
+
+    public object CreateInterfaceProxy(Type serviceType, object implementationInstance)
+    {
+        if (serviceType == null)
+        {
+            throw new ArgumentNullException(nameof(serviceType));
+        }
+
+        if (implementationInstance == null)
+        {
+            return CreateInterfaceProxy(serviceType);
+        }
+
+        var proxyType = _proxyTypeGenerator.CreateInterfaceProxyType(serviceType, implementationInstance.GetType());
+        return Activator.CreateInstance(proxyType, _aspectActivatorFactory, implementationInstance);
+    }
+
+    public void Dispose()
+    {
     }
 }
+
+// internal sealed class DisposedProxyGenerator : IProxyGenerator
+// {
+//     private readonly IServiceProvider _serviceProvider;
+//     private readonly IProxyGenerator _proxyGenerator;
+//
+//     public DisposedProxyGenerator(IServiceProvider serviceProvider)
+//     {
+//         _serviceProvider = serviceProvider;
+//         _proxyGenerator = _serviceProvider.GetRequiredService<IProxyGenerator>();
+//     }
+//
+//     public IProxyTypeGenerator TypeGenerator => _proxyGenerator.TypeGenerator;
+//
+//     public object CreateClassProxy(Type serviceType, Type implementationType, object[] args)
+//     {
+//         return _proxyGenerator.CreateClassProxy(serviceType, implementationType, args);
+//     }
+//
+//     public object CreateInterfaceProxy(Type serviceType)
+//     {
+//         return _proxyGenerator.CreateInterfaceProxy(serviceType);
+//     }
+//
+//     public object CreateInterfaceProxy(Type serviceType, object implementationInstance)
+//     {
+//         return _proxyGenerator.CreateInterfaceProxy(serviceType, implementationInstance);
+//     }
+//
+//     public void Dispose()
+//     {
+//         _serviceProvider.();
+//     }
+// }
