@@ -19,9 +19,9 @@ public class TestIgnore
     [Fact]
     public void IgnoreSoftDeleted()
     {
-        var filterCount = _dbContext.Client.QueryFilter.GeFilterList.Count;
+        var filterCount = _dbContext.Client.QueryFilter.GetFilterList.Count;
         var filterCount2 = 0;
-        _dbContext.IgnoreSoftDeleted(() => { filterCount2 = _dbContext.Client.QueryFilter.GeFilterList.Count; });
+        _dbContext.IgnoreSoftDeleted(() => { filterCount2 = _dbContext.Client.QueryFilter.GetFilterList.Count; });
 
         Assert.Equal(2, filterCount);
         Assert.Equal(1, filterCount2);
@@ -31,9 +31,9 @@ public class TestIgnore
     [Fact]
     public void IgnoreTenant()
     {
-        var filterCount = _dbContext.Client.QueryFilter.GeFilterList.Count;
+        var filterCount = _dbContext.Client.QueryFilter.GetFilterList.Count;
         var filterCount2 = 0;
-        _dbContext.IgnoreTenant(() => { filterCount2 = _dbContext.Client.QueryFilter.GeFilterList.Count; });
+        _dbContext.IgnoreTenant(() => { filterCount2 = _dbContext.Client.QueryFilter.GetFilterList.Count; });
 
         Assert.Equal(2, filterCount);
         Assert.Equal(1, filterCount2);

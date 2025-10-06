@@ -1,4 +1,5 @@
-using Kurisu.AspNetCore.DependencyInjection.Attributes;
+using Kurisu.AspNetCore.Abstractions.DependencyInjection;
+using Kurisu.AspNetCore.Abstractions.UnifyResultAndValidation;
 using Kurisu.Test.Framework.DI.Dependencies.Abstractions;
 using Kurisu.Test.Framework.DI.Dtos;
 
@@ -11,6 +12,7 @@ public class GenericsGet<TAnimal> : IGenericsGet<TAnimal> where TAnimal : Animal
 
     public string Say()
     {
+        throw new Exception();
         return Animal.Say(); 
     }
 }

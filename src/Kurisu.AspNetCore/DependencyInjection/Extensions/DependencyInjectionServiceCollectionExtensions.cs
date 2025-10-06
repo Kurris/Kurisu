@@ -2,6 +2,7 @@ using System;
 using System.Linq;
 using System.Reflection;
 using Kurisu.AspNetCore;
+using Kurisu.AspNetCore.Abstractions.DependencyInjection;
 using Kurisu.AspNetCore.DependencyInjection;
 using Kurisu.AspNetCore.DependencyInjection.Internal;
 using Microsoft.Extensions.Logging;

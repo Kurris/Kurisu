@@ -1,6 +1,7 @@
-﻿
-
-using Kurisu.AspNetCore.DependencyInjection.Attributes;
+﻿using Dlhis.Entity.Basic.Entity;
+using Kurisu.AspNetCore.Abstractions.DependencyInjection;
+using Kurisu.AspNetCore.DataAccess.SqlSugar.Services;
+using Kurisu.Test.WebApi_A.Aops;
 
 namespace Kurisu.Test.WebApi_A.Services.Implements;
 
@@ -9,15 +10,20 @@ public class TestService : ITestService
 {
     private readonly ILogger<TestService> _logger;
 
+    [DiInject]
+    public IDbContext DbContext { get; set; }
+
     public TestService(ILogger<TestService> logger)
     {
         _logger = logger;
     }
-    
-    public Task<string> SayAsync()
+
+    [TestAop]
+    public async Task<string> SayAsync()
     {
         _logger.LogInformation("doing");
-        return Task.FromResult("hello");
+        //await DbContext.Queryable<GainfoFaceEntity>().ToListAsync();
+        return "a";
     }
 
 

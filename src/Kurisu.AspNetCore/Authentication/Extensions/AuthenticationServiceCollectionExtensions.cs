@@ -1,4 +1,4 @@
-﻿using Kurisu.AspNetCore.Authentication.Abstractions;
+﻿using Kurisu.AspNetCore.Abstractions.Authentication;
 using Kurisu.AspNetCore.Authentication.Defaults;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;

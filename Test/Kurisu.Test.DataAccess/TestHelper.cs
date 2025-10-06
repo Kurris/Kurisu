@@ -1,12 +1,11 @@
 ﻿using System.Diagnostics.CodeAnalysis;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using Kurisu.AspNetCore.Abstractions.Authentication;
 using Kurisu.AspNetCore.Authentication;
-using Kurisu.AspNetCore.Authentication.Abstractions;
 using Kurisu.AspNetCore.Authentication.Defaults;
 using Kurisu.AspNetCore.Authentication.Options;
-using Kurisu.AspNetCore.DataAccess.SqlSugar.Extensions;
-using Kurisu.AspNetCore.DataAccess.SqlSugar.Services;
+using Kurisu.Extensions.SqlSugar.Extensions;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -32,16 +31,16 @@ public class TestHelper
             var token = JwtEncryption.GenerateToken(
                 new List<Claim>()
                 {
-                    new("sub", "3"),
+                    new("sub", 3.ToString()),
                     new("role", "admin"),
-                    new("preferred_username", "ligy"),
+                    new("name", "ligy"),
                     new("userType", "normal"),
                     new("tenant", "1234"),
                     new("code", "DL001")
                 },
                 jwtOptions.SecretKey, jwtOptions.Issuer!, jwtOptions.Audience!, 3600);
 
-            return TestHelper.GetResolver(token);
+            return GetResolver(token);
         });
 
         services.AddSqlSugar(DbType.Sqlite);

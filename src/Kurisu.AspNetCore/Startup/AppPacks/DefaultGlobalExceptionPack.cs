@@ -1,6 +1,6 @@
 using System;
 using System.Threading.Tasks;
-using Kurisu.AspNetCore.Startup.Abstractions;
+using Kurisu.AspNetCore.Abstractions.Startup;
 using Kurisu.AspNetCore.UnifyResultAndValidation;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;

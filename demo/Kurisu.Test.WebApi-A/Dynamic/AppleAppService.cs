@@ -1,13 +1,15 @@
 ﻿using Kurisu.AspNetCore.DynamicApi.Attributes;
+using Kurisu.Test.WebApi_A.Aops;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Kurisu.Test.WebApi_A.Dynamic;
 
-[DynamicApi("api/apple")]
+[AsApi("api/apple")]
 public class AppleAppService
 {
+    [TestAop]
     [HttpGet("something")]
-    public string HttpGetA(string a)
+    public virtual string HttpGetA(string a)
     {
         return a;
     }

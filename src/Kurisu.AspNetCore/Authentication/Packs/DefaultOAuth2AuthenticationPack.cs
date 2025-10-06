@@ -1,5 +1,5 @@
+using Kurisu.AspNetCore.Abstractions.Startup;
 using Kurisu.AspNetCore.Authentication.Options;
-using Kurisu.AspNetCore.Startup;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;

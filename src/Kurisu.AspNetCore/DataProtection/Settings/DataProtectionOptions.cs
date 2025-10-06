@@ -14,9 +14,4 @@ public class DataProtectionOptions
     /// 应用名称
     /// </summary>
     public string AppName { get; set; }
-
-    /// <summary>
-    /// 持续化提供器
-    /// </summary>
-    public DataProtectionProviderType Provider { get; set; }
 }

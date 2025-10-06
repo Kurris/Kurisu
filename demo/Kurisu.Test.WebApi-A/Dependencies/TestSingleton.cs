@@ -1,5 +1,4 @@
-using System;
-using Kurisu.AspNetCore.DependencyInjection.Attributes;
+using Kurisu.AspNetCore.Abstractions.DependencyInjection;
 using Kurisu.Test.Framework.DI.Dependencies.Abstractions;
 
 namespace Kurisu.Test.Framework.DI.Dependencies;

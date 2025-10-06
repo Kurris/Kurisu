@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Kurisu.AspNetCore.Abstractions.Startup;
 using Kurisu.AspNetCore.DependencyInjection;
 using Kurisu.AspNetCore.Startup;
 using Microsoft.AspNetCore.Http;

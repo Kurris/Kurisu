@@ -1,5 +1,5 @@
 using System;
-using Kurisu.AspNetCore.DependencyInjection.Attributes;
+using Kurisu.AspNetCore.Abstractions.DependencyInjection;
 using Kurisu.Test.Framework.DependencyInjection.Dependencies.Abstractions;
 using Microsoft.Extensions.DependencyInjection;
 

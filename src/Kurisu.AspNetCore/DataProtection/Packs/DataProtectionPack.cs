@@ -1,7 +1,5 @@
-﻿using System;
+﻿using Kurisu.AspNetCore.Abstractions.Startup;
 using Kurisu.AspNetCore.Cache.Options;
-using Kurisu.AspNetCore.DataProtection.Extensions;
-using Kurisu.AspNetCore.Startup;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.Extensions.DependencyInjection;
 using StackExchange.Redis;
@@ -25,21 +23,9 @@ public class DataProtectionPack : BaseAppPack
         var options = App.StartupOptions.DataProtectionOptions;
 
         var builder = services.AddDataProtection().SetApplicationName(options.AppName);
-
-        if (options.Provider == DataProtectionProviderType.Redis)
-        {
-            var reidConnectionString = Configuration.GetSection($"{nameof(RedisOptions)}:{nameof(RedisOptions.ConnectionString)}").Value;
-            var redisConnection = ConnectionMultiplexer.Connect(reidConnectionString);
-            //DataProtection-Keys
-            builder.PersistKeysToStackExchangeRedis(redisConnection);
-        }
-        else if (options.Provider == DataProtectionProviderType.Db)
-        {
-            builder.PersistKeysToDb();
-        }
-        else
-        {
-            throw new NotSupportedException(nameof(options.Provider));
-        }
+        var reidConnectionString = Configuration.GetSection($"{nameof(RedisOptions)}:{nameof(RedisOptions.ConnectionString)}").Value;
+        var redisConnection = ConnectionMultiplexer.Connect(reidConnectionString);
+        //DataProtection-Keys
+        builder.PersistKeysToStackExchangeRedis(redisConnection);
     }
 }

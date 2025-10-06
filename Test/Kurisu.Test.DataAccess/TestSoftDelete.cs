@@ -1,5 +1,5 @@
 ﻿using System.Diagnostics.CodeAnalysis;
-using Kurisu.AspNetCore.DataAccess.Entity;
+using Kurisu.AspNetCore.Abstractions.DataAccess.Contract;
 using Kurisu.AspNetCore.DataAccess.SqlSugar.Services;
 using Kurisu.Test.DataAccess.Entities;
 using Microsoft.Extensions.DependencyInjection;

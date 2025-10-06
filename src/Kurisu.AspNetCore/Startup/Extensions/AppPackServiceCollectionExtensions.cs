@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using Kurisu.AspNetCore.Abstractions.DependencyInjection;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;

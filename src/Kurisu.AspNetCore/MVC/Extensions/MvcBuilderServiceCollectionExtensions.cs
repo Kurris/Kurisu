@@ -1,4 +1,5 @@
 using System;
+using Kurisu.AspNetCore.Abstractions.DependencyInjection;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 

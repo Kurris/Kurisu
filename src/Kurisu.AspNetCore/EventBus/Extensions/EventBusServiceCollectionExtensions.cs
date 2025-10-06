@@ -1,3 +1,4 @@
+using Kurisu.AspNetCore.Abstractions.DependencyInjection;
 using Kurisu.AspNetCore.EventBus.Abstractions;
 using Kurisu.AspNetCore.EventBus.Internal;
 using Microsoft.Extensions.DependencyInjection;

@@ -23,17 +23,18 @@ public class DefaultDynamicApiConvention : IApplicationModelConvention
     {
         foreach (var controller in application.Controllers)
         {
-            var dynamicApi = controller.ControllerType.GetCustomAttribute<DynamicApiAttribute>();
+            var dynamicApi = controller.ControllerType.GetCustomAttribute<AsApiAttribute>();
             if (dynamicApi == null) continue;
 
             controller.ApiExplorer.IsVisible = true;
             controller.ControllerName = controller.ControllerName.Replace("Controller", string.Empty).Replace("Service", string.Empty);
- 
+
             foreach (var action in controller.Actions)
             {
                 //定义接口方法才属于接口
                 action.ApiExplorer.IsVisible = action.Attributes.Any(x => x.GetType().IsAssignableTo(typeof(HttpMethodAttribute)));
             }
+
             //action.Selectors[0].AttributeRouteModel = AttributeRouteModel.CombineAttributeRouteModel();
             //BindingInfo.GetBindingInfo(new[] { new FromBodyAttribute() });
         }

@@ -1,12 +1,11 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using Kurisu.AspNetCore.Cache;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using StackExchange.Redis;
 
 namespace Kurisu.AspNetCore.Utils.Extensions;
 
@@ -20,7 +19,7 @@ public static class SnowFlakeApplicationBuilderExtensions
     /// </summary>
     /// <param name="app"></param>
     /// <exception cref="Exception"></exception>
-    public static void UseSnowFlakeDistributedInitialize(this IApplicationBuilder app)
+    public static async Task UseSnowFlakeDistributedInitializeAsync(this IApplicationBuilder app)
     {
         const string key = "snowflake";
         var range = Enumerable.Range(1, 32);
@@ -29,13 +28,13 @@ public static class SnowFlakeApplicationBuilderExtensions
         var logger = app.ApplicationServices.GetService<ILogger<SnowFlakeHelper>>();
         var lifetime = app.ApplicationServices.GetService<IHostApplicationLifetime>();
 
-        using var handler = cache.Lock("snowflake-initialize", TimeSpan.FromSeconds(3), TimeSpan.FromMilliseconds(500), 6);
+        await using var handler = await cache.LockAsync("snowflake-initialize", TimeSpan.FromSeconds(3), TimeSpan.FromMilliseconds(500), 6);
         if (!handler.Acquired)
         {
             throw new Exception("雪花workerId初始化失败");
         }
 
-        var ids = cache.ListRange(key)?.ToList()?? [];
+        var ids = (await cache.ListRangeAsync(key))?.ToList() ?? [];
         foreach (var item in range)
         {
             if (ids.Contains(item))
@@ -43,16 +42,23 @@ public static class SnowFlakeApplicationBuilderExtensions
                 continue;
             }
 
-            var pr = cache.ListLeftPush(key, item);
+            var pr = await cache.ListLeftPushAsync(key, item);
             SnowFlakeHelper.Initialize(1, item);
             logger.LogInformation("雪花workerId初始化完成:{workerId}.结果:{result}", item, pr);
-            
-            lifetime.ApplicationStopping.Register(() =>
+
+            lifetime.ApplicationStopping.Register(async void () =>
             {
-                var rr = cache.ListRemove(key, item.ToString());
-                logger.LogInformation("雪花workerId移除:{workerId}.结果:{result}", item, rr);
+                try
+                {
+                    var rr = await cache.ListRemoveAsync(key, item.ToString());
+                    logger.LogInformation("雪花workerId移除:{workerId}.结果:{result}", item, rr);
+                }
+                catch (Exception e)
+                {
+                    logger.LogError(e, "雪花workerId移除失败:{workerId}", item);
+                }
             });
-                
+
             return;
         }
 

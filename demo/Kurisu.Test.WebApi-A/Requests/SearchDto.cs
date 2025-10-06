@@ -1,5 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
-using Kurisu.AspNetCore.DataAccess.Dto;
+using Kurisu.AspNetCore.Abstractions.DataAccess.Contract;
 
 namespace Kurisu.Test.WebApi_A.Requests
 {

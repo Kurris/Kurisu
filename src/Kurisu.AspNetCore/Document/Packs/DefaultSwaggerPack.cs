@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using Kurisu.AspNetCore.Abstractions.Startup;
 using Kurisu.AspNetCore.Document.Settings;
 using Kurisu.AspNetCore.MVC;
 using Kurisu.AspNetCore.Startup;

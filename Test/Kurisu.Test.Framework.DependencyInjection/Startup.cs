@@ -1,6 +1,6 @@
 using System.Linq;
 using System.Reflection;
-using Kurisu.AspNetCore.DataAccess.SqlSugar.Extensions;
+using Kurisu.Extensions.SqlSugar.Extensions;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using SqlSugar;

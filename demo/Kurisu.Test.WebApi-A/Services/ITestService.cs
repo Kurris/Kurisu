@@ -1,4 +1,6 @@
-﻿namespace Kurisu.Test.WebApi_A.Services;
+﻿using Kurisu.AspNetCore.DataAccess.SqlSugar.Services;
+
+namespace Kurisu.Test.WebApi_A.Services;
 
 public interface ITestService
 {

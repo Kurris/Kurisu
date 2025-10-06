@@ -1,4 +1,5 @@
 using System.Threading.Tasks;
+using Kurisu.AspNetCore.Abstractions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 

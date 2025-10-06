@@ -1,4 +1,4 @@
-using Kurisu.AspNetCore.Authentication.Abstractions;
+using Kurisu.AspNetCore.Abstractions.Authentication;
 using Microsoft.AspNetCore.Http;
 
 namespace Kurisu.AspNetCore.Authentication.Defaults;

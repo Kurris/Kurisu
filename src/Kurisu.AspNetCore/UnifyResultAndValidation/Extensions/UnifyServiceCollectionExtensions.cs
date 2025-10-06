@@ -1,4 +1,5 @@
-using Kurisu.AspNetCore.UnifyResultAndValidation.Abstractions;
+using Kurisu.AspNetCore.Abstractions.DependencyInjection;
+using Kurisu.AspNetCore.Abstractions.UnifyResultAndValidation;
 using Kurisu.AspNetCore.UnifyResultAndValidation.Filters;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -19,7 +20,8 @@ public static class UnifyServiceCollectionExtensions
     /// <returns></returns>
     public static IServiceCollection AddUnifyResult(this IServiceCollection services, bool wrapException = true)
     {
-        services.AddScoped<ApiRequestSettingService>();
+        services.AddScoped<ApiLogSetting>();
+        services.AddSingleton(typeof(IFrameworkExceptionHandlers), typeof(DefaultExceptionHandlers));
 
         services.TryAddSingleton(typeof(IApiResult), typeof(ApiResult<object>));
         services.AddMvcFilter<ValidateAndPackResultFilter>();

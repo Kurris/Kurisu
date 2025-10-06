@@ -1,15 +1,12 @@
-using Dlhis.Entity.Basic.Entity;
-using Kurisu.AspNetCore.CustomClass;
-using Kurisu.AspNetCore.DataAccess.SqlSugar.Aop;
-using Kurisu.AspNetCore.DataAccess.SqlSugar.Services;
+using Kurisu.AspNetCore;
+using Kurisu.AspNetCore.Abstractions.UnifyResultAndValidation;
 using Kurisu.AspNetCore.EventBus.Abstractions;
 using Kurisu.AspNetCore.MVC;
 using Kurisu.AspNetCore.UnifyResultAndValidation;
-using Kurisu.AspNetCore.UnifyResultAndValidation.Abstractions;
 using Kurisu.Test.Framework.DI.Dependencies.Abstractions;
 using Kurisu.Test.Framework.DI.Dtos;
+using Kurisu.Test.WebApi_A.Aops;
 using Kurisu.Test.WebApi_A.AutoReload;
-using Kurisu.Test.WebApi_A.Entity;
 using Kurisu.Test.WebApi_A.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -30,13 +27,11 @@ public class WeatherForecastController : ControllerBase
     private readonly IGenericsGet<Dog> _dogService;
     private readonly IEventBus _eventBus;
     private readonly IFrameworkExceptionHandlers _exceptionHandlers;
-    private readonly IDbContext _dbContext;
 
     public WeatherForecastController(IConfiguration configuration, ITestService testService,
         IGenericsGet<Dog> dogService,
         IEventBus eventBus,
-        IFrameworkExceptionHandlers exceptionHandlers,
-        IDbContext dbContext
+        IFrameworkExceptionHandlers exceptionHandlers
     )
     {
         _configuration = configuration;
@@ -44,22 +39,33 @@ public class WeatherForecastController : ControllerBase
         _dogService = dogService;
         _eventBus = eventBus;
         _exceptionHandlers = exceptionHandlers;
-        _dbContext = dbContext;
     }
 
-    [Log("测试")]
+    [TestAop]
+    [Log("测试", DisableResponseLogout = true)]
     [AllowAnonymous]
-    [HttpGet("config123")]
+    [HttpPost("config123")]
     //[IgnoreTenant]
-    public async Task<IApiResult> GetConfig()
+    [return: TestReturnParameterAOP]
+    public virtual async Task<IApiResult> GetConfig([CheckMyLessonAOP] Lesson lesson)
     {
-        var bbb = await _dbContext.Queryable<GainfoGroupEntity>().ToListAsync();
+        _dogService.Say();
         var s = DateTime.Now.ToString("D");
         var dict = _exceptionHandlers.GetMethods();
         await _testService.SayAsync();
         var options = _configuration.GetSection("ReloadConfigOptions").Get<SignalROptions>();
         return DefaultApiResult.Success(options);
     }
+}
+
+public interface ILessonId
+{
+    public long LessonId { get; set; }
+}
+
+public class Lesson : ILessonId
+{
+    public long LessonId { get; set; }
 }
 
 public class TestResult

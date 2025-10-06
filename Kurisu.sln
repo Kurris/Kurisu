@@ -29,6 +29,14 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Kurisu.Test.DataAccess", "t
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Kurisu.Test.HelperClass", "test\Kurisu.Test.HelperClass\Kurisu.Test.HelperClass.csproj", "{86006FC9-A76E-4C66-8E73-BF0802ECACDC}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Kurisu.AspNetCore.Abstractions", "src\Kurisu.AspNetCore.Abstractions\Kurisu.AspNetCore.Abstractions.csproj", "{F46744BC-8327-4700-978C-7120C43E4D1E}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Kurisu.Extensions.SqlSugar", "src\Kurisu.Extensions.SqlSugar\Kurisu.Extensions.SqlSugar.csproj", "{E5087983-F05F-40D2-9F36-556EA7248EE9}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Kurisu.Aspect.Abstractions", "src\Kurisu.Aspect.Abstractions\Kurisu.Aspect.Abstractions.csproj", "{42310BD5-EDE8-44EA-B7CF-4D34E90CE3F7}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Kurisu.Extensions.DataProtection.SqlSugar", "src\Kurisu.Extensions.DataProtection.SqlSugar\Kurisu.Extensions.DataProtection.SqlSugar.csproj", "{123D1FFB-8A4D-47A3-A13D-8519CDDDBDF0}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -75,6 +83,22 @@ Global
 		{86006FC9-A76E-4C66-8E73-BF0802ECACDC}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{86006FC9-A76E-4C66-8E73-BF0802ECACDC}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{86006FC9-A76E-4C66-8E73-BF0802ECACDC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F46744BC-8327-4700-978C-7120C43E4D1E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F46744BC-8327-4700-978C-7120C43E4D1E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F46744BC-8327-4700-978C-7120C43E4D1E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F46744BC-8327-4700-978C-7120C43E4D1E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E5087983-F05F-40D2-9F36-556EA7248EE9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E5087983-F05F-40D2-9F36-556EA7248EE9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E5087983-F05F-40D2-9F36-556EA7248EE9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E5087983-F05F-40D2-9F36-556EA7248EE9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{42310BD5-EDE8-44EA-B7CF-4D34E90CE3F7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{42310BD5-EDE8-44EA-B7CF-4D34E90CE3F7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{42310BD5-EDE8-44EA-B7CF-4D34E90CE3F7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{42310BD5-EDE8-44EA-B7CF-4D34E90CE3F7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{123D1FFB-8A4D-47A3-A13D-8519CDDDBDF0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{123D1FFB-8A4D-47A3-A13D-8519CDDDBDF0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{123D1FFB-8A4D-47A3-A13D-8519CDDDBDF0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{123D1FFB-8A4D-47A3-A13D-8519CDDDBDF0}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -90,6 +114,10 @@ Global
 		{720054D0-AF45-4AD2-88EA-659F5663A069} = {D1E2CE4D-D97A-4C04-BE47-3A2B4187784B}
 		{E0C1616C-AF10-4D53-8B67-7D955D01D7BE} = {D1E2CE4D-D97A-4C04-BE47-3A2B4187784B}
 		{86006FC9-A76E-4C66-8E73-BF0802ECACDC} = {D1E2CE4D-D97A-4C04-BE47-3A2B4187784B}
+		{F46744BC-8327-4700-978C-7120C43E4D1E} = {6273CD61-EECD-4A84-83C2-2CB430386B80}
+		{E5087983-F05F-40D2-9F36-556EA7248EE9} = {6273CD61-EECD-4A84-83C2-2CB430386B80}
+		{42310BD5-EDE8-44EA-B7CF-4D34E90CE3F7} = {6273CD61-EECD-4A84-83C2-2CB430386B80}
+		{123D1FFB-8A4D-47A3-A13D-8519CDDDBDF0} = {6273CD61-EECD-4A84-83C2-2CB430386B80}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {A5C47A14-B996-4828-919A-EB6F1E544959}

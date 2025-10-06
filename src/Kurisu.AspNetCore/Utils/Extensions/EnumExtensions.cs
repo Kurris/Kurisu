@@ -20,14 +20,8 @@ public static class EnumExtensions
     /// <returns>枚举值的描述或名称。</returns>
     public static string GetDisplay(this Enum value, string lang = "cn")
     {
-        var fieldName = value.ToString();
-        var f = value.GetType().GetField(fieldName, BindingFlags.Public | BindingFlags.Static)!;
-
-        var attribute = f.GetCustomAttributes<LangAttribute>().FirstOrDefault(x => x.Lang == lang);
-
-        return attribute != null
-            ? attribute.Description
-            : fieldName;
+        var f = value.GetType().GetField(value.ToString(), BindingFlags.Public | BindingFlags.Static)!;
+        return f.GetCustomAttributes<LangAttribute>().FirstOrDefault(x => x.Lang == lang)?.Description ?? value.ToString();
     }
 
     /// <summary>
@@ -39,11 +33,7 @@ public static class EnumExtensions
     /// <returns>类型的描述或名称。</returns>
     public static string GetDisplay(this Type value, string lang = "cn")
     {
-        var attribute = value.GetCustomAttributes<LangAttribute>().FirstOrDefault(x => x.Lang == lang);
-
-        return attribute != null
-            ? attribute.Description
-            : value.Name;
+        return value.GetCustomAttributes<LangAttribute>().FirstOrDefault(x => x.Lang == lang)?.Description ?? value.Name;
     }
 
     /// <summary>
@@ -55,9 +45,7 @@ public static class EnumExtensions
     public static string GetDescription(this Enum value)
     {
         var f = value.GetType().GetField(value.ToString(), BindingFlags.Public | BindingFlags.Static)!;
-        return f.IsDefined(typeof(DescriptionAttribute))
-            ? f.GetCustomAttribute<DescriptionAttribute>()!.Description
-            : value.ToString();
+        return f.GetCustomAttribute<DescriptionAttribute>() is { } attr ? attr.Description : value.ToString();
     }
 
     /// <summary>
@@ -68,8 +56,6 @@ public static class EnumExtensions
     /// <returns>类型的描述或名称。</returns>
     public static string GetDescription(this Type value)
     {
-        return value.IsDefined(typeof(DescriptionAttribute))
-            ? value.GetCustomAttribute<DescriptionAttribute>()!.Description
-            : value.Name;
+        return value.GetCustomAttribute<DescriptionAttribute>() is { } attr ? attr.Description : value.Name;
     }
 }

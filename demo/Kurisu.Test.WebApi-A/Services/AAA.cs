@@ -1,4 +1,4 @@
-﻿using Kurisu.AspNetCore.ConfigurableOptions.Attributes;
+﻿using Kurisu.AspNetCore.Abstractions.ConfigurableOptions;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Extensions.Options;
 

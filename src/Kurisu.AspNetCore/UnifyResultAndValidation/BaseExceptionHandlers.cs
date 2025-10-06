@@ -15,15 +15,16 @@ namespace Kurisu.AspNetCore.UnifyResultAndValidation;
 public interface IFrameworkExceptionHandlers
 {
     /// <summary>
-    /// 处理异常
+    /// 处理异常。根据异常类型调用对应的处理方法。
     /// </summary>
-    /// <param name="ex"></param>
+    /// <param name="ex">待处理的异常实例。</param>
+    /// <returns>处理成功返回 true，否则返回 false。</returns>
     Task<bool> HandleAsync(Exception ex);
 
     /// <summary>
-    /// 处理方法集合
+    /// 获取所有异常处理方法的集合。Key 为异常类型，Value 为对应的处理方法。
     /// </summary>
-    /// <returns></returns>
+    /// <returns>异常类型与处理方法的字典。</returns>
     Dictionary<Type, MethodInfo> GetMethods();
 }
 
@@ -32,13 +33,28 @@ public interface IFrameworkExceptionHandlers
 /// </summary>
 public abstract class BaseFrameworkExceptionHandlers : IFrameworkExceptionHandlers
 {
+    private readonly ILogger _logger;
     private Dictionary<Type, MethodInfo> _methods;
 
     /// <summary>
-    /// 处理异常
+    /// 构造函数，注入日志记录器。
     /// </summary>
-    /// <param name="ex"></param>
-    /// <returns></returns>
+    /// <param name="logger">日志记录器。</param>
+    public BaseFrameworkExceptionHandlers(ILogger logger)
+    {
+        _logger = logger;
+    }
+
+    /// <summary>
+    /// 日志记录器。
+    /// </summary>
+    protected ILogger Logger => _logger;
+
+    /// <summary>
+    /// 处理异常。根据异常类型调用对应的处理方法。
+    /// </summary>
+    /// <param name="ex">待处理的异常��例。</param>
+    /// <returns>处理成功返回 true，否则返回 false。</returns>
     public async Task<bool> HandleAsync(Exception ex)
     {
         var methods = GetMethods();
@@ -66,9 +82,9 @@ public abstract class BaseFrameworkExceptionHandlers : IFrameworkExceptionHandle
     }
 
     /// <summary>
-    /// 获取处理方法集合
+    /// 获取所有异常处理方法的集合。Key 为异常类型，Value 为对应的处理方法。
     /// </summary>
-    /// <returns></returns>
+    /// <returns>异常类型与处理方法���字典。</returns>
     public Dictionary<Type, MethodInfo> GetMethods()
     {
         if (_methods != null)
@@ -91,7 +107,7 @@ public abstract class BaseFrameworkExceptionHandlers : IFrameworkExceptionHandle
         var dict = new Dictionary<Type, MethodInfo>(infos.Count);
 
         //比较HandlerExceptionAttribute<T>中的T和方法的参数类型是否一致
-        using (LogContext.PushProperty("Prefix", "异常处理器"))
+        using (LogContext.PushProperty("Prefix", "[异常处理器扫描]"))
         {
             foreach (var info in infos)
             {
@@ -105,7 +121,7 @@ public abstract class BaseFrameworkExceptionHandlers : IFrameworkExceptionHandle
                         var parameters = info.GetParameters();
                         if (parameters.Length == 1 && parameters[0].ParameterType == genericArgument)
                         {
-                            App.Logger.LogDebug("Method: {InfoName}, Exception Type: {GenericArgumentName}", info.Name, genericArgument.Name);
+                            _logger.LogDebug("Method: {InfoName},Handle Exception Type: {GenericArgumentName}", info.Name, genericArgument.Name);
                             dict.Add(genericArgument, info);
                         }
                     }

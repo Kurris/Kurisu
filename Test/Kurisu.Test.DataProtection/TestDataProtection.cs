@@ -1,5 +1,4 @@
 using Kurisu.AspNetCore.Cache;
-using Kurisu.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.Extensions.Options;
 using DataProtectionOptions = Kurisu.AspNetCore.DataProtection.Settings.DataProtectionOptions;
@@ -30,13 +29,7 @@ public class TestDataProtection
 
         Assert.Equal("123", decryptText);
 
-        if (_dataProtectionOptions.Provider == DataProtectionProviderType.Db)
-        {
-        }
-        else if (_dataProtectionOptions.Provider == DataProtectionProviderType.Redis)
-        {
-            var list = _redisCache.ListRange("DataProtection-Keys");
-            Assert.NotEmpty(list);
-        }
+        var list = _redisCache.ListRange("DataProtection-Keys");
+        Assert.NotEmpty(list);
     }
 }

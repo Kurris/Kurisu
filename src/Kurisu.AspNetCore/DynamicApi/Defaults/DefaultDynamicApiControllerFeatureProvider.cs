@@ -21,6 +21,6 @@ public class DefaultDynamicApiControllerFeatureProvider : ControllerFeatureProvi
             return false;
         }
 
-        return typeInfo.GetCustomAttribute<DynamicApiAttribute>() != null;
+        return typeInfo.GetCustomAttribute<AsApiAttribute>() != null;
     }
 }

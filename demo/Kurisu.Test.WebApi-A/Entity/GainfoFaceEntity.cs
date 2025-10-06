@@ -1,4 +1,5 @@
-﻿using Kurisu.AspNetCore.DataAccess.SqlSugar;
+﻿using Kurisu.AspNetCore.Abstractions.DependencyInjection;
+using Kurisu.AspNetCore.DataAccess.SqlSugar;
 using SqlSugar;
 
 namespace Dlhis.Entity.Basic.Entity;

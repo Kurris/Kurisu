@@ -4,18 +4,18 @@ namespace AspectCore.DynamicProxy.Parameters;
 
 internal class ParameterAspectInvoker
 {
-    private readonly IList<Func<ParameterAspectDelegate, ParameterAspectDelegate>> delegates = new List<Func<ParameterAspectDelegate, ParameterAspectDelegate>>();
+    private readonly IList<Func<ParameterAspectDelegate, ParameterAspectDelegate>> _delegates = new List<Func<ParameterAspectDelegate, ParameterAspectDelegate>>();
 
     public void AddDelegate(Func<ParameterAspectContext, ParameterAspectDelegate, Task> parameterAspectDelegate)
     {
-        delegates.Add(next => ctx => parameterAspectDelegate(ctx, next));
+        _delegates.Add(next => ctx => parameterAspectDelegate(ctx, next));
     }
 
     private ParameterAspectDelegate Build()
     {
         ParameterAspectDelegate invoke = ctx => TaskUtils.CompletedTask;
 
-        foreach (var next in delegates.Reverse())
+        foreach (var next in _delegates.Reverse())
         {
             invoke = next(invoke);
         }
@@ -30,6 +30,6 @@ internal class ParameterAspectInvoker
 
     public void Reset()
     {
-        delegates.Clear();
+        _delegates.Clear();
     }
 }

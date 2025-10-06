@@ -1,4 +1,4 @@
-using Kurisu.AspNetCore.ConfigurableOptions.Attributes;
+using Kurisu.AspNetCore.Abstractions.ConfigurableOptions;
 
 namespace Kurisu.Test.Framework.Configurations;
 

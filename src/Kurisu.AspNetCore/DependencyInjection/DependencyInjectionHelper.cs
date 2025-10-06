@@ -3,8 +3,8 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using Kurisu.AspNetCore.ConfigurableOptions.Attributes;
-using Kurisu.AspNetCore.DependencyInjection.Attributes;
+using Kurisu.AspNetCore.Abstractions.ConfigurableOptions;
+using Kurisu.AspNetCore.Abstractions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
@@ -33,6 +33,7 @@ internal static class DependencyInjectionHelper
             .ToList();
     });
 
+
     /// <summary>
     /// 配置类
     /// </summary>
@@ -58,17 +59,21 @@ internal static class DependencyInjectionHelper
         //范型类型转换
         service = GetGenericRealType(service);
 
+
+        ServiceDescriptor descriptor;
         if (interfaceType == null)
         {
-            services.Add(ServiceDescriptor.Describe(service, service, lifetime));
-            App.Logger.LogDebug("注册{lifetime}服务: {service}", lifetime.ToString(), service.Name);
+            descriptor = ServiceDescriptor.Describe(service, service, lifetime);
         }
         else
         {
             interfaceType = GetGenericRealType(interfaceType);
-            services.Add(ServiceDescriptor.Describe(interfaceType, service, lifetime));
-            App.Logger.LogDebug("注册{lifetime}服务: {service} => {interfaceType}", lifetime.ToString(), service.Name, interfaceType.Name);
+            descriptor = ServiceDescriptor.Describe(interfaceType, service, lifetime);
         }
+
+        services.Add(descriptor);
+
+        App.Logger.LogDebug("注册{Lifetime}服务: {ServiceName} {ServiceInterface}", lifetime, service.Name, descriptor.ServiceType.Name);
     }
 
     /// <summary>

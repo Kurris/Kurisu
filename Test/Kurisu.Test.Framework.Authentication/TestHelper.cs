@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
-using Kurisu.AspNetCore.Authentication.Abstractions;
+using Kurisu.AspNetCore.Abstractions.Authentication;
 using Kurisu.AspNetCore.Authentication.Defaults;
 using Microsoft.AspNetCore.Http;
 

@@ -1,7 +1,9 @@
-﻿using Kurisu.AspNetCore.Startup.Extensions;
+﻿using Kurisu.AspNetCore.Abstractions.DependencyInjection;
+using Kurisu.AspNetCore.Startup.Extensions;
 using Kurisu.AspNetCore.UnifyResultAndValidation.Extensions;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json;
@@ -50,7 +52,7 @@ public abstract class DefaultStartup
         services.AddConfiguration(Configuration);
 
         // 配置启动项
-        this.ConfigureStartupOptions(App.StartupOptions);
+        ConfigureStartupOptions(App.StartupOptions);
 
         // 注入 HttpContextAccessor
         services.AddHttpContextAccessor();
@@ -68,18 +70,20 @@ public abstract class DefaultStartup
                 options.SerializerSettings.ReferenceLoopHandling = ReferenceLoopHandling.Ignore;
                 options.SerializerSettings.DateFormatString = "yyyy-MM-dd HH:mm:ss";
 
-                options.SerializerSettings.ContractResolver = new DefaultContractResolver()
+                options.SerializerSettings.ContractResolver = new DefaultContractResolver
                 {
                     NamingStrategy = new CamelCaseNamingStrategy
                     {
                         OverrideSpecifiedNames = false
                     }
                 };
-            });
+            })
+            .ConfigureApplicationPartManager(manager => { manager.FeatureProviders.Add(App.StartupOptions.DynamicApiOptions.ControllerFeatureProvider); })
+            .AddControllersAsServices();
         
-        //.ConfigureApplicationPartManager(manager => { manager.FeatureProviders.Add(App.StartupOptions.DynamicApiOptions.ControllerFeatureProvider); });
         // MVC 约定配置
-        //services.Configure<MvcOptions>(options => options.Conventions.Add(App.StartupOptions.DynamicApiOptions.ModelConvention));
+        services.Configure<MvcOptions>(options => options.Conventions.Add(App.StartupOptions.DynamicApiOptions.ModelConvention));
+
 
         // 响应与异常格式统一
         services.AddUnifyResult();

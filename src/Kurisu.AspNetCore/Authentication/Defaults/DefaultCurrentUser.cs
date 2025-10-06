@@ -1,7 +1,8 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
-using Kurisu.AspNetCore.Authentication.Abstractions;
+using Kurisu.AspNetCore.Abstractions.Authentication;
 using Mapster;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Net.Http.Headers;
@@ -26,10 +27,10 @@ public class DefaultCurrentUser : DefaultCurrentTenant, ICurrentUser
     /// 获取用户id
     /// </summary>
     /// <returns></returns>
-    public virtual string GetUserId()
+    public virtual int GetUserId()
     {
         //microsoft identity model框架对值token claim.key进行了转换
-        return HttpContextAccessor.HttpContext?.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        return HttpContextAccessor.HttpContext?.User.FindFirst(ClaimTypes.NameIdentifier)?.Value.Adapt<int>() ?? -1;
     }
 
     /// <summary>
@@ -40,11 +41,6 @@ public class DefaultCurrentUser : DefaultCurrentTenant, ICurrentUser
     public virtual T GetUserId<T>()
     {
         var userId = GetUserId();
-        if (string.IsNullOrWhiteSpace(userId))
-        {
-            return default;
-        }
-
         return userId.Adapt<T>();
     }
 
@@ -61,9 +57,14 @@ public class DefaultCurrentUser : DefaultCurrentTenant, ICurrentUser
     /// 获取user name
     /// </summary>
     /// <returns></returns>
-    public string GetName(string userClaim = "name")
+    public string GetName(string userClaimType = "name")
     {
-        var name = GetUserClaim(userClaim);
+        if (userClaimType.Equals("name", StringComparison.OrdinalIgnoreCase))
+        {
+            userClaimType = ClaimTypes.Name;
+        }
+        
+        var name = GetUserClaim(userClaimType);
         return name;
     }
 

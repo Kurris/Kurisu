@@ -25,7 +25,7 @@ public static class JsonExtensions
     /// <param name="settings">序列化配置<see cref="DefaultSetting"/></param>
     /// <typeparam name="T">序列化类型</typeparam>
     /// <returns></returns>
-    public static T ToObject<T>(this string json, JsonSerializerSettings settings = default)
+    public static T ToObject<T>(this string json, JsonSerializerSettings settings = null)
     {
         return JsonConvert.DeserializeObject<T>(json, settings);
     }
@@ -36,7 +36,7 @@ public static class JsonExtensions
     /// <param name="obj">对象</param>
     /// <param name="settings">序列化配置</param>
     /// <returns></returns>
-    public static string ToJson<T>(this T obj, JsonSerializerSettings settings = default)
+    public static string ToJson<T>(this T obj, JsonSerializerSettings settings = null)
     {
         return JsonConvert.SerializeObject(obj, settings);
     }

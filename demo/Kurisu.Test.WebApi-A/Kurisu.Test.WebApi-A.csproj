@@ -1,12 +1,13 @@
 <Project Sdk="Microsoft.NET.Sdk.Web">
 
     <PropertyGroup>
-        <TargetFramework>net6.0</TargetFramework>
-        <Nullable>enable</Nullable>
+        <Nullable>disable</Nullable>
         <ImplicitUsings>enable</ImplicitUsings>
         <RootNamespace>Kurisu.Test.WebApi_A</RootNamespace>
         <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
         <GenerateDocumentationFile>True</GenerateDocumentationFile>
+        <LangVersion>latestmajor</LangVersion>
+        <TargetFramework>net8.0</TargetFramework>
     </PropertyGroup>
 
     <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
@@ -35,7 +36,9 @@
     </ItemGroup>
 
     <ItemGroup>
+      <ProjectReference Include="..\..\src\Kurisu.Aspect\Kurisu.Aspect.csproj" />
       <ProjectReference Include="..\..\src\Kurisu.AspNetCore\Kurisu.AspNetCore.csproj" />
+      <ProjectReference Include="..\..\src\Kurisu.Extensions.SqlSugar\Kurisu.Extensions.SqlSugar.csproj" />
     </ItemGroup>
 
 </Project>

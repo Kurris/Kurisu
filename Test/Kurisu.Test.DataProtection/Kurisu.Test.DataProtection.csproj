@@ -23,6 +23,7 @@
 
     <ItemGroup>
       <ProjectReference Include="..\..\src\Kurisu.AspNetCore\Kurisu.AspNetCore.csproj" />
+      <ProjectReference Include="..\..\src\Kurisu.Extensions.DataProtection.SqlSugar\Kurisu.Extensions.DataProtection.SqlSugar.csproj" />
     </ItemGroup>
 
     <ItemGroup>

@@ -1,8 +1,10 @@
 using System;
 using System.Linq;
 using System.Net.Http;
+using Kurisu.AspNetCore.Abstractions.DependencyInjection;
 using Kurisu.AspNetCore.Authentication.Extensions;
 using Kurisu.AspNetCore.Authentication.Options;
+using Kurisu.AspNetCore.Utils.Extensions;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
@@ -30,7 +32,6 @@ public static class OAuth2AuthenticationServiceCollectionExtensions
     {
         services.AddUserInfo();
 
-
         const string clientName = "AuthenticationBackchannel";
         //授权后端使用的HttpClient, 不校验SSL安全,并且发送X-Requested-Internal标识内部网络请求
         services.AddHttpClient(clientName, (sp, httpClient) =>
@@ -40,16 +41,7 @@ public static class OAuth2AuthenticationServiceCollectionExtensions
                     httpClient.DefaultRequestHeaders.Add("X-Requested-Internal", "internal");
                 }
             })
-            .ConfigurePrimaryHttpMessageHandler(() =>
-            {
-                var handler = new HttpClientHandler
-                {
-                    ClientCertificateOptions = ClientCertificateOption.Manual,
-                    ServerCertificateCustomValidationCallback = (_, _, _, _) => true
-                };
-
-                return handler;
-            });
+            .NotVerifyCertificate();
 
         //使用配置的HttpClient
         services.AddOptions<JwtBearerOptions>(JwtBearerDefaults.AuthenticationScheme)
@@ -89,8 +81,15 @@ public static class OAuth2AuthenticationServiceCollectionExtensions
     }
 }
 
-internal class PatConfigureJwtBearerOptions(string specificScheme) : IPostConfigureOptions<JwtBearerOptions>
+internal class PatConfigureJwtBearerOptions : IPostConfigureOptions<JwtBearerOptions>
 {
+    private readonly string _specificScheme;
+
+    public PatConfigureJwtBearerOptions(string specificScheme)
+    {
+        _specificScheme = specificScheme;
+    }
+
     public void PostConfigure(string name, JwtBearerOptions options)
     {
         var before = options.ForwardDefaultSelector;
@@ -102,7 +101,7 @@ internal class PatConfigureJwtBearerOptions(string specificScheme) : IPostConfig
             var (scheme, token) = GetBearerValueTuple(context);
             //如果不是bearer则转到pat的scheme进行验证
             return scheme.Equals(JwtBearerDefaults.AuthenticationScheme, StringComparison.OrdinalIgnoreCase) && !token.Contains('.')
-                ? specificScheme
+                ? _specificScheme
                 : null;
         };
     }

@@ -18,7 +18,7 @@ public class DisableApiLogAttribute : Attribute, IAsyncActionFilter
     /// <param name="next"></param>
     public async Task OnActionExecutionAsync(ActionExecutingContext context, ActionExecutionDelegate next)
     {
-        var setting = context.HttpContext.RequestServices.GetService<ApiRequestSettingService>();
+        var setting = context.HttpContext.RequestServices.GetService<ApiLogSetting>();
         setting.EnableApiRequestLog = false;
         await next();
     }

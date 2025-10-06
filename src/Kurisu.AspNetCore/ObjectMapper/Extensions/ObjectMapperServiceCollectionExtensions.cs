@@ -1,5 +1,6 @@
 using System.Linq;
 using System.Reflection;
+using Kurisu.AspNetCore.Abstractions.DependencyInjection;
 using Mapster;
 using MapsterMapper;
 using Microsoft.Extensions.DependencyInjection.Extensions;

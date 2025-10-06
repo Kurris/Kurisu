@@ -11,7 +11,7 @@ public class TestCurrentUserInfo
     public void GetSubject_Return_3()
     {
         var sub = TestHelper.GetResolver(_token).GetUserId();
-        Assert.Equal("3", sub);
+        Assert.Equal(3, sub);
     }
 
 

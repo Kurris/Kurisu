@@ -1,8 +1,9 @@
 using System;
 using System.Linq;
 using System.Reflection;
+using Kurisu.AspNetCore.Abstractions.ConfigurableOptions;
+using Kurisu.AspNetCore.Abstractions.DependencyInjection;
 using Kurisu.AspNetCore.ConfigurableOptions;
-using Kurisu.AspNetCore.ConfigurableOptions.Attributes;
 using Kurisu.AspNetCore.DependencyInjection;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection.Extensions;

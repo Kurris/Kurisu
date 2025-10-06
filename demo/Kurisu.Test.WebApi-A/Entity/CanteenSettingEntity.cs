@@ -1,4 +1,4 @@
-﻿using Kurisu.AspNetCore.DataAccess.Entity;
+﻿using Kurisu.AspNetCore.Abstractions.DataAccess.Contract;
 using Kurisu.AspNetCore.DataAccess.SqlSugar;
 using SqlSugar;
 

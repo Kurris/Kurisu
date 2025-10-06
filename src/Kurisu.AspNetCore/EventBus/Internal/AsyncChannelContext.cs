@@ -2,6 +2,7 @@ using System;
 using System.Linq;
 using System.Threading.Channels;
 using System.Threading.Tasks;
+using Kurisu.AspNetCore.Abstractions.DependencyInjection;
 using Kurisu.AspNetCore.EventBus.Abstractions;
 using Kurisu.AspNetCore.EventBus.Abstractions.Handler;
 using Kurisu.AspNetCore.Scope;

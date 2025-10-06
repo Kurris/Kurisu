@@ -1,140 +1,120 @@
 ﻿using System;
+using System.Threading;
 using System.Threading.Tasks;
 using StackExchange.Redis;
 
 namespace Kurisu.AspNetCore.Cache;
 
-/// <summary>
-/// redis lock
-/// </summary>
 public sealed class RedisLock : IDisposable, IAsyncDisposable
 {
     private readonly IDatabase _db;
-
-    /// <summary>
-    /// 锁标识
-    /// </summary>
-    private bool _acquired;
-
     private readonly string _lockKey;
     private readonly string _lockValue = Guid.NewGuid().ToString();
-    private readonly TimeSpan? _expiry;
-    private readonly int _interval;
+    private readonly TimeSpan _expiry;
+    private readonly TimeSpan _interval;
+    private bool _acquired;
+    private CancellationTokenSource _cts;
 
     /// <summary>
-    /// ctor
+    /// 构造 RedisLock 实例。
     /// </summary>
-    /// <param name="db"></param>
-    /// <param name="lockKey"></param>
-    /// <param name="expiry"></param>
-    /// <exception cref="ArgumentException"></exception>
+    /// <param name="db">Redis 数据库实例。</param>
+    /// <param name="lockKey">锁的键名。</param>
+    /// <param name="expiry">锁的过期时间，默认3秒。</param>
+    /// <exception cref="ArgumentException">当 expiry 不是3的倍数时抛出。</exception>
     public RedisLock(IDatabase db, string lockKey, TimeSpan? expiry = null)
     {
         _db = db;
         _lockKey = lockKey;
-        _expiry = expiry;
-        if (!_expiry.HasValue)
-        {
-            _expiry = TimeSpan.FromSeconds(3);
-        }
-        else
-        {
-            var interval = _expiry.Value.TotalSeconds % 3;
-            if (interval != 0)
-            {
-                throw new ArgumentException(nameof(expiry) + "应该为3的倍数");
-            }
-        }
+        _expiry = expiry ?? TimeSpan.FromSeconds(3);
 
-        _interval = (_expiry.Value / 3).Seconds;
+        if (_expiry.TotalSeconds % 3 != 0)
+            throw new ArgumentException(nameof(expiry) + " 应该为3的倍数");
+
+        _interval = TimeSpan.FromSeconds(_expiry.TotalSeconds / 3);
     }
 
     /// <summary>
-    /// 锁标识
+    /// 当前锁是否已获取。
     /// </summary>
     public bool Acquired => _acquired;
 
     /// <summary>
-    /// lock
+    /// 异步尝试获取锁，并自动续期。
     /// </summary>
-    /// <returns></returns>
+    /// <returns>返回自身实例。</returns>
     public async Task<RedisLock> LockAsync()
     {
         _acquired = await _db.StringSetAsync(_lockKey, _lockValue, _expiry, when: When.NotExists);
         if (_acquired)
         {
-            _ = StartRenewalAsync();
+            _cts = new CancellationTokenSource();
+            _ = StartRenewalAsync(_cts.Token);
         }
 
         return this;
     }
 
     /// <summary>
-    /// lock
+    /// 后台自动续期任务。
     /// </summary>
-    /// <returns></returns>
-    public RedisLock Lock()
+    /// <param name="token">取消令牌。</param>
+    private async Task StartRenewalAsync(CancellationToken token)
     {
-        _acquired = _db.StringSet(_lockKey, _lockValue, _expiry, when: When.NotExists);
-        if (_acquired)
+        try
         {
-            _ = StartRenewalAsync();
+            while (_acquired && !token.IsCancellationRequested)
+            {
+                await Task.Delay(_interval, token);
+                await _db.KeyExpireAsync(_lockKey, _expiry, when: ExpireWhen.Always);
+            }
         }
-
-        return this;
-    }
-
-    /// <summary>
-    /// 续
-    /// </summary>
-    /// <returns></returns>
-    private async Task StartRenewalAsync()
-    {
-        while (_acquired)
+        catch (TaskCanceledException)
         {
-            await Task.Delay(_interval);
-            await _db.KeyExpireAsync(_lockKey, _expiry, when: ExpireWhen.Always);
+            // ignore
+        }
+        catch (Exception)
+        {
+            // 可记录日志
         }
     }
 
     /// <summary>
-    /// 解锁
+    /// 异步释放锁。
     /// </summary>
-    /// <returns></returns>
+    /// <returns>异步任务。</returns>
     public async ValueTask DisposeAsync()
     {
-        //如果获取lock成功
         if (_acquired)
         {
-            //判断是否为当前value
+            _cts?.Cancel();
             var getValue = await _db.StringGetAsync(_lockKey);
             if (getValue == _lockValue)
             {
-                //移除string locker
                 await _db.KeyDeleteAsync(_lockKey);
             }
         }
 
         _acquired = false;
+        _cts?.Dispose();
     }
 
     /// <summary>
-    /// 解锁
+    /// 释放锁。
     /// </summary>
     public void Dispose()
     {
-        //如果获取lock成功
         if (_acquired)
         {
-            //判断是否为当前value
+            _cts?.Cancel();
             var getValue = _db.StringGet(_lockKey);
             if (getValue == _lockValue)
             {
-                //移除string locker
                 _db.KeyDelete(_lockKey);
             }
         }
 
         _acquired = false;
+        _cts?.Dispose();
     }
 }

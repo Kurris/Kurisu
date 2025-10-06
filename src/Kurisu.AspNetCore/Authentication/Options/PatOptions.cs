@@ -1,6 +1,6 @@
 // ReSharper disable ClassNeverInstantiated.Global
 
-using Kurisu.AspNetCore.ConfigurableOptions.Attributes;
+using Kurisu.AspNetCore.Abstractions.ConfigurableOptions;
 
 namespace Kurisu.AspNetCore.Authentication.Options;
 

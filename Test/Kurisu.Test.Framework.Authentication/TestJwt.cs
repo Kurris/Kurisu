@@ -30,7 +30,7 @@ public class TestJwt
                 new("sub", "3"),
                 new("role", "admin"),
                 new("role", "hr"),
-                new("preferred_username", "ligy"),
+                new("name", "ligy"),
                 new("userType", "normal"),
                 new("tenant", "1234"),
                 new("code", "DL001")
@@ -40,7 +40,7 @@ public class TestJwt
         Assert.NotNull(token);
 
         var user = TestHelper.GetResolver(token);
-        Assert.Equal("3", user.GetUserId());
+        Assert.Equal("3", user.GetUserId<string>());
         Assert.Equal("ligy", user.GetName());
         Assert.Equal("normal", user.GetUserClaim("userType"));
         Assert.Equal("DL001", user.GetUserClaim("code"));

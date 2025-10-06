@@ -1,11 +1,11 @@
+using AspectCore.Extensions.Hosting;
+using Kurisu.AspNetCore.Abstractions.DependencyInjection;
 using Kurisu.AspNetCore.Cache.Extensions;
 using Kurisu.AspNetCore.DataAccess.SqlSugar.Extensions;
 using Kurisu.AspNetCore.EventBus.Extensions;
 using Kurisu.AspNetCore.Startup;
-using Kurisu.AspNetCore.Utils;
 using Kurisu.AspNetCore.Utils.Extensions;
-using Mapster;
-using Microsoft.Extensions.Localization;
+using Kurisu.Extensions.SqlSugar.Extensions;
 using Microsoft.IdentityModel.Logging;
 using static Kurisu.AspNetCore.Startup.KurisuHost;
 
@@ -15,16 +15,10 @@ class Program
 {
     public static void Main(string[] args)
     {
-        var id = SnowFlakeHelper.Instance.NextId();
-        var s = SnowFlakeHelper.ParseId(id);
-
-        var a = (long)(DateTime.UtcNow - DateTimeOffset.UnixEpoch).TotalMilliseconds;
-        var b = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
-        var c = a == b;
         Builder(args)
-            //.EnableAppSettingsReload()
+            //.UseServiceContext()
+            .UseDynamicProxy((_, configuration) => configuration.PropertyEnableInjectAttributeType = typeof(DiInjectAttribute))
             .RunKurisu<Startup>();
-        //IStringLocalizer 
     }
 }
 
@@ -61,15 +55,20 @@ public class Startup : DefaultStartup
         services.AddSqlSugar();
         services.AddEventBus();
         services.AddRedis();
-        //services.AddAop();
         services.AddMemoryCache();
     }
 
-    /// <inheritdoc />
-    public override void Configure(IApplicationBuilder app, IWebHostEnvironment env)
+    public override async void Configure(IApplicationBuilder app, IWebHostEnvironment env)
     {
-        var a = TestEnumType.Wait.GetDisplay();
-        var b = TestEnumType.Wait.GetDisplay("en");
-        base.Configure(app, env);
+        try
+        {
+            base.Configure(app, env);
+
+            //await app.UseSnowFlakeDistributedInitializeAsync();
+        }
+        catch (Exception e)
+        {
+            throw; // TODO handle exception
+        }
     }
 }

@@ -1,4 +1,5 @@
 using System;
+using Kurisu.AspNetCore.Abstractions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Kurisu.AspNetCore.DependencyInjection.Internal;

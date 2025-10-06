@@ -32,8 +32,8 @@ public class RedisCache
     /// <param name="logger"></param>
     public RedisCache(IConnectionMultiplexer connectionMultiplexer, ILogger<RedisCache> logger)
     {
-        _connectionMultiplexer = connectionMultiplexer;
         _logger = logger;
+        _connectionMultiplexer = connectionMultiplexer;
         _db = _connectionMultiplexer.GetDatabase();
         AddRegisterEvent();
     }
@@ -58,38 +58,6 @@ public class RedisCache
             if (!handler.Acquired && retryInterval.HasValue)
             {
                 await Task.Delay(retryInterval.Value);
-            }
-            else
-            {
-                return handler;
-            }
-
-            _logger.LogInformation("get {lockKey} fail {retry}. will retry in {interval}ms", lockKey, retry, retryInterval.Value.TotalMilliseconds);
-        } while (!locker.Acquired && retry < retryCount);
-
-        return locker;
-    }
-
-    /// <summary>
-    /// lock
-    /// </summary>
-    /// <param name="lockKey"></param>
-    /// <param name="expiry"></param>
-    /// <param name="retryInterval"></param>
-    /// <param name="retryCount"></param>
-    /// <returns></returns>
-    public RedisLock Lock(string lockKey, TimeSpan? expiry = null, TimeSpan? retryInterval = null, int retryCount = 3)
-    {
-        var locker = new RedisLock(_db, lockKey, expiry);
-        var retry = 0;
-        do
-        {
-            var handler = locker.Lock();
-            retry++;
-
-            if (!handler.Acquired && retryInterval.HasValue)
-            {
-                Task.Delay(retryInterval.Value).Wait();
             }
             else
             {

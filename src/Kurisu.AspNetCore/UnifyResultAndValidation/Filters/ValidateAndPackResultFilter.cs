@@ -1,15 +1,14 @@
 using System.Reflection;
 using System.Threading.Tasks;
-using Kurisu.AspNetCore.Authentication.Abstractions;
-using Kurisu.AspNetCore.DataAccess.SqlSugar.Aop;
-using Kurisu.AspNetCore.UnifyResultAndValidation.Abstractions;
+using Kurisu.AspNetCore.Abstractions.Authentication;
+using Kurisu.AspNetCore.Abstractions.DependencyInjection;
+using Kurisu.AspNetCore.Abstractions.UnifyResultAndValidation;
 using Kurisu.AspNetCore.UnifyResultAndValidation.Exceptions;
 using Kurisu.AspNetCore.Utils.Extensions;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Controllers;
 using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.Extensions.DependencyInjection;
-using Newtonsoft.Json;
 using Serilog.Context;
 
 namespace Kurisu.AspNetCore.UnifyResultAndValidation.Filters;
@@ -34,22 +33,24 @@ public class ValidateAndPackResultFilter : IAsyncActionFilter, IAsyncResultFilte
     /// <returns></returns>
     public async Task OnActionExecutionAsync(ActionExecutingContext context, ActionExecutionDelegate next)
     {
-        var setting = context.HttpContext.RequestServices.GetService<ApiRequestSettingService>();
-        if (setting?.EnableApiRequestLog == true)
+        var apiLogSetting = context.HttpContext.RequestServices.GetRequiredService<ApiLogSetting>();
+        if (apiLogSetting.EnableApiRequestLog)
         {
-            setting.ConnectionId = context.HttpContext.Connection.Id;
-            setting.Path = context.HttpContext.Request.Path;
-            setting.Method = context.HttpContext.Request.Method;
-            setting.Parameters = JsonConvert.SerializeObject(context.ActionArguments);
-            setting.UserId = context.HttpContext.RequestServices.GetService<ICurrentUser>()?.GetUserId();
+            apiLogSetting.ConnectionId = context.HttpContext.Connection.Id;
+            apiLogSetting.Path = context.HttpContext.Request.Path;
+            apiLogSetting.HttpMethod = context.HttpContext.Request.Method;
+            apiLogSetting.Parameters = context.ActionArguments;
+            apiLogSetting.UserId = context.HttpContext.RequestServices.GetRequiredService<ICurrentUser>().GetUserId();
         }
 
         var controllerActionDescriptor = (ControllerActionDescriptor)context.ActionDescriptor;
-        var logAttribute = controllerActionDescriptor.MethodInfo.GetCustomAttribute<LogAttribute>();
-        var title = logAttribute?.Title;
-        if (title.IsPresent())
+        var logAttribute = controllerActionDescriptor.MethodInfo.GetCustomAttribute<LogAttribute>() ?? new LogAttribute(string.Empty);
+        apiLogSetting.Title = logAttribute.Title;
+        apiLogSetting.DisableResponseLogout = logAttribute.DisableResponseLogout;
+
+        if (apiLogSetting.Title.IsPresent())
         {
-            using (LogContext.PushProperty("Prefix", $"[{title}]"))
+            using (LogContext.PushProperty("Prefix", $"[{apiLogSetting.Title}]"))
             {
                 await next();
             }
@@ -81,14 +82,31 @@ public class ValidateAndPackResultFilter : IAsyncActionFilter, IAsyncResultFilte
         }
 
         //日志
-        var setting = context.HttpContext.RequestServices.GetService<ApiRequestSettingService>();
-        if (setting?.EnableApiRequestLog == true)
+        var apiLogSetting = context.HttpContext.RequestServices.GetRequiredService<ApiLogSetting>();
+        if (apiLogSetting.EnableApiRequestLog)
         {
-            setting.Response = (context.Result as ObjectResult)?.Value?.ToJson();
-            setting.Log();
-        }
+            if (apiLogSetting.Title.IsPresent())
+            {
+                using (LogContext.PushProperty("Prefix", $"[{apiLogSetting.Title}]"))
+                {
+                    if (!apiLogSetting.DisableResponseLogout)
+                    {
+                        apiLogSetting.Response = (context.Result as ObjectResult)?.Value;
+                    }
 
-        await next();
+                    apiLogSetting.Log();
+                    await next();
+                }
+            }
+            else
+            {
+                await next();
+            }
+        }
+        else
+        {
+            await next();
+        }
     }
 
     private static void ResultHandle(ResultExecutingContext context)

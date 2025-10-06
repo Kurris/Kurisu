@@ -3,8 +3,7 @@ using System.Linq;
 using System.Net;
 using System.Text;
 using System.Threading.Tasks;
-using Kurisu.AspNetCore.DependencyInjection.Attributes;
-using Kurisu.AspNetCore.UnifyResultAndValidation.Abstractions;
+using Kurisu.AspNetCore.Abstractions.UnifyResultAndValidation;
 using Kurisu.AspNetCore.UnifyResultAndValidation.Attributes;
 using Kurisu.AspNetCore.UnifyResultAndValidation.Exceptions;
 using Kurisu.AspNetCore.Utils.Extensions;
@@ -13,13 +12,13 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
+using Serilog.Context;
 
 namespace Kurisu.AspNetCore.UnifyResultAndValidation;
 
 /// <summary>
 /// 默认异常处理器，实现框架级异常处理逻辑。
 /// </summary>
-[DiInject]
 public class DefaultExceptionHandlers : BaseFrameworkExceptionHandlers
 {
     /// <summary>
@@ -37,7 +36,9 @@ public class DefaultExceptionHandlers : BaseFrameworkExceptionHandlers
     /// </summary>
     /// <param name="apiResult">API结果接口</param>
     /// <param name="httpContextAccessor">Http上下文访问器</param>
-    public DefaultExceptionHandlers(IApiResult apiResult, IHttpContextAccessor httpContextAccessor)
+    /// <param name="logger"></param>
+    public DefaultExceptionHandlers(IApiResult apiResult, IHttpContextAccessor httpContextAccessor, ILogger<DefaultExceptionHandlers> logger)
+        : base(logger)
     {
         _apiResult = apiResult;
         _httpContextAccessor = httpContextAccessor;
@@ -61,27 +62,39 @@ public class DefaultExceptionHandlers : BaseFrameworkExceptionHandlers
     public virtual async Task ExceptionHandle(Exception ex)
     {
         var context = _httpContextAccessor.HttpContext!;
+        var apiLogSetting = context.RequestServices.GetRequiredService<ApiLogSetting>();
         if (!context.Response.HasStarted)
         {
             context.Response.StatusCode = ex.Source!.Contains("IdentityModel.AspNetCore") ? 401 : 500;
 
             // 序列化异常信息为驼峰格式JSON
-            var responseJson = JsonConvert.SerializeObject(_apiResult!.GetDefaultErrorApiResult(ex.Message), JsonExtensions.DefaultSetting);
+            var apiResult = _apiResult!.GetDefaultErrorApiResult(ex.Message);
+            var responseJson = JsonConvert.SerializeObject(apiResult, JsonExtensions.DefaultSetting);
             var bytes = Encoding.UTF8.GetBytes(responseJson);
 
             context.Response.ContentType = "application/json";
             context.Response.ContentLength = bytes.Length;
             await context.Response.BodyWriter.WriteAsync(bytes);
-            var setting = context.RequestServices.GetRequiredService<ApiRequestSettingService>();
-            if (setting.EnableApiRequestLog)
+
+            if (apiLogSetting.EnableApiRequestLog)
             {
-                setting.IsGlobal = true;
-                setting.Response = responseJson;
-                setting.Log();
+                apiLogSetting.IsGlobal = true;
+                apiLogSetting.Response = apiResult;
+                apiLogSetting.Log(false);
             }
         }
 
-        App.Logger.LogError(ex, "未知异常:{error}", ex.Message);
+        if (apiLogSetting.Title.IsPresent())
+        {
+            using (LogContext.PushProperty("Prefix", $"[{apiLogSetting.Title}]"))
+            {
+                Logger.LogError(ex, "未知异常:{error}", ex.Message);
+            }
+        }
+        else
+        {
+            Logger.LogError(ex, "未知异常:{error}", ex.Message);
+        }
     }
 
     /// <summary>
@@ -97,11 +110,11 @@ public class DefaultExceptionHandlers : BaseFrameworkExceptionHandlers
         var errorData = apiResult.GetDefaultErrorApiResult(context.Exception.Message);
         context.Result = new ObjectResult(errorData);
 
-        var setting = context.HttpContext.RequestServices.GetRequiredService<ApiRequestSettingService>();
+        var setting = context.HttpContext.RequestServices.GetRequiredService<ApiLogSetting>();
         if (setting.EnableApiRequestLog)
         {
             setting.Response = JsonConvert.SerializeObject(errorData);
-            setting.Log();
+            setting.Log(false);
         }
     }
 

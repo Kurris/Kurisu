@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using Kurisu.AspNetCore.Abstractions.Startup;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Kurisu.AspNetCore.Startup.AppPacks;
