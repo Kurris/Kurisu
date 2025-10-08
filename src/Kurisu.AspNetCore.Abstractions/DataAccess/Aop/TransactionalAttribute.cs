@@ -18,27 +18,28 @@ public class TransactionalAttribute : AbstractInterceptorAttribute
 
     public override async Task Invoke(AspectContext context, AspectDelegate next)
     {
-        var transactionManager = context.ServiceProvider.GetRequiredService<ITransactionManager>();
+        var mgr = context.ServiceProvider.GetRequiredService<IDatasourceManager>();
 
         // ReSharper disable once ConvertToUsingDeclaration
-        using (var scopeManager = IsolationLevel.HasValue
-                   ? await transactionManager.BeginAsync(Propagation, IsolationLevel.Value)
-                   : await transactionManager.BeginAsync(Propagation))
+        using (var transactionScope = IsolationLevel.HasValue
+                   ? mgr.CreateScope(Propagation, IsolationLevel.Value)
+                   : mgr.CreateScope(Propagation))
         {
+            await transactionScope.BeginAsync();
             try
             {
                 await next(context);
-                await scopeManager.CommitAsync();
+                await transactionScope.CommitAsync();
             }
             catch (Exception ex)
             {
                 if (NoRollbackFor != null && NoRollbackFor.IsAssignableFrom(ex.GetType()))
                 {
-                    await scopeManager.CommitAsync();
+                    await transactionScope.CommitAsync();
                 }
                 else
                 {
-                    await scopeManager.RollbackAsync();
+                    await transactionScope.RollbackAsync();
                     throw;
                 }
             }

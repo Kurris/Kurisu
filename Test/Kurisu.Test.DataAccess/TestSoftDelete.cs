@@ -1,6 +1,9 @@
 ﻿using System.Diagnostics.CodeAnalysis;
+using Kurisu.AspNetCore.Abstractions.DataAccess;
 using Kurisu.AspNetCore.Abstractions.DataAccess.Contract;
 using Kurisu.AspNetCore.DataAccess.SqlSugar.Services;
+using Kurisu.Extensions.SqlSugar.Extensions;
+using Kurisu.Extensions.SqlSugar.Services;
 using Kurisu.Test.DataAccess.Entities;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -20,7 +23,7 @@ public class TestSoftDelete
     [Fact]
     public async Task SoftDelete()
     {
-        await _dbContext.Deleteable<Test1WithSoftDeleteEntity>().ExecuteCommandAsync();
+        await _dbContext.AsSqlSugarDbContext().Deleteable<Test1WithSoftDeleteEntity>().ExecuteCommandAsync();
 
         await _dbContext.InsertAsync(new Test1WithSoftDeleteEntity
         {
@@ -36,10 +39,10 @@ public class TestSoftDelete
         data = await _dbContext.Queryable<Test1WithSoftDeleteEntity>().ToListAsync();
         Assert.Empty(data);
 
-        _dbContext.Client.QueryFilter.ClearAndBackup<ISoftDeleted>();
+        _dbContext.AsSqlSugarDbContext().Client.QueryFilter.ClearAndBackup<ISoftDeleted>();
         data = await _dbContext.Queryable<Test1WithSoftDeleteEntity>().ToListAsync();
         Assert.Single(data);
-        _dbContext.Client.QueryFilter.Restore();
+        _dbContext.AsSqlSugarDbContext().Client.QueryFilter.Restore();
 
         data = await _dbContext.Queryable<Test1WithSoftDeleteEntity>().ToListAsync();
         Assert.Empty(data);
@@ -49,7 +52,7 @@ public class TestSoftDelete
     [Fact]
     public async Task RealDelete()
     {
-        await _dbContext.Deleteable<Test1WithSoftDeleteEntity>().ExecuteCommandAsync();
+        await _dbContext.AsSqlSugarDbContext().Deleteable<Test1WithSoftDeleteEntity>().ExecuteCommandAsync();
 
         await _dbContext.InsertAsync(new Test1WithSoftDeleteEntity
         {
@@ -65,10 +68,10 @@ public class TestSoftDelete
         data = await _dbContext.Queryable<Test1WithSoftDeleteEntity>().ToListAsync();
         Assert.Empty(data);
 
-        _dbContext.Client.QueryFilter.ClearAndBackup<ISoftDeleted>();
+        _dbContext.AsSqlSugarDbContext().Client.QueryFilter.ClearAndBackup<ISoftDeleted>();
         data = await _dbContext.Queryable<Test1WithSoftDeleteEntity>().ToListAsync();
         Assert.Empty(data);
-        _dbContext.Client.QueryFilter.Restore();
+        _dbContext.AsSqlSugarDbContext().Client.QueryFilter.Restore();
 
         data = await _dbContext.Queryable<Test1WithSoftDeleteEntity>().ToListAsync();
         Assert.Empty(data);

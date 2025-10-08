@@ -1,6 +1,5 @@
-﻿using Dlhis.Entity.Basic.Entity;
+﻿using Kurisu.AspNetCore.Abstractions.DataAccess;
 using Kurisu.AspNetCore.Abstractions.DependencyInjection;
-using Kurisu.AspNetCore.DataAccess.SqlSugar.Services;
 using Kurisu.Test.WebApi_A.Aops;
 
 namespace Kurisu.Test.WebApi_A.Services.Implements;

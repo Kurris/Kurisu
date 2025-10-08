@@ -1,7 +1,4 @@
-using System;
-using System.Threading.Tasks;
-using Kurisu.AspNetCore;
-using Kurisu.AspNetCore.DataAccess.SqlSugar.Services;
+using Kurisu.AspNetCore.Abstractions.DataAccess;
 using Kurisu.AspNetCore.Scope;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;

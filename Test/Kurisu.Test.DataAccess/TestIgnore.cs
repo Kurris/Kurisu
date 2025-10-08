@@ -1,5 +1,8 @@
 ﻿using System.Diagnostics.CodeAnalysis;
+using Kurisu.AspNetCore.Abstractions.DataAccess;
 using Kurisu.AspNetCore.DataAccess.SqlSugar.Services;
+using Kurisu.Extensions.SqlSugar.Extensions;
+using Kurisu.Extensions.SqlSugar.Services;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Kurisu.Test.DataAccess;
@@ -19,9 +22,9 @@ public class TestIgnore
     [Fact]
     public void IgnoreSoftDeleted()
     {
-        var filterCount = _dbContext.Client.QueryFilter.GetFilterList.Count;
+        var filterCount = _dbContext.AsSqlSugarDbContext().Client.QueryFilter.GetFilterList.Count;
         var filterCount2 = 0;
-        _dbContext.IgnoreSoftDeleted(() => { filterCount2 = _dbContext.Client.QueryFilter.GetFilterList.Count; });
+        _dbContext.IgnoreSoftDeleted(() => { filterCount2 = _dbContext.AsSqlSugarDbContext().Client.QueryFilter.GetFilterList.Count; });
 
         Assert.Equal(2, filterCount);
         Assert.Equal(1, filterCount2);
@@ -31,9 +34,9 @@ public class TestIgnore
     [Fact]
     public void IgnoreTenant()
     {
-        var filterCount = _dbContext.Client.QueryFilter.GetFilterList.Count;
+        var filterCount = _dbContext.AsSqlSugarDbContext().Client.QueryFilter.GetFilterList.Count;
         var filterCount2 = 0;
-        _dbContext.IgnoreTenant(() => { filterCount2 = _dbContext.Client.QueryFilter.GetFilterList.Count; });
+        _dbContext.IgnoreTenant(() => { filterCount2 = _dbContext.AsSqlSugarDbContext().Client.QueryFilter.GetFilterList.Count; });
 
         Assert.Equal(2, filterCount);
         Assert.Equal(1, filterCount2);

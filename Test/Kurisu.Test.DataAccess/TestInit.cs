@@ -1,4 +1,5 @@
-using Kurisu.AspNetCore.DataAccess.SqlSugar.Services;
+using Kurisu.AspNetCore.Abstractions.DataAccess;
+using Kurisu.Extensions.SqlSugar.Extensions;
 using Kurisu.Test.DataAccess.Entities;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -17,7 +18,7 @@ public class TestInit
     [Fact]
     public void Init()
     {
-        _dbContext.Client.CodeFirst.InitTables<Test1Entity>();
-        _dbContext.Client.CodeFirst.InitTables<Test1WithSoftDeleteEntity>();
+        _dbContext.AsSqlSugarDbContext().Client.CodeFirst.InitTables<Test1Entity>();
+        _dbContext.AsSqlSugarDbContext().Client.CodeFirst.InitTables<Test1WithSoftDeleteEntity>();
     }
 }

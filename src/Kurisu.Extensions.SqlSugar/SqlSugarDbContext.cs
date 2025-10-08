@@ -1,22 +1,33 @@
 ﻿using System.Data;
 using System.Linq.Expressions;
 using Kurisu.AspNetCore.Abstractions.Authentication;
+using Kurisu.AspNetCore.Abstractions.DataAccess;
 using Kurisu.AspNetCore.Abstractions.DataAccess.Contract;
 using Kurisu.AspNetCore.DataAccess.SqlSugar;
 using Kurisu.AspNetCore.DataAccess.SqlSugar.Attributes;
 using Kurisu.AspNetCore.DataAccess.SqlSugar.Services;
+using Kurisu.Extensions.SqlSugar.Services;
 using Microsoft.Extensions.DependencyInjection;
 using SqlSugar;
 
-namespace Kurisu.Extensions.SqlSugar.Services.Implements;
+namespace Kurisu.Extensions.SqlSugar;
 
-internal class DbContext(ISqlSugarClient db, IServiceProvider serviceProvider) : IDbContext
+internal class SqlSugarDbContext : ISqlSugarDbContext
 {
-    private readonly ISqlSugarOptionsService _sqlSugarOptionsService = serviceProvider.GetRequiredService<ISqlSugarOptionsService>();
+    private readonly ISqlSugarOptionsService _sqlSugarOptionsService;
+    private readonly IServiceProvider _serviceProvider;
+    private readonly IDatasourceManager _datasourceManager;
 
-    public ISqlSugarClient Client { get; } = db;
+    public SqlSugarDbContext(IServiceProvider serviceProvider, IDatasourceManager datasourceManager)
+    {
+        _serviceProvider = serviceProvider;
+        _datasourceManager = datasourceManager;
+        _sqlSugarOptionsService = serviceProvider.GetRequiredService<ISqlSugarOptionsService>();
+    }
 
-    public IQueryableSetting GetQueryableSetting() => serviceProvider.GetRequiredService<IQueryableSetting>();
+    public ISqlSugarClient Client => (ISqlSugarClient)_datasourceManager.CurrentDbClient;
+
+    public IQueryableSetting GetQueryableSetting() => _serviceProvider.GetRequiredService<IQueryableSetting>();
 
 
     public ISugarQueryable<T> Queryable<T>()
@@ -38,7 +49,7 @@ internal class DbContext(ISqlSugarClient db, IServiceProvider serviceProvider) :
 
             if (!string.IsNullOrEmpty(tenantIdName))
             {
-                var currentUser = serviceProvider.GetRequiredService<ICurrentUser>();
+                var currentUser = _serviceProvider.GetRequiredService<ICurrentUser>();
                 var tenantsStr = currentUser.GetUserClaim("tenants");
                 if (!string.IsNullOrEmpty(tenantsStr))
                 {
@@ -51,7 +62,7 @@ internal class DbContext(ISqlSugarClient db, IServiceProvider serviceProvider) :
         // ReSharper disable once InvertIf
         if (setting.GetEnableDataPermission<T>())
         {
-            var permissionData = serviceProvider.GetRequiredService<IGetDataPermissions>().GetData<T>();
+            var permissionData = _serviceProvider.GetRequiredService<IGetDataPermissions>().GetData<T>();
             query = permissionData.Aggregate(query, (current, item) => current.Where(GetWhereExpression<T, Guid>(item.Key, item.Value)));
         }
 
@@ -73,7 +84,7 @@ internal class DbContext(ISqlSugarClient db, IServiceProvider serviceProvider) :
     public IDbContext ChangeDb(string dbId)
     {
         var client = ((SqlSugarClient)Client).GetConnection(dbId);
-        return new DbContext(client, serviceProvider);
+        return new SqlSugarDbContext(_serviceProvider, _datasourceManager);
     }
 
 

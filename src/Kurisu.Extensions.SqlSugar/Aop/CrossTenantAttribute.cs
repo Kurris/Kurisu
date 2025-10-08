@@ -1,15 +1,15 @@
-﻿using Kurisu.AspNetCore.DataAccess.SqlSugar.Services;
+﻿using AspectCore.DynamicProxy;
+using Kurisu.AspNetCore.Abstractions.DataAccess;
 using Kurisu.Extensions.SqlSugar.Services;
-using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Kurisu.Extensions.SqlSugar.Aop;
 
 /// <summary>
-/// 根据权限跨基地
+/// 根据权限跨租户
 /// </summary>
 [AttributeUsage(AttributeTargets.Method)]
-public class CrossTenantAttribute : Attribute, IAsyncActionFilter
+public class CrossTenantAttribute : AbstractInterceptorAttribute
 {
     private readonly Type[] _ignoreTypes;
 
@@ -18,6 +18,7 @@ public class CrossTenantAttribute : Attribute, IAsyncActionFilter
     /// </summary>
     public CrossTenantAttribute()
     {
+        _ignoreTypes = Array.Empty<Type>();
     }
 
     /// <summary>
@@ -29,21 +30,16 @@ public class CrossTenantAttribute : Attribute, IAsyncActionFilter
         _ignoreTypes = ignoreTypes;
     }
 
-    /// <summary>
-    /// 
-    /// </summary>
-    /// <param name="context"></param>
-    /// <param name="next"></param>
-    public async Task OnActionExecutionAsync(ActionExecutingContext context, ActionExecutionDelegate next)
+    public override async Task Invoke(AspectContext context, AspectDelegate next)
     {
-        var setting = context.HttpContext.RequestServices.GetRequiredService<IQueryableSetting>();
-        var dbContext = context.HttpContext.RequestServices.GetRequiredService<IDbContext>();
+        var setting = context.ServiceProvider.GetRequiredService<IQueryableSetting>();
+        var dbContext = context.ServiceProvider.GetRequiredService<IDbContext>();
 
         await dbContext.IgnoreTenantAsync(async () =>
         {
             setting.EnableCrossTenant = true;
             setting.CrossTenantIgnoreTypes = _ignoreTypes ?? Array.Empty<Type>();
-            await next();
+            await next(context);
         });
     }
 }

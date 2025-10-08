@@ -1,5 +1,6 @@
 ﻿using System.Xml.Linq;
-using Kurisu.AspNetCore.DataAccess.SqlSugar.Services;
+using Kurisu.AspNetCore.Abstractions.DataAccess;
+using Kurisu.Extensions.SqlSugar.Extensions;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.DataProtection.KeyManagement;
 using Microsoft.AspNetCore.DataProtection.Repositories;
@@ -69,7 +70,7 @@ internal class SugarSqlXmlRepository : BaseXmlRepository
         {
             using var scope = Services.CreateScope();
             var db = scope.ServiceProvider.GetRequiredService<IDbContext>();
-            db.Client.CodeFirst.InitTables<DataProtectionKey>();
+            db.AsSqlSugarDbContext().Client.CodeFirst.InitTables<DataProtectionKey>();
             var data = db.Queryable<DataProtectionKey>().ToList();
             foreach (var key in data)
             {
@@ -90,7 +91,7 @@ internal class SugarSqlXmlRepository : BaseXmlRepository
     {
         using var scope = Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<IDbContext>();
-        db.Client.CodeFirst.InitTables<DataProtectionKey>();
+        db.AsSqlSugarDbContext().Client.CodeFirst.InitTables<DataProtectionKey>();
         var newKey = new DataProtectionKey
         {
             FriendlyName = friendlyName,
@@ -110,7 +111,7 @@ public abstract class BaseXmlRepository : IXmlRepository
     /// 服务提供器。
     /// </summary>
     public IServiceProvider Services { get; set; }
-    
+
     /// <summary>
     /// 日志工厂。
     /// </summary>
