@@ -20,8 +20,6 @@ namespace Kurisu.Test.DataAccess;
 [ExcludeFromCodeCoverage]
 public class TestHelper
 {
-    
-    
     public static IServiceProvider GetServiceProvider()
     {
         var services = new ServiceCollection();
@@ -55,9 +53,10 @@ public class TestHelper
         services.AddScoped<ITransactionalOuterService, TransactionalOuterService>();
 
         var serviceProvider = services.BuildDynamicProxyProvider();
-
-        var scope = serviceProvider.CreateScope();
-        return scope.ServiceProvider;
+        
+        // Return the root provider; callers should create and hold a scope when they need
+        // a scoped IServiceProvider that must stay alive across test method invocations.
+        return serviceProvider;
     }
 
     /// <summary>

@@ -2,6 +2,7 @@ using Kurisu.AspNetCore.Abstractions.DataAccess;
 using Kurisu.AspNetCore.Extensions;
 using Microsoft.Extensions.DependencyInjection;
 using SqlSugar;
+using Kurisu.Extensions.SqlSugar;
 
 namespace Kurisu.Test.DataAccess.Trans;
 
@@ -375,5 +376,82 @@ public class TransactionManagerTests
 
         Assert.Equal(1, countOuter);
         Assert.Equal(0, countInner);
+    }
+
+    /// <summary>
+    /// 测试：Propagation.Never 在没有 ambient 事务时按非事务方式执行
+    /// </summary>
+    [Fact]
+    public async Task Never_WithoutAmbient_ExecutesWithoutTransaction()
+    {
+        var sp = TestHelper.GetServiceProvider();
+        var manager = sp.GetRequiredService<IDatasourceManager>();
+
+        await PrepareTableAsync(manager);
+
+        using (var scope = manager.CreateTransScope(Propagation.Never))
+        {
+            await scope.BeginAsync();
+            var client = manager.GetCurrentClient<ISqlSugarClient>();
+            await client!.Ado.ExecuteCommandAsync("INSERT INTO tx_test (name) VALUES (@name)", new { name = "never_mgr" });
+            await scope.CommitAsync();
+        }
+
+        var count = await CountAsync(manager, "never_mgr");
+        Assert.Equal(1, count);
+    }
+
+    /// <summary>
+    /// 测试：Propagation.Never 在有 ambient 事务时应抛出 InvalidOperationException
+    /// </summary>
+    [Fact]
+    public async Task Never_WithAmbient_ThrowsInvalidOperationException()
+    {
+        var sp = TestHelper.GetServiceProvider();
+        var manager = sp.GetRequiredService<IDatasourceManager>();
+
+        await PrepareTableAsync(manager);
+
+        using (var outer = manager.CreateTransScope(Propagation.Required))
+        {
+            await outer.BeginAsync();
+            // 在有外层事务的情况下，创建 Never scope 应抛异常
+            Assert.Throws<InvalidOperationException>(() => manager.CreateTransScope(Propagation.Never));
+            await outer.RollbackAsync();
+        }
+    }
+
+    /// <summary>
+    /// 测试：Dispose 后 Propagation 栈应清空，ClientCount 应为 1
+    /// </summary>
+    [Fact]
+    public async Task Dispose_ClearsPropagationStack_And_LeavesOneClient()
+    {
+        var sp = TestHelper.GetServiceProvider();
+        var manager = sp.GetRequiredService<IDatasourceManager>();
+        var concrete = (SqlSugarDatasourceManager)manager;
+
+        await PrepareTableAsync(manager);
+
+        using (var outer = manager.CreateTransScope(Propagation.Required))
+        {
+            await outer.BeginAsync();
+            var outerClient = manager.GetCurrentClient<ISqlSugarClient>();
+            await outerClient!.Ado.ExecuteCommandAsync("INSERT INTO tx_test (name) VALUES (@name)", new { name = "dispose_outer" });
+
+            using (var inner = manager.CreateTransScope(Propagation.RequiresNew))
+            {
+                await inner.BeginAsync();
+                var innerClient = manager.GetCurrentClient<ISqlSugarClient>();
+                await innerClient!.Ado.ExecuteCommandAsync("INSERT INTO tx_test (name) VALUES (@name)", new { name = "dispose_inner" });
+                await inner.CommitAsync();
+            }
+
+            await outer.CommitAsync();
+        }
+
+        // 在所有作用域 Dispose 后，检查栈与 client 状态
+        Assert.Equal(0, concrete.PropagationCount);
+        Assert.Equal(1, concrete.ClientCount);
     }
 }

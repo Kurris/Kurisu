@@ -99,4 +99,11 @@ public class TransactionalInnerService : ITransactionalInnerService
         await _dbContext.InsertAsync(new TxTest { Name = name });
         throw new Exception("nested inner fail");
     }
+
+    // 新增：Never 传播性 - 在存在外层事务时应抛出异常；无外层事务时正常执行
+    [Transactional(Propagation = Propagation.Never)]
+    public async Task InnerNeverAsync(string name)
+    {
+        await _dbContext.InsertAsync(new TxTest { Name = name });
+    }
 }

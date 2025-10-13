@@ -2,11 +2,32 @@ using Kurisu.AspNetCore.Abstractions.DataAccess;
 using Kurisu.Extensions.SqlSugar.Extensions;
 using Kurisu.Test.DataAccess.Trans.Mock;
 using Microsoft.Extensions.DependencyInjection;
+using Kurisu.Extensions.SqlSugar;
 
 namespace Kurisu.Test.DataAccess.Trans;
 
 public class TransactionalAttributeTests : IDisposable
 {
+    // 保存供所有测试方法和 Dispose 使用的同一个 IServiceProvider 实例
+    private readonly IServiceScope _scope;
+    private readonly IServiceProvider _sp;
+    private int _clientCount = 1;
+
+    public TransactionalAttributeTests()
+    {
+        var root = TestHelper.GetServiceProvider();
+        // create a scope and keep it alive for the duration of the test instance
+        _scope = root.CreateScope();
+        _sp = _scope.ServiceProvider;
+
+        // Ensure a scoped IDbContext is resolved at test setup so the datasource manager
+        // creates its base client. Many tests depend on a client being present; resolving
+        // IDbContext here and accessing its SqlSugar client ensures a client is created
+        // on the datasource manager even for tests that don't touch the DB directly.
+        //var dbContext = _sp.GetRequiredService<IDbContext>();
+        //_ = dbContext.AsSqlSugarDbContext().Client;
+    }
+
     /// <summary>
     /// 准备测试用表：若不存在则创建，并清空数据。
     /// </summary>
@@ -31,7 +52,7 @@ public class TransactionalAttributeTests : IDisposable
     [Fact]
     public async Task Transactional_Commits_OnSuccess()
     {
-        var sp = TestHelper.GetServiceProvider();
+        var sp = _sp;
         var dbContext = sp.GetRequiredService<IDbContext>();
         await PrepareTableAsync(dbContext);
 
@@ -45,7 +66,7 @@ public class TransactionalAttributeTests : IDisposable
     [Fact]
     public async Task Transactional_Rollbacks_OnException()
     {
-        var sp = TestHelper.GetServiceProvider();
+        var sp = _sp;
         var dbContext = sp.GetRequiredService<IDbContext>();
         await PrepareTableAsync(dbContext);
 
@@ -59,7 +80,7 @@ public class TransactionalAttributeTests : IDisposable
     [Fact]
     public async Task Required_Propagation_Commits_All()
     {
-        var sp = TestHelper.GetServiceProvider();
+        var sp = _sp;
         var dbContext = sp.GetRequiredService<IDbContext>();
         await PrepareTableAsync(dbContext);
 
@@ -73,7 +94,7 @@ public class TransactionalAttributeTests : IDisposable
     [Fact]
     public async Task Required_Propagation_Rollback_All_OnException()
     {
-        var sp = TestHelper.GetServiceProvider();
+        var sp = _sp;
         var dbContext = sp.GetRequiredService<IDbContext>();
         await PrepareTableAsync(dbContext);
 
@@ -87,7 +108,7 @@ public class TransactionalAttributeTests : IDisposable
     [Fact]
     public async Task RequiresNew_Propagation_OuterCommit_InnerRollback()
     {
-        var sp = TestHelper.GetServiceProvider();
+        var sp = _sp;
         var dbContext = sp.GetRequiredService<IDbContext>();
         await PrepareTableAsync(dbContext);
 
@@ -101,7 +122,7 @@ public class TransactionalAttributeTests : IDisposable
     [Fact]
     public async Task RequiresNew_Propagation_OuterCommit_InnerCommit()
     {
-        var sp = TestHelper.GetServiceProvider();
+        var sp = _sp;
         var dbContext = sp.GetRequiredService<IDbContext>();
         await PrepareTableAsync(dbContext);
 
@@ -115,7 +136,7 @@ public class TransactionalAttributeTests : IDisposable
     [Fact]
     public async Task RequiresNew_Propagation_OuterRollback_WhenInnerThrows_Uncaught()
     {
-        var sp = TestHelper.GetServiceProvider();
+        var sp = _sp;
         var dbContext = sp.GetRequiredService<IDbContext>();
         await PrepareTableAsync(dbContext);
 
@@ -130,7 +151,7 @@ public class TransactionalAttributeTests : IDisposable
     [Fact]
     public async Task Required_Propagation_InnerThrows_OuterCatches_RollbackAll()
     {
-        var sp = TestHelper.GetServiceProvider();
+        var sp = _sp;
         var dbContext = sp.GetRequiredService<IDbContext>();
         await PrepareTableAsync(dbContext);
 
@@ -146,7 +167,7 @@ public class TransactionalAttributeTests : IDisposable
     [Fact]
     public async Task Required_Propagation_InnerThrows_OuterDoesNotCatch_RollbackAll()
     {
-        var sp = TestHelper.GetServiceProvider();
+        var sp = _sp;
         var dbContext = sp.GetRequiredService<IDbContext>();
         await PrepareTableAsync(dbContext);
 
@@ -160,7 +181,7 @@ public class TransactionalAttributeTests : IDisposable
     [Fact]
     public async Task RequiresNew_OuterInnerRequired_InnerThrows_OuterCatches_RollbackAll()
     {
-        var sp = TestHelper.GetServiceProvider();
+        var sp = _sp;
         var dbContext = sp.GetRequiredService<IDbContext>();
         await PrepareTableAsync(dbContext);
 
@@ -176,7 +197,7 @@ public class TransactionalAttributeTests : IDisposable
     [Fact]
     public async Task RequiresNew_OuterInnerRequired_InnerThrows_OuterDoesNotCatch_RollbackAll()
     {
-        var sp = TestHelper.GetServiceProvider();
+        var sp = _sp;
         var dbContext = sp.GetRequiredService<IDbContext>();
         await PrepareTableAsync(dbContext);
 
@@ -190,7 +211,7 @@ public class TransactionalAttributeTests : IDisposable
     [Fact]
     public async Task Transactional_NoRollbackFor_Commits_WhenSpecifiedException()
     {
-        var sp = TestHelper.GetServiceProvider();
+        var sp = _sp;
         var dbContext = sp.GetRequiredService<IDbContext>();
         await PrepareTableAsync(dbContext);
 
@@ -206,7 +227,7 @@ public class TransactionalAttributeTests : IDisposable
     [Fact]
     public async Task OuterRequiredInnerNoRollback_CommitsBoth_WhenInnerMarkedNoRollbackFor()
     {
-        var sp = TestHelper.GetServiceProvider();
+        var sp = _sp;
         var dbContext = sp.GetRequiredService<IDbContext>();
         await PrepareTableAsync(dbContext);
 
@@ -223,7 +244,7 @@ public class TransactionalAttributeTests : IDisposable
     [Fact]
     public async Task OuterRequiredInnerSwallow_CommitsBoth_WhenInnerSwallowsException()
     {
-        var sp = TestHelper.GetServiceProvider();
+        var sp = _sp;
         var dbContext = sp.GetRequiredService<IDbContext>();
         await PrepareTableAsync(dbContext);
 
@@ -238,7 +259,7 @@ public class TransactionalAttributeTests : IDisposable
     [Fact]
     public async Task OuterRequiredInnerRequiresNew_NoRollback_CommitsInnerAndOuter()
     {
-        var sp = TestHelper.GetServiceProvider();
+        var sp = _sp;
         var dbContext = sp.GetRequiredService<IDbContext>();
         await PrepareTableAsync(dbContext);
 
@@ -255,7 +276,8 @@ public class TransactionalAttributeTests : IDisposable
     [Fact]
     public async Task Mandatory_WithoutAmbient_ThrowsInvalidOperationException()
     {
-        var sp = TestHelper.GetServiceProvider();
+        _clientCount = 0;
+        var sp = _sp;
         var service = sp.GetRequiredService<ITransactionalInnerService>();
 
         await Assert.ThrowsAsync<InvalidOperationException>(async () => await service.InnerMandatoryAsync("m1"));
@@ -264,7 +286,7 @@ public class TransactionalAttributeTests : IDisposable
     [Fact]
     public async Task Mandatory_WithAmbient_CommitsBoth()
     {
-        var sp = TestHelper.GetServiceProvider();
+        var sp = _sp;
         var dbContext = sp.GetRequiredService<IDbContext>();
         await PrepareTableAsync(dbContext);
 
@@ -278,7 +300,7 @@ public class TransactionalAttributeTests : IDisposable
     [Fact]
     public async Task Mandatory_WithAmbient_InnerThrows_OuterDoesNotCatch_RollbackAll()
     {
-        var sp = TestHelper.GetServiceProvider();
+        var sp = _sp;
         var dbContext = sp.GetRequiredService<IDbContext>();
         await PrepareTableAsync(dbContext);
 
@@ -292,7 +314,7 @@ public class TransactionalAttributeTests : IDisposable
     [Fact]
     public async Task Mandatory_WithAmbient_InnerThrows_OuterCatches_CommitsBoth()
     {
-        var sp = TestHelper.GetServiceProvider();
+        var sp = _sp;
         var dbContext = sp.GetRequiredService<IDbContext>();
         await PrepareTableAsync(dbContext);
 
@@ -306,7 +328,7 @@ public class TransactionalAttributeTests : IDisposable
     [Fact]
     public async Task Nested_WithAmbient_CommitsInnerRolledUpToOuterWhenNoErrors()
     {
-        var sp = TestHelper.GetServiceProvider();
+        var sp = _sp;
         var dbContext = sp.GetRequiredService<IDbContext>();
         await PrepareTableAsync(dbContext);
 
@@ -320,7 +342,7 @@ public class TransactionalAttributeTests : IDisposable
     [Fact]
     public async Task Nested_WithAmbient_InnerThrows_OuterDoesNotCatch_RollbackAll()
     {
-        var sp = TestHelper.GetServiceProvider();
+        var sp = _sp;
         var dbContext = sp.GetRequiredService<IDbContext>();
         await PrepareTableAsync(dbContext);
 
@@ -334,7 +356,7 @@ public class TransactionalAttributeTests : IDisposable
     [Fact]
     public async Task Nested_WithAmbient_InnerThrows_OuterCatches_OnlyOuterPersists()
     {
-        var sp = TestHelper.GetServiceProvider();
+        var sp = _sp;
         var dbContext = sp.GetRequiredService<IDbContext>();
         await PrepareTableAsync(dbContext);
 
@@ -345,8 +367,43 @@ public class TransactionalAttributeTests : IDisposable
         Assert.Equal(0, await CountAsync(dbContext, "inner_n3"));
     }
 
+    [Fact]
+    public async Task Never_WithoutAmbient_Commits()
+    {
+        var sp = _sp;
+        var dbContext = sp.GetRequiredService<IDbContext>();
+        await PrepareTableAsync(dbContext);
+
+        var service = sp.GetRequiredService<ITransactionalInnerService>();
+        await service.InnerNeverAsync("never1");
+
+        Assert.Equal(1, await CountAsync(dbContext, "never1"));
+    }
+
+    [Fact]
+    public async Task Never_WithAmbient_ThrowsInvalidOperationException()
+    {
+        var sp = _sp;
+        var dbContext = sp.GetRequiredService<IDbContext>();
+        await PrepareTableAsync(dbContext);
+
+        var service = sp.GetRequiredService<ITransactionalOuterService>();
+        await Assert.ThrowsAsync<InvalidOperationException>(async () => await service.OuterRequiredCallsNeverAsync("outer_never", "inner_never"));
+
+        Assert.Equal(0, await CountAsync(dbContext, "outer_never"));
+        Assert.Equal(0, await CountAsync(dbContext, "inner_never"));
+    }
+
     public void Dispose()
     {
-        
+        // Verify that datasource manager cleaned up all clients/propagations after each test
+        var manager = _sp.GetRequiredService<IDatasourceManager>();
+        var concrete = manager as SqlSugarDatasourceManager;
+        Assert.NotNull(concrete);
+        Assert.Equal(_clientCount, concrete.ClientCount);
+        Assert.Equal(0, concrete.PropagationCount);
+
+        // Dispose the scope we created in the constructor
+        _scope.Dispose();
     }
 }

@@ -13,6 +13,7 @@ public sealed class SqlSugarDatasourceManager : AbstractDatasourceManager<ISqlSu
     private readonly Action<bool> _onAfterScope;
 
     public int ClientCount => _clients.Count;
+    public int PropagationCount => _propagations.Count;
 
     public SqlSugarDatasourceManager(IServiceProvider serviceProvider)
     {
@@ -112,6 +113,18 @@ public sealed class SqlSugarDatasourceManager : AbstractDatasourceManager<ISqlSu
 
                 // 有外层事务：使用 savepoint 实现嵌套事务
                 return new NestedTransactionScope(client, isolationLevel, _onAfterScope);
+            }
+            case Propagation.Never:
+            {
+                // 如果当前存在任何 transaction propagation，则不允许在事务中运行
+                if (_propagations.Count > 0)
+                {
+                    throw new InvalidOperationException("Existing transaction found for transaction marked with propagation 'Never'.");
+                }
+
+                // 无 ambient：按非事务方式执行（Begin/Commit/Rollback 都为 no-op）
+                var client = _clients.Count > 0 ? GetCurrentClient<ISqlSugarClient>() : CreateClient();
+                return new NoTransactionScope(client, isolationLevel, _onAfterScope);
             }
 
             default:
@@ -271,6 +284,43 @@ public sealed class SqlSugarDatasourceManager : AbstractDatasourceManager<ISqlSu
         public override void Dispose()
         {
             _afterScope?.Invoke(!_hasTransaction);
+        }
+    }
+
+    public class NoTransactionScope : AbstractTransactionScope
+    {
+        private readonly Action<bool> _afterScope;
+
+        public NoTransactionScope(ISqlSugarClient client, IsolationLevel? isolationLevel, Action<bool> afterScope)
+        {
+            // client 参数 保留以便在需要时执行 SQL；但 NoTransactionScope 本身不管理事务
+            // 使用 isolationLevel 参数以避免未使用参数的分析器警告
+            _ = isolationLevel;
+            _afterScope = afterScope;
+        }
+
+        public override Task BeginAsync()
+        {
+            // Explicitly do nothing: never start a transaction
+            return Task.CompletedTask;
+        }
+
+        public override Task CommitAsync()
+        {
+            // No transaction to commit
+            return Task.CompletedTask;
+        }
+
+        public override Task RollbackAsync()
+        {
+            // No transaction to rollback
+            return Task.CompletedTask;
+        }
+
+        public override void Dispose()
+        {
+            // 调用 afterScope，但不弹出 client（因为未创建新 client/事务）
+            _afterScope?.Invoke(false);
         }
     }
 }

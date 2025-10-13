@@ -26,4 +26,7 @@ public interface ITransactionalOuterService
     Task OuterRequiredCallsNestedAsync(string outerName, string innerName);
     Task OuterRequiredCallsNestedAndThrowNoCatchAsync(string outerName, string innerName);
     Task OuterRequiredCallsNestedAndThrowCatchAsync(string outerName, string innerName);
+
+    // 新增：用于 Never 测试的 outer 方法
+    Task OuterRequiredCallsNeverAsync(string outerName, string innerName);
 }

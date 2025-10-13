@@ -21,4 +21,7 @@ public interface ITransactionalInnerService
     // 新增：Nested 传播性方法
     Task InnerNestedAsync(string name);
     Task InnerNestedAndThrowAsync(string name);
+
+    // 新增：Never 传播性方法
+    Task InnerNeverAsync(string name);
 }

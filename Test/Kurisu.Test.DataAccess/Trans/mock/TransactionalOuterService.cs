@@ -207,4 +207,13 @@ public class TransactionalOuterService : ITransactionalOuterService
             // swallow
         }
     }
+
+    // 新增：Outer 调用 Inner Never（在 Required ambient 下）
+    [Transactional]
+    public async Task OuterRequiredCallsNeverAsync(string outerName, string innerName)
+    {
+        await _dbContext.InsertAsync(new TxTest { Name = outerName });
+        var inner = _serviceProvider.GetRequiredService<ITransactionalInnerService>();
+        await inner.InnerNeverAsync(innerName);
+    }
 }
