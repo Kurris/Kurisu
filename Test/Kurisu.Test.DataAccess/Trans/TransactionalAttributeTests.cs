@@ -5,7 +5,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Kurisu.Test.DataAccess.Trans;
 
-public class TransactionalAttributeTests
+public class TransactionalAttributeTests : IDisposable
 {
     /// <summary>
     /// 准备测试用表：若不存在则创建，并清空数据。
@@ -250,5 +250,103 @@ public class TransactionalAttributeTests
         // inner committed (RequiresNew), outer rolled back
         Assert.Equal(0, await CountAsync(dbContext, "outer"));
         Assert.Equal(1, await CountAsync(dbContext, "inner"));
+    }
+
+    [Fact]
+    public async Task Mandatory_WithoutAmbient_ThrowsInvalidOperationException()
+    {
+        var sp = TestHelper.GetServiceProvider();
+        var service = sp.GetRequiredService<ITransactionalInnerService>();
+
+        await Assert.ThrowsAsync<InvalidOperationException>(async () => await service.InnerMandatoryAsync("m1"));
+    }
+
+    [Fact]
+    public async Task Mandatory_WithAmbient_CommitsBoth()
+    {
+        var sp = TestHelper.GetServiceProvider();
+        var dbContext = sp.GetRequiredService<IDbContext>();
+        await PrepareTableAsync(dbContext);
+
+        var service = sp.GetRequiredService<ITransactionalOuterService>();
+        await service.OuterRequiredCallsMandatoryAsync("outer_m", "inner_m");
+
+        Assert.Equal(1, await CountAsync(dbContext, "outer_m"));
+        Assert.Equal(1, await CountAsync(dbContext, "inner_m"));
+    }
+
+    [Fact]
+    public async Task Mandatory_WithAmbient_InnerThrows_OuterDoesNotCatch_RollbackAll()
+    {
+        var sp = TestHelper.GetServiceProvider();
+        var dbContext = sp.GetRequiredService<IDbContext>();
+        await PrepareTableAsync(dbContext);
+
+        var service = sp.GetRequiredService<ITransactionalOuterService>();
+        await Assert.ThrowsAsync<Exception>(async () => await service.OuterRequiredCallsMandatoryAndThrowNoCatchAsync("outer_m2", "inner_m2"));
+
+        Assert.Equal(0, await CountAsync(dbContext, "outer_m2"));
+        Assert.Equal(0, await CountAsync(dbContext, "inner_m2"));
+    }
+
+    [Fact]
+    public async Task Mandatory_WithAmbient_InnerThrows_OuterCatches_CommitsBoth()
+    {
+        var sp = TestHelper.GetServiceProvider();
+        var dbContext = sp.GetRequiredService<IDbContext>();
+        await PrepareTableAsync(dbContext);
+
+        var service = sp.GetRequiredService<ITransactionalOuterService>();
+        await service.OuterRequiredCallsMandatoryAndThrowCatchAsync("outer_m3", "inner_m3");
+
+        Assert.Equal(1, await CountAsync(dbContext, "outer_m3"));
+        Assert.Equal(1, await CountAsync(dbContext, "inner_m3"));
+    }
+
+    [Fact]
+    public async Task Nested_WithAmbient_CommitsInnerRolledUpToOuterWhenNoErrors()
+    {
+        var sp = TestHelper.GetServiceProvider();
+        var dbContext = sp.GetRequiredService<IDbContext>();
+        await PrepareTableAsync(dbContext);
+
+        var service = sp.GetRequiredService<ITransactionalOuterService>();
+        await service.OuterRequiredCallsNestedAsync("outer_n", "inner_n");
+
+        Assert.Equal(1, await CountAsync(dbContext, "outer_n"));
+        Assert.Equal(1, await CountAsync(dbContext, "inner_n"));
+    }
+
+    [Fact]
+    public async Task Nested_WithAmbient_InnerThrows_OuterDoesNotCatch_RollbackAll()
+    {
+        var sp = TestHelper.GetServiceProvider();
+        var dbContext = sp.GetRequiredService<IDbContext>();
+        await PrepareTableAsync(dbContext);
+
+        var service = sp.GetRequiredService<ITransactionalOuterService>();
+        await Assert.ThrowsAsync<Exception>(async () => await service.OuterRequiredCallsNestedAndThrowNoCatchAsync("outer_n2", "inner_n2"));
+
+        Assert.Equal(0, await CountAsync(dbContext, "outer_n2"));
+        Assert.Equal(0, await CountAsync(dbContext, "inner_n2"));
+    }
+
+    [Fact]
+    public async Task Nested_WithAmbient_InnerThrows_OuterCatches_OnlyOuterPersists()
+    {
+        var sp = TestHelper.GetServiceProvider();
+        var dbContext = sp.GetRequiredService<IDbContext>();
+        await PrepareTableAsync(dbContext);
+
+        var service = sp.GetRequiredService<ITransactionalOuterService>();
+        await service.OuterRequiredCallsNestedAndThrowCatchAsync("outer_n3", "inner_n3");
+
+        Assert.Equal(1, await CountAsync(dbContext, "outer_n3"));
+        Assert.Equal(0, await CountAsync(dbContext, "inner_n3"));
+    }
+
+    public void Dispose()
+    {
+        
     }
 }

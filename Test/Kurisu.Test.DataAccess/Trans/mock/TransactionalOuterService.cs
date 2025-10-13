@@ -139,4 +139,72 @@ public class TransactionalOuterService : ITransactionalOuterService
         var inner = _serviceProvider.GetRequiredService<ITransactionalInnerService>();
         await inner.InsertAndThrowNoRollbackRequiresNewAsync(innerName);
     }
+
+    // 新增：Outer 调用 Inner Mandatory（在 Required ambient 下）
+    [Transactional]
+    public async Task OuterRequiredCallsMandatoryAsync(string outerName, string innerName)
+    {
+        await _dbContext.InsertAsync(new TxTest { Name = outerName });
+        var inner = _serviceProvider.GetRequiredService<ITransactionalInnerService>();
+        await inner.InnerMandatoryAsync(innerName);
+    }
+
+    // 新增：Outer 调用 Inner Mandatory 并让 inner 抛异常，外层不捕获
+    [Transactional]
+    public async Task OuterRequiredCallsMandatoryAndThrowNoCatchAsync(string outerName, string innerName)
+    {
+        await _dbContext.InsertAsync(new TxTest { Name = outerName });
+        var inner = _serviceProvider.GetRequiredService<ITransactionalInnerService>();
+        await inner.InnerMandatoryAndThrowAsync(innerName);
+    }
+
+    // 新增：Outer 调用 Inner Mandatory 并捕获异常（swallow）
+    [Transactional]
+    public async Task OuterRequiredCallsMandatoryAndThrowCatchAsync(string outerName, string innerName)
+    {
+        await _dbContext.InsertAsync(new TxTest { Name = outerName });
+        var inner = _serviceProvider.GetRequiredService<ITransactionalInnerService>();
+        try
+        {
+            await inner.InnerMandatoryAndThrowAsync(innerName);
+        }
+        catch
+        {
+            // swallow
+        }
+    }
+
+    // 新增：Outer 调用 Inner Nested（在 Required ambient 下）
+    [Transactional]
+    public async Task OuterRequiredCallsNestedAsync(string outerName, string innerName)
+    {
+        await _dbContext.InsertAsync(new TxTest { Name = outerName });
+        var inner = _serviceProvider.GetRequiredService<ITransactionalInnerService>();
+        await inner.InnerNestedAsync(innerName);
+    }
+
+    // 新增：Outer 调用 Inner Nested 并让 inner 抛异常，外层不捕获
+    [Transactional]
+    public async Task OuterRequiredCallsNestedAndThrowNoCatchAsync(string outerName, string innerName)
+    {
+        await _dbContext.InsertAsync(new TxTest { Name = outerName });
+        var inner = _serviceProvider.GetRequiredService<ITransactionalInnerService>();
+        await inner.InnerNestedAndThrowAsync(innerName);
+    }
+
+    // 新增：Outer 调用 Inner Nested 并捕获异常（swallow）
+    [Transactional]
+    public async Task OuterRequiredCallsNestedAndThrowCatchAsync(string outerName, string innerName)
+    {
+        await _dbContext.InsertAsync(new TxTest { Name = outerName });
+        var inner = _serviceProvider.GetRequiredService<ITransactionalInnerService>();
+        try
+        {
+            await inner.InnerNestedAndThrowAsync(innerName);
+        }
+        catch
+        {
+            // swallow
+        }
+    }
 }

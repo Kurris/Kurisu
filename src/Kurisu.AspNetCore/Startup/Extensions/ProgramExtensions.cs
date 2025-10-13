@@ -1,5 +1,6 @@
 ﻿using System.Threading.Tasks;
 using Kurisu.AspNetCore.Abstractions.DependencyInjection;
+using Kurisu.AspNetCore.Startup;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -19,7 +20,7 @@ public static class ProgramExtensions
     /// </summary>
     /// <param name="hostBuilder"></param>
     /// <typeparam name="TStartup"></typeparam>
-    public static void RunKurisu<TStartup>(this IHostBuilder hostBuilder) where TStartup : class
+    public static void RunKurisu<TStartup>(this IHostBuilder hostBuilder) where TStartup : DefaultStartup
     {
         hostBuilder.RunKurisuAsync<TStartup>().Wait();
     }
@@ -30,7 +31,7 @@ public static class ProgramExtensions
     /// <typeparam name="TStartup"></typeparam>
     /// <param name="hostBuilder"></param>
     /// <returns></returns>
-    public static async Task RunKurisuAsync<TStartup>(this IHostBuilder hostBuilder) where TStartup : class
+    public static async Task RunKurisuAsync<TStartup>(this IHostBuilder hostBuilder) where TStartup : DefaultStartup
     {
         var host = hostBuilder
             .ConfigureLogging(builder =>

@@ -16,4 +16,14 @@ public interface ITransactionalOuterService
     Task OuterRequiredInnerNoRollbackAsync(string outerName, string innerName);
     Task OuterRequiredInnerSwallowAsync(string outerName, string innerName);
     Task OuterRequiredInnerRequiresNewNoCatchAsync(string outerName, string innerName);
+
+    // 新增：用于 Mandatory 测试的 outer 方法
+    Task OuterRequiredCallsMandatoryAsync(string outerName, string innerName);
+    Task OuterRequiredCallsMandatoryAndThrowNoCatchAsync(string outerName, string innerName);
+    Task OuterRequiredCallsMandatoryAndThrowCatchAsync(string outerName, string innerName);
+
+    // 新增：用于 Nested 测试的 outer 方法
+    Task OuterRequiredCallsNestedAsync(string outerName, string innerName);
+    Task OuterRequiredCallsNestedAndThrowNoCatchAsync(string outerName, string innerName);
+    Task OuterRequiredCallsNestedAndThrowCatchAsync(string outerName, string innerName);
 }

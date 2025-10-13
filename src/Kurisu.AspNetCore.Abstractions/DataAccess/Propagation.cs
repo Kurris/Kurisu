@@ -13,27 +13,17 @@ public enum Propagation
     RequiresNew,
 
     /// <summary>
-    /// 如果存在事务则加入事务，否则以非事务方式执行。
-    /// </summary>
-    //Supports,
-
-    /// <summary>
-    /// 始终以非事务方式执行，若存在事务则挂起当前事务。
-    /// </summary>
-    //NotSupported,
-
-    /// <summary>
     /// 必须在事务中运行，否则抛出异常。
     /// </summary>
-    //Mandatory,
+    Mandatory,
 
     /// <summary>
     /// 不允许在事务中运行，若存在事务则抛出异常。
     /// </summary>
-    //Never,
+    Never,
 
     /// <summary>
     /// 若存在事务则在嵌套事务中执行，否则行为同 <see cref="Required"/>。
     /// </summary>
-    //Nested
+    Nested
 }

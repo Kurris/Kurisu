@@ -16,7 +16,7 @@ namespace Kurisu.AspNetCore.Startup;
 /// 继承此类可自定义服务注册和请求管道配置。
 /// </summary>
 [SkipScan]
-public abstract class DefaultStartup
+public abstract class DefaultStartup : StartupBase
 {
     /// <summary>
     /// 构造函数，注入全局配置。
@@ -46,7 +46,7 @@ public abstract class DefaultStartup
     /// 配置依赖注入容器，注册服务。
     /// </summary>
     /// <param name="services">服务集合</param>
-    public virtual void ConfigureServices(IServiceCollection services)
+    public override void ConfigureServices(IServiceCollection services)
     {
         // 映射配置文件
         services.AddConfiguration(Configuration);
@@ -80,7 +80,7 @@ public abstract class DefaultStartup
             })
             .ConfigureApplicationPartManager(manager => { manager.FeatureProviders.Add(App.StartupOptions.DynamicApiOptions.ControllerFeatureProvider); })
             .AddControllersAsServices();
-        
+
         // MVC 约定配置
         services.Configure<MvcOptions>(options => options.Conventions.Add(App.StartupOptions.DynamicApiOptions.ModelConvention));
 
@@ -99,7 +99,7 @@ public abstract class DefaultStartup
     /// 配置请求处理管道。
     /// </summary>
     /// <param name="app">应用程序构建器</param>
-    public virtual void Configure(IApplicationBuilder app)
+    public override void Configure(IApplicationBuilder app)
     {
         // 设置根服务提供器，应用程序唯一
         InternalApp.RootServices = app.ApplicationServices;

@@ -1,8 +1,5 @@
 ﻿using Kurisu.AspNetCore.Abstractions.DataAccess;
 using Kurisu.AspNetCore.Abstractions.DataAccess.Aop;
-using Kurisu.Test.DataAccess.Trans;
-using System;
-using System.Threading.Tasks;
 
 namespace Kurisu.Test.DataAccess.Trans.Mock;
 
@@ -73,5 +70,33 @@ public class TransactionalInnerService : ITransactionalInnerService
         {
             // swallow intentionally
         }
+    }
+
+    // 新增：Mandatory 传播性 - 如果没有外部事务应抛出 InvalidOperationException
+    [Transactional(Propagation = Propagation.Mandatory)]
+    public async Task InnerMandatoryAsync(string name)
+    {
+        await _dbContext.InsertAsync(new TxTest { Name = name });
+    }
+
+    [Transactional(Propagation = Propagation.Mandatory)]
+    public async Task InnerMandatoryAndThrowAsync(string name)
+    {
+        await _dbContext.InsertAsync(new TxTest { Name = name });
+        throw new Exception("mandatory inner fail");
+    }
+
+    // 新增：Nested 传播性 - 在有外层事务时使用 savepoint
+    [Transactional(Propagation = Propagation.Nested)]
+    public async Task InnerNestedAsync(string name)
+    {
+        await _dbContext.InsertAsync(new TxTest { Name = name });
+    }
+
+    [Transactional(Propagation = Propagation.Nested)]
+    public async Task InnerNestedAndThrowAsync(string name)
+    {
+        await _dbContext.InsertAsync(new TxTest { Name = name });
+        throw new Exception("nested inner fail");
     }
 }

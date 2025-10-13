@@ -10,17 +10,19 @@ public sealed class SqlSugarDatasourceManager : AbstractDatasourceManager<ISqlSu
     private readonly Stack<ISqlSugarClient> _clients = new();
     private readonly Stack<Propagation> _propagations = new();
     private readonly IServiceProvider _serviceProvider;
-    private readonly Action _onDispose;
+    private readonly Action<bool> _onAfterScope;
 
     public int ClientCount => _clients.Count;
 
     public SqlSugarDatasourceManager(IServiceProvider serviceProvider)
     {
         _serviceProvider = serviceProvider;
-        _onDispose = () =>
+        _onAfterScope = pop =>
         {
             _propagations.Pop();
-            
+
+            if (!pop) return;
+
             //保存最后一个，避免栈空,用于后续数据库操作
             if (_clients.Count > 1)
             {
@@ -65,7 +67,7 @@ public sealed class SqlSugarDatasourceManager : AbstractDatasourceManager<ISqlSu
         return scope;
     }
 
-    public ITransactionScope CreateTransScopeInternal(Propagation propagation, IsolationLevel? isolationLevel = null)
+    private ITransactionScope CreateTransScopeInternal(Propagation propagation, IsolationLevel? isolationLevel = null)
     {
         switch (propagation)
         {
@@ -78,13 +80,38 @@ public sealed class SqlSugarDatasourceManager : AbstractDatasourceManager<ISqlSu
                 return new RequiredTransactionScope(client,
                     isolationLevel,
                     client.Ado.IsAnyTran(),
-                    _onDispose
+                    _onAfterScope
                 );
             }
             case Propagation.RequiresNew:
             {
                 var client = CreateClient();
-                return new RequiresNewTransactionScope(client, isolationLevel, _onDispose);
+                return new RequiresNewTransactionScope(client, isolationLevel, _onAfterScope);
+            }
+            case Propagation.Mandatory:
+            {
+                var client = _propagations.Count > 0
+                    ? GetCurrentClient<ISqlSugarClient>()
+                    : throw new InvalidOperationException("No existing transaction found for transaction marked with propagation 'Mandatory'.");
+
+                return new MandatoryTransactionScope(client,
+                    isolationLevel, _onAfterScope
+                );
+            }
+            case Propagation.Nested:
+            {
+                // 如果没有 ambient transaction，则与 Required 行为一致（新建事务）
+                var client = _clients.Count > 0 ? GetCurrentClient<ISqlSugarClient>() : CreateClient();
+                var hasTran = client.Ado.IsAnyTran();
+
+                if (!hasTran)
+                {
+                    // 无外层事务：像 Required 一样新建事务，并确保在 Dispose 时清理
+                    return new RequiredTransactionScope(client, isolationLevel, false, _onAfterScope);
+                }
+
+                // 有外层事务：使用 savepoint 实现嵌套事务
+                return new NestedTransactionScope(client, isolationLevel, _onAfterScope);
             }
 
             default:
@@ -98,14 +125,14 @@ public sealed class SqlSugarDatasourceManager : AbstractDatasourceManager<ISqlSu
         private readonly ISqlSugarClient _client;
         private readonly IsolationLevel? _isolationLevel;
         private readonly bool _hasTransaction;
-        private readonly Action _onDispose;
+        private readonly Action<bool> _afterScope;
 
-        public RequiredTransactionScope(ISqlSugarClient client, IsolationLevel? isolationLevel, bool hasTransaction = false, Action onDispose = null)
+        public RequiredTransactionScope(ISqlSugarClient client, IsolationLevel? isolationLevel, bool hasTransaction = false, Action<bool> afterScope = null)
         {
             _client = client;
             _isolationLevel = isolationLevel;
             _hasTransaction = hasTransaction;
-            _onDispose = onDispose;
+            _afterScope = afterScope;
         }
 
         public override async Task BeginAsync()
@@ -147,26 +174,103 @@ public sealed class SqlSugarDatasourceManager : AbstractDatasourceManager<ISqlSu
 
         public override void Dispose()
         {
-            if (!_hasTransaction)
-            {
-                _onDispose?.Invoke();
-            }
+            _afterScope?.Invoke(!_hasTransaction);
         }
     }
 
     public class RequiresNewTransactionScope : RequiredTransactionScope
     {
-        private readonly Action _toDispose;
-
-        public RequiresNewTransactionScope(ISqlSugarClient client, IsolationLevel? isolationLevel, Action toDispose)
-            : base(client, isolationLevel)
+        public RequiresNewTransactionScope(ISqlSugarClient client, IsolationLevel? isolationLevel, Action<bool> afterScope)
+            : base(client, isolationLevel, false, afterScope)
         {
-            _toDispose = toDispose;
+        }
+    }
+
+    public class MandatoryTransactionScope : RequiredTransactionScope
+    {
+        public MandatoryTransactionScope(ISqlSugarClient client, IsolationLevel? isolationLevel, Action<bool> afterScope)
+            : base(client, isolationLevel, client.Ado.IsAnyTran(), afterScope)
+        {
+        }
+    }
+
+    public class NestedTransactionScope : AbstractTransactionScope
+    {
+        private readonly ISqlSugarClient _client;
+        private readonly IsolationLevel? _isolationLevel;
+        private readonly Action<bool> _afterScope;
+        private readonly string _savepointName;
+        private bool _isSavepointCreated;
+        private readonly bool _hasTransaction;
+
+        public NestedTransactionScope(ISqlSugarClient client, IsolationLevel? isolationLevel, Action<bool> afterScope)
+        {
+            _client = client;
+            _isolationLevel = isolationLevel;
+            _afterScope = afterScope;
+            _savepointName = "SP_" + Guid.NewGuid().ToString("N");
+            _isSavepointCreated = false;
+            _hasTransaction = client.Ado.IsAnyTran();
+        }
+
+        public override async Task BeginAsync()
+        {
+            // 当存在外层事务时，创建 savepoint；若没有外层事务（不应走到这里）则开启新事务
+            if (!_client.Ado.IsAnyTran())
+            {
+                if (_isolationLevel.HasValue)
+                {
+                    await _client.Ado.BeginTranAsync(_isolationLevel.Value);
+                }
+                else
+                {
+                    await _client.Ado.BeginTranAsync();
+                }
+
+                return;
+            }
+
+            // 创建 savepoint（MySQL/Postgres 风格）
+            await _client.Ado.ExecuteCommandAsync($"SAVEPOINT {_savepointName};");
+            _isSavepointCreated = true;
+        }
+
+        public override async Task CommitAsync()
+        {
+            if (!_isSavepointCreated)
+            {
+                // 如果没有 savepoint（可能是新开事务），直接提交
+                await _client.Ado.CommitTranAsync();
+                return;
+            }
+
+            // 对于 savepoint，通常不需要显式释放，部分数据库支持 RELEASE SAVEPOINT
+            try
+            {
+                await _client.Ado.ExecuteCommandAsync($"RELEASE SAVEPOINT {_savepointName};");
+            }
+            catch
+            {
+                // 某些驱动/数据库 不支持 RELEASE SAVEPOINT，可以忽略错误
+            }
+        }
+
+        public override async Task RollbackAsync()
+        {
+            if (!_isSavepointCreated)
+            {
+                // 非 savepoint 情形，回滚整个事务
+                await _client.Ado.RollbackTranAsync();
+                return;
+            }
+
+            // 回滚到 savepoint（只撤销内层改动）
+            await _client.Ado.ExecuteCommandAsync($"ROLLBACK TO SAVEPOINT {_savepointName};");
         }
 
         public override void Dispose()
         {
-            _toDispose?.Invoke();
+            _afterScope?.Invoke(!_hasTransaction);
         }
     }
 }

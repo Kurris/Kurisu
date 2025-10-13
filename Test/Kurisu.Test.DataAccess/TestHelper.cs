@@ -20,6 +20,8 @@ namespace Kurisu.Test.DataAccess;
 [ExcludeFromCodeCoverage]
 public class TestHelper
 {
+    
+    
     public static IServiceProvider GetServiceProvider()
     {
         var services = new ServiceCollection();
@@ -33,7 +35,7 @@ public class TestHelper
             var jwtOptions = sp.GetRequiredService<IOptions<JwtOptions>>().Value;
 
             var token = JwtEncryption.GenerateToken(
-                new List<Claim>()
+                new List<Claim>
                 {
                     new("sub", 3.ToString()),
                     new("role", "admin"),

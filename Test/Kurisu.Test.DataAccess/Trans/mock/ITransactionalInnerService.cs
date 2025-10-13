@@ -13,4 +13,12 @@ public interface ITransactionalInnerService
     Task InnerRequiredAsync(string name);
     Task InnerRequiresNewAsync(string name);
     Task InnerRequiresNewAndThrowAsync(string name);
+
+    // 新增：Mandatory 传播性方法，用于测试当存在或不存在 ambient 事务时的行为
+    Task InnerMandatoryAsync(string name);
+    Task InnerMandatoryAndThrowAsync(string name);
+
+    // 新增：Nested 传播性方法
+    Task InnerNestedAsync(string name);
+    Task InnerNestedAndThrowAsync(string name);
 }
