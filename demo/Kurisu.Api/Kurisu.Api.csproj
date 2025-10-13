@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net6.0</TargetFramework>
+        <LangVersion>latestmajor</LangVersion>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\..\..\Kurisu.RemoteCall\src\Kurisu.RemoteCall\Kurisu.RemoteCall.csproj" />
+      <ProjectReference Include="..\..\src\Kurisu.RemoteCall\Kurisu.RemoteCall.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <None Remove="api.json" />
+      <Content Include="api.json">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </Content>
+    </ItemGroup>
+
+</Project>

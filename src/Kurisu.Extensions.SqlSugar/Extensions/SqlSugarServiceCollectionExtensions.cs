@@ -1,6 +1,7 @@
 ﻿using Kurisu.AspNetCore.Abstractions.Authentication;
 using Kurisu.AspNetCore.Abstractions.DataAccess;
 using Kurisu.AspNetCore.Abstractions.DataAccess.Contract;
+using Kurisu.AspNetCore.Abstractions.DataAccess.Contract.Field;
 using Kurisu.AspNetCore.Abstractions.UnifyResultAndValidation;
 using Kurisu.AspNetCore.DataAccess.SqlSugar.Attributes;
 using Kurisu.AspNetCore.DataAccess.SqlSugar.Options;
@@ -8,6 +9,7 @@ using Kurisu.AspNetCore.DataAccess.SqlSugar.Services;
 using Kurisu.AspNetCore.DataAccess.SqlSugar.Services.Implements;
 using Kurisu.Extensions.SqlSugar.Services;
 using Kurisu.Extensions.SqlSugar.Services.Implements;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;

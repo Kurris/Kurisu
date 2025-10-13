@@ -10,10 +10,19 @@ namespace Kurisu.AspNetCore.Abstractions.DataAccess.Aop;
 [AttributeUsage(AttributeTargets.Method)]
 public class TransactionalAttribute : AbstractInterceptorAttribute
 {
+    /// <summary>
+    /// 隔离级别
+    /// </summary>
     public IsolationLevel? IsolationLevel { get; set; }
 
+    /// <summary>
+    ///  指定不回滚的异常
+    /// </summary>
     public Type NoRollbackFor { get; set; }
 
+    /// <summary>
+    /// 事务传播行为
+    /// </summary>
     public Propagation Propagation { get; set; } = Propagation.Required;
 
     public override async Task Invoke(AspectContext context, AspectDelegate next)
@@ -22,8 +31,8 @@ public class TransactionalAttribute : AbstractInterceptorAttribute
 
         // ReSharper disable once ConvertToUsingDeclaration
         using (var transactionScope = IsolationLevel.HasValue
-                   ? mgr.CreateScope(Propagation, IsolationLevel.Value)
-                   : mgr.CreateScope(Propagation))
+                   ? mgr.CreateTransScope(Propagation, IsolationLevel.Value)
+                   : mgr.CreateTransScope(Propagation))
         {
             await transactionScope.BeginAsync();
             try
@@ -40,8 +49,9 @@ public class TransactionalAttribute : AbstractInterceptorAttribute
                 else
                 {
                     await transactionScope.RollbackAsync();
-                    throw;
                 }
+
+                throw;
             }
         }
     }

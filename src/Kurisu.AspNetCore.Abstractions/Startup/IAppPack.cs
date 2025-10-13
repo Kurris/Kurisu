@@ -1,5 +1,4 @@
 ﻿using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -30,6 +29,5 @@ public interface IAppPack : IOrderedFilter
     /// 管道服务配置
     /// </summary>
     /// <param name="app">app管道</param>
-    /// <param name="env">环境</param>
-    void Configure(IApplicationBuilder app, IWebHostEnvironment env);
+    void Configure(IApplicationBuilder app);
 }

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using Kurisu.AspNetCore;
@@ -37,6 +38,8 @@ public static class DependencyInjectionServiceCollectionExtensions
         services.AddScoped<INamedResolver, NamedResolver>();
         var serviceTypes = DependencyInjectionHelper.DependencyServices.Value;
 
+        var namedServices = new Dictionary<Tuple<Type, string>, Type>();
+
         foreach (var service in serviceTypes)
         {
             var (named, lifeTime, interfaceTypes) = DependencyInjectionHelper.GetInjectInfos(service);
@@ -48,7 +51,7 @@ public static class DependencyInjectionServiceCollectionExtensions
                 {
                     if (!string.IsNullOrEmpty(named))
                     {
-                        if (DependencyInjectionHelper.NamedServices.TryAdd(new Tuple<Type, string>(interfaceType, named), service))
+                        if (namedServices.TryAdd(new Tuple<Type, string>(interfaceType, named), service))
                         {
                             DependencyInjectionHelper.Register(services, lifeTime, service);
                         }
@@ -68,5 +71,7 @@ public static class DependencyInjectionServiceCollectionExtensions
                 DependencyInjectionHelper.Register(services, lifeTime, service);
             }
         }
+
+        DependencyInjectionHelper.NamedServices = namedServices;
     }
 }

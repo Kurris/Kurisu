@@ -28,7 +28,7 @@ public abstract class BaseAppPack : IAppPack
     /// <summary>
     /// 在Startup Configure请求管道中,以UseRouting分割添加自定义AppPack
     /// </summary>
-    public virtual bool IsBeforeUseRouting { get; }
+    public virtual bool IsBeforeUseRouting { get; } = false;
 
     /// <summary>
     /// 执行2
@@ -50,8 +50,7 @@ public abstract class BaseAppPack : IAppPack
     /// 配置管道3
     /// </summary>
     /// <param name="app"></param>
-    /// <param name="env"></param>
-    public virtual void Configure(IApplicationBuilder app, IWebHostEnvironment env)
+    public virtual void Configure(IApplicationBuilder app)
     {
     }
 }

@@ -3,6 +3,9 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Kurisu.AspNetCore.Utils.Extensions;
 
+/// <summary>
+/// httpClientBuilder 扩展
+/// </summary>
 public static class HttpClientBuilderExtensions
 {
     /// <summary>

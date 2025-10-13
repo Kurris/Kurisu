@@ -19,4 +19,14 @@ public static class IDbContextExtensions
     {
         return dbContext.AsSqlSugarDbContext().Queryable<T>();
     }
+
+    public static IUpdateable<T> Updateable<T>(this IDbContext dbContext) where T : class, new()
+    {
+        return dbContext.AsSqlSugarDbContext().Updateable<T>();
+    }
+
+    public static IDeleteable<T> Deleteable<T>(this IDbContext dbContext) where T : class, new()
+    {
+        return dbContext.AsSqlSugarDbContext().Deleteable<T>();
+    }
 }

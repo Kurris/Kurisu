@@ -1,5 +1,6 @@
 ﻿using Kurisu.AspNetCore.Abstractions.DataAccess;
 using Kurisu.AspNetCore.DataAccess.SqlSugar.Options;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
 
 namespace Kurisu.Extensions.SqlSugar.Services.Implements;

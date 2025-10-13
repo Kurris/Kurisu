@@ -22,7 +22,7 @@ public static class ServiceCollectionBuildExtensions
         return services.WeaveDynamicProxyService().BuildServiceProvider(options);
     }
 
-    public static IServiceCollection WeaveDynamicProxyService(this IServiceCollection services)
+    private static IServiceCollection WeaveDynamicProxyService(this IServiceCollection services)
     {
         if (services == null)
         {

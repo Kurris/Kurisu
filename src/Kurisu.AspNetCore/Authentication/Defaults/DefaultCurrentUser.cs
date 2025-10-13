@@ -59,11 +59,6 @@ public class DefaultCurrentUser : DefaultCurrentTenant, ICurrentUser
     /// <returns></returns>
     public string GetName(string userClaimType = "name")
     {
-        if (userClaimType.Equals("name", StringComparison.OrdinalIgnoreCase))
-        {
-            userClaimType = ClaimTypes.Name;
-        }
-        
         var name = GetUserClaim(userClaimType);
         return name;
     }

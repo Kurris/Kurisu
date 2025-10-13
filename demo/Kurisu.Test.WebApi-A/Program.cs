@@ -1,10 +1,10 @@
 using AspectCore.Extensions.Hosting;
+using Kurisu.Api;
+using Kurisu.AspNetCore;
 using Kurisu.AspNetCore.Abstractions.DependencyInjection;
 using Kurisu.AspNetCore.Cache.Extensions;
-using Kurisu.AspNetCore.DataAccess.SqlSugar.Extensions;
 using Kurisu.AspNetCore.EventBus.Extensions;
 using Kurisu.AspNetCore.Startup;
-using Kurisu.AspNetCore.Utils.Extensions;
 using Kurisu.Extensions.SqlSugar.Extensions;
 using Microsoft.IdentityModel.Logging;
 using static Kurisu.AspNetCore.Startup.KurisuHost;
@@ -16,8 +16,8 @@ class Program
     public static void Main(string[] args)
     {
         Builder(args)
-            //.UseServiceContext()
-            .UseDynamicProxy((_, configuration) => configuration.PropertyEnableInjectAttributeType = typeof(DiInjectAttribute))
+            .ConfigureServices(collection => collection.AddRemoteCall(App.ActiveTypes))
+            .ConfigureAppConfiguration((_, config) => { config.AddJsonFile(Path.Combine(AppContext.BaseDirectory, "api.json"), optional: false, reloadOnChange: true); })
             .RunKurisu<Startup>();
     }
 }
@@ -58,11 +58,14 @@ public class Startup : DefaultStartup
         services.AddMemoryCache();
     }
 
-    public override async void Configure(IApplicationBuilder app, IWebHostEnvironment env)
+    public override async void Configure(IApplicationBuilder app)
     {
         try
         {
-            base.Configure(app, env);
+            var path = AppContext.BaseDirectory;
+            var configuration = app.ApplicationServices.GetRequiredService<IConfiguration>();
+            var value = configuration.GetSection("aservice").Value;
+            base.Configure(app);
 
             //await app.UseSnowFlakeDistributedInitializeAsync();
         }

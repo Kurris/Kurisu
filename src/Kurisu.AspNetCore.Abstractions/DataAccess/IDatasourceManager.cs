@@ -4,11 +4,7 @@ namespace Kurisu.AspNetCore.Abstractions.DataAccess;
 /// 数据源管理器
 /// </summary>
 // IDatasourceManager：数据源管理器接口
-public interface IDatasourceManager : ITransactionManager, IDisposable
+public interface IDatasourceManager : ITransactionManager
 {
-    object CurrentDbClient { get; }
-
-    void NewClient();
-
-    void NewClient(string name);
+    object GetCurrentClient();
 }

@@ -2,10 +2,11 @@
 using System.Linq.Expressions;
 using Kurisu.AspNetCore.Abstractions.Authentication;
 using Kurisu.AspNetCore.Abstractions.DataAccess;
-using Kurisu.AspNetCore.Abstractions.DataAccess.Contract;
+using Kurisu.AspNetCore.Abstractions.DataAccess.Contract.Field;
 using Kurisu.AspNetCore.DataAccess.SqlSugar;
 using Kurisu.AspNetCore.DataAccess.SqlSugar.Attributes;
 using Kurisu.AspNetCore.DataAccess.SqlSugar.Services;
+using Kurisu.AspNetCore.Extensions;
 using Kurisu.Extensions.SqlSugar.Services;
 using Microsoft.Extensions.DependencyInjection;
 using SqlSugar;
@@ -25,7 +26,7 @@ internal class SqlSugarDbContext : ISqlSugarDbContext
         _sqlSugarOptionsService = serviceProvider.GetRequiredService<ISqlSugarOptionsService>();
     }
 
-    public ISqlSugarClient Client => (ISqlSugarClient)_datasourceManager.CurrentDbClient;
+    public ISqlSugarClient Client => _datasourceManager.GetCurrentClient<ISqlSugarClient>();
 
     public IQueryableSetting GetQueryableSetting() => _serviceProvider.GetRequiredService<IQueryableSetting>();
 

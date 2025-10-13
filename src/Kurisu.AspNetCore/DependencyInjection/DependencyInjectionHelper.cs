@@ -15,7 +15,7 @@ internal static class DependencyInjectionHelper
     /// <summary>
     /// 命名服务
     /// </summary>
-    internal static readonly ConcurrentDictionary<Tuple<Type, string>, Type> NamedServices = new();
+    internal static Dictionary<Tuple<Type, string>, Type> NamedServices = new();
 
     /// <summary>
     /// 应用程序有效类型

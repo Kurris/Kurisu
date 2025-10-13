@@ -7,7 +7,7 @@
         <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
         <GenerateDocumentationFile>True</GenerateDocumentationFile>
         <LangVersion>latestmajor</LangVersion>
-        <TargetFramework>net8.0</TargetFramework>
+        <TargetFramework>net6.0</TargetFramework>
     </PropertyGroup>
 
     <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
@@ -40,6 +40,7 @@
       <ProjectReference Include="..\..\src\Kurisu.Aspect\Kurisu.Aspect.csproj" />
       <ProjectReference Include="..\..\src\Kurisu.AspNetCore\Kurisu.AspNetCore.csproj" />
       <ProjectReference Include="..\..\src\Kurisu.Extensions.SqlSugar\Kurisu.Extensions.SqlSugar.csproj" />
+      <ProjectReference Include="..\Kurisu.Api\Kurisu.Api.csproj" />
     </ItemGroup>
 
 </Project>

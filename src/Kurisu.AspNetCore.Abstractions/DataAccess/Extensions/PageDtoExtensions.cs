@@ -1,4 +1,4 @@
-﻿using Kurisu.AspNetCore.Abstractions.DataAccess.Contract;
+﻿using Kurisu.AspNetCore.Abstractions.DataAccess.Contract.Page;
 
 // ReSharper disable once CheckNamespace
 namespace Kurisu.AspNetCore.Extensions;

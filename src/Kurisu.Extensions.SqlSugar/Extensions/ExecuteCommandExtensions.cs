@@ -1,4 +1,5 @@
 ﻿using Kurisu.AspNetCore.Abstractions.DataAccess.Contract;
+using Kurisu.AspNetCore.Abstractions.DataAccess.Contract.Field;
 using Kurisu.AspNetCore.Abstractions.UnifyResultAndValidation;
 using SqlSugar;
 

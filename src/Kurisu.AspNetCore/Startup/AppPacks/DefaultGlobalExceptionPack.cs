@@ -23,7 +23,7 @@ public class DefaultGlobalExceptionPack : BaseAppPack
     public override bool IsBeforeUseRouting => true;
 
     /// <inheritdoc />
-    public override void Configure(IApplicationBuilder app, IWebHostEnvironment env)
+    public override void Configure(IApplicationBuilder app)
     {
         app.UseMiddleware<GlobalExceptionMiddleware>();
     }

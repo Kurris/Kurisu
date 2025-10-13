@@ -31,8 +31,7 @@ public class WeatherForecastController : ControllerBase
     public WeatherForecastController(IConfiguration configuration, ITestService testService,
         IGenericsGet<Dog> dogService,
         IEventBus eventBus,
-        IFrameworkExceptionHandlers exceptionHandlers
-    )
+        IFrameworkExceptionHandlers exceptionHandlers)
     {
         _configuration = configuration;
         _testService = testService;

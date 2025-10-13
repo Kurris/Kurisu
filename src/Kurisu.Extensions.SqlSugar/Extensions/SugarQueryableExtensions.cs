@@ -1,5 +1,6 @@
 ﻿using System.Threading.Tasks;
 using Kurisu.AspNetCore.Abstractions.DataAccess.Contract;
+using Kurisu.AspNetCore.Abstractions.DataAccess.Contract.Page;
 using SqlSugar;
 
 namespace Kurisu.AspNetCore.DataAccess.SqlSugar.Extensions;

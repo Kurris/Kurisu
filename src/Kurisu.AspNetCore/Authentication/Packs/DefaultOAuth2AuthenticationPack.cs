@@ -1,7 +1,6 @@
 using Kurisu.AspNetCore.Abstractions.Startup;
 using Kurisu.AspNetCore.Authentication.Options;
 using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -28,7 +27,7 @@ public class DefaultOAuth2AuthenticationPack : BaseAppPack
     }
 
     /// <inheritdoc />
-    public override void Configure(IApplicationBuilder app, IWebHostEnvironment env)
+    public override void Configure(IApplicationBuilder app)
     {
         app.UseAuthentication();
         app.UseAuthorization();

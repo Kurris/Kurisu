@@ -32,7 +32,7 @@ public class DefaultCorsPack : BaseAppPack
     }
 
     /// <inheritdoc />
-    public override void Configure(IApplicationBuilder app, IWebHostEnvironment env)
+    public override void Configure(IApplicationBuilder app)
     {
         app.UseCors(Cors);
     }

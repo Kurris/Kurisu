@@ -17,7 +17,7 @@ public class DefaultHealthCheckPack : BaseAppPack
     }
 
     /// <inheritdoc />
-    public override void Configure(IApplicationBuilder app, IWebHostEnvironment env)
+    public override void Configure(IApplicationBuilder app)
     {
         app.UseHealthChecks("/healthz");
     }

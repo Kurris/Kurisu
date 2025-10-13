@@ -17,6 +17,7 @@ public interface IDbContext
     IDbContext ChangeDb(string dbId);
 
     Task<long> InsertReturnIdentityAsync<T>(T obj) where T : class, new();
+    
     long InsertReturnIdentity<T>(T obj) where T : class, new();
 
     Task<int> InsertAsync<T>(T obj) where T : class, new();

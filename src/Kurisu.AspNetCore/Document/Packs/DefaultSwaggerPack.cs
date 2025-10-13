@@ -4,12 +4,9 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using Kurisu.AspNetCore.Abstractions.Startup;
-using Kurisu.AspNetCore.Document.Settings;
 using Kurisu.AspNetCore.MVC;
-using Kurisu.AspNetCore.Startup;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -183,7 +180,7 @@ public class DefaultSwaggerPack : BaseAppPack
     }
 
     /// <inheritdoc />
-    public override void Configure(IApplicationBuilder app, IWebHostEnvironment env)
+    public override void Configure(IApplicationBuilder app)
     {
         var setting = App.StartupOptions.DocumentOptions;
         var virtualPath = Configuration.GetValue("VirtualPath", string.Empty);

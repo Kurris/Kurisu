@@ -2,7 +2,6 @@ using System;
 using System.Linq;
 using Kurisu.AspNetCore.Abstractions.DependencyInjection;
 using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -38,11 +37,10 @@ public static class AppPackServiceCollectionExtensions
     /// 使用自定义appPacks
     /// </summary>
     /// <param name="app">应用程序</param>
-    /// <param name="env">web环境</param>
     /// <param name="serviceProvider">服务提供器</param>
     /// <param name="isBeforeUseRouting">在使用UseRouting之前</param>
     /// <returns></returns>
-    public static IApplicationBuilder UseAppPacks(this IApplicationBuilder app, IWebHostEnvironment env, IServiceProvider serviceProvider, bool isBeforeUseRouting)
+    public static IApplicationBuilder UseAppPacks(this IApplicationBuilder app, IServiceProvider serviceProvider, bool isBeforeUseRouting)
     {
         var configuration = serviceProvider.GetRequiredService<IConfiguration>();
         foreach (var appPack in App.AppPacks.Where(x => x.IsBeforeUseRouting == isBeforeUseRouting))
@@ -54,7 +52,7 @@ public static class AppPackServiceCollectionExtensions
             }
 
             appPack.Invoke(serviceProvider);
-            appPack.Configure(app, env);
+            appPack.Configure(app);
         }
 
         return app;

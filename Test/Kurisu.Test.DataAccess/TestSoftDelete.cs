@@ -1,6 +1,7 @@
 ﻿using System.Diagnostics.CodeAnalysis;
 using Kurisu.AspNetCore.Abstractions.DataAccess;
 using Kurisu.AspNetCore.Abstractions.DataAccess.Contract;
+using Kurisu.AspNetCore.Abstractions.DataAccess.Contract.Field;
 using Kurisu.AspNetCore.DataAccess.SqlSugar.Services;
 using Kurisu.Extensions.SqlSugar.Extensions;
 using Kurisu.Extensions.SqlSugar.Services;

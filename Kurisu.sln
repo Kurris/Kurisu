@@ -37,6 +37,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Kurisu.Aspect.Abstractions"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Kurisu.Extensions.DataProtection.SqlSugar", "src\Kurisu.Extensions.DataProtection.SqlSugar\Kurisu.Extensions.DataProtection.SqlSugar.csproj", "{123D1FFB-8A4D-47A3-A13D-8519CDDDBDF0}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Kurisu.Api", "demo\Kurisu.Api\Kurisu.Api.csproj", "{7C58426D-BB22-40B5-ABB6-CD0CF85A79A5}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Kurisu.RemoteCall", "src\Kurisu.RemoteCall\Kurisu.RemoteCall.csproj", "{7351C608-3E34-4173-B768-5A08FC3D1832}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -99,6 +103,14 @@ Global
 		{123D1FFB-8A4D-47A3-A13D-8519CDDDBDF0}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{123D1FFB-8A4D-47A3-A13D-8519CDDDBDF0}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{123D1FFB-8A4D-47A3-A13D-8519CDDDBDF0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7C58426D-BB22-40B5-ABB6-CD0CF85A79A5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7C58426D-BB22-40B5-ABB6-CD0CF85A79A5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7C58426D-BB22-40B5-ABB6-CD0CF85A79A5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7C58426D-BB22-40B5-ABB6-CD0CF85A79A5}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7351C608-3E34-4173-B768-5A08FC3D1832}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7351C608-3E34-4173-B768-5A08FC3D1832}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7351C608-3E34-4173-B768-5A08FC3D1832}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7351C608-3E34-4173-B768-5A08FC3D1832}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -118,6 +130,8 @@ Global
 		{E5087983-F05F-40D2-9F36-556EA7248EE9} = {6273CD61-EECD-4A84-83C2-2CB430386B80}
 		{42310BD5-EDE8-44EA-B7CF-4D34E90CE3F7} = {6273CD61-EECD-4A84-83C2-2CB430386B80}
 		{123D1FFB-8A4D-47A3-A13D-8519CDDDBDF0} = {6273CD61-EECD-4A84-83C2-2CB430386B80}
+		{7C58426D-BB22-40B5-ABB6-CD0CF85A79A5} = {33CE951A-78DA-442D-90CC-49F1D754E50A}
+		{7351C608-3E34-4173-B768-5A08FC3D1832} = {6273CD61-EECD-4A84-83C2-2CB430386B80}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {A5C47A14-B996-4828-919A-EB6F1E544959}

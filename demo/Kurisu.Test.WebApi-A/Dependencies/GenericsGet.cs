@@ -12,7 +12,7 @@ public class GenericsGet<TAnimal> : IGenericsGet<TAnimal> where TAnimal : Animal
 
     public string Say()
     {
-        throw new Exception();
+        //throw new Exception();
         return Animal.Say(); 
     }
 }

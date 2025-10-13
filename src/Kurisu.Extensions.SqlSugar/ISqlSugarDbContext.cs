@@ -23,7 +23,6 @@ public interface ISqlSugarDbContext : IDbContext
     
     IQueryableSetting GetQueryableSetting();
     
-    
     IUpdateable<T> Updateable<T>() where T : class, new();
     IDeleteable<T> Deleteable<T>() where T : class, new();
 

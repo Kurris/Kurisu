@@ -5,6 +5,9 @@ using StackExchange.Redis;
 
 namespace Kurisu.AspNetCore.Cache;
 
+/// <summary>
+/// redis分布式锁，支持自动续期。
+/// </summary>
 public sealed class RedisLock : IDisposable, IAsyncDisposable
 {
     private readonly IDatabase _db;

@@ -99,8 +99,7 @@ public abstract class DefaultStartup
     /// 配置请求处理管道。
     /// </summary>
     /// <param name="app">应用程序构建器</param>
-    /// <param name="env">主机环境</param>
-    public virtual void Configure(IApplicationBuilder app, IWebHostEnvironment env)
+    public virtual void Configure(IApplicationBuilder app)
     {
         // 设置根服务提供器，应用程序唯一
         InternalApp.RootServices = app.ApplicationServices;
@@ -108,9 +107,9 @@ public abstract class DefaultStartup
         // 创建作用域，初始化 pack
         using (var scope = app.ApplicationServices.CreateScope())
         {
-            app.UseAppPacks(env, scope.ServiceProvider, true);
+            app.UseAppPacks(scope.ServiceProvider, true);
             app.UseRouting();
-            app.UseAppPacks(env, scope.ServiceProvider, false);
+            app.UseAppPacks(scope.ServiceProvider, false);
         }
 
         // 映射控制器路由
