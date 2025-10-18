@@ -3,6 +3,4 @@
 /// <summary>
 /// 处理器
 /// </summary>
-public interface IRemoteCallHandler
-{
-}
+public interface IRemoteCallHandler;

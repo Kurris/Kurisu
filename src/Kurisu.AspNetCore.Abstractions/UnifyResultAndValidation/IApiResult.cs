@@ -9,6 +9,13 @@ namespace Kurisu.AspNetCore.Abstractions.UnifyResultAndValidation;
 public interface IApiResult
 {
     /// <summary>
+    /// 尝试获取数据
+    /// </summary>
+    /// <typeparam name="TResponse"></typeparam>
+    /// <returns></returns>
+    bool TryGetData<TResponse>(out TResponse data);
+
+    /// <summary>
     /// 获取默认成功结果
     /// </summary>
     /// <typeparam name="TResult"></typeparam>

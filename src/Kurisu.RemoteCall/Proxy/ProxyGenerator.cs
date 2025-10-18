@@ -8,7 +8,9 @@ namespace Kurisu.RemoteCall.Proxy;
 /// </summary>
 internal class ProxyGenerator : DispatchProxy
 {
-    private static readonly MethodInfo CreateMethod = typeof(DispatchProxy).GetMethod(nameof(DispatchProxy.Create), BindingFlags.Static | BindingFlags.Public)!;
+    private static readonly MethodInfo CreateMethod = typeof(DispatchProxy)
+        .GetMethods(BindingFlags.Public | BindingFlags.Static)
+        .FirstOrDefault(x => x.IsGenericMethod && x.Name == nameof(DispatchProxy.Create));
 
     /// <summary>
     /// DispatchProxy需要无参构造函数

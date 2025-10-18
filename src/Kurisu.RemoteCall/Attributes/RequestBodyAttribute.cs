@@ -1,9 +1,6 @@
 ﻿namespace Kurisu.RemoteCall.Attributes;
-
 /// <summary>
-/// 请求参数定义为body
+/// 请求体参数标记
 /// </summary>
 [AttributeUsage(AttributeTargets.Parameter)]
-public class RequestBodyAttribute : Attribute
-{
-}
+public class RequestBodyAttribute : Attribute;

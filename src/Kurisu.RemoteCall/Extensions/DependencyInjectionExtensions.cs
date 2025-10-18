@@ -22,28 +22,6 @@ public static class DependencyInjectionExtensions
     /// <param name="services"></param>
     /// <param name="activeTypes"></param>
     /// <returns></returns>
-    public static void Inject(this IServiceCollection services, IEnumerable<Type> activeTypes)
-    {
-        //services.AddRemoteCall(activeTypes);
-    }
-
-    /// <summary>
-    /// 添加远程调用
-    /// </summary>
-    /// <param name="services"></param>
-    /// <param name="action"></param>
-    /// <returns></returns>
-    public static IRemoteCallBuilder AddRemoteCall(this IServiceCollection services, Func<IEnumerable<Type>> action)
-    {
-        return services.AddRemoteCall(action());
-    }
-
-    /// <summary>
-    /// 添加远程调用
-    /// </summary>
-    /// <param name="services"></param>
-    /// <param name="activeTypes"></param>
-    /// <returns></returns>
     public static IRemoteCallBuilder AddRemoteCall(this IServiceCollection services, IEnumerable<Type> activeTypes)
     {
         services.AddHttpClient();
@@ -56,7 +34,6 @@ public static class DependencyInjectionExtensions
         foreach (var rc in interfaceTypes.Select(item => item.GetCustomAttribute<EnableRemoteClientAttribute>()!))
         {
             rc.ConfigureServices(services);
-            RemoteCallSetting.Files.Add(rc.SettingFile);
         }
 
         foreach (var interfaceType in interfaceTypes)
@@ -75,9 +52,4 @@ public static class DependencyInjectionExtensions
             Services = services
         };
     }
-}
-
-public static class RemoteCallSetting
-{
-    public static HashSet<string> Files = new();
 }

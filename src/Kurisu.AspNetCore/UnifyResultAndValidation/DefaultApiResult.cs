@@ -56,6 +56,21 @@ public sealed class ApiResult<T> : IApiResult
     public ApiStateCode Code { get; set; }
 
     /// <summary>
+    ///  尝试获取数据
+    /// </summary>
+    /// <typeparam name="TResponse"></typeparam>
+    /// <returns></returns>
+    public bool TryGetData<TResponse>(out TResponse data)
+    {
+        data = default;
+        if (Data is not TResponse response) return false;
+        
+        data = response;
+        return true;
+
+    }
+
+    /// <summary>
     /// 成功结果
     /// </summary>
     /// <param name="apiResult"></param>

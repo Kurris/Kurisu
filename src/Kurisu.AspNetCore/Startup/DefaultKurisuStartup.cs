@@ -2,7 +2,6 @@
 using Kurisu.AspNetCore.Startup.Extensions;
 using Kurisu.AspNetCore.UnifyResultAndValidation.Extensions;
 using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -16,7 +15,7 @@ namespace Kurisu.AspNetCore.Startup;
 /// 继承此类可自定义服务注册和请求管道配置。
 /// </summary>
 [SkipScan]
-public abstract class DefaultStartup : StartupBase
+public abstract class DefaultStartup
 {
     /// <summary>
     /// 构造函数，注入全局配置。
@@ -46,7 +45,7 @@ public abstract class DefaultStartup : StartupBase
     /// 配置依赖注入容器，注册服务。
     /// </summary>
     /// <param name="services">服务集合</param>
-    public override void ConfigureServices(IServiceCollection services)
+    public virtual void ConfigureServices(IServiceCollection services)
     {
         // 映射配置文件
         services.AddConfiguration(Configuration);
@@ -99,7 +98,7 @@ public abstract class DefaultStartup : StartupBase
     /// 配置请求处理管道。
     /// </summary>
     /// <param name="app">应用程序构建器</param>
-    public override void Configure(IApplicationBuilder app)
+    public virtual void Configure(IApplicationBuilder app)
     {
         // 设置根服务提供器，应用程序唯一
         InternalApp.RootServices = app.ApplicationServices;

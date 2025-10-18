@@ -8,7 +8,8 @@
 		<GenerateDocumentationFile>True</GenerateDocumentationFile>
 		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
 		<Description>远程调用</Description>
-		<TargetFramework>net6.0</TargetFramework>
+		<TargetFrameworks>net6.0;net8.0</TargetFrameworks>
+		<LangVersion>latestmajor</LangVersion>
 	</PropertyGroup>
 
 	<ItemGroup>

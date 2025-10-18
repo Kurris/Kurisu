@@ -51,11 +51,6 @@ public sealed class EnableRemoteClientAttribute : Attribute
     public Type PolicyHandler { get; set; }
 
     /// <summary>
-    /// 配置文件
-    /// </summary>
-    public string SettingFile { get; set; }
-
-    /// <summary>
     /// 配置服务
     /// </summary>
     /// <param name="services"></param>
@@ -68,6 +63,11 @@ public sealed class EnableRemoteClientAttribute : Attribute
 
         if (string.IsNullOrEmpty(Name))
         {
+            if (PolicyHandler != null)
+            {
+                throw new ArgumentException("当PolicyHandler不为空时," + nameof(Name) + "不能为空");
+            }
+
             services.AddHttpClient();
         }
         else
