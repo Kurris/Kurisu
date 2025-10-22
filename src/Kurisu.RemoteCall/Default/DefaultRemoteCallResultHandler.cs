@@ -1,7 +1,6 @@
 ﻿using System.Net;
 using Kurisu.RemoteCall.Abstractions;
 using Kurisu.RemoteCall.Utils;
-using Mapster;
 using Newtonsoft.Json;
 
 namespace Kurisu.RemoteCall.Default;
@@ -31,8 +30,11 @@ internal class DefaultRemoteCallResultHandler : IRemoteCallResultHandler
     private static TResult Handle<TResult>(string responseBody)
     {
         var type = typeof(TResult);
-        return Common.IsReferenceType(type)
-            ? JsonConvert.DeserializeObject<TResult>(responseBody)
-            : responseBody.Adapt<TResult>();
+        if (Common.IsReferenceType(type))
+        {
+            return JsonConvert.DeserializeObject<TResult>(responseBody);
+        }
+
+        return (TResult)Convert.ChangeType(responseBody, type);
     }
 }

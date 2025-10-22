@@ -1,5 +1,4 @@
 ﻿using System.Reflection;
-using Mapster;
 
 namespace Kurisu.RemoteCall;
 
@@ -28,14 +27,4 @@ public class ParameterValue
     /// 值
     /// </summary>
     public object Value { get; set; }
-
-    /// <summary>
-    /// 获取值
-    /// </summary>
-    /// <typeparam name="T"></typeparam>
-    /// <returns></returns>
-    public T GetValue<T>()
-    {
-        return Value.Adapt<T>();
-    }
 }

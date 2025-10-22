@@ -10,15 +10,14 @@ namespace Kurisu.RemoteCall.Default;
 /// </summary>
 internal class DefaultParameterValidator : IRemoteCallParameterValidator
 {
-    /// <inheritdoc />
-    public void Validate(List<ParameterValue> parameters)
+    public void Validate(object[] values)
     {
-        foreach (var item in parameters)
+        foreach (var item in values)
         {
-            ValidateObject(item.Value);
+            ValidateObject(item);
         }
     }
-    
+
     /// <summary>
     /// 验证实体
     /// </summary>
@@ -27,14 +26,12 @@ internal class DefaultParameterValidator : IRemoteCallParameterValidator
     private static void ValidateObject(object obj)
     {
         var type = obj.GetType();
-        if (type.IsGenericType )
+        if (type.IsGenericType)
         {
-            if (obj is IEnumerable enumerable)
+            if (obj is not IEnumerable enumerable) return;
+            foreach (var item in enumerable)
             {
-                foreach (var item in enumerable)
-                {
-                    ValidateObject(item);
-                }
+                ValidateObject(item);
             }
         }
         else

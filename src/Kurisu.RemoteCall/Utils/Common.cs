@@ -22,38 +22,25 @@ internal static class Common
         return (type.IsClass || type.IsInterface || type.IsArray) && type != typeof(string);
     }
 
-    /// <summary>
-    /// 判断当前请求是否需要授权，并获取授权头及 token。
-    /// </summary>
-    /// <param name="invocation">代理调用信息。</param>
-    /// <returns>
-    /// 三元组：
-    /// <list type="bullet">
-    /// <item><description>是否需要授权。</description></item>
-    /// <item><description>授权头名称。</description></item>
-    /// <item><description>token 值。</description></item>
-    /// </list>
-    /// </returns>
-    /// <exception cref="NullReferenceException">
-    /// 当未能获取到 HttpContext 或请求头中未包含 token 时抛出。
-    /// </exception>
-    internal static async Task<(bool, string, string)> UseAuthAsync(this IProxyInvocation invocation)
+   
+    internal static async Task UseAuthAsync(this IProxyInvocation invocation, HttpRequestMessage request)
     {
         var auth = invocation.GetCustomAttribute<RequestAuthorizeAttribute>();
         if (auth == null)
         {
-            return (false, string.Empty, string.Empty);
+            return;
         }
 
         var headerName = auth.HeaderName;
         string token;
         if (auth.Handler.IsImplementFrom<IRemoteCallAuthTokenHandler>())
         {
-            var handler = (IRemoteCallAuthTokenHandler?)Activator.CreateInstance(auth.Handler) 
-                ?? throw new NullReferenceException($"无法创建 {auth.Handler.FullName} 的实例。");
+            var handler = (IRemoteCallAuthTokenHandler)Activator.CreateInstance(auth.Handler)
+                          ?? throw new NullReferenceException($"无法创建 {auth.Handler.FullName} 的实例。");
 
-            token = await handler.GetTokenAsync(invocation.ServiceProvider);
-            return (true, headerName, token);
+            token = await handler.GetTokenAsync(invocation.ServiceProvider).ConfigureAwait(false);
+            request.Headers.TryAddWithoutValidation(headerName, token);
+            return;
         }
 
         var httpContext = invocation.ServiceProvider.GetService<IHttpContextAccessor>()?.HttpContext
@@ -62,10 +49,10 @@ internal static class Common
         token = httpContext.Request.Headers[headerName].FirstOrDefault();
         if (string.IsNullOrEmpty(token))
         {
-            throw new NullReferenceException($"使用请求的token失败, HttpContext Header[{headerName}] 为Null");
+            throw new NullReferenceException($"使用请求的token失败,但HttpContext.Headers[{headerName}] 为Null");
         }
 
-        return (true, headerName, token);
+        request.Headers.TryAddWithoutValidation(headerName, token);
     }
 
     /// <summary>

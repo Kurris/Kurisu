@@ -1,4 +1,3 @@
-using System.Collections.Immutable;
 using System.Reflection;
 using Kurisu.RemoteCall.Abstractions;
 using Kurisu.RemoteCall.Attributes;
@@ -8,20 +7,14 @@ using Microsoft.Extensions.Logging;
 
 namespace Kurisu.RemoteCall;
 
+/// <summary>
+/// http客户端远程调用客户端
+/// </summary>
 internal class HttpClientRemoteCallClient : BaseRemoteCallClient
 {
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly IRemoteCallUrlResolver _urlResolver;
     private readonly IRemoteCallParameterValidator _validator;
-
-    private static readonly IReadOnlyDictionary<HttpMethodType, HttpMethod> HttpMethods = new Dictionary<HttpMethodType, HttpMethod>
-    {
-        [HttpMethodType.Get] = HttpMethod.Get,
-        [HttpMethodType.Delete] = HttpMethod.Delete,
-        [HttpMethodType.Post] = HttpMethod.Post,
-        [HttpMethodType.Put] = HttpMethod.Put,
-        [HttpMethodType.Patch] = HttpMethod.Patch
-    }.ToImmutableDictionary();
 
     public HttpClientRemoteCallClient(
         IHttpClientFactory httpClientFactory,
@@ -38,63 +31,57 @@ internal class HttpClientRemoteCallClient : BaseRemoteCallClient
 
     protected override async Task<TResult> RequestAsync<TResult>(IProxyInvocation invocation)
     {
-        var remoteClient = invocation.InterfaceType.GetCustomAttribute<EnableRemoteClientAttribute>()!;
-        var httpMethodAttr = invocation.Method.GetCustomAttribute<HttpMethodAttribute>() ?? throw new NullReferenceException("请定义请求方式");
-        var httpClient = string.IsNullOrEmpty(remoteClient.Name)
+        var client = invocation.RemoteClient;
+        var httpMethodDefined = invocation.Method.GetCustomAttribute<BaseHttpMethodAttribute>()
+                                ?? throw new NullReferenceException("请定义请求方式");
+        var httpClient = string.IsNullOrEmpty(client.Name)
             ? _httpClientFactory.CreateClient()
-            : _httpClientFactory.CreateClient(remoteClient.Name);
+            : _httpClientFactory.CreateClient(client.Name);
 
+        _validator.Validate(invocation.ParameterValues);
 
-        var parameters = invocation.Method.GetParameters();
-        var paramValues = parameters.Select((x, idx) => new ParameterValue(x, invocation.Parameters[idx])).ToList();
-        _validator.Validate(paramValues);
+        var url = _urlResolver.ResolveUrl(httpMethodDefined.HttpMethodType, client.BaseUrl, httpMethodDefined.Template, invocation.WrapParameterValues);
 
-        var url = _urlResolver.GetUrl(httpMethodAttr.HttpMethod, remoteClient.BaseUrl, httpMethodAttr.Template, paramValues);
-        var httpMethod = HttpMethods[httpMethodAttr.HttpMethod];
-
-        HttpContent content = null;
-
-        if (httpMethodAttr.HttpMethod != HttpMethodType.Get)
+        // ReSharper disable once ConvertToUsingDeclaration
+        using (var request = new HttpRequestMessage(httpMethodDefined.HttpMethod, new Uri(url)))
         {
-            var contentHandlerType = invocation.GetCustomAttribute<RequestContentHandlerAttribute>()?.ContentHandler;
-            if (contentHandlerType != null)
-            {
-                var contentHandler = HandlerCache.ContentHandlers.GetOrAdd(contentHandlerType,
-                    t => (IRemoteCallContentHandler)Activator.CreateInstance(t));
+            request.Content = CreateContentWhenNotGet(invocation, httpMethodDefined);
+            var body = request.Content == null ? string.Empty : await request.Content.ReadAsStringAsync().ConfigureAwait(false);
+            await invocation.UseAuthAsync(request).ConfigureAwait(false);
 
-                var method = contentHandler.GetType().GetTypeInfo().GetRuntimeMethod(invocation.Method.Name, parameters.Select(x => x.ParameterType).ToArray())!;
-                content = (HttpContent)method.Invoke(contentHandler, invocation.Parameters);
-            }
-            else
+            using (var response = await httpClient.SendAsync(request).ConfigureAwait(false))
             {
-                content = ContentUtils.Create(invocation.Method, paramValues);
+                var responseJson = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+
+                if (invocation.UseLog())
+                {
+                    Logger.LogInformation("{method} {url}\r\nBody:{body}\r\nResponse:{response} .", httpMethodDefined.HttpMethodType, url, body, responseJson);
+                }
+
+                var resultHandlerType = invocation.GetCustomAttribute<ResultHandlerAttribute>()?.Handler ?? typeof(void);
+                var resultHandler = HandlerCache.ResultHandlers.GetOrAdd(resultHandlerType,
+                    t => (IRemoteCallResultHandler)Activator.CreateInstance(t));
+
+                return resultHandler.Handle<TResult>(response.StatusCode, responseJson);
             }
         }
-
-        var (useAuth, headerName, token) = await invocation.UseAuthAsync();
-        if (useAuth)
-            httpClient.DefaultRequestHeaders.Add(headerName, token);
+    }
 
 
-        var response = await httpClient.SendAsync(new HttpRequestMessage
-        {
-            Content = content,
-            Method = httpMethod,
-            RequestUri = new Uri(url)
-        });
+    private static HttpContent CreateContentWhenNotGet(IProxyInvocation invocation, BaseHttpMethodAttribute httpMethodDefined)
+    {
+        if (httpMethodDefined.HttpMethodType == HttpMethodType.Get) return null;
 
-        var responseJson = await response.Content.ReadAsStringAsync();
+        var contentHandlerType = invocation.GetCustomAttribute<RequestContentHandlerAttribute>()?.Handler;
+        if (contentHandlerType == null) return HttpContentUtils.Create(invocation.Method, invocation.WrapParameterValues);
 
-        if (invocation.UseLog())
-        {
-            var body = content != null ? await content.ReadAsStringAsync() : string.Empty;
-            Logger.LogInformation("{method} {url}\r\nBody:{body}\r\nResponse:{response} .", httpMethodAttr.HttpMethod, url, body, responseJson);
-        }
+        var contentHandler = HandlerCache.ContentHandlers.GetOrAdd(contentHandlerType,
+            t => (IRemoteCallContentHandler)Activator.CreateInstance(t));
 
-        var resultHandlerType = invocation.GetCustomAttribute<ResultHandlerAttribute>()?.Handler ?? typeof(void);
-        var resultHandler = HandlerCache.ResultHandlers.GetOrAdd(resultHandlerType,
-            t => (IRemoteCallResultHandler)Activator.CreateInstance(t));
+        var method = contentHandler.GetType().GetTypeInfo()
+                         .GetRuntimeMethod(invocation.Method.Name, invocation.ParameterInfos.Select(p => p.ParameterType).ToArray())
+                     ?? throw new NullReferenceException("请求内容处理器方法未找到");
 
-        return resultHandler.Handle<TResult>(response.StatusCode, responseJson);
+        return (HttpContent)method.Invoke(contentHandler, invocation.ParameterValues);
     }
 }

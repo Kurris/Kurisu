@@ -9,16 +9,16 @@ namespace Kurisu.RemoteCall.Attributes;
 public sealed class RequestContentHandlerAttribute : Attribute
 {
     /// <summary>
-    /// contentHandler  <see cref="IRemoteCallContentHandler"/>
+    /// handler  <see cref="IRemoteCallContentHandler"/>
     /// </summary>
-    /// <param name="contentHandler">内容处理器</param>
-    public RequestContentHandlerAttribute(Type contentHandler)
+    /// <param name="handler">内容处理器</param>
+    public RequestContentHandlerAttribute(Type handler)
     {
-        ContentHandler = contentHandler;
+        Handler = handler;
     }
 
     /// <summary>
     /// 处理类
     /// </summary>
-    public Type ContentHandler { get; }
+    public Type Handler { get; }
 }

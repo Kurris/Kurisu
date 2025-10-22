@@ -1,4 +1,5 @@
 using System.Reflection;
+using Kurisu.RemoteCall.Default;
 using Kurisu.RemoteCall.Proxy.Abstractions;
 
 namespace Kurisu.RemoteCall.Proxy;
@@ -24,10 +25,22 @@ internal class ProxyInfo : IProxyInvocation
     /// <summary>
     /// 方法参数
     /// </summary>
-    public object[] Parameters { get; set; }
+    public ParameterInfo[] ParameterInfos { get; set; }
+
+    /// <summary>
+    ///  参数值
+    /// </summary>
+    public object[] ParameterValues { get; set; }
+
+    /// <summary>
+    ///  包装后的参数值
+    /// </summary>
+    public List<ParameterValue> WrapParameterValues { get; set; }
 
     /// <summary>
     /// 方法返回值
     /// </summary>
     public object ReturnValue { get; set; }
+
+    public RemoteClient RemoteClient { get; set; }
 }

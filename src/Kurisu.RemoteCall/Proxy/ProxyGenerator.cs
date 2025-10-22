@@ -1,4 +1,6 @@
 ﻿using System.Reflection;
+using Kurisu.RemoteCall.Attributes;
+using Kurisu.RemoteCall.Default;
 using Kurisu.RemoteCall.Proxy.Abstractions;
 
 namespace Kurisu.RemoteCall.Proxy;
@@ -59,12 +61,26 @@ internal class ProxyGenerator : DispatchProxy
     /// <returns></returns>
     protected override object Invoke(MethodInfo method, object[] args)
     {
+        var parameterInfos = method!.GetParameters();
+        var parameterValues = parameterInfos.Select((p, i) => new ParameterValue(p, args![i])).ToList();
+
+        var enableRemoteClientAttribute = InterfaceType.GetCustomAttribute<EnableRemoteClientAttribute>()!;
+
         var info = new ProxyInfo
         {
+            ServiceProvider = ServiceProvider,
+
             Method = method,
-            Parameters = args,
+            ParameterInfos = parameterInfos,
+            ParameterValues = args,
+            WrapParameterValues = parameterValues,
             InterfaceType = InterfaceType,
-            ServiceProvider = ServiceProvider
+            RemoteClient = new RemoteClient
+            {
+                Name = enableRemoteClientAttribute.Name,
+                BaseUrl = enableRemoteClientAttribute.BaseUrl,
+                PolicyHandler = enableRemoteClientAttribute.PolicyHandler
+            }
         };
 
         Interceptor.Intercept(info);

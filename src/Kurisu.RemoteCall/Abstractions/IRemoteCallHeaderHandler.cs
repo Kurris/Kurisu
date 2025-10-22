@@ -9,5 +9,5 @@ public interface IRemoteCallHeaderHandler : IRemoteCallHandler
     /// 
     /// </summary>
     /// <returns></returns>
-    Dictionary<string, string> Handler();
+    Dictionary<string, string> GetHeaders();
 }

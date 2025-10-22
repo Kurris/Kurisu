@@ -8,6 +8,6 @@ public interface IRemoteCallParameterValidator
     /// <summary>
     /// 验证
     /// </summary>
-    /// <param name="parameters"></param>
-    void Validate(List<ParameterValue> parameters);
+    /// <param name="values"></param>
+    void Validate(object[] values);
 }

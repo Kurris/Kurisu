@@ -1,7 +1,7 @@
 ﻿namespace Kurisu.RemoteCall;
 
 /// <summary>
-/// http请求方法
+/// Http方法类型
 /// </summary>
 public enum HttpMethodType
 {

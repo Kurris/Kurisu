@@ -30,7 +30,7 @@ public abstract class BaseRemoteCallUrlResolver : IRemoteCallUrlResolver
     /// <param name="template">模板Url</param>
     /// <param name="parameters">参数列表</param>
     /// <returns>完整Url</returns>
-    public string GetUrl(HttpMethodType httpMethod, string baseUrl, string template, List<ParameterValue> parameters)
+    public string ResolveUrl(HttpMethodType httpMethod, string baseUrl, string template, List<ParameterValue> parameters)
     {
         baseUrl = ResolveBaseUrl(baseUrl);
         template = ResolveTemplateUrl(httpMethod, template, parameters);
@@ -45,9 +45,9 @@ public abstract class BaseRemoteCallUrlResolver : IRemoteCallUrlResolver
             return template;
 
         // 保证拼接时不会出现双斜杠或漏斜杠
-        if (!baseUrl.EndsWith("/") && !template.StartsWith("/"))
+        if (!baseUrl.EndsWith('/') && !template.StartsWith('/'))
             return baseUrl + "/" + template;
-        if (baseUrl.EndsWith("/") && template.StartsWith("/"))
+        if (baseUrl.EndsWith('/') && template.StartsWith('/'))
             return baseUrl.TrimEnd('/') + template;
         return baseUrl + template;
     }
@@ -84,10 +84,10 @@ public abstract class BaseRemoteCallUrlResolver : IRemoteCallUrlResolver
         if (string.IsNullOrEmpty(str))
             return str;
 
-        int start = str.IndexOf("${", StringComparison.Ordinal);
+        var start = str.IndexOf("${", StringComparison.Ordinal);
         while (start >= 0)
         {
-            int end = str.IndexOf("}", start, StringComparison.Ordinal);
+            var end = str.IndexOf('}', start);
             if (end < 0)
                 break;
 
