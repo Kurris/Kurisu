@@ -19,7 +19,6 @@ public sealed class DeleteAttribute : BaseHttpMethodAttribute
     public DeleteAttribute(string template)
     {
         Template = template;
-        HttpMethodType = HttpMethodType.Delete;
     }
 
     /// <summary>

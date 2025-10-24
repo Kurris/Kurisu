@@ -1,5 +1,5 @@
-﻿using Kurisu.RemoteCall.Proxy.Abstractions;
-using System.Reflection;
+﻿using System.Reflection;
+using Kurisu.RemoteCall.Proxy.Abstractions;
 
 namespace Kurisu.RemoteCall.Utils;
 
@@ -8,12 +8,19 @@ namespace Kurisu.RemoteCall.Utils;
 /// </summary>
 internal static class TypeExtensions
 {
-    internal static T GetCustomAttribute<T>(this IProxyInvocation proxyInvocation) where T : Attribute
+    public static bool TryGetCustomAttribute<T>(this IProxyInvocation proxyInvocation, out T attribute) where T : Attribute
     {
-        return proxyInvocation.Method.GetCustomAttribute<T>() ?? proxyInvocation.InterfaceType.GetCustomAttribute<T>();
+        attribute = proxyInvocation.Method.GetCustomAttribute<T>();
+        if (attribute != null)
+        {
+            return true;
+        }
+
+        attribute = proxyInvocation.InterfaceType.GetCustomAttribute<T>();
+        return attribute != null;
     }
 
-    internal static bool IsImplementFrom<T>(this Type type) where T : class
+    internal static bool IsInheritedFrom<T>(this Type type) where T : class
     {
         return type != null && type.IsAssignableTo(typeof(T));
     }

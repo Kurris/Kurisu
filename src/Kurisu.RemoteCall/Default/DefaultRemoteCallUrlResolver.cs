@@ -1,6 +1,3 @@
-using System.Collections;
-using System.Reflection;
-using Kurisu.RemoteCall.Attributes;
 using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json;
 
@@ -20,17 +17,18 @@ internal class DefaultRemoteCallUrlResolver : BaseRemoteCallUrlResolver
     }
 
     /// <inheritdoc />
-    protected override string ResolveTemplateUrl(HttpMethodType httpMethod, string template, List<ParameterValue> parameters)
+    protected override string ResolveTemplateUrl(string httpMethod, string template, List<ParameterValue> parameters)
     {
         template = base.ResolveTemplateUrl(httpMethod, template, parameters);
+        template = ResolveRouteUrl(template, parameters);
 
         return httpMethod switch
         {
-            HttpMethodType.Get => ResolveGetUrl(template, parameters),
-            HttpMethodType.Put => ResolvePutUrl(template, parameters),
-            HttpMethodType.Post => ResolvePostUrl(template, parameters),
-            HttpMethodType.Delete => ResolveDeleteUrl(template, parameters),
-            HttpMethodType.Patch => ResolvePutUrl(template, parameters),
+            "GET" => ResolveGetUrl(template, parameters),
+            "PUT" => ResolvePutUrl(template, parameters),
+            "POST" => ResolvePostUrl(template, parameters),
+            "DELETE" => ResolveDeleteUrl(template, parameters),
+            "PATCH" => ResolvePutUrl(template, parameters),
             _ => template
         };
     }
@@ -38,28 +36,18 @@ internal class DefaultRemoteCallUrlResolver : BaseRemoteCallUrlResolver
 
     private static string ResolveGetUrl(string template, List<ParameterValue> parameters)
     {
-        parameters = parameters.Where(x => !x.Parameter.IsDefined(typeof(RequestIgnoreQueryAttribute))).ToList();
         //处理请求url的地址
         List<string> items = new(parameters.Count);
 
-        var parameter = parameters.FirstOrDefault(x => x.Parameter.IsDefined(typeof(RequestQueryAttribute)) && x.Parameter.ParameterType != typeof(string));
+        //第一个参数为类,并且定义了RequestQueryAttribute
+        var parameter = parameters.FirstOrDefault(x => x.QueryAttribute != null && x.Parameter.ParameterType != typeof(string));
         if (parameter != null)
         {
-            var v = parameter.Value;
-            if (v is IEnumerable nv)
-            {
-                foreach (var item in nv)
-                {
-                    items.Add($"{parameter.Parameter.Name}={item}");
-                }
-            }
-            else
-            {
-                //对象转字典
-                var d = JsonConvert.DeserializeObject<Dictionary<string, string>>(JsonConvert.SerializeObject(parameter.Value))!;
-                items.AddRange(d.Select(pair => $"{pair.Key}={pair.Value}"));
-            }
+            //对象转字典
+            var d = JsonConvert.DeserializeObject<Dictionary<string, string>>(JsonConvert.SerializeObject(parameter.Value))!;
+            items.AddRange(d.Select(pair => $"{pair.Key}={pair.Value}"));
         }
+
         else
         {
             foreach (var item in parameters)
@@ -114,6 +102,29 @@ internal class DefaultRemoteCallUrlResolver : BaseRemoteCallUrlResolver
             {
                 template = template.Replace($"{{{item.Parameter.Name}}}", item.Value + string.Empty);
             }
+        }
+
+        return template;
+    }
+
+    private static string ResolveRouteUrl(string template, List<ParameterValue> parameters)
+    {
+        foreach (var item in parameters.Where(x => x.RouteAttribute != null))
+        {
+            var name = $"{{{item.RouteAttribute.Name ?? item.Parameter.Name}}}";
+            var value = string.Empty;
+
+            //如果是枚举类型,则获取枚举的名称
+            if (item.Parameter.ParameterType.IsEnum)
+            {
+                value = Enum.GetName(item.Parameter.ParameterType, item.Value) ?? value;
+            }
+            else
+            {
+                value = item.Value + string.Empty;
+            }
+
+            template = template.Replace(name, value);
         }
 
         return template;

@@ -19,7 +19,6 @@ public sealed class PutAttribute : BaseHttpMethodAttribute
     public PutAttribute(string template)
     {
         Template = template;
-        HttpMethodType = HttpMethodType.Put;
     }
 
     /// <summary>

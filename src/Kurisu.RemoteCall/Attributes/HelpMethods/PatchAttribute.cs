@@ -19,7 +19,6 @@ public sealed class PatchAttribute : BaseHttpMethodAttribute
     public PatchAttribute(string template)
     {
         Template = template;
-        HttpMethodType = HttpMethodType.Delete;
     }
 
     /// <summary>

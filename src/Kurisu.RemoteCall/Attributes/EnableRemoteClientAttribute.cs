@@ -73,7 +73,7 @@ public sealed class EnableRemoteClientAttribute : Attribute
         else
         {
             var builder = services.AddHttpClient(Name);
-            if (PolicyHandler.IsImplementFrom<IRemoteCallPolicyHandler>())
+            if (PolicyHandler.IsInheritedFrom<IRemoteCallPolicyHandler>())
             {
                 ((IRemoteCallPolicyHandler)Activator.CreateInstance(PolicyHandler))!.ConfigureHttpClient(builder);
             }

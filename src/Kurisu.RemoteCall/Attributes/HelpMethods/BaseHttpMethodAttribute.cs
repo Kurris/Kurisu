@@ -9,11 +9,6 @@ namespace Kurisu.RemoteCall.Attributes;
 public abstract class BaseHttpMethodAttribute : Attribute
 {
     /// <summary>
-    /// 请求方法
-    /// </summary>
-    internal HttpMethodType HttpMethodType { get; set; }
-
-    /// <summary>
     /// 请求route template
     /// </summary>
     public abstract string Template { get; }

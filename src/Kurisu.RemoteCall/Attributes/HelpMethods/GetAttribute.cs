@@ -19,7 +19,6 @@ public sealed class GetAttribute : BaseHttpMethodAttribute
     public GetAttribute(string template)
     {
         Template = template;
-        HttpMethodType = HttpMethodType.Get;
     }
 
     /// <summary>

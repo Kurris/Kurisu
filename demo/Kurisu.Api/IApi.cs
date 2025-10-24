@@ -2,7 +2,7 @@
 
 namespace Kurisu.Api;
 
-[EnableRemoteClient("Kurisu.Api", "${a-service}", SettingFile = "api.json")]
+[EnableRemoteClient("Kurisu.Api", "${a-service}")]
 public interface IApi
 {
 }

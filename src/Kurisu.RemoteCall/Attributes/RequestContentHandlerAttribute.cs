@@ -14,7 +14,7 @@ public sealed class RequestContentHandlerAttribute : Attribute
     /// <param name="handler">内容处理器</param>
     public RequestContentHandlerAttribute(Type handler)
     {
-        Handler = handler;
+        Handler = handler ?? throw new ArgumentNullException(nameof(handler));
     }
 
     /// <summary>

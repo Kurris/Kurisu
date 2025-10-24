@@ -1,5 +1,4 @@
 ﻿using System.Reflection;
-using Kurisu.RemoteCall.Attributes;
 using Kurisu.RemoteCall.Default;
 
 namespace Kurisu.RemoteCall.Proxy.Abstractions;
@@ -7,7 +6,7 @@ namespace Kurisu.RemoteCall.Proxy.Abstractions;
 /// <summary>
 /// 代理调用信息
 /// </summary>
-internal interface IProxyInvocation
+public interface IProxyInvocation
 {
     public IServiceProvider ServiceProvider { get; set; }
 

@@ -13,5 +13,5 @@ public interface IRemoteCallUrlResolver
     /// <param name="template"></param>
     /// <param name="parameters"></param>
     /// <returns></returns>
-    string ResolveUrl(HttpMethodType httpMethod, string baseUrl, string template, List<ParameterValue> parameters);
+    string ResolveUrl(string httpMethod, string baseUrl, string template, List<ParameterValue> parameters);
 }

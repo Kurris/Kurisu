@@ -13,7 +13,7 @@ public class RemoteCallTests
     {
         var services = new ServiceCollection();
         services.AddSingleton<IConfiguration>(new ConfigurationBuilder().Build());
-        services.AddRemoteCall(new[] { typeof(IGetApi) ,typeof(IPostApi)});
+        services.AddRemoteCall(new[] { typeof(IGetApi), typeof(IPostApi) });
 
         ServiceProvider = services.BuildServiceProvider();
     }
@@ -42,10 +42,8 @@ public class RemoteCallTests
             Name = "ligy",
             Type = 1
         };
-        // Act
-        var result = await api.GetTestAsync(model);
 
-        // Assert
+        var result = await api.GetTestAsync(model);
         Assert.Equal(model.ToJson(), result);
     }
 
@@ -53,9 +51,7 @@ public class RemoteCallTests
     public async Task PostTestAsync_ShouldPostDataSuccessfully()
     {
         var api = ServiceProvider.GetRequiredService<IPostApi>();
-
         var result = await api.PostTestAsync("ligy");
-
         Assert.Equal(new { data = "ligy" }.ToJson(), result);
     }
 }

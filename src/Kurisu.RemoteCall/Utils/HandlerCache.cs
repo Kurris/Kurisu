@@ -13,7 +13,7 @@ internal static class HandlerCache
 
     internal static readonly ConcurrentDictionary<Type, IRemoteCallResultHandler> ResultHandlers = new()
     {
-        [typeof(void)] = new DefaultRemoteCallResultHandler()
+        [typeof(RemoteCallStandardResultHandler)] = new DefaultRemoteCallResultHandler()
     };
 
     internal static readonly ConcurrentDictionary<Type, IRemoteCallContentHandler> ContentHandlers = new();

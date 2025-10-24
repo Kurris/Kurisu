@@ -30,7 +30,7 @@ public abstract class BaseRemoteCallUrlResolver : IRemoteCallUrlResolver
     /// <param name="template">模板Url</param>
     /// <param name="parameters">参数列表</param>
     /// <returns>完整Url</returns>
-    public string ResolveUrl(HttpMethodType httpMethod, string baseUrl, string template, List<ParameterValue> parameters)
+    public string ResolveUrl(string httpMethod, string baseUrl, string template, List<ParameterValue> parameters)
     {
         baseUrl = ResolveBaseUrl(baseUrl);
         template = ResolveTemplateUrl(httpMethod, template, parameters);
@@ -69,7 +69,7 @@ public abstract class BaseRemoteCallUrlResolver : IRemoteCallUrlResolver
     /// <param name="template">模板Url</param>
     /// <param name="parameters">参数列表</param>
     /// <returns>处理后的模板Url</returns>
-    protected virtual string ResolveTemplateUrl(HttpMethodType httpMethod, string template, List<ParameterValue> parameters)
+    protected virtual string ResolveTemplateUrl(string httpMethod, string template, List<ParameterValue> parameters)
     {
         return FixFromConfiguration(template);
     }
