@@ -3,15 +3,13 @@ using Kurisu.RemoteCall.Abstractions;
 using Kurisu.RemoteCall.Default;
 using Kurisu.RemoteCall.Proxy.Abstractions;
 using Kurisu.RemoteCall.Utils;
-using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
 namespace Kurisu.RemoteCall.Attributes;
 
 /// <summary>
-/// 请求拦截器抽象特性基类，定义远程调用的拦截处理流程（如参数校验、URL解析、请求前后处理、异常处理、日志等）。
-/// 需继承实现具体业务逻辑。
+/// 请求拦截器抽象特性基类
 /// </summary>
 /// <typeparam name="TResult">远程调用返回结果类型</typeparam>
 [AttributeUsage(AttributeTargets.Interface | AttributeTargets.Method)]
@@ -26,6 +24,11 @@ public abstract class AbstractRequestInterceptorAttribute<TResult> : Attribute, 
     /// 请求体内容（用于日志记录）
     /// </summary>
     private string _requestBody;
+
+    /// <summary>
+    /// 异常对象 
+    /// </summary>
+    private Exception _exception;
 
     /// <summary>
     /// 服务提供器，用于获取依赖服务
@@ -72,28 +75,60 @@ public abstract class AbstractRequestInterceptorAttribute<TResult> : Attribute, 
     /// <param name="request">HttpRequestMessage实例</param>
     public virtual async Task BeforeRequestAsync(HttpClient httpClient, HttpRequestMessage request)
     {
-        request.Content = HandleHttpContext();
+        await UseAuthAsync(request);
+        await UseHeadersAsync(request);
+
+        request.Content = HandleHttpContext(request);
         _requestBody = request.Content == null ? string.Empty : await request.Content.ReadAsStringAsync().ConfigureAwait(false);
-        return;
+    }
 
-        // 处理HttpContext，生成请求内容
-        HttpContent HandleHttpContext()
+    /// <summary>
+    ///  使用请求头，支持自定义头处理器或静态头
+    /// </summary>
+    /// <param name="request"></param>
+    protected virtual async Task UseHeadersAsync(HttpRequestMessage request)
+    {
+        if (ProxyInvocation.TryGetCustomAttribute<RequestHeaderAttribute>(out var headerAttribute))
         {
-            if ("get".Equals(request.Method.Method, StringComparison.OrdinalIgnoreCase)) return null;
-
-            if (!ProxyInvocation.TryGetCustomAttribute<RequestContentHandlerAttribute>(out var contentHandlerAttr))
+            if (headerAttribute.Handler != null)
             {
-                return HttpContentUtils.Create(ProxyInvocation.Method, ProxyInvocation.WrapParameterValues);
+                var headerHandler = (IRemoteCallHeaderHandler)ServiceProvider.GetRequiredService(headerAttribute.Handler);
+                var headers = await headerHandler.GetHeadersAsync().ConfigureAwait(false);
+                foreach (var header in headers)
+                {
+                    request.Headers.TryAddWithoutValidation(header.Key, header.Value);
+                }
             }
-
-
-            var contentHandler = HandlerCache.ContentHandlers.GetOrAdd(contentHandlerAttr.Handler, t => (IRemoteCallContentHandler)Activator.CreateInstance(t));
-            var method = contentHandler.GetType().GetTypeInfo()
-                             .GetRuntimeMethod(ProxyInvocation.Method.Name, ProxyInvocation.ParameterInfos.Select(p => p.ParameterType).ToArray())
-                         ?? throw new NullReferenceException("请求内容处理器方法未找到");
-
-            return (HttpContent)method.Invoke(contentHandler, ProxyInvocation.ParameterValues);
+            else
+            {
+                request.Headers.TryAddWithoutValidation(headerAttribute.Name, headerAttribute.Value);
+            }
         }
+    }
+
+    /// <summary>
+    /// 处理HttpContext，生成请求内容
+    /// </summary>
+    /// <param name="request">HttpRequestMessage实例</param>
+    /// <returns>HttpContent实例</returns>
+    private HttpContent HandleHttpContext(HttpRequestMessage request)
+    {
+        if ("get".Equals(request.Method.Method, StringComparison.OrdinalIgnoreCase)) return null;
+
+        if (!ProxyInvocation.TryGetCustomAttribute<RequestContentAttribute>(out var contentHandlerAttr))
+        {
+            return HttpContentUtils.Create(ProxyInvocation.Method, ProxyInvocation.WrapParameterValues);
+        }
+
+        var contentHandler = (IRemoteCallContentHandler)ServiceProvider.GetRequiredService(contentHandlerAttr.Handler);
+
+        // 缓存方法以提高性能
+        var methodKey = (contentHandler.GetType(), ProxyInvocation.Method.Name, string.Join(",", ProxyInvocation.ParameterInfos.Select(p => p.ParameterType.FullName)));
+        var method = HandlerCache.Methods.GetOrAdd(methodKey, _ =>
+            contentHandler.GetType().GetRuntimeMethod(ProxyInvocation.Method.Name, ProxyInvocation.ParameterInfos.Select(p => p.ParameterType).ToArray())
+            ?? throw new InvalidOperationException("请求内容处理器方法未找到"));
+
+        return (HttpContent)method.Invoke(contentHandler, ProxyInvocation.ParameterValues);
     }
 
     /// <summary>
@@ -108,25 +143,9 @@ public abstract class AbstractRequestInterceptorAttribute<TResult> : Attribute, 
         }
 
         var headerName = auth.HeaderName;
-        string token;
-        if (auth.Handler.IsInheritedFrom<IRemoteCallAuthTokenHandler>())
-        {
-            var handler = (IRemoteCallAuthTokenHandler)Activator.CreateInstance(auth.Handler)
-                          ?? throw new NullReferenceException($"无法创建 {auth.Handler.FullName} 的实例。");
 
-            token = await handler.GetTokenAsync(ServiceProvider).ConfigureAwait(false);
-        }
-        else
-        {
-            var httpContext = ServiceProvider.GetRequiredService<IHttpContextAccessor>().HttpContext
-                              ?? throw new NullReferenceException("获取HttpContext失败,HttpContext为Null,请检查是否注入IHttpContextAccessor或在请求的作用域中.");
-
-            token = httpContext.Request.Headers[headerName].FirstOrDefault();
-            if (string.IsNullOrEmpty(token))
-            {
-                throw new NullReferenceException($"使用请求的token失败,但HttpContext.Headers[{headerName}] 为Null");
-            }
-        }
+        var handler = (IRemoteCallAuthTokenHandler)ServiceProvider.GetRequiredService(auth.Handler);
+        var token = await handler.GetTokenAsync().ConfigureAwait(false);
 
         request.Headers.TryAddWithoutValidation(headerName, token);
     }
@@ -138,31 +157,33 @@ public abstract class AbstractRequestInterceptorAttribute<TResult> : Attribute, 
     /// <returns>处理后的结果</returns>
     public virtual async Task<TResult> AfterResponseAsync(HttpResponseMessage response)
     {
-        if (ProxyInvocation.TryGetCustomAttribute<ResultHandlerAttribute>(out var resultHandlerAttr))
+        IRemoteCallResultHandler handler;
+        if (ProxyInvocation.TryGetCustomAttribute<ResponseResultAttribute>(out var resultHandlerAttr))
         {
-            if (!resultHandlerAttr.Handler.IsInheritedFrom<IRemoteCallResultHandler>())
-            {
-                throw new InvalidOperationException($"请求结果处理器 {resultHandlerAttr.Handler.FullName} 必须实现 IRemoteCallResultHandler 接口");
-            }
+            handler = (IRemoteCallResultHandler)ServiceProvider.GetRequiredService(resultHandlerAttr.Handler);
         }
-
-        var resultHandler = HandlerCache.ResultHandlers.GetOrAdd(resultHandlerAttr?.Handler ?? typeof(RemoteCallStandardResultHandler),
-            t => (IRemoteCallResultHandler)Activator.CreateInstance(t)
-        );
+        else
+        {
+            handler = ServiceProvider.GetRequiredService<DefaultRemoteCallResultHandler>();
+        }
 
         _responseBody = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
 
-        return resultHandler.Handle<TResult>(response.StatusCode, _responseBody);
+        return handler.Handle<TResult>(response.StatusCode, _responseBody);
     }
 
     /// <summary>
     /// 异常处理，默认抛出异常，可重写自定义处理
     /// </summary>
     /// <param name="exception">异常对象</param>
+    /// <param name="result"></param>
     /// <returns>处理结果</returns>
-    public virtual Task<TResult> OnExceptionAsync(Exception exception)
+    public virtual bool TryOnException(Exception exception, out TResult result)
     {
-        throw exception;
+        result = default;
+        _exception = exception;
+
+        return false;
     }
 
     /// <summary>
@@ -175,7 +196,12 @@ public abstract class AbstractRequestInterceptorAttribute<TResult> : Attribute, 
     {
         if (!ProxyInvocation.TryGetCustomAttribute<RequestDisableLogAttribute>(out _))
         {
-            logger.LogInformation("{method} {url}\r\nBody:{body}\r\nResponse:{response} .", httpMethod, url, _requestBody, _responseBody);
+            if (_exception != null)
+            {
+                _responseBody = _exception.Message;
+            }
+
+            logger.LogInformation("{method} {url}\nBody:{body}\nResponse:{response} .", httpMethod, url, _requestBody, _responseBody);
         }
     }
 }

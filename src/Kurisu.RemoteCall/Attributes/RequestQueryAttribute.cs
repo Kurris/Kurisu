@@ -9,7 +9,7 @@ public class RequestQueryAttribute : Attribute
     /// <summary>
     /// ctor
     /// </summary>
-    public RequestQueryAttribute() : this(string.Empty)
+    public RequestQueryAttribute()
     {
     }
 

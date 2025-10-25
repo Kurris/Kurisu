@@ -63,7 +63,6 @@ internal class ProxyGenerator : DispatchProxy
     {
         var parameterInfos = method!.GetParameters();
         var parameterValues = parameterInfos.Select((p, i) => new ParameterValue(p, args![i])).ToList();
-
         var enableRemoteClientAttribute = InterfaceType.GetCustomAttribute<EnableRemoteClientAttribute>()!;
 
         var info = new ProxyInfo

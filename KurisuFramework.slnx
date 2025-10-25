@@ -20,5 +20,6 @@
     <Project Path="test\Kurisu.Test.Framework.Configurations\Kurisu.Test.Framework.Configurations.csproj" Type="Classic C#" />
     <Project Path="test\Kurisu.Test.Framework.DependencyInjection\Kurisu.Test.Framework.DependencyInjection.csproj" Type="Classic C#" />
     <Project Path="test\Kurisu.Test.HelperClass\Kurisu.Test.HelperClass.csproj" Type="Classic C#" />
+    <Project Path="test\Kurisu.Test.RemoteCall\Kurisu.Test.RemoteCall.csproj" Type="Classic C#" />
   </Folder>
 </Solution>

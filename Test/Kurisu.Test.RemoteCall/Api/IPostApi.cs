@@ -8,7 +8,7 @@ namespace Kurisu.Test.RemoteCall.Api;
 [EnableRemoteClient("post-client", "http://localhost:5000", PolicyHandler = typeof(MockPostHttpClientPolicy))]
 public interface IPostApi
 {
-    [RequestContentHandler(typeof(PostContentHandler))]
+    [RequestContent(typeof(PostContentHandler))]
     [Post("api/post1", "application/x-www-form-urlencoded")]
     Task<string> PostTestAsync(string data);
 }

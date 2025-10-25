@@ -1,5 +1,6 @@
+using System.Collections;
+using Kurisu.RemoteCall.Utils;
 using Microsoft.Extensions.Configuration;
-using Newtonsoft.Json;
 
 namespace Kurisu.RemoteCall.Default;
 
@@ -25,14 +26,10 @@ internal class DefaultRemoteCallUrlResolver : BaseRemoteCallUrlResolver
         return httpMethod switch
         {
             "GET" => ResolveGetUrl(template, parameters),
-            "PUT" => ResolvePutUrl(template, parameters),
-            "POST" => ResolvePostUrl(template, parameters),
-            "DELETE" => ResolveDeleteUrl(template, parameters),
-            "PATCH" => ResolvePutUrl(template, parameters),
+            "PUT" or "POST" or "DELETE" or "PATCH" => ResolvePostUrl(template, parameters),
             _ => template
         };
     }
-
 
     private static string ResolveGetUrl(string template, List<ParameterValue> parameters)
     {
@@ -40,14 +37,30 @@ internal class DefaultRemoteCallUrlResolver : BaseRemoteCallUrlResolver
         List<string> items = new(parameters.Count);
 
         //第一个参数为类,并且定义了RequestQueryAttribute
-        var parameter = parameters.FirstOrDefault(x => x.QueryAttribute != null && x.Parameter.ParameterType != typeof(string));
+        var parameter = parameters.FirstOrDefault(x => x.QueryAttribute != null
+                                                       && x.Parameter.ParameterType.IsClass
+                                                       && x.Parameter.ParameterType != typeof(string));
         if (parameter != null)
         {
             //对象转字典
-            var d = JsonConvert.DeserializeObject<Dictionary<string, string>>(JsonConvert.SerializeObject(parameter.Value))!;
-            items.AddRange(d.Select(pair => $"{pair.Key}={pair.Value}"));
+            var objDictionary = parameter.Value.ToObjDictionary();
+            foreach (var keyValuePair in objDictionary)
+            {
+                if (keyValuePair.Value is IEnumerable enumerable and not string)
+                {
+                    var index = 0;
+                    foreach (var item in enumerable)
+                    {
+                        items.Add($"{keyValuePair.Key}[{index}]={item}");
+                        index++;
+                    }
+                }
+                else
+                {
+                    items.Add($"{keyValuePair.Key}={keyValuePair.Value}");
+                }
+            }
         }
-
         else
         {
             foreach (var item in parameters)
@@ -68,31 +81,6 @@ internal class DefaultRemoteCallUrlResolver : BaseRemoteCallUrlResolver
             : template;
     }
 
-    private static string ResolveDeleteUrl(string template, List<ParameterValue> parameters)
-    {
-        foreach (var item in parameters)
-        {
-            if (template.Contains($"{{{item.Parameter.Name}}}"))
-            {
-                template = template.Replace($"{{{item.Parameter.Name}}}", item.Value + string.Empty);
-            }
-        }
-
-        return template;
-    }
-
-    private static string ResolvePutUrl(string template, List<ParameterValue> parameters)
-    {
-        foreach (var item in parameters.Where(x => !x.Parameter.ParameterType.IsClass || x.Parameter.ParameterType == typeof(string)))
-        {
-            if (template.Contains($"{{{item.Parameter.Name}}}"))
-            {
-                template = template.Replace($"{{{item.Parameter.Name}}}", item.Value + string.Empty);
-            }
-        }
-
-        return template;
-    }
 
     private static string ResolvePostUrl(string template, List<ParameterValue> parameters)
     {

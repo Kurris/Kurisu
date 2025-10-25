@@ -1,6 +1,5 @@
 using System.Collections.Concurrent;
-using Kurisu.RemoteCall.Abstractions;
-using Kurisu.RemoteCall.Default;
+using System.Reflection;
 
 namespace Kurisu.RemoteCall.Utils;
 
@@ -9,12 +8,5 @@ namespace Kurisu.RemoteCall.Utils;
 /// </summary>
 internal static class HandlerCache
 {
-    internal static readonly ConcurrentBag<string> ConfigClients = new();
-
-    internal static readonly ConcurrentDictionary<Type, IRemoteCallResultHandler> ResultHandlers = new()
-    {
-        [typeof(RemoteCallStandardResultHandler)] = new DefaultRemoteCallResultHandler()
-    };
-
-    internal static readonly ConcurrentDictionary<Type, IRemoteCallContentHandler> ContentHandlers = new();
+    internal static readonly ConcurrentDictionary<(Type, string, string), MethodInfo> Methods = new();
 }

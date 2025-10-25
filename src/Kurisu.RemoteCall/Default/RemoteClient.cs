@@ -2,6 +2,9 @@ using Kurisu.RemoteCall.Abstractions;
 
 namespace Kurisu.RemoteCall.Default;
 
+/// <summary>
+///  remote client 配置
+/// </summary>
 public class RemoteClient
 {
     /// <summary>

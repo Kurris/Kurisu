@@ -25,6 +25,8 @@ internal class HttpClientRemoteCallClient : BaseRemoteCallClient
 
     protected override async Task<TResult> RequestAsync<TResult>(IProxyInvocation invocation)
     {
+        if (invocation == null) throw new ArgumentNullException(nameof(invocation));
+
         var client = invocation.RemoteClient;
         var httpMethodDefined = invocation.Method.GetCustomAttribute<BaseHttpMethodAttribute>()
                                 ?? throw new NullReferenceException("请定义请求方式");
@@ -44,8 +46,7 @@ internal class HttpClientRemoteCallClient : BaseRemoteCallClient
         var requestUrl = interceptor.ResolveUrl(httpMethod, client.BaseUrl, template, invocation.WrapParameterValues);
 
         using var request = new HttpRequestMessage(httpMethodDefined.HttpMethod, new Uri(requestUrl));
-        await interceptor.BeforeRequestAsync(httpClient, request);
-        await interceptor.UseAuthAsync(request).ConfigureAwait(false);
+        await interceptor.BeforeRequestAsync(httpClient, request).ConfigureAwait(false);
 
         try
         {
@@ -54,7 +55,12 @@ internal class HttpClientRemoteCallClient : BaseRemoteCallClient
         }
         catch (Exception e)
         {
-            return await interceptor.OnExceptionAsync(e);
+            if (interceptor.TryOnException(e, out var result))
+            {
+                return result;
+            }
+
+            throw;
         }
         finally
         {

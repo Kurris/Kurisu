@@ -7,3 +7,6 @@ namespace Kurisu.RemoteCall.Default;
 /// </summary>
 /// <typeparam name="TResult"></typeparam>
 public class DefaultRequestInterceptorAttribute<TResult> : AbstractRequestInterceptorAttribute<TResult>;
+
+
+

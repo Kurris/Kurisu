@@ -51,8 +51,9 @@ public interface IRemoteCallInterceptor<TResult>
     /// 
     /// </summary>
     /// <param name="exception"></param>
+    /// <param name="result"></param>
     /// <returns></returns>
-    Task<TResult> OnExceptionAsync(Exception exception);
+    bool TryOnException(Exception exception, out TResult result);
 
     /// <summary>
     /// 

@@ -42,20 +42,4 @@ public class RequestHeaderAttribute : Attribute
     /// header处理器
     /// </summary>
     public Type Handler { get; }
-
-    /// <summary>
-    /// 获取headers
-    /// </summary>
-    /// <returns></returns>
-    public Dictionary<string, string> GetHeaders()
-    {
-        if (!Handler.IsAssignableTo(typeof(IRemoteCallHeaderHandler)))
-            return new Dictionary<string, string>
-            {
-                [Name] = Value,
-            };
-
-        var instance = Activator.CreateInstance(Handler) as IRemoteCallHeaderHandler;
-        return instance?.GetHeaders() ?? new Dictionary<string, string>();
-    }
 }

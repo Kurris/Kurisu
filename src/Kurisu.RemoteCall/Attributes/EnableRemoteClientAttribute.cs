@@ -56,11 +56,6 @@ public sealed class EnableRemoteClientAttribute : Attribute
     /// <param name="services"></param>
     public void ConfigureServices(IServiceCollection services)
     {
-        if (HandlerCache.ConfigClients.Contains(Name))
-        {
-            throw new Exception("重复的服务命名:" + Name);
-        }
-
         if (string.IsNullOrEmpty(Name))
         {
             if (PolicyHandler != null)
@@ -78,7 +73,5 @@ public sealed class EnableRemoteClientAttribute : Attribute
                 ((IRemoteCallPolicyHandler)Activator.CreateInstance(PolicyHandler))!.ConfigureHttpClient(builder);
             }
         }
-
-        HandlerCache.ConfigClients.Add(Name);
     }
 }

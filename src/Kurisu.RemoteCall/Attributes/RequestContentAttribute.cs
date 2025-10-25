@@ -1,4 +1,5 @@
 ﻿using Kurisu.RemoteCall.Abstractions;
+using Kurisu.RemoteCall.Utils;
 
 namespace Kurisu.RemoteCall.Attributes;
 
@@ -6,15 +7,17 @@ namespace Kurisu.RemoteCall.Attributes;
 /// 请求content内容处理
 /// </summary>
 [AttributeUsage(AttributeTargets.Interface | AttributeTargets.Method)]
-public sealed class RequestContentHandlerAttribute : Attribute
+public sealed class RequestContentAttribute : Attribute
 {
     /// <summary>
     /// handler  <see cref="IRemoteCallContentHandler"/>
     /// </summary>
     /// <param name="handler">内容处理器</param>
-    public RequestContentHandlerAttribute(Type handler)
+    public RequestContentAttribute(Type handler)
     {
-        Handler = handler ?? throw new ArgumentNullException(nameof(handler));
+        if (handler == null) throw new ArgumentNullException(nameof(handler));
+        if (!handler.IsInheritedFrom<IRemoteCallContentHandler>()) throw new ArgumentException(nameof(handler) + " 必须继承自 " + nameof(IRemoteCallContentHandler));
+        Handler = handler;
     }
 
     /// <summary>

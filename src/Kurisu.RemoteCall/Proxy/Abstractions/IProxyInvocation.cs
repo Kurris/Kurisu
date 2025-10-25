@@ -8,6 +8,9 @@ namespace Kurisu.RemoteCall.Proxy.Abstractions;
 /// </summary>
 public interface IProxyInvocation
 {
+    /// <summary>
+    /// service provider
+    /// </summary>
     public IServiceProvider ServiceProvider { get; set; }
 
     /// <summary>

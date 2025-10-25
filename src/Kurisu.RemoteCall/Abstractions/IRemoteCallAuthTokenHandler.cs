@@ -8,7 +8,6 @@ public interface IRemoteCallAuthTokenHandler : IRemoteCallHandler
     /// <summary>
     /// 获取token
     /// </summary>
-    /// <param name="serviceProvider">sp from singleton services</param>
     /// <returns></returns>
-    Task<string> GetTokenAsync(IServiceProvider serviceProvider);
+    Task<string> GetTokenAsync();
 }
