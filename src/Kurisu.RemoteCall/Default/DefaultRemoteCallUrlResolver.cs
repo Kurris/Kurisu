@@ -1,6 +1,7 @@
 using System.Collections;
-using Kurisu.RemoteCall.Utils;
 using Microsoft.Extensions.Configuration;
+using System.Net;
+using Kurisu.RemoteCall.Utils;
 
 namespace Kurisu.RemoteCall.Default;
 
@@ -37,42 +38,23 @@ internal class DefaultRemoteCallUrlResolver : BaseRemoteCallUrlResolver
         List<string> items = new(parameters.Count);
 
         //第一个参数为类,并且定义了RequestQueryAttribute
-        var parameter = parameters.FirstOrDefault(x => x.QueryAttribute != null
-                                                       && x.Parameter.ParameterType.IsClass
-                                                       && x.Parameter.ParameterType != typeof(string));
+        var parameter = parameters.FirstOrDefault(x => x.QueryAttribute != null && !TypeHelper.IsSimpleType(x.Parameter.ParameterType));
         if (parameter != null)
         {
             //对象转字典
-            var objDictionary = parameter.Value.ToObjDictionary();
+            var objDictionary = parameter.Value.ToObjDictionary(null);
             foreach (var keyValuePair in objDictionary)
             {
-                if (keyValuePair.Value is IEnumerable enumerable and not string)
-                {
-                    var index = 0;
-                    foreach (var item in enumerable)
-                    {
-                        items.Add($"{keyValuePair.Key}[{index}]={item}");
-                        index++;
-                    }
-                }
-                else
-                {
-                    items.Add($"{keyValuePair.Key}={keyValuePair.Value}");
-                }
+                items.Add($"{keyValuePair.Key}={keyValuePair.Value}");
             }
         }
         else
         {
             foreach (var item in parameters)
             {
-                if (template.Contains($"{{{item.Parameter.Name}}}"))
-                {
-                    template = template.Replace($"{{{item.Parameter.Name}}}", item.Value + string.Empty);
-                }
-                else
-                {
-                    items.Add($"{item.Parameter.Name}={item.Value}");
-                }
+                var k = WebUtility.UrlEncode(item.Parameter.Name);
+                var v = WebUtility.UrlEncode(item.Value + string.Empty);
+                items.Add($"{k}={v}");
             }
         }
 
@@ -88,7 +70,8 @@ internal class DefaultRemoteCallUrlResolver : BaseRemoteCallUrlResolver
         {
             if (template.Contains($"{{{item.Parameter.Name}}}"))
             {
-                template = template.Replace($"{{{item.Parameter.Name}}}", item.Value + string.Empty);
+                var val = WebUtility.UrlEncode(item.Value + string.Empty);
+                template = template.Replace($"{{{item.Parameter.Name}}}", val);
             }
         }
 
@@ -109,7 +92,7 @@ internal class DefaultRemoteCallUrlResolver : BaseRemoteCallUrlResolver
             }
             else
             {
-                value = item.Value + string.Empty;
+                value = WebUtility.UrlEncode(item.Value + string.Empty);
             }
 
             template = template.Replace(name, value);

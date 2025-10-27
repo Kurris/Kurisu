@@ -30,7 +30,7 @@ internal class DefaultRemoteCallResultHandler : IRemoteCallResultHandler
     private static TResult Handle<TResult>(string responseBody)
     {
         var type = typeof(TResult);
-        if (Common.IsReferenceType(type))
+        if (CommonUtils.IsReferenceType(type))
         {
             return JsonConvert.DeserializeObject<TResult>(responseBody);
         }

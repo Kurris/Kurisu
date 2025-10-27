@@ -14,10 +14,10 @@ public class MockWeatherHttpClientPolicy : IRemoteCallPolicyHandler
         {
             var mock = new MockHttpMessageHandler();
 
-            mock.When(HttpMethod.Get, "http://localhost:5000/api/weather/ping")
+            mock.When(HttpMethod.Get, "http://localhost:5001/api/weather/ping")
                 .Respond("application/json", "\"pong\"");
 
-            mock.When(HttpMethod.Get, "http://localhost:5000/api/weather/echo*")
+            mock.When(HttpMethod.Get, "http://localhost:5001/api/weather/echo*")
                 .Respond(req =>
                 {
                     var uri = req.RequestUri!;
@@ -29,10 +29,10 @@ public class MockWeatherHttpClientPolicy : IRemoteCallPolicyHandler
                     };
                 });
 
-            mock.When(HttpMethod.Get, "http://localhost:5000/api/weather/list")
+            mock.When(HttpMethod.Get, "http://localhost:5001/api/weather/list")
                 .Respond("application/json", "[{\"Url\":\"/api/weather/1\",\"UserName\":\"user1\"},{\"Url\":\"/api/weather/2\",\"UserName\":\"user2\"}]");
 
-            mock.When(HttpMethod.Post, "http://localhost:5000/api/weather/create")
+            mock.When(HttpMethod.Post, "http://localhost:5001/api/weather/create")
                 .Respond(async req =>
                 {
                     var body = await req.Content.ReadAsStringAsync();
@@ -42,7 +42,7 @@ public class MockWeatherHttpClientPolicy : IRemoteCallPolicyHandler
                     };
                 });
 
-            mock.When(HttpMethod.Get, "http://localhost:5000/api/weather/complex*")
+            mock.When(HttpMethod.Get, "http://localhost:5001/api/weather/complex*")
                 .Respond(req =>
                 {
                     var uri = req.RequestUri!;

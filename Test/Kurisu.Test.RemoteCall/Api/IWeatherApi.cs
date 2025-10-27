@@ -4,7 +4,7 @@ using Kurisu.Test.RemoteCall.Models;
 
 namespace Kurisu.Test.RemoteCall.Api;
 
-[EnableRemoteClient("weather-client", "http://localhost:5001")]
+[EnableRemoteClient("weather-client", "http://localhost:5001", PolicyHandler = typeof(MockWeatherHttpClientPolicy))]
 public interface IWeatherApi
 {
     [Get("api/weather/ping")]

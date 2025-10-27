@@ -1,8 +1,4 @@
 ﻿<Solution>
-  <Folder Name="/demo/">
-    <Project Path="demo\Kurisu.Api\Kurisu.Api.csproj" Type="Classic C#" />
-    <Project Path="demo\Kurisu.Test.WebApi-A\Kurisu.Test.WebApi-A.csproj" />
-  </Folder>
   <Folder Name="/src/">
     <Project Path="src\Kurisu.Aspect.Abstractions\Kurisu.Aspect.Abstractions.csproj" Type="Classic C#" />
     <Project Path="src\Kurisu.Aspect\Kurisu.Aspect.csproj" />
@@ -13,7 +9,6 @@
     <Project Path="src\Kurisu.RemoteCall\Kurisu.RemoteCall.csproj" Type="Classic C#" />
   </Folder>
   <Folder Name="/test/">
-    <Project Path="test\Kurisu.Test.Console\Kurisu.Test.Console.csproj" Type="Classic C#" />
     <Project Path="test\Kurisu.Test.DataAccess\Kurisu.Test.DataAccess.csproj" Type="Classic C#" />
     <Project Path="test\Kurisu.Test.DataProtection\Kurisu.Test.DataProtection.csproj" Type="Classic C#" />
     <Project Path="test\Kurisu.Test.Framework.Authentication\Kurisu.Test.Framework.Authentication.csproj" Type="Classic C#" />

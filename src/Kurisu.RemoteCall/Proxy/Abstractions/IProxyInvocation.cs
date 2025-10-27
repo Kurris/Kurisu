@@ -33,6 +33,9 @@ public interface IProxyInvocation
     /// </summary>
     public object[] ParameterValues { get; set; }
 
+    /// <summary>
+    /// 包装后的参数值
+    /// </summary>
     public List<ParameterValue> WrapParameterValues { get; set; }
 
     /// <summary>
@@ -40,5 +43,8 @@ public interface IProxyInvocation
     /// </summary>
     object ReturnValue { get; set; }
 
+    /// <summary>
+    /// 客户端
+    /// </summary>
     public RemoteClient RemoteClient { get; set; }
 }

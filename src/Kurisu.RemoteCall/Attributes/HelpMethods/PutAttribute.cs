@@ -26,5 +26,8 @@ public sealed class PutAttribute : BaseHttpMethodAttribute
     /// </summary>
     public override string Template { get; }
 
+    /// <summary>
+    /// 请求方法
+    /// </summary>
     public override HttpMethod HttpMethod => HttpMethod.Put;
 }

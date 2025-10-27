@@ -26,5 +26,8 @@ public sealed class DeleteAttribute : BaseHttpMethodAttribute
     /// </summary>
     public override string Template { get; }
 
+    /// <summary>
+    /// 请求方法
+    /// </summary>
     public override HttpMethod HttpMethod => HttpMethod.Delete;
 }
