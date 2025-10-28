@@ -5,7 +5,7 @@ namespace Kurisu.RemoteCall.Abstractions;
 /// <summary>
 /// 结果处理器
 /// </summary>
-public interface IRemoteCallResultHandler : IRemoteCallHandler
+public interface IRemoteCallResponseResultHandler : IRemoteCallHandler
 {
     /// <summary>
     /// Handle

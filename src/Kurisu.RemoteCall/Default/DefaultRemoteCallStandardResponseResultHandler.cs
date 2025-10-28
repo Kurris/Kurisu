@@ -1,15 +1,22 @@
 ﻿using System.Net;
 using Kurisu.RemoteCall.Abstractions;
-using Newtonsoft.Json;
+using Kurisu.RemoteCall.Utils;
 
 namespace Kurisu.RemoteCall.Default;
 
-internal class RemoteCallStandardResultHandler : IRemoteCallResultHandler
+internal class DefaultRemoteCallStandardResponseResultHandler : IRemoteCallResponseResultHandler
 {
+    private readonly IJsonSerializer _jsonSerializer;
+
+    public DefaultRemoteCallStandardResponseResultHandler(IJsonSerializer jsonSerializer)
+    {
+        _jsonSerializer = jsonSerializer;
+    }
+
     /// <inheritdoc />
     public TResult Handle<TResult>(HttpStatusCode statusCode, string responseBody)
     {
-        var apiResult = JsonConvert.DeserializeObject<ApiResult<TResult>>(responseBody);
+        var apiResult = _jsonSerializer.Deserialize<ApiResult<TResult>>(responseBody);
         var isSuccessStatusCode = (int)statusCode >= 200 && (int)statusCode <= 299;
 
         if (!isSuccessStatusCode || apiResult.Code != 200)

@@ -78,7 +78,9 @@ public abstract class AbstractRequestInterceptorAttribute<TResult> : Attribute, 
         await UseAuthAsync(request);
         await UseHeadersAsync(request);
 
-        request.Content = HandleHttpContext(request);
+        var jsonSerializer = ServiceProvider.GetRequiredService<IJsonSerializer>();
+        var commonUtils = ServiceProvider.GetRequiredService<ICommonUtils>();
+        request.Content = HandleHttpContext(request, jsonSerializer, commonUtils);
         _requestBody = request.Content == null ? string.Empty : await request.Content.ReadAsStringAsync().ConfigureAwait(false);
     }
 
@@ -110,14 +112,16 @@ public abstract class AbstractRequestInterceptorAttribute<TResult> : Attribute, 
     /// 处理HttpContext，生成请求内容
     /// </summary>
     /// <param name="request">HttpRequestMessage实例</param>
+    /// <param name="jsonSerializer">用于序列化对象的 JSON 序列化器适配器</param>
+    /// <param name="commonUtils">通用工具实例</param>
     /// <returns>HttpContent实例</returns>
-    private HttpContent HandleHttpContext(HttpRequestMessage request)
+    private HttpContent HandleHttpContext(HttpRequestMessage request, IJsonSerializer jsonSerializer, ICommonUtils commonUtils)
     {
         if ("get".Equals(request.Method.Method, StringComparison.OrdinalIgnoreCase)) return null;
 
         if (!ProxyInvocation.TryGetCustomAttribute<RequestContentAttribute>(out var contentHandlerAttr))
         {
-            return HttpContentUtils.Create(ProxyInvocation.Method, ProxyInvocation.WrapParameterValues);
+            return HttpContentUtils.Create(ProxyInvocation.Method, ProxyInvocation.WrapParameterValues, jsonSerializer, commonUtils);
         }
 
         var contentHandler = (IRemoteCallContentHandler)ServiceProvider.GetRequiredService(contentHandlerAttr.Handler);
@@ -157,14 +161,14 @@ public abstract class AbstractRequestInterceptorAttribute<TResult> : Attribute, 
     /// <returns>处理后的结果</returns>
     public virtual async Task<TResult> AfterResponseAsync(HttpResponseMessage response)
     {
-        IRemoteCallResultHandler handler;
+        IRemoteCallResponseResultHandler handler;
         if (ProxyInvocation.TryGetCustomAttribute<ResponseResultAttribute>(out var resultHandlerAttr))
         {
-            handler = (IRemoteCallResultHandler)ServiceProvider.GetRequiredService(resultHandlerAttr.Handler);
+            handler = (IRemoteCallResponseResultHandler)ServiceProvider.GetRequiredService(resultHandlerAttr.Handler);
         }
         else
         {
-            handler = ServiceProvider.GetRequiredService<DefaultRemoteCallResultHandler>();
+            handler = ServiceProvider.GetRequiredService<DefaultRemoteCallResponseResultHandler>();
         }
 
         _responseBody = await response.Content.ReadAsStringAsync().ConfigureAwait(false);

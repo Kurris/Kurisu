@@ -46,10 +46,10 @@ internal class HttpClientRemoteCallClient : BaseRemoteCallClient
         var requestUrl = interceptor.ResolveUrl(httpMethod, client.BaseUrl, template, invocation.WrapParameterValues);
 
         using var request = new HttpRequestMessage(httpMethodDefined.HttpMethod, new Uri(requestUrl));
-        await interceptor.BeforeRequestAsync(httpClient, request).ConfigureAwait(false);
 
         try
         {
+            await interceptor.BeforeRequestAsync(httpClient, request).ConfigureAwait(false);
             using var response = await httpClient.SendAsync(request).ConfigureAwait(false);
             return await interceptor.AfterResponseAsync(response).ConfigureAwait(false);
         }

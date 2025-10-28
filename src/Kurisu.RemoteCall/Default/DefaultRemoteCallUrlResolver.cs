@@ -1,4 +1,3 @@
-using System.Collections;
 using Microsoft.Extensions.Configuration;
 using System.Net;
 using Kurisu.RemoteCall.Utils;
@@ -10,12 +9,16 @@ namespace Kurisu.RemoteCall.Default;
 /// </summary>
 internal class DefaultRemoteCallUrlResolver : BaseRemoteCallUrlResolver
 {
+    private readonly ICommonUtils _commonUtils;
+
     /// <summary>
     /// init
     /// </summary>
     /// <param name="configuration"></param>
-    public DefaultRemoteCallUrlResolver(IConfiguration configuration) : base(configuration)
+    /// <param name="commonUtils"></param>
+    public DefaultRemoteCallUrlResolver(IConfiguration configuration, ICommonUtils commonUtils) : base(configuration)
     {
+        _commonUtils = commonUtils;
     }
 
     /// <inheritdoc />
@@ -32,7 +35,7 @@ internal class DefaultRemoteCallUrlResolver : BaseRemoteCallUrlResolver
         };
     }
 
-    private static string ResolveGetUrl(string template, List<ParameterValue> parameters)
+    private string ResolveGetUrl(string template, List<ParameterValue> parameters)
     {
         //处理请求url的地址
         List<string> items = new(parameters.Count);
@@ -42,7 +45,7 @@ internal class DefaultRemoteCallUrlResolver : BaseRemoteCallUrlResolver
         if (parameter != null)
         {
             //对象转字典
-            var objDictionary = parameter.Value.ToObjDictionary(null);
+            var objDictionary = _commonUtils.ToObjDictionary(string.Empty, parameter.Value);
             foreach (var keyValuePair in objDictionary)
             {
                 items.Add($"{keyValuePair.Key}={keyValuePair.Value}");

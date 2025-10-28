@@ -38,7 +38,7 @@ public sealed class EnableRemoteClientAttribute : Attribute
     /// <summary>
     /// client name
     /// </summary>
-    public string Name { get; }
+    public string Name { get; private set; }
 
     /// <summary>
     /// BaseUrl,支持从<see cref="IConfiguration"/>中获取,如$(Path)
@@ -58,20 +58,13 @@ public sealed class EnableRemoteClientAttribute : Attribute
     {
         if (string.IsNullOrEmpty(Name))
         {
-            if (PolicyHandler != null)
-            {
-                throw new ArgumentException("当PolicyHandler不为空时," + nameof(Name) + "不能为空");
-            }
-
-            services.AddHttpClient();
+            Name = RemoteCallStatic.DefaultClientName;
         }
-        else
+
+        var builder = services.AddHttpClient(Name);
+        if (PolicyHandler.IsInheritedFrom<IRemoteCallPolicyHandler>())
         {
-            var builder = services.AddHttpClient(Name);
-            if (PolicyHandler.IsInheritedFrom<IRemoteCallPolicyHandler>())
-            {
-                ((IRemoteCallPolicyHandler)Activator.CreateInstance(PolicyHandler))!.ConfigureHttpClient(builder);
-            }
+            ((IRemoteCallPolicyHandler)Activator.CreateInstance(PolicyHandler))!.ConfigureHttpClient(builder);
         }
     }
 }

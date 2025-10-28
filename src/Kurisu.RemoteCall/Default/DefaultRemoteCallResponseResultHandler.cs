@@ -1,15 +1,20 @@
 ﻿using System.Net;
 using Kurisu.RemoteCall.Abstractions;
 using Kurisu.RemoteCall.Utils;
-using Newtonsoft.Json;
 
 namespace Kurisu.RemoteCall.Default;
 
-/// <summary>
-/// 默认结果处理器
-/// </summary>
-internal class DefaultRemoteCallResultHandler : IRemoteCallResultHandler
+internal class DefaultRemoteCallResponseResultHandler : IRemoteCallResponseResultHandler
 {
+    private readonly IJsonSerializer _jsonSerializer;
+    private readonly ICommonUtils _commonUtils;
+
+    public DefaultRemoteCallResponseResultHandler(IJsonSerializer jsonSerializer , ICommonUtils commonUtils)
+    {
+        _jsonSerializer = jsonSerializer;
+        _commonUtils = commonUtils;
+    }
+
     public TResult Handle<TResult>(HttpStatusCode statusCode, string responseBody)
     {
         var result = Handle<TResult>(responseBody);
@@ -27,12 +32,12 @@ internal class DefaultRemoteCallResultHandler : IRemoteCallResultHandler
         return result;
     }
 
-    private static TResult Handle<TResult>(string responseBody)
+    private TResult Handle<TResult>(string responseBody)
     {
         var type = typeof(TResult);
-        if (CommonUtils.IsReferenceType(type))
+        if (_commonUtils.IsReferenceType(type))
         {
-            return JsonConvert.DeserializeObject<TResult>(responseBody);
+            return _jsonSerializer.Deserialize<TResult>(responseBody);
         }
 
         return (TResult)Convert.ChangeType(responseBody, type);

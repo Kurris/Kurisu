@@ -12,7 +12,7 @@ public class RemoteCallTestFixture
     {
         var services = new ServiceCollection();
         services.AddSingleton<IConfiguration>(new ConfigurationBuilder().Build());
-        services.AddRemoteCall(new[] { typeof(IGetApi), typeof(IPostApi), typeof(IWeatherApi), typeof(IHeaderRouteApi), typeof(IContentApi), typeof(IAuthApi), typeof(IResponseApi), typeof(ICustomContentApi) });
+        services.AddRemoteCall(new[] { typeof(IGetApi), typeof(IPostApi), typeof(IWeatherApi), typeof(IHeaderRouteApi), typeof(IContentApi), typeof(IAuthApi), typeof(IResponseApi), typeof(ICustomContentApi), typeof(IResponseAltApi) });
 
         // register test helper handlers so attributes' Handler types can be resolved from DI
         services.AddSingleton<TestAuthTokenHandler>();

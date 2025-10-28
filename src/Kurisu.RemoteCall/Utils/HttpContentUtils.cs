@@ -1,14 +1,14 @@
 ﻿using System.Net;
 using System.Reflection;
 using System.Text;
+using Kurisu.RemoteCall.Abstractions;
 using Kurisu.RemoteCall.Attributes;
-using Newtonsoft.Json;
 
 namespace Kurisu.RemoteCall.Utils;
 
 internal static class HttpContentUtils
 {
-    public static HttpContent Create(MethodInfo method, List<ParameterValue> parameters)
+    public static HttpContent Create(MethodInfo method, List<ParameterValue> parameters, IJsonSerializer jsonSerializer, ICommonUtils commonUtils)
     {
         var postAttribute = method.GetCustomAttribute<PostAttribute>();
         var contentType = postAttribute?.ContentType ?? "application/json";
@@ -68,7 +68,7 @@ internal static class HttpContentUtils
                 var pName = param.Parameter.Name;
                 var pValue = param.Value;
 
-                foreach (var keyValuePair in pValue.ToObjDictionary(pName))
+                foreach (var keyValuePair in commonUtils.ToObjDictionary(pName, pValue))
                 {
                     // overwrite existing keys with later values (consistent behavior)
                     dict[keyValuePair.Key] = keyValuePair.Value;
@@ -100,6 +100,6 @@ internal static class HttpContentUtils
             return new StringContent(value?.ToString() ?? string.Empty, Encoding.UTF8, contentType);
         }
 
-        return new StringContent(JsonConvert.SerializeObject(value), Encoding.UTF8, contentType);
+        return new StringContent(jsonSerializer.Serialize(value), Encoding.UTF8, contentType);
     }
 }

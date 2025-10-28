@@ -1,6 +1,4 @@
-using System.Collections;
 using System.ComponentModel.DataAnnotations;
-using System.Runtime.CompilerServices;
 using Kurisu.RemoteCall.Abstractions;
 
 namespace Kurisu.RemoteCall.Default;
@@ -14,29 +12,7 @@ internal class DefaultParameterValidator : IRemoteCallParameterValidator
     {
         foreach (var item in values)
         {
-            ValidateObject(item);
-        }
-    }
-
-    /// <summary>
-    /// 验证实体
-    /// </summary>
-    /// <param name="obj"></param>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static void ValidateObject(object obj)
-    {
-        var type = obj.GetType();
-        if (type.IsGenericType)
-        {
-            if (obj is not IEnumerable enumerable) return;
-            foreach (var item in enumerable)
-            {
-                ValidateObject(item);
-            }
-        }
-        else
-        {
-            Validator.ValidateObject(obj, new ValidationContext(obj), true);
+            Validator.ValidateObject(item, new ValidationContext(item), true);
         }
     }
 }

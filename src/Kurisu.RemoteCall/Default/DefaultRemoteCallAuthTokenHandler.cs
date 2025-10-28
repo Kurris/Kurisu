@@ -15,13 +15,16 @@ internal class DefaultRemoteCallAuthTokenHandler : IRemoteCallAuthTokenHandler
 
     public async Task<string> GetTokenAsync()
     {
-        var httpContext = _httpContextAccessor.HttpContext
-                          ?? throw new InvalidOperationException("获取HttpContext失败,HttpContext为Null,请检查是否注入IHttpContextAccessor或在请求的作用域中.");
+        var httpContext = _httpContextAccessor.HttpContext;
+        if (httpContext == null)
+        {
+            throw new ArgumentNullException(nameof(_httpContextAccessor.HttpContext), "HttpContext is null when attempting to get authorization token. Skipping Authorization header.");
+        }
 
         var token = httpContext.Request.Headers[HeaderNames.Authorization].FirstOrDefault();
         if (string.IsNullOrEmpty(token))
         {
-            throw new InvalidOperationException($"使用请求的token失败,但HttpContext.Headers[{HeaderNames.Authorization}] 为Null");
+            throw new ArgumentNullException(nameof(token), "Authorization header is missing in the current HttpContext. Skipping Authorization header.");
         }
 
         return await Task.FromResult(token);

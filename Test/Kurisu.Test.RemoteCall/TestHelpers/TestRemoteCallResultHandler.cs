@@ -3,7 +3,7 @@ using Kurisu.RemoteCall.Abstractions;
 
 namespace Kurisu.Test.RemoteCall.TestHelpers;
 
-public class TestRemoteCallResultHandler : IRemoteCallResultHandler
+public class TestRemoteCallResultHandler : IRemoteCallResponseResultHandler
 {
     public TResult Handle<TResult>(HttpStatusCode statusCode, string responseBody)
     {
@@ -20,7 +20,7 @@ public class TestRemoteCallResultHandler : IRemoteCallResultHandler
                 var val = sub.Substring(firstQuote + 1, secondQuote - firstQuote - 1);
                 return (TResult)(object)val;
             }
-
+            
             return (TResult)(object)responseBody;
         }
 
