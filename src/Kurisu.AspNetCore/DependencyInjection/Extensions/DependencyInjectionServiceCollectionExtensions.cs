@@ -1,12 +1,8 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Reflection;
-using Kurisu.AspNetCore;
 using Kurisu.AspNetCore.Abstractions.DependencyInjection;
 using Kurisu.AspNetCore.DependencyInjection;
 using Kurisu.AspNetCore.DependencyInjection.Internal;
-using Microsoft.Extensions.Logging;
 
 // ReSharper disable once CheckNamespace
 namespace Microsoft.Extensions.DependencyInjection;
