@@ -83,13 +83,7 @@ public class CommonUtilsTests : IClassFixture<RemoteCallTestFixture>
         Assert.Equal("1", d["x.N.Items[0]"].ToString());
         Assert.Equal("2", d["x.N.Items[1]"].ToString());
     }
-
-    [Fact]
-    public void ToObjDictionary_Null_Throws()
-    {
-        var utils = _fixture.GetService<ICommonUtils>();
-        Assert.ThrowsAny<Exception>(() => utils.ToObjDictionary("p", null));
-    }
+    
 
     [Fact]
     public void ToObjDictionary_EmptyEnumerable_SetsPrefixToNull()

@@ -1,4 +1,4 @@
-namespace Kurisu.RemoteCall.Attributes;
+namespace Kurisu.RemoteCall.Attributes.HelpMethods;
 
 /// <summary>
 /// put

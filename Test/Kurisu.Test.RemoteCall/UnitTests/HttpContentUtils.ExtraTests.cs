@@ -5,6 +5,7 @@ using Kurisu.RemoteCall.Utils;
 using Kurisu.RemoteCall;
 using Kurisu.RemoteCall.Attributes;
 using Kurisu.RemoteCall.Abstractions;
+using Kurisu.RemoteCall.Attributes.HelpMethods;
 using Xunit;
 
 namespace Kurisu.Test.RemoteCall.UnitTests;

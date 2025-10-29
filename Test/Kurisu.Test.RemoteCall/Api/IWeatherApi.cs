@@ -1,4 +1,5 @@
 using Kurisu.RemoteCall.Attributes;
+using Kurisu.RemoteCall.Attributes.HelpMethods;
 using Kurisu.Test.RemoteCall.MockPolicies;
 using Kurisu.Test.RemoteCall.Models;
 

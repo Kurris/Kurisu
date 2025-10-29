@@ -149,8 +149,8 @@ public abstract class AbstractRequestInterceptorAttribute<TResult> : Attribute, 
         var headerName = auth.HeaderName;
 
         var handler = (IRemoteCallAuthTokenHandler)ServiceProvider.GetRequiredService(auth.Handler);
-        var token = await handler.GetTokenAsync().ConfigureAwait(false);
-
+        var token = await handler.GetTokenAsync().ConfigureAwait(false)!;
+        //相信IRemoteCallAuthTokenHandler的返回值必须存在
         request.Headers.TryAddWithoutValidation(headerName, token);
     }
 

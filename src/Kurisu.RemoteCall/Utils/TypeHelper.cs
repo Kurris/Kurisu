@@ -67,4 +67,11 @@ internal static class TypeHelper
         if (!IsEnumerable(type, out var et)) return false;
         return IsSimpleType(et);
     }
+
+    public static bool IsReferenceType(Type type)
+    {
+        if (type == null) return false;
+        type = Nullable.GetUnderlyingType(type) ?? type;
+        return (type.IsClass || type.IsInterface || type.IsArray) && type != typeof(string);
+    }
 }

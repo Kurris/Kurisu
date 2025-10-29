@@ -2,7 +2,7 @@
 using System.Reflection;
 using System.Text;
 using Kurisu.RemoteCall.Abstractions;
-using Kurisu.RemoteCall.Attributes;
+using Kurisu.RemoteCall.Attributes.HelpMethods;
 
 namespace Kurisu.RemoteCall.Utils;
 

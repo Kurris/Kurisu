@@ -10,6 +10,7 @@ using System.Reflection;
 using Kurisu.RemoteCall;
 using Kurisu.RemoteCall.Abstractions;
 using Kurisu.RemoteCall.Attributes;
+using Kurisu.RemoteCall.Attributes.HelpMethods;
 using Kurisu.RemoteCall.Default;
 using Kurisu.RemoteCall.Proxy.Abstractions;
 using Kurisu.RemoteCall.Utils;

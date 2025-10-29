@@ -64,6 +64,7 @@ public sealed class EnableRemoteClientAttribute : Attribute
         var builder = services.AddHttpClient(Name);
         if (PolicyHandler.IsInheritedFrom<IRemoteCallPolicyHandler>())
         {
+            //确保异常直接抛出
             ((IRemoteCallPolicyHandler)Activator.CreateInstance(PolicyHandler))!.ConfigureHttpClient(builder);
         }
     }

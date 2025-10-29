@@ -218,6 +218,18 @@ internal class CommonUtils : ICommonUtils
 
     public Dictionary<string, object> ToObjDictionary(string prefix, object obj)
     {
+        // Handle null explicitly: if obj is null, return a dictionary indicating a null value for the prefix
+        if (obj == null)
+        {
+            var nullResult = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase);
+            if (!string.IsNullOrEmpty(prefix))
+            {
+                nullResult[prefix] = null;
+            }
+
+            return nullResult;
+        }
+
         if (TryParseToObjDictionaryWhenJToken(prefix, obj, out var result))
         {
             return result;

@@ -1,5 +1,6 @@
 ﻿// filepath: e:\github\Kurisu\test\Kurisu.Test.RemoteCall\Api\IResponseAltApi.cs
 using Kurisu.RemoteCall.Attributes;
+using Kurisu.RemoteCall.Attributes.HelpMethods;
 using Kurisu.Test.RemoteCall.MockPolicies;
 using Kurisu.Test.RemoteCall.TestHelpers;
 

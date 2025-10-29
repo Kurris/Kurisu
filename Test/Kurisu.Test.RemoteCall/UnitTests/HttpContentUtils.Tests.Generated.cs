@@ -4,6 +4,7 @@ using System.Reflection;
 using System.Text;
 using Kurisu.RemoteCall;
 using Kurisu.RemoteCall.Attributes;
+using Kurisu.RemoteCall.Attributes.HelpMethods;
 using Kurisu.RemoteCall.Utils;
 using Kurisu.Test.RemoteCall.TestHelpers;
 

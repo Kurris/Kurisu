@@ -55,7 +55,8 @@ internal class DefaultRemoteCallUrlResolver : BaseRemoteCallUrlResolver
         {
             foreach (var item in parameters)
             {
-                var k = WebUtility.UrlEncode(item.Parameter.Name);
+                var name = item.QueryAttribute == null ? item.Parameter.Name : item.QueryAttribute.Name;
+                var k = WebUtility.UrlEncode(name);
                 var v = WebUtility.UrlEncode(item.Value + string.Empty);
                 items.Add($"{k}={v}");
             }

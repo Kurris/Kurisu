@@ -20,6 +20,12 @@ internal static class TypeExtensions
         return attribute != null;
     }
 
+    /// <summary>
+    /// 是否继承自某个类型(已做null检查)
+    /// </summary>
+    /// <param name="type"></param>
+    /// <typeparam name="T"></typeparam>
+    /// <returns></returns>
     internal static bool IsInheritedFrom<T>(this Type type) where T : class
     {
         return type != null && type.IsAssignableTo(typeof(T));

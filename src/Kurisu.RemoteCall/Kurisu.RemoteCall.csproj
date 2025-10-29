@@ -4,12 +4,14 @@
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>disable</Nullable>
 		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-		<Version>0.4.8</Version>
+		<Version>0.5.0</Version>
 		<GenerateDocumentationFile>True</GenerateDocumentationFile>
 		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
 		<Description>远程调用</Description>
 		<TargetFrameworks>net6.0;net8.0</TargetFrameworks>
 		<LangVersion>latestmajor</LangVersion>
+		<Title> </Title>
+		<Authors>ligy</Authors>
 	</PropertyGroup>
 
 	<ItemGroup>
