@@ -37,55 +37,55 @@ public class HttpContentUtils_Tests : IClassFixture<RemoteCallTestFixture>
     }
 
     [Fact]
-    public void Create_ReturnsDefaultEmptyJson_WhenNoParameters()
+    public async Task Create_ReturnsDefaultEmptyJson_WhenNoParameters()
     {
         var m = typeof(PostMethods).GetMethod("DefaultPost")!;
         var content = HttpContentUtils.Create(m, new List<ParameterValue>(), new NewtonsoftJsonSerializer(), _fixture.GetService<ICommonUtils>());
-        var s = content.ReadAsStringAsync().Result;
+        var s =await content.ReadAsStringAsync();
         Assert.Equal("{}", s);
     }
 
     [Fact]
-    public void Create_AsUrlencoded_RawString_ParsesAndEncodes()
+    public async Task Create_AsUrlencoded_RawString_ParsesAndEncodes()
     {
         var m = typeof(PostMethods).GetMethod("AsUrlencodedString")!;
         var parameters = new List<ParameterValue> { new ParameterValue(m.GetParameters()[0], "a=1&b=two words") };
         var content = HttpContentUtils.Create(m, parameters, new NewtonsoftJsonSerializer(), _fixture.GetService<ICommonUtils>());
-        var s = content.ReadAsStringAsync().Result;
+        var s =await content.ReadAsStringAsync();
         Assert.Contains("a=1", s);
         // b value should be URL-encoded (space -> +)
         Assert.Contains("b=two+words", s);
     }
 
     [Fact]
-    public void Create_AsUrlencoded_FormUrlEncodedContent_WhenContentTypeForm()
+    public async Task Create_AsUrlencoded_FormUrlEncodedContent_WhenContentTypeForm()
     {
         var m = typeof(PostMethods).GetMethod("AsUrlencodedForm")!;
         var parameters = new List<ParameterValue> { new ParameterValue(m.GetParameters()[0], 1), new ParameterValue(m.GetParameters()[1], 2) };
         var content = HttpContentUtils.Create(m, parameters, new NewtonsoftJsonSerializer(), _fixture.GetService<ICommonUtils>());
         Assert.IsType<FormUrlEncodedContent>(content);
-        var s = content.ReadAsStringAsync().Result;
+        var s =await content.ReadAsStringAsync();
         Assert.Contains("a=1", s);
         Assert.Contains("b=2", s);
     }
 
     [Fact]
-    public void Create_AsUrlencoded_MultipleParameters_UsesCommonUtils()
+    public async Task Create_AsUrlencoded_MultipleParameters_UsesCommonUtils()
     {
         var m = typeof(PostMethods).GetMethod("AsUrlencodedMultiple")!;
         var parameters = new List<ParameterValue> { new ParameterValue(m.GetParameters()[0], new { A = 1 }), new ParameterValue(m.GetParameters()[1], new { B = 2 }) };
         var content = HttpContentUtils.Create(m, parameters, new NewtonsoftJsonSerializer(), _fixture.GetService<ICommonUtils>());
-        var s = content.ReadAsStringAsync().Result;
+        var s =await content.ReadAsStringAsync();
         Assert.Contains("A=1", s.Replace("%22",""));
     }
 
     [Fact]
-    public void Create_JsonSerializesNonStringParameter()
+    public async Task Create_JsonSerializesNonStringParameter()
     {
         var m = typeof(PostMethods).GetMethod("JsonPost")!;
         var parameters = new List<ParameterValue> { new ParameterValue(m.GetParameters()[0], new { X = 5 }) };
         var content = HttpContentUtils.Create(m, parameters, new NewtonsoftJsonSerializer(), _fixture.GetService<ICommonUtils>());
-        var s = content.ReadAsStringAsync().Result;
+        var s =await content.ReadAsStringAsync();
         Assert.Contains("\"X\":5", s);
     }
 

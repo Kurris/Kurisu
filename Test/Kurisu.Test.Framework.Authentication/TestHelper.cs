@@ -38,7 +38,7 @@ public class TestHelper
             HttpContext = httpContext
         };
 
-        httpContextAccessor.HttpContext.Request.Headers.Add("Authorization", "Bearer " + token);
+        httpContextAccessor.HttpContext.Request.Headers.Authorization = "Bearer " + token;
         httpContextAccessor.HttpContext.User = principal;
 
         return new DefaultCurrentUser(httpContextAccessor);

@@ -39,7 +39,7 @@ namespace Kurisu.Test.RemoteCall.UnitTests
         }
 
         [Fact]
-        public void Create_NonAsUrlencoded_Object_SerializesToJson()
+        public async Task Create_NonAsUrlencoded_Object_SerializesToJson()
         {
             var method = typeof(HttpContentUtils_ExtraTests2).GetMethod(nameof(DummyMethodWithString), BindingFlags.NonPublic | BindingFlags.Static)!;
             var pinfo = method.GetParameters().First();
@@ -49,7 +49,7 @@ namespace Kurisu.Test.RemoteCall.UnitTests
             // call Create with a method that has no Post attribute (use object.ToString)
             var noAttrMethod = typeof(object).GetMethod(nameof(object.ToString))!;
             var content = HttpContentUtils.Create(noAttrMethod, parameters, serializer, utils);
-            var s = content.ReadAsStringAsync().Result;
+            var s =await content.ReadAsStringAsync();
             Assert.Contains("X", s);
         }
     }

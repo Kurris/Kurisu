@@ -26,7 +26,7 @@ namespace Kurisu.Test.RemoteCall.UnitTests
         private static void DummyRawMethod(string raw) { }
 
         [Fact]
-        public void Create_AsUrlencoded_MultipleParams_ReturnsFormUrlEncodedContent()
+        public async Task Create_AsUrlencoded_MultipleParams_ReturnsFormUrlEncodedContent()
         {
             var method = typeof(HttpContentUtils_ExtraTests3).GetMethod(nameof(DummyFormMethod), BindingFlags.NonPublic | BindingFlags.Static)!;
             var pInfos = method.GetParameters();
@@ -38,14 +38,14 @@ namespace Kurisu.Test.RemoteCall.UnitTests
 
             var content = HttpContentUtils.Create(method, parameters, CreateSerializer(), CreateCommonUtils());
             Assert.IsType<FormUrlEncodedContent>(content);
-            var s = content.ReadAsStringAsync().Result;
+            var s =await content.ReadAsStringAsync();
             // order is not guaranteed, check both keys present
             Assert.Contains("a=1", s);
             Assert.Contains("b=2", s);
         }
 
         [Fact]
-        public void Create_AsUrlencoded_RawString_KeyWithoutEquals_EncodesKeyWithEmptyValue()
+        public async Task Create_AsUrlencoded_RawString_KeyWithoutEquals_EncodesKeyWithEmptyValue()
         {
             var method = typeof(HttpContentUtils_ExtraTests3).GetMethod(nameof(DummyRawMethod), BindingFlags.NonPublic | BindingFlags.Static)!;
             var pInfo = method.GetParameters().First();
@@ -54,17 +54,17 @@ namespace Kurisu.Test.RemoteCall.UnitTests
 
             // DummyRawMethod has asUrlencodedFormat=true but contentType default application/json, so it should produce key= form string using StringContent
             var content = HttpContentUtils.Create(method, parameters, CreateSerializer(), CreateCommonUtils());
-            var s = content.ReadAsStringAsync().Result;
+            var s =await content.ReadAsStringAsync();
             // expect flag= (empty value) and k=v encoded
             Assert.Contains("flag=", s);
             Assert.Contains("k=v", s);
         }
 
         [Fact]
-        public void Create_EmptyParameters_ReturnsEmptyJsonObject()
+        public async Task Create_EmptyParameters_ReturnsEmptyJsonObject()
         {
             var content = HttpContentUtils.Create(typeof(object).GetMethod(nameof(object.ToString))!, null, CreateSerializer(), CreateCommonUtils());
-            var s = content.ReadAsStringAsync().Result;
+            var s =await content.ReadAsStringAsync();
             Assert.Equal("{}", s);
         }
     }
