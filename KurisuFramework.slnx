@@ -1,4 +1,9 @@
 ﻿<Solution>
+  <Folder Name="/analyser/">
+    <Project Path="src\Kurisu.Transaction.Analyzer\Kurisu.Transaction.Analyzer.Sample\Kurisu.Transaction.Analyzer.Sample.csproj" Type="Classic C#" />
+    <Project Path="src\Kurisu.Transaction.Analyzer\Kurisu.Transaction.Analyzer.Tests\Kurisu.Transaction.Analyzer.Tests.csproj" Type="Classic C#" />
+    <Project Path="src\Kurisu.Transaction.Analyzer\Kurisu.Transaction.Analyzer\Kurisu.Transaction.Analyzer.csproj" Type="Classic C#" />
+  </Folder>
   <Folder Name="/src/">
     <Project Path="src\Kurisu.Aspect.Abstractions\Kurisu.Aspect.Abstractions.csproj" Type="Classic C#" />
     <Project Path="src\Kurisu.Aspect\Kurisu.Aspect.csproj" />
