@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Configuration;
 using System.Net;
 using Kurisu.RemoteCall.Utils;
+using System.Collections;
 
 namespace Kurisu.RemoteCall.Default;
 
@@ -41,19 +42,56 @@ internal class DefaultRemoteCallUrlResolver : BaseRemoteCallUrlResolver
         List<string> items = new(parameters.Count);
 
         //第一个参数为类,并且定义了RequestQueryAttribute
-        var parameter = parameters.FirstOrDefault(x => x.QueryAttribute != null && !TypeHelper.IsSimpleType(x.Parameter.ParameterType));
+        var parameter = parameters.FirstOrDefault(x => x.QueryAttribute != null
+                                                       && TypeHelper.IsComplexType(x.Parameter.ParameterType));
         if (parameter != null)
         {
-            //对象转字典
-            var objDictionary = _commonUtils.ToObjDictionary(string.Empty, parameter.Value);
-            foreach (var keyValuePair in objDictionary)
+            // 使用属性名（如果有）作为前缀，方便生成形如 prefix.prop=val 的键名
+            var prefix = parameter.QueryAttribute.Name ?? string.Empty;
+
+            // 如果传入的是集合且不是 string，按元素展开为多个同名 query（prefix=1&prefix=2...）
+            if (parameter.Value is IEnumerable enumerable and not string)
             {
-                items.Add($"{keyValuePair.Key}={keyValuePair.Value}");
+                prefix = parameter.QueryAttribute.Name ?? parameter.Parameter.Name;
+                foreach (var elem in enumerable)
+                {
+                    if (elem == null) continue;
+
+                    // 简单类型或 string 直接作为值，否则对复杂元素展开成字典再追加
+                    if (TypeHelper.IsSimpleType(elem.GetType()))
+                    {
+                        var k = WebUtility.UrlEncode(prefix);
+                        var v = WebUtility.UrlEncode(elem + string.Empty);
+                        items.Add($"{k}={v}");
+                    }
+                    else
+                    {
+                        var dict = _commonUtils.ToObjDictionary(prefix, elem);
+                        foreach (var kv in dict)
+                        {
+                            var k = WebUtility.UrlEncode(kv.Key);
+                            var v = WebUtility.UrlEncode(kv.Value + string.Empty);
+                            items.Add($"{k}={v}");
+                        }
+                    }
+                }
+            }
+            else
+            {
+                //对象转字典（保留原有行为）
+                var objDictionary = _commonUtils.ToObjDictionary(prefix, parameter.Value);
+                foreach (var keyValuePair in objDictionary)
+                {
+                    var k = WebUtility.UrlEncode(keyValuePair.Key);
+                    var v = WebUtility.UrlEncode(keyValuePair.Value + string.Empty);
+                    items.Add($"{k}={v}");
+                }
             }
         }
         else
         {
-            foreach (var item in parameters)
+            //处理简单类型参数
+            foreach (var item in parameters.Where(x => TypeHelper.IsSimpleType(x.Parameter.ParameterType)))
             {
                 var name = item.QueryAttribute == null ? item.Parameter.Name : item.QueryAttribute.Name;
                 var k = WebUtility.UrlEncode(name);
