@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-
-namespace Kurisu.AspNetCore.DataAccess.SqlSugar.Attributes;
+﻿namespace Kurisu.AspNetCore.DataAccess.SqlSugar.Attributes;
 
 /// <summary>
 /// 数据权限

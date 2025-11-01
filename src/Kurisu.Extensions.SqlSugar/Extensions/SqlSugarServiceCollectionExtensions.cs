@@ -1,15 +1,10 @@
 ﻿using Kurisu.AspNetCore.Abstractions.Authentication;
 using Kurisu.AspNetCore.Abstractions.DataAccess;
-using Kurisu.AspNetCore.Abstractions.DataAccess.Contract;
 using Kurisu.AspNetCore.Abstractions.DataAccess.Contract.Field;
 using Kurisu.AspNetCore.Abstractions.UnifyResultAndValidation;
 using Kurisu.AspNetCore.DataAccess.SqlSugar.Attributes;
 using Kurisu.AspNetCore.DataAccess.SqlSugar.Options;
-using Kurisu.AspNetCore.DataAccess.SqlSugar.Services;
-using Kurisu.AspNetCore.DataAccess.SqlSugar.Services.Implements;
-using Kurisu.Extensions.SqlSugar.Services;
 using Kurisu.Extensions.SqlSugar.Services.Implements;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -26,9 +21,8 @@ public static class SqlSugarServiceCollectionExtensions
     private static void AddSqlSugarCore(this IServiceCollection services)
     {
         services.AddScoped<IDatasourceManager, SqlSugarDatasourceManager>();
-        services.AddScoped<IDbConnectionManager, SqlSugarConnectionHandler>();
-        services.AddScoped<ISqlSugarOptionsService, SqlSugarOptionsService>();
-        services.AddScoped<IQueryableSetting, QueryableSetting>();
+        services.AddScoped<IDbConnectionManager, SqlSugarConnectionManager>();
+        services.AddScoped<ScopeQuerySetting>();
         services.AddScoped<IDbContext, SqlSugarDbContext>();
         services.AddSingleton(_ => SqlSugarServiceCollectionExtensionsHelper.ConfigExternal());
     }
@@ -100,7 +94,7 @@ public static class SqlSugarServiceCollectionExtensions
                     var options = sp.GetRequiredService<IOptions<SqlSugarOptions>>().Value;
                     var logger = sp.GetService<ILogger<SqlSugarClient>>();
                     var currentUser = sp.GetService<ICurrentUser>();
-                    var sugarOptions = sp.GetRequiredService<ISqlSugarOptionsService>();
+                    var queryableSetting = sp.GetRequiredService<ScopeQuerySetting>();
 
                     db.Ado.CommandTimeOut = options.Timeout;
 
@@ -131,7 +125,7 @@ public static class SqlSugarServiceCollectionExtensions
 
                     db.Aop.DataExecuting = (_, model) =>
                     {
-                        if (!sugarOptions.IgnoreTenant //启用租户
+                        if (!queryableSetting.IgnoreTenant //启用租户
                             && currentUser != null //用户信息存在
                             && model.PropertyName == nameof(ITenantId.TenantId) //当前为租户字段
                             && model.EntityValue is ITenantId) //继承ITenantId

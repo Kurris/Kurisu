@@ -1,10 +1,15 @@
-﻿namespace Kurisu.Extensions.SqlSugar.Services;
+﻿namespace Kurisu.AspNetCore.Abstractions.DataAccess;
 
 /// <summary>
-/// 查询配置
+/// 查询服务
 /// </summary>
-public interface IQueryableSetting
+public class ScopeQuerySetting
 {
+    /// <summary>
+    /// 忽略租户
+    /// </summary>
+    public bool IgnoreTenant { get; set; }
+
     /// <summary>
     /// 跨tenant数据权限
     /// </summary>
@@ -25,17 +30,15 @@ public interface IQueryableSetting
     /// </summary>
     public Type[] DataPermissionIgnoreTypes { get; set; }
 
-    /// <summary>
-    /// 获取是否启用数据权限
-    /// </summary>
-    /// <typeparam name="T"></typeparam>
-    /// <returns></returns>
-    public bool GetEnableDataPermission<T>();
 
-    /// <summary>
-    /// 获取是否启用跨租户
-    /// </summary>
-    /// <typeparam name="T"></typeparam>
-    /// <returns></returns>
-    public bool GetEnableCrossTenant<T>();
+    public bool GetEnableDataPermission<T>()
+    {
+        return EnableDataPermission && !DataPermissionIgnoreTypes.Contains(typeof(T));
+    }
+
+
+    public bool GetEnableCrossTenant<T>()
+    {
+        return EnableCrossTenant && !CrossTenantIgnoreTypes.Contains(typeof(T));
+    }
 }

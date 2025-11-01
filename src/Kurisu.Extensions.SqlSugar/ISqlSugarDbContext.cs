@@ -1,5 +1,4 @@
 using Kurisu.AspNetCore.Abstractions.DataAccess;
-using Kurisu.Extensions.SqlSugar.Services;
 using SqlSugar;
 
 namespace Kurisu.Extensions.SqlSugar;
@@ -21,9 +20,18 @@ public interface ISqlSugarDbContext : IDbContext
     /// <returns></returns>
     ISugarQueryable<T> Queryable<T>();
     
-    IQueryableSetting GetQueryableSetting();
-    
+    /// <summary>
+    /// 更新 
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <returns></returns>
     IUpdateable<T> Updateable<T>() where T : class, new();
+    
+    /// <summary>
+    /// 删除
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <returns></returns>
     IDeleteable<T> Deleteable<T>() where T : class, new();
 
 }

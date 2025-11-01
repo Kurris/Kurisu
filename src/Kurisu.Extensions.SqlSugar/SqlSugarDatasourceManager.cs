@@ -42,11 +42,14 @@ public sealed class SqlSugarDatasourceManager : AbstractDatasourceManager<ISqlSu
     public override ISqlSugarClient CreateClient(string name)
     {
         var dbConnectionManager = _serviceProvider.GetRequiredService<IDbConnectionManager>();
-        dbConnectionManager.Switch(name);
-        var client = _serviceProvider.GetRequiredService<ISqlSugarClient>();
-        dbConnectionManager.Switch();
-        _clients.Push(client);
-        return client;
+
+        dbConnectionManager.SwitchConnectionString(name, () =>
+        {
+            var client = _serviceProvider.GetRequiredService<ISqlSugarClient>();
+            _clients.Push(client);
+        });
+
+        return _clients.Peek();
     }
 
 

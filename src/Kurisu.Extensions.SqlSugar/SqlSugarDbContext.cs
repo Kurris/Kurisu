@@ -1,13 +1,9 @@
-﻿using System.Data;
-using System.Linq.Expressions;
+﻿using System.Linq.Expressions;
 using Kurisu.AspNetCore.Abstractions.Authentication;
 using Kurisu.AspNetCore.Abstractions.DataAccess;
 using Kurisu.AspNetCore.Abstractions.DataAccess.Contract.Field;
-using Kurisu.AspNetCore.DataAccess.SqlSugar;
 using Kurisu.AspNetCore.DataAccess.SqlSugar.Attributes;
-using Kurisu.AspNetCore.DataAccess.SqlSugar.Services;
 using Kurisu.AspNetCore.Extensions;
-using Kurisu.Extensions.SqlSugar.Services;
 using Microsoft.Extensions.DependencyInjection;
 using SqlSugar;
 
@@ -15,7 +11,6 @@ namespace Kurisu.Extensions.SqlSugar;
 
 internal class SqlSugarDbContext : ISqlSugarDbContext
 {
-    private readonly ISqlSugarOptionsService _sqlSugarOptionsService;
     private readonly IServiceProvider _serviceProvider;
     private readonly IDatasourceManager _datasourceManager;
 
@@ -23,12 +18,11 @@ internal class SqlSugarDbContext : ISqlSugarDbContext
     {
         _serviceProvider = serviceProvider;
         _datasourceManager = datasourceManager;
-        _sqlSugarOptionsService = serviceProvider.GetRequiredService<ISqlSugarOptionsService>();
     }
 
     public ISqlSugarClient Client => _datasourceManager.GetCurrentClient<ISqlSugarClient>();
 
-    public IQueryableSetting GetQueryableSetting() => _serviceProvider.GetRequiredService<IQueryableSetting>();
+    public ScopeQuerySetting GetScopeQuerySetting() => _serviceProvider.GetRequiredService<ScopeQuerySetting>();
 
 
     public ISugarQueryable<T> Queryable<T>()
@@ -37,7 +31,7 @@ internal class SqlSugarDbContext : ISqlSugarDbContext
 
         var query = Client.Queryable<T>();
 
-        var setting = GetQueryableSetting();
+        var setting = GetScopeQuerySetting();
 
         if (setting.GetEnableCrossTenant<T>())
         {
@@ -82,33 +76,22 @@ internal class SqlSugarDbContext : ISqlSugarDbContext
         return Expression.Lambda<Func<T, bool>>(containsExp, parameterExpression);
     }
 
-    public IDbContext ChangeDb(string dbId)
-    {
-        var client = ((SqlSugarClient)Client).GetConnection(dbId);
-        return new SqlSugarDbContext(_serviceProvider, _datasourceManager);
-    }
-
 
     #region insert
 
-    public async Task<long> InsertReturnIdentityAsync<T>(T obj) where T : class, new()
+    public async Task<long> InsertReturnIdentityAsync<T>(T obj, CancellationToken cancellationToken = default) where T : class, new()
     {
-        return await Client.Insertable(obj).ExecuteReturnBigIdentityAsync();
+        return await Client.Insertable(obj).ExecuteReturnBigIdentityAsync(cancellationToken);
     }
 
-    public async Task<int> InsertAsync<T>(T obj) where T : class, new()
+    public async Task<int> InsertAsync<T>(T obj, CancellationToken cancellationToken = default) where T : class, new()
     {
-        return await Client.Insertable(obj).ExecuteCommandAsync();
+        return await Client.Insertable(obj).ExecuteCommandAsync(cancellationToken);
     }
 
-    public async Task<int> InsertAsync<T>(T[] obj) where T : class, new()
+    public async Task<int> InsertAsync<T>(List<T> objs, CancellationToken cancellationToken = default) where T : class, new()
     {
-        return await Client.Insertable(obj).ExecuteCommandAsync();
-    }
-
-    public async Task<int> InsertAsync<T>(List<T> obj) where T : class, new()
-    {
-        return await Client.Insertable(obj).ExecuteCommandAsync();
+        return await Client.Insertable(objs.ToArray()).ExecuteCommandAsync(cancellationToken);
     }
 
     public long InsertReturnIdentity<T>(T obj) where T : class, new()
@@ -121,28 +104,9 @@ internal class SqlSugarDbContext : ISqlSugarDbContext
         return Client.Insertable(obj).ExecuteCommand();
     }
 
-    public int Insert<T>(T[] obj) where T : class, new()
+    public bool Insert<T>(List<T> objs) where T : class, new()
     {
-        return Client.Insertable(obj).ExecuteCommand();
-    }
-
-    public int Insert<T>(List<T> obj) where T : class, new()
-    {
-        return Client.Insertable(obj).ExecuteCommand();
-    }
-
-    public async Task<int> SaveAsync<T>(T obj) where T : SugarBaseEntity, new()
-    {
-        return obj.Id == 0
-            ? await this.InsertAsync(obj)
-            : await this.UpdateAsync(obj);
-    }
-
-    public int Save<T>(T obj) where T : SugarBaseEntity, new()
-    {
-        return obj.Id == 0
-            ? this.Insert(obj)
-            : this.Update(obj);
+        return Client.Insertable(objs.ToArray()).ExecuteCommandIdentityIntoEntity();
     }
 
     #endregion
@@ -150,39 +114,34 @@ internal class SqlSugarDbContext : ISqlSugarDbContext
 
     #region delete
 
-    public async Task<int> DeleteAsync<T>(T obj, bool isReally = false) where T : class, new()
+    public async Task<int> DeleteAsync<T>(T obj, bool isReally = false, CancellationToken cancellationToken = default) where T : class, new()
     {
         if (isReally || !typeof(T).IsAssignableTo(typeof(ISoftDeleted)))
         {
-            return await this.Deleteable(obj).ExecuteCommandAsync();
+            return await this.Deleteable(obj).ExecuteCommandAsync(cancellationToken);
         }
 
         obj.SetPropertyValue(nameof(ISoftDeleted.IsDeleted), true);
-        return await this.UpdateAsync(obj);
+        return await this.UpdateAsync(obj, cancellationToken);
     }
 
-    public async Task<int> DeleteAsync<T>(T[] obj, bool isReally = false) where T : class, new()
+    public async Task<int> DeleteAsync<T>(List<T> objs, bool isReally = false, CancellationToken cancellationToken = default) where T : class, new()
     {
-        var list = obj.ToList();
+        var list = objs.ToList();
 
         if (isReally || !typeof(T).IsAssignableTo(typeof(ISoftDeleted)))
         {
-            return await this.Deleteable(list).ExecuteCommandAsync();
+            var total = 0;
+            foreach (var item in list)
+            {
+                total += await this.DeleteAsync(item, isReally, cancellationToken);
+            }
+
+            return total;
         }
 
         list.ForEach(x => x.SetPropertyValue(nameof(ISoftDeleted.IsDeleted), true));
-        return await this.UpdateAsync(list);
-    }
-
-    public async Task<int> DeleteAsync<T>(List<T> list, bool isReally = false) where T : class, new()
-    {
-        if (isReally || !typeof(T).IsAssignableTo(typeof(ISoftDeleted)))
-        {
-            return await this.Deleteable(list).ExecuteCommandAsync();
-        }
-
-        list.ForEach(x => x.SetPropertyValue(nameof(ISoftDeleted.IsDeleted), true));
-        return await this.UpdateAsync(list);
+        return await this.UpdateAsync(list, cancellationToken);
     }
 
     public int Delete<T>(T obj, bool isReally = false) where T : class, new()
@@ -196,28 +155,21 @@ internal class SqlSugarDbContext : ISqlSugarDbContext
         return this.Update(obj);
     }
 
-    public int Delete<T>(T[] obj, bool isReally = false) where T : class, new()
-    {
-        var list = obj.ToList();
-
-        if (isReally || !typeof(T).IsAssignableTo(typeof(ISoftDeleted)))
-        {
-            return this.Deleteable(list).ExecuteCommand();
-        }
-
-        list.ForEach(x => x.SetPropertyValue(nameof(ISoftDeleted.IsDeleted), true));
-        return this.Update(list);
-    }
-
-    public int Delete<T>(List<T> list, bool isReally = false) where T : class, new()
+    public int Delete<T>(List<T> objs, bool isReally = false) where T : class, new()
     {
         if (isReally || !typeof(T).IsAssignableTo(typeof(ISoftDeleted)))
         {
-            return this.Deleteable(list).ExecuteCommand();
+            var total = 0;
+            foreach (var item in objs)
+            {
+                total += Delete(item, isReally);
+            }
+
+            return total;
         }
 
-        list.ForEach(x => x.SetPropertyValue(nameof(ISoftDeleted.IsDeleted), true));
-        return this.Update(list);
+        objs.ForEach(x => x.SetPropertyValue(nameof(ISoftDeleted.IsDeleted), true));
+        return Update(objs);
     }
 
     public IDeleteable<T> Deleteable<T>() where T : class, new()
@@ -232,7 +184,7 @@ internal class SqlSugarDbContext : ISqlSugarDbContext
 
     public IDeleteable<T> Deleteable<T>(List<T> list) where T : class, new()
     {
-        return Client.Deleteable(list);
+        return Client.Deleteable<T>();
     }
 
     #endregion
@@ -240,19 +192,14 @@ internal class SqlSugarDbContext : ISqlSugarDbContext
 
     #region update
 
-    public async Task<int> UpdateAsync<T>(T obj) where T : class, new()
+    public async Task<int> UpdateAsync<T>(T obj, CancellationToken cancellationToken = default) where T : class, new()
     {
-        return await Client.Updateable(obj).ExecuteCommandAsync();
+        return await Client.Updateable(obj).ExecuteCommandAsync(cancellationToken);
     }
 
-    public async Task<int> UpdateAsync<T>(T[] obj) where T : class, new()
+    public async Task<int> UpdateAsync<T>(List<T> objs, CancellationToken cancellationToken = default) where T : class, new()
     {
-        return await Client.Updateable(obj).ExecuteCommandAsync();
-    }
-
-    public async Task<int> UpdateAsync<T>(List<T> obj) where T : class, new()
-    {
-        return await Client.Updateable(obj).ExecuteCommandAsync();
+        return await Client.Updateable(objs).ExecuteCommandAsync(cancellationToken);
     }
 
     public IUpdateable<T> Updateable<T>() where T : class, new()
@@ -266,47 +213,13 @@ internal class SqlSugarDbContext : ISqlSugarDbContext
         return Client.Updateable(obj).ExecuteCommand();
     }
 
-    public int Update<T>(T[] obj) where T : class, new()
+    public int Update<T>(List<T> objs) where T : class, new()
     {
-        return Client.Updateable(obj).ExecuteCommand();
-    }
-
-    public int Update<T>(List<T> obj) where T : class, new()
-    {
-        return Client.Updateable(obj).ExecuteCommand();
+        return Client.Updateable(objs).ExecuteCommand();
     }
 
     #endregion
 
-    public async Task UseTransactionAsync(Func<Task> func, IsolationLevel isolationLevel = IsolationLevel.RepeatableRead)
-    {
-        await Client.Ado.BeginTranAsync(isolationLevel);
-        try
-        {
-            await func();
-            await Client.Ado.CommitTranAsync();
-        }
-        catch (Exception)
-        {
-            await Client.Ado.RollbackTranAsync();
-            throw;
-        }
-    }
-
-    public void UseTransaction(Action action, IsolationLevel isolationLevel = IsolationLevel.RepeatableRead)
-    {
-        Client.Ado.BeginTran(isolationLevel);
-        try
-        {
-            action();
-            Client.Ado.CommitTran();
-        }
-        catch (Exception)
-        {
-            Client.Ado.RollbackTran();
-            throw;
-        }
-    }
 
     /// <inheritdoc />
     public async Task IgnoreTenantAsync(Func<Task> func)
@@ -314,13 +227,13 @@ internal class SqlSugarDbContext : ISqlSugarDbContext
         try
         {
             Client.QueryFilter.ClearAndBackup<ITenantId>();
-            _sqlSugarOptionsService.IgnoreTenant = true;
+            GetScopeQuerySetting().IgnoreTenant = true;
             await func();
         }
         finally
         {
             Client.QueryFilter.Restore();
-            _sqlSugarOptionsService.IgnoreTenant = false;
+            GetScopeQuerySetting().IgnoreTenant = false;
         }
     }
 
@@ -330,13 +243,13 @@ internal class SqlSugarDbContext : ISqlSugarDbContext
         try
         {
             Client.QueryFilter.ClearAndBackup<ITenantId>();
-            _sqlSugarOptionsService.IgnoreTenant = true;
+            GetScopeQuerySetting().IgnoreTenant = true;
             action();
         }
         finally
         {
             Client.QueryFilter.Restore();
-            _sqlSugarOptionsService.IgnoreTenant = false;
+            GetScopeQuerySetting().IgnoreTenant = false;
         }
     }
 

@@ -5,12 +5,12 @@
 /// </summary>
 public interface IDbConnectionManager
 {
+    void Register(string name, string connectionString);
+
     string GetCurrent();
 
-    void Switch(string name);
-    void Switch();
-
-    void Register(string name, string connectionString);
+    void SwitchConnectionString(string name, Action todo);
+    Task SwitchConnectionStringAsync(string name, Func<Task> todo);
 
     /// <summary>
     /// 获取连接字符串

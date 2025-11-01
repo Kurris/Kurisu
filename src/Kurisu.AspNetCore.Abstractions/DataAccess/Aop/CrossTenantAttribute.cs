@@ -1,9 +1,7 @@
 ﻿using AspectCore.DynamicProxy;
-using Kurisu.AspNetCore.Abstractions.DataAccess;
-using Kurisu.Extensions.SqlSugar.Services;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace Kurisu.Extensions.SqlSugar.Aop;
+namespace Kurisu.AspNetCore.Abstractions.DataAccess.Aop;
 
 /// <summary>
 /// 根据权限跨租户
@@ -32,14 +30,20 @@ public class CrossTenantAttribute : AbstractInterceptorAttribute
 
     public override async Task Invoke(AspectContext context, AspectDelegate next)
     {
-        var setting = context.ServiceProvider.GetRequiredService<IQueryableSetting>();
-        var dbContext = context.ServiceProvider.GetRequiredService<IDbContext>();
+        var setting = context.ServiceProvider.GetRequiredService<ScopeQuerySetting>();
 
-        await dbContext.IgnoreTenantAsync(async () =>
+        try
         {
+            setting.IgnoreTenant = true;
             setting.EnableCrossTenant = true;
             setting.CrossTenantIgnoreTypes = _ignoreTypes ?? Array.Empty<Type>();
             await next(context);
-        });
+        }
+        finally
+        {
+            setting.IgnoreTenant = false;
+            setting.EnableCrossTenant = false;
+            setting.CrossTenantIgnoreTypes = Array.Empty<Type>();
+        }
     }
 }
