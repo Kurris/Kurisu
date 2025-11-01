@@ -29,7 +29,9 @@ public class ObfuscateJsonConverter : JsonConverter
     public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
     {
         var v = value?.ToString() ?? string.Empty;
-        var vc = v.ToCharArray().Reverse().ToList();
+        var vv = v.ToCharArray();
+        vv.Reverse();
+        var vc = vv.ToList();
 
         for (int i = 0; i < vc.Count; i++)
         {
@@ -53,7 +55,6 @@ public class ObfuscateJsonConverter : JsonConverter
     /// <param name="existingValue"></param>
     /// <param name="serializer"></param>
     /// <returns></returns>
-    /// <exception cref="NotImplementedException"></exception>
     public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
     {
         return reader.Value;
