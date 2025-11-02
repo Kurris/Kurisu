@@ -1,5 +1,6 @@
 ﻿using Kurisu.AspNetCore.Abstractions.DataAccess;
 using Kurisu.AspNetCore.Abstractions.DataAccess.Aop;
+using Kurisu.AspNetCore.Abstractions.DataAccess.Core.Context;
 using Kurisu.Test.DataAccess.Trans;
 using Microsoft.Extensions.DependencyInjection;
 using System;

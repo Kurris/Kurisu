@@ -1,16 +1,13 @@
-﻿namespace Kurisu.AspNetCore.Abstractions.DataAccess;
+﻿namespace Kurisu.AspNetCore.Abstractions.DataAccess.Core;
 
 /// <summary>
 /// 数据库连接字符串管理器
 /// </summary>
 public interface IDbConnectionManager
 {
-    void Register(string name, string connectionString);
-
     string GetCurrent();
 
-    void SwitchConnectionString(string name, Action todo);
-    Task SwitchConnectionStringAsync(string name, Func<Task> todo);
+    IDisposable CreateScope(string name);
 
     /// <summary>
     /// 获取连接字符串

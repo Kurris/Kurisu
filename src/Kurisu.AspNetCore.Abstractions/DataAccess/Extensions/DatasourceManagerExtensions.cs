@@ -1,7 +1,6 @@
-﻿using Kurisu.AspNetCore.Abstractions.DataAccess;
+﻿using Kurisu.AspNetCore.Abstractions.DataAccess.Core;
 
-// ReSharper disable once CheckNamespace
-namespace Kurisu.AspNetCore.Extensions;
+namespace Kurisu.AspNetCore.Abstractions.DataAccess.Extensions;
 
 public static class DatasourceManagerExtensions
 {

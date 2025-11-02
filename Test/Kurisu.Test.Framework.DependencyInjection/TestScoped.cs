@@ -1,7 +1,7 @@
 using System;
 using System.Linq;
 using System.Reflection;
-using Kurisu.AspNetCore.Abstractions.DataAccess;
+using Kurisu.AspNetCore.Abstractions.DataAccess.Core.Context;
 using Kurisu.AspNetCore.Scope;
 using Kurisu.Extensions.SqlSugar.Extensions;
 using Microsoft.Extensions.Configuration;

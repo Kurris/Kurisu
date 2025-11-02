@@ -47,13 +47,13 @@ public class TestHelper
             return GetResolver(token);
         });
 
-        services.AddSqlSugar();
+        services.AddSqlSugar(DbType.MySqlConnector);
         // register split services: inner and outer implementations located in Trans/mock
         services.AddScoped<ITransactionalInnerService, TransactionalInnerService>();
         services.AddScoped<ITransactionalOuterService, TransactionalOuterService>();
 
         var serviceProvider = services.BuildDynamicProxyProvider();
-        
+
         // Return the root provider; callers should create and hold a scope when they need
         // a scoped IServiceProvider that must stay alive across test method invocations.
         return serviceProvider;

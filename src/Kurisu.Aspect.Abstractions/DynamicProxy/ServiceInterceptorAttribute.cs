@@ -2,7 +2,7 @@
 
 namespace AspectCore.DynamicProxy;
 
-public sealed class ServiceInterceptorAttribute : AbstractInterceptorAttribute, IEquatable<ServiceInterceptorAttribute>
+public sealed class ServiceInterceptorAttribute : AopAttribute, IEquatable<ServiceInterceptorAttribute>
 {
     private readonly Type _interceptorType;
 

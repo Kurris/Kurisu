@@ -1,5 +1,6 @@
 ﻿using System.Data;
 using AspectCore.DynamicProxy;
+using Kurisu.AspNetCore.Abstractions.DataAccess.Core;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Kurisu.AspNetCore.Abstractions.DataAccess.Aop;
@@ -8,7 +9,7 @@ namespace Kurisu.AspNetCore.Abstractions.DataAccess.Aop;
 /// 事务
 /// </summary>
 [AttributeUsage(AttributeTargets.Method)]
-public class TransactionalAttribute : AbstractInterceptorAttribute
+public class TransactionalAttribute : AopAttribute
 {
     /// <summary>
     /// 隔离级别

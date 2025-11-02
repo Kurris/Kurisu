@@ -1,17 +1,18 @@
-using Kurisu.AspNetCore.Abstractions.DataAccess;
+using Kurisu.AspNetCore.Abstractions.DataAccess.Contract;
 using SqlSugar;
 
-namespace Kurisu.Extensions.SqlSugar;
+namespace Kurisu.Extensions.SqlSugar.Core.Context;
 
-public interface ISqlSugarDbContext : IDbContext
+public interface ISqlSugarDbContext
 {
     /// <summary>
-    /// 使用原生sugar client
+    /// code-first生成表结构
     /// </summary>
-    /// <remarks>
-    /// 将会脱离IDbContext的控制
-    /// </remarks>
-    public ISqlSugarClient Client { get; }
+    /// <param name="tables"></param>
+    void CodeFirstInitTables(params Type[] tables);
+    
+    
+    ISqlSugarClient Client { get; }
 
     /// <summary>
     /// 查询
@@ -19,19 +20,18 @@ public interface ISqlSugarDbContext : IDbContext
     /// <typeparam name="T"></typeparam>
     /// <returns></returns>
     ISugarQueryable<T> Queryable<T>();
-    
+
     /// <summary>
     /// 更新 
     /// </summary>
     /// <typeparam name="T"></typeparam>
     /// <returns></returns>
-    IUpdateable<T> Updateable<T>() where T : class, new();
-    
+    IUpdateable<T> Updateable<T>() where T : class, IEntity, new();
+
     /// <summary>
     /// 删除
     /// </summary>
     /// <typeparam name="T"></typeparam>
     /// <returns></returns>
-    IDeleteable<T> Deleteable<T>() where T : class, new();
-
+    IDeleteable<T> Deleteable<T>() where T : class, IEntity, new();
 }

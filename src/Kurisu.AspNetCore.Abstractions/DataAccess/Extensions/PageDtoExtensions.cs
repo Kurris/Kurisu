@@ -1,7 +1,6 @@
 ﻿using Kurisu.AspNetCore.Abstractions.DataAccess.Contract.Page;
 
-// ReSharper disable once CheckNamespace
-namespace Kurisu.AspNetCore.Extensions;
+namespace Kurisu.AspNetCore.Abstractions.DataAccess.Extensions;
 
 /// <summary>
 /// 分页扩展

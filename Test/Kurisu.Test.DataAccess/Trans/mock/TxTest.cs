@@ -1,6 +1,8 @@
-﻿namespace Kurisu.Test.DataAccess.Trans.Mock;
+﻿using Kurisu.AspNetCore.Abstractions.DataAccess.Contract;
 
-public class TxTest
+namespace Kurisu.Test.DataAccess.Trans.Mock;
+
+public class TxTest : IEntity
 {
     public int Id { get; set; }
     public string Name { get; set; }

@@ -14,6 +14,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
+using SqlSugar;
 
 namespace Kurisu.Test.Framework.DependencyInjection;
 
@@ -47,7 +48,7 @@ public class TestHelper
         //     return GetResolver(token);
         // });
         services.AddDependencyInjection();
-        services.AddSqlSugar();
+        services.AddSqlSugar(DbType.MySqlConnector);
 
         var serviceProvider = services.BuildServiceProvider();
 

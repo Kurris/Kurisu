@@ -1,8 +1,10 @@
-using Kurisu.AspNetCore.Abstractions.DataAccess;
 using Kurisu.Extensions.SqlSugar.Extensions;
 using Kurisu.Test.DataAccess.Trans.Mock;
 using Microsoft.Extensions.DependencyInjection;
 using Kurisu.Extensions.SqlSugar;
+using Kurisu.AspNetCore.Abstractions.DataAccess.Core;
+using Kurisu.AspNetCore.Abstractions.DataAccess.Core.Context;
+using Kurisu.Extensions.SqlSugar.Core.Manager;
 
 namespace Kurisu.Test.DataAccess.Trans;
 
@@ -33,9 +35,7 @@ public class TransactionalAttributeTests : IDisposable
     /// </summary>
     private async Task PrepareTableAsync(IDbContext dbContext)
     {
-        var client = dbContext.AsSqlSugarDbContext().Client;
-        // CodeFirst.InitTables is synchronous in this SqlSugar version
-        client.CodeFirst.InitTables<TxTest>();
+        dbContext.AsSqlSugarDbContext().CodeFirstInitTables(typeof(TxTest));
         // 使用 DbContext 的 Deleteable API 清空表，而不是直接执行 SQL
         await dbContext.Deleteable<TxTest>().ExecuteCommandAsync();
     }
