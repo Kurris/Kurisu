@@ -4,12 +4,12 @@ using Microsoft.AspNetCore.DataProtection;
 using Microsoft.Extensions.DependencyInjection;
 using StackExchange.Redis;
 
-namespace Kurisu.AspNetCore.DataProtection.Packs;
+namespace Kurisu.AspNetCore.DataProtection.Modules;
 
 /// <summary>
 /// 数据保护pack
 /// </summary>
-public class DataProtectionPack : BaseAppPack
+public class DataProtectionModule : AppModule
 {
     /// <inheritdoc />
     public override bool IsEnable => App.StartupOptions.DataProtectionOptions.Enable;

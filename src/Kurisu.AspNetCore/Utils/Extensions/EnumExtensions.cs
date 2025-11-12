@@ -1,8 +1,6 @@
 ﻿using System;
 using System.ComponentModel;
-using System.Linq;
 using System.Reflection;
-using Kurisu.AspNetCore.CustomClass;
 
 namespace Kurisu.AspNetCore.Utils.Extensions;
 
@@ -11,31 +9,6 @@ namespace Kurisu.AspNetCore.Utils.Extensions;
 /// </summary>
 public static class EnumExtensions
 {
-    /// <summary>
-    /// 获取枚举值的<see cref="LangAttribute"/>描述。
-    /// 如果未找到对应语言的描述，则返回枚举值的名称。
-    /// </summary>
-    /// <param name="value">枚举值。</param>
-    /// <param name="lang">语言标识，默认为"cn"。</param>
-    /// <returns>枚举值的描述或名称。</returns>
-    public static string GetDisplay(this Enum value, string lang = "cn")
-    {
-        var f = value.GetType().GetField(value.ToString(), BindingFlags.Public | BindingFlags.Static)!;
-        return f.GetCustomAttributes<LangAttribute>().FirstOrDefault(x => x.Lang == lang)?.Description ?? value.ToString();
-    }
-
-    /// <summary>
-    /// 获取类型的<see cref="LangAttribute"/>描述。
-    /// 如果未找到对应语言的描述，则返回类型的名称。
-    /// </summary>
-    /// <param name="value">类型对象。</param>
-    /// <param name="lang">语言标识，默认为"cn"。</param>
-    /// <returns>类型的描述或名称。</returns>
-    public static string GetDisplay(this Type value, string lang = "cn")
-    {
-        return value.GetCustomAttributes<LangAttribute>().FirstOrDefault(x => x.Lang == lang)?.Description ?? value.Name;
-    }
-
     /// <summary>
     /// 获取枚举值的<see cref="DescriptionAttribute"/>描述。
     /// 如果未定义<see cref="DescriptionAttribute"/>，则返回枚举值的名称。

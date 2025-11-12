@@ -15,19 +15,19 @@ using Microsoft.OpenApi.Models;
 using Swashbuckle.AspNetCore.Filters;
 using Swashbuckle.AspNetCore.SwaggerGen;
 
-namespace Kurisu.AspNetCore.Document.Packs;
+namespace Kurisu.AspNetCore.Document.Modules;
 
 /// <summary>
 /// swagger默认pack
 /// </summary>
-public class DefaultSwaggerPack : BaseAppPack
+public class DefaultSwaggerModule : AppModule
 {
     private static List<OpenApiInfo> _apiInfos;
 
     /// <summary>
     /// ctor
     /// </summary>
-    public DefaultSwaggerPack()
+    public DefaultSwaggerModule()
     {
         Initialize();
     }

@@ -4,6 +4,7 @@ using Kurisu.AspNetCore.Abstractions.DataAccess;
 using Kurisu.AspNetCore.Abstractions.DataAccess.Contract;
 using Kurisu.AspNetCore.Abstractions.DataAccess.Contract.Field;
 using Kurisu.AspNetCore.Abstractions.DataAccess.Core.Context;
+using Kurisu.AspNetCore.Abstractions.State;
 using Kurisu.AspNetCore.DataAccess.SqlSugar.Attributes;
 using Microsoft.Extensions.DependencyInjection;
 using SqlSugar;
@@ -21,7 +22,25 @@ internal abstract class SpecialQueryableDbContext : AbstractDbContext<ISqlSugarC
 
     public virtual void CodeFirstInitTables(params Type[] tables)
     {
-        Client.CodeFirst.InitTables(tables);
+        Client.DbMaintenance.CreateDatabase();
+        foreach (var table in tables)
+        {
+            Client.CodeFirst.InitTables(table);
+
+            if (table.IsAssignableTo(typeof(IIndexConfigurator)))
+            {
+                var tableName = Client.EntityMaintenance.GetTableName(table);
+                var handler = (IIndexConfigurator)Activator.CreateInstance(table)!;
+                var indexModels = handler.GetIndexConfigs();
+                foreach (var indexModel in indexModels)
+                {
+                    if (!Client.DbMaintenance.IsAnyIndex(indexModel.IndexName))
+                    {
+                        Client.DbMaintenance.CreateIndex(tableName, indexModel.ColumnNames, indexModel.IndexName, indexModel.IsUnique);
+                    }
+                }
+            }
+        }
     }
 
     public new virtual ISqlSugarClient Client => base.Client;
@@ -98,18 +117,6 @@ internal abstract class SpecialQueryableDbContext : AbstractDbContext<ISqlSugarC
         return Client.Deleteable<T>();
     }
 
-    public override async Task IgnoreTenantAsync(Func<Task> func)
-    {
-        await using (_snapshotManager.BeginScopeAsync(s =>
-                     {
-                         s.IgnoreTenant = true;
-                         Client.QueryFilter.ClearAndBackup<ITenantId>();
-                     }))
-        {
-            await func();
-            Client.QueryFilter.Restore();
-        }
-    }
 
     public override void IgnoreTenant(Action action)
     {
@@ -119,34 +126,71 @@ internal abstract class SpecialQueryableDbContext : AbstractDbContext<ISqlSugarC
                    Client.QueryFilter.ClearAndBackup<ITenantId>();
                }))
         {
-            action();
-            Client.QueryFilter.Restore();
+            try
+            {
+                action();
+            }
+            finally
+            {
+                Client.QueryFilter.Restore();
+            }
         }
     }
 
-    public override async Task IgnoreSoftDeletedAsync(Func<Task> func)
+    public override async Task IgnoreTenantAsync(Func<Task> func)
     {
-        Client.QueryFilter.ClearAndBackup<ISoftDeleted>();
-        try
+        await using (_snapshotManager.BeginScopeAsync(s =>
+                     {
+                         s.IgnoreTenant = true;
+                         Client.QueryFilter.ClearAndBackup<ITenantId>();
+                     }))
         {
-            await func();
-        }
-        finally
-        {
-            Client.QueryFilter.Restore();
+            try
+            {
+                await func();
+            }
+            finally
+            {
+                Client.QueryFilter.Restore();
+            }
         }
     }
 
-    public override void IgnoreSoftDeleted(Action action)
+    public override void IgnoreSoftDeleted(Action todo)
     {
-        Client.QueryFilter.ClearAndBackup<ISoftDeleted>();
-        try
+        using (_snapshotManager.BeginScope(s =>
+               {
+                   s.IgnoreSoftDeleted = true;
+                   Client.QueryFilter.ClearAndBackup<ISoftDeleted>();
+               }))
         {
-            action();
+            try
+            {
+                todo();
+            }
+            finally
+            {
+                Client.QueryFilter.Restore();
+            }
         }
-        finally
+    }
+
+    public override async Task IgnoreSoftDeletedAsync(Func<Task> todo)
+    {
+        await using (_snapshotManager.BeginScopeAsync(s =>
+                     {
+                         s.IgnoreSoftDeleted = true;
+                         Client.QueryFilter.ClearAndBackup<ISoftDeleted>();
+                     }))
         {
-            Client.QueryFilter.Restore();
+            try
+            {
+                await todo();
+            }
+            finally
+            {
+                Client.QueryFilter.Restore();
+            }
         }
     }
 
@@ -158,7 +202,7 @@ internal abstract class SpecialQueryableDbContext : AbstractDbContext<ISqlSugarC
                    s.CrossTenantIgnoreTypes = ignoreTypes ?? Array.Empty<Type>();
                }))
         {
-            todo();
+            IgnoreTenant(todo);
         }
     }
 
@@ -170,7 +214,7 @@ internal abstract class SpecialQueryableDbContext : AbstractDbContext<ISqlSugarC
                          s.CrossTenantIgnoreTypes = ignoreTypes ?? Array.Empty<Type>();
                      }))
         {
-            await todo();
+            await IgnoreTenantAsync(todo);
         }
     }
 

@@ -28,7 +28,9 @@ public class App
     public static ILogger Logger { get; } = LoggerFactory.Create(builder =>
         {
             builder.AddSerilog(new LoggerConfiguration()
-                .WriteTo.Console(outputTemplate: "[{Timestamp:yyyy-MM-dd HH:mm:ss} {Level:u3}] {Prefix} [{SourceContext}] {Message:lj}{NewLine}{Exception}")
+                .WriteTo.Console(
+                    outputTemplate: "[{Timestamp:yyyy-MM-dd HH:mm:ss} {Level:u3}] [{SourceContext}] {Message:lj}{NewLine}{Exception}"
+                )
                 .MinimumLevel.Debug()
                 .CreateLogger()
             );
@@ -63,20 +65,32 @@ public class App
     /// <summary>
     /// 自定义应用pack
     /// </summary>
-    private static List<BaseAppPack> _appPacks;
+    private static List<AppModule> _appModules;
 
     /// <summary>
     /// 自定义应用pack
     /// </summary>
-    internal static List<BaseAppPack> AppPacks
+    internal static List<AppModule> AppModules
     {
         get
         {
-            if (_appPacks != null) return _appPacks;
+            if (_appModules != null) return _appModules;
 
-            var packTypes = DependencyInjectionHelper.ActiveTypes.Value.Where(x => x.IsSubclassOf(typeof(BaseAppPack)));
-            _appPacks = packTypes.Select(x => (BaseAppPack)Activator.CreateInstance(x)!).OrderBy(x => x.Order).ToList();
-            return _appPacks;
+            var packTypes = DependencyInjectionHelper.ActiveTypes.Value
+                .Where(x => typeof(AppModule).IsAssignableFrom(x)
+                            && x != typeof(AppModule)
+                            && !x.IsAbstract
+                ).ToList();
+
+            var leafTypes = packTypes
+                .Where(x => !packTypes.Any(y => y != x && x.IsAssignableFrom(y)))
+                .ToList();
+
+            _appModules = leafTypes.Select(x => (AppModule)Activator.CreateInstance(x)!)
+                .OrderBy(x => x.Order)
+                .ToList();
+
+            return _appModules;
         }
     }
 

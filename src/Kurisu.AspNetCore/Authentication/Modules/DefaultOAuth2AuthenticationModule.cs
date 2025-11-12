@@ -1,27 +1,29 @@
-﻿using Kurisu.AspNetCore.Abstractions.Startup;
+using Kurisu.AspNetCore.Abstractions.Startup;
 using Kurisu.AspNetCore.Authentication.Options;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace Kurisu.AspNetCore.Authentication.Packs;
+namespace Kurisu.AspNetCore.Authentication.Modules;
 
 /// <summary>
-/// jwt pack
+/// oauth2.0 module
 /// </summary>
-public class DefaultJwtAuthenticationPack : BaseAppPack
+public class DefaultOAuth2AuthenticationModule : AppModule
 {
-    /// <inheritdoc />
+    /// <summary>
+    /// 执行顺序
+    /// </summary>
     public override int Order => 2;
 
     /// <inheritdoc />
-    public override bool IsEnable => Configuration.GetSection(nameof(JwtOptions)).Get<JwtOptions>() != null;
+    public override bool IsEnable => Configuration.GetSection(nameof(IdentityServerOptions)).Get<IdentityServerOptions>() != null;
 
     /// <inheritdoc />
     public override void ConfigureServices(IServiceCollection services)
     {
-        var setting = Configuration.GetSection(nameof(JwtOptions)).Get<JwtOptions>();
-        services.AddKurisuJwtAuthentication(setting);
+        var setting = Configuration.GetSection(nameof(IdentityServerOptions)).Get<IdentityServerOptions>();
+        services.AddOAuth2Authentication(setting);
     }
 
     /// <inheritdoc />

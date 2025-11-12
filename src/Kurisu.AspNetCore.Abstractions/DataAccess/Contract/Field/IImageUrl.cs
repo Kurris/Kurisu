@@ -10,3 +10,11 @@ public interface IImageUrl
     /// </summary>
     public string ImageUrl { get; set; }
 }
+
+public interface IImageUrls
+{
+    /// <summary>
+    /// 图像url
+    /// </summary>
+    public string ImageUrls { get; set; }
+}

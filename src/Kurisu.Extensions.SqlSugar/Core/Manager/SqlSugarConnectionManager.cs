@@ -24,7 +24,6 @@ internal class SqlSugarConnectionManager : IDbConnectionManager
         dbConnectionRegistry.Register(_default, options.Value.DefaultConnectionString);
     }
 
-    // Ensure there is a stack for the current async context and initialize with default if empty
     private Stack<string> Stack
     {
         get

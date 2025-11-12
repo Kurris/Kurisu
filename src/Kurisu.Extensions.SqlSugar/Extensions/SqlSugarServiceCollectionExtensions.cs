@@ -4,6 +4,7 @@ using Kurisu.AspNetCore.Abstractions.DataAccess;
 using Kurisu.AspNetCore.Abstractions.DataAccess.Contract.Field;
 using Kurisu.AspNetCore.Abstractions.DataAccess.Core;
 using Kurisu.AspNetCore.Abstractions.DataAccess.Core.Context;
+using Kurisu.AspNetCore.Abstractions.State;
 using Kurisu.AspNetCore.Abstractions.UnifyResultAndValidation;
 using Kurisu.AspNetCore.DataAccess.SqlSugar.Attributes;
 using Kurisu.Extensions.SqlSugar.Core.Context;
@@ -30,8 +31,6 @@ public static class SqlSugarServiceCollectionExtensions
     /// <param name="configDb"></param>
     public static void AddSqlSugar(this IServiceCollection services, DbType dbType, Action<IServiceProvider, ISqlSugarClient> configDb = null)
     {
-        services.AddSingleton(typeof(IStateSnapshotManager<>), typeof(StateSnapshotManager<>));
-
         services.AddSingleton<IDbConnectionRegistry, SqlSugarConnectionRegistry>();
         services.AddSingleton<IDbConnectionManager, SqlSugarConnectionManager>();
         services.AddScoped<IDatasourceManager, SqlSugarDatasourceManager>();
@@ -108,9 +107,9 @@ public class DefaultSqlSugarConfigHandler
     private readonly ICurrentUser _currentUser;
     private readonly IStateSnapshotManager<DbOperationState> _snapshotManager;
     private readonly SqlSugarOptions _sqlSugarOptions;
-    protected ILogger<DefaultSqlSugarConfigHandler> Logger { get; }
+    protected ILogger<ISqlSugarClient> Logger { get; }
 
-    public DefaultSqlSugarConfigHandler(ILogger<DefaultSqlSugarConfigHandler> logger,
+    public DefaultSqlSugarConfigHandler(ILogger<ISqlSugarClient> logger,
         ICurrentUser currentUser,
         IOptions<SqlSugarOptions> options,
         IStateSnapshotManager<DbOperationState> snapshotManager)

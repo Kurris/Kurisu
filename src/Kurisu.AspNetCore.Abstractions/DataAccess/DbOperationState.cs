@@ -1,15 +1,13 @@
-﻿using System;
-using System.Text.Json;
-using System.Text.Json.Serialization;
+﻿using Kurisu.AspNetCore.Abstractions.State;
 
 namespace Kurisu.AspNetCore.Abstractions.DataAccess;
 
-public class DbOperationState : ICloneable
+public class DbOperationState : ICopyable<DbOperationState>
 {
     public DbOperationState()
     {
-        CrossTenantIgnoreTypes = Array.Empty<Type>();
-        DataPermissionIgnoreTypes = Array.Empty<Type>();
+        CrossTenantIgnoreTypes = [];
+        DataPermissionIgnoreTypes = [];
     }
 
     /// <summary>
@@ -52,11 +50,5 @@ public class DbOperationState : ICloneable
     public bool GetEnableCrossTenant<T>()
     {
         return EnableCrossTenant && !CrossTenantIgnoreTypes.Contains(typeof(T));
-    }
-
-    public object Clone()
-    {
-        var json = JsonSerializer.Serialize(this);
-        return JsonSerializer.Deserialize<DbOperationState>(json);
     }
 }

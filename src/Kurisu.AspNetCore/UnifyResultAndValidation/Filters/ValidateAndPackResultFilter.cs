@@ -40,7 +40,7 @@ public class ValidateAndPackResultFilter : IAsyncActionFilter, IAsyncResultFilte
             apiLogSetting.Path = context.HttpContext.Request.Path;
             apiLogSetting.HttpMethod = context.HttpContext.Request.Method;
             apiLogSetting.Parameters = context.ActionArguments;
-            apiLogSetting.UserId = context.HttpContext.RequestServices.GetRequiredService<ICurrentUser>().GetUserId();
+            apiLogSetting.UserId = context.HttpContext.RequestServices.GetService<ICurrentUser>()?.GetUserId() ?? 0;
         }
 
         var controllerActionDescriptor = (ControllerActionDescriptor)context.ActionDescriptor;
@@ -100,6 +100,12 @@ public class ValidateAndPackResultFilter : IAsyncActionFilter, IAsyncResultFilte
             }
             else
             {
+                if (!apiLogSetting.DisableResponseLogout)
+                {
+                    apiLogSetting.Response = (context.Result as ObjectResult)?.Value;
+                }
+
+                apiLogSetting.Log();
                 await next();
             }
         }

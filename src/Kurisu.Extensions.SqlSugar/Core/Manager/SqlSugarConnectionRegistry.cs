@@ -4,23 +4,33 @@ namespace Kurisu.Extensions.SqlSugar.Core.Manager;
 
 internal class SqlSugarConnectionRegistry : IDbConnectionRegistry
 {
+    private readonly Dictionary<string, string> _connectionStrings = new();
+
     public void Register(Dictionary<string, string> connectionStrings)
     {
-        throw new NotImplementedException();
+        foreach (var kvp in connectionStrings)
+        {
+            _connectionStrings[kvp.Key] = kvp.Value;
+        }
     }
 
     public void Register(string name, string connectionString)
     {
-        throw new NotImplementedException();
+        _connectionStrings[name] = connectionString;
     }
 
     public string GetConnectionString(string name)
     {
-        throw new NotImplementedException();
+        if (_connectionStrings.TryGetValue(name, out var connectionString))
+        {
+            return connectionString;
+        }
+
+        throw new KeyNotFoundException($"Connection string with name '{name}' not found.");
     }
 
     public bool Exists(string name)
     {
-        throw new NotImplementedException();
+        return _connectionStrings.ContainsKey(name);
     }
 }

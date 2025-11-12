@@ -1,14 +1,13 @@
 ﻿using Kurisu.AspNetCore.Abstractions.Startup;
 using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace Kurisu.AspNetCore.Startup.AppPacks;
+namespace Kurisu.AspNetCore.Startup.Module;
 
 /// <summary>
 /// 健康检查
 /// </summary>
-public class DefaultHealthCheckPack : BaseAppPack
+public class DefaultHealthCheckModule : AppModule
 {
     /// <inheritdoc />
     public override void ConfigureServices(IServiceCollection services)

@@ -32,10 +32,6 @@ public class EnableCrossTenantAttribute : AopAttribute
     public override async Task Invoke(AspectContext context, AspectDelegate next)
     {
         var dbContext = context.ServiceProvider.GetRequiredService<IDbContext>();
-        await dbContext.IgnoreTenantAsync(async () =>
-        {
-            await dbContext.EnableCrossTenantAsync(_ignoreTypes,
-                async () => { await next(context); });
-        });
+        await dbContext.EnableCrossTenantAsync(_ignoreTypes, async () => { await next(context); });
     }
 }

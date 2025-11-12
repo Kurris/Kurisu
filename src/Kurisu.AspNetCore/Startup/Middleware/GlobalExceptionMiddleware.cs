@@ -1,33 +1,11 @@
-using System;
+﻿using System;
 using System.Threading.Tasks;
 using Kurisu.AspNetCore.Abstractions.Startup;
 using Kurisu.AspNetCore.UnifyResultAndValidation;
-using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace Kurisu.AspNetCore.Startup.AppPacks;
-
-/// <summary>
-/// 默认全局异常中间件启动pack
-/// </summary>
-public class DefaultGlobalExceptionPack : BaseAppPack
-{
-    /// <summary>
-    /// 优先级
-    /// </summary>
-    public override int Order => -1;
-
-    /// <inheritdoc />
-    public override bool IsBeforeUseRouting => true;
-
-    /// <inheritdoc />
-    public override void Configure(IApplicationBuilder app)
-    {
-        app.UseMiddleware<GlobalExceptionMiddleware>();
-    }
-}
+namespace Kurisu.AspNetCore.Startup.Middleware;
 
 /// <summary>
 /// 全局异常中间件

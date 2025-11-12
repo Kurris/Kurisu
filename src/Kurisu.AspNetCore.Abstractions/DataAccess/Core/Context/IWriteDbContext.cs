@@ -24,10 +24,13 @@ public interface IWriteDbContext
 
     int Update<T>(T obj) where T : class, IEntity, new();
 
+    int Update<T>(T obj, string[] updateColumns) where T : class, IEntity, new();
+
     int Update<T>(List<T> objs) where T : class, IEntity, new();
 
     Task<int> UpdateAsync<T>(T obj, CancellationToken cancellationToken = default) where T : class, IEntity, new();
 
-    Task<int> UpdateAsync<T>(List<T> objs, CancellationToken cancellationToken = default) where T : class, IEntity, new();
+    Task<int> UpdateAsync<T>(T obj, string[] updateColumns, CancellationToken cancellationToken = default) where T : class, IEntity, new();
 
+    Task<int> UpdateAsync<T>(List<T> objs, CancellationToken cancellationToken = default) where T : class, IEntity, new();
 }

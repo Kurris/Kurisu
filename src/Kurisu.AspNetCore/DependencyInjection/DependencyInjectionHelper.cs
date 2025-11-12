@@ -1,10 +1,10 @@
 ﻿using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using Kurisu.AspNetCore.Abstractions.ConfigurableOptions;
 using Kurisu.AspNetCore.Abstractions.DependencyInjection;
+using Kurisu.AspNetCore.Abstractions.State;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
@@ -32,6 +32,24 @@ internal static class DependencyInjectionHelper
             .Where(x => x.IsDefined(typeof(DiInjectAttribute), false))
             .ToList();
     });
+
+    public static readonly Lazy<List<Type>> StateTypes = new(() =>
+    {
+        var targetGeneric = typeof(ICopyable<>);
+
+        return ActiveTypes.Value
+            .Where(x => x is { IsClass: true, IsPublic: true, IsAbstract: false, IsInterface: false })
+            .Where(x => IsImplementFromGenericInterfaceBySelf(x, targetGeneric)
+            )
+            .ToList();
+    });
+
+    private static bool IsImplementFromGenericInterfaceBySelf(Type implementType, Type targetGenericInterface)
+    {
+        return implementType.GetInterfaces()
+            .Where(i => i.IsGenericType && i.GetGenericTypeDefinition() == targetGenericInterface)
+            .Any(i => i.GetGenericArguments()[0] == implementType);
+    }
 
 
     /// <summary>

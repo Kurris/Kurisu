@@ -19,9 +19,9 @@ public static class AppPackServiceCollectionExtensions
     /// <param name="services"></param>
     /// <param name="configuration"></param>
     /// <returns></returns>
-    public static IServiceCollection AddAppPacks(this IServiceCollection services, IConfiguration configuration)
+    public static IServiceCollection AddAppModules(this IServiceCollection services, IConfiguration configuration)
     {
-        foreach (var appPack in App.AppPacks)
+        foreach (var appPack in App.AppModules)
         {
             appPack.Configuration = configuration;
             if (appPack.IsEnable)
@@ -43,7 +43,7 @@ public static class AppPackServiceCollectionExtensions
     public static IApplicationBuilder UseAppPacks(this IApplicationBuilder app, IServiceProvider serviceProvider, bool isBeforeUseRouting)
     {
         var configuration = serviceProvider.GetRequiredService<IConfiguration>();
-        foreach (var appPack in App.AppPacks.Where(x => x.IsBeforeUseRouting == isBeforeUseRouting))
+        foreach (var appPack in App.AppModules.Where(x => x.IsBeforeUseRouting == isBeforeUseRouting))
         {
             appPack.Configuration = configuration;
             if (!appPack.IsEnable)

@@ -1,14 +1,13 @@
 using Kurisu.AspNetCore.Abstractions.Startup;
 using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace Kurisu.AspNetCore.Startup.AppPacks;
+namespace Kurisu.AspNetCore.Startup.Module;
 
 /// <summary>
 /// cors默认pack
 /// </summary>
-public class DefaultCorsPack : BaseAppPack
+public class DefaultCorsModule : AppModule
 {
     private const string Cors = "defaultCors";
 

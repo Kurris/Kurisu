@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using Kurisu.AspNetCore.Abstractions.DependencyInjection;
 using Kurisu.AspNetCore.DependencyInjection;
 using Kurisu.AspNetCore.DependencyInjection.Internal;
+using Kurisu.AspNetCore.State.Extensions;
 
 // ReSharper disable once CheckNamespace
 namespace Microsoft.Extensions.DependencyInjection;
@@ -21,6 +22,7 @@ public static class DependencyInjectionServiceCollectionExtensions
     public static IServiceCollection AddDependencyInjection(this IServiceCollection services)
     {
         services.RegisterServices();
+        services.RegisterStateAccessor();
         return services;
     }
 
@@ -69,5 +71,15 @@ public static class DependencyInjectionServiceCollectionExtensions
         }
 
         DependencyInjectionHelper.NamedServices = namedServices;
+    }
+
+    private static void RegisterStateAccessor(this IServiceCollection services)
+    {
+        var add = typeof(StateAccessorServiceCollectionExtensions).GetMethod(nameof(StateAccessorServiceCollectionExtensions.AddStateAccessor));
+        foreach (var stateType in DependencyInjectionHelper.StateTypes.Value)
+        {
+            var genericAdd = add?.MakeGenericMethod(stateType);
+            genericAdd?.Invoke(null, new object[] { services });
+        }
     }
 }

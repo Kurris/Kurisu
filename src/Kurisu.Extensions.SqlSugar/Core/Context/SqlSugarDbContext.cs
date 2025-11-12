@@ -6,14 +6,12 @@ namespace Kurisu.Extensions.SqlSugar.Core.Context;
 
 internal class SqlSugarDbContext : SpecialQueryableDbContext
 {
-
     public SqlSugarDbContext(IServiceProvider serviceProvider) : base(serviceProvider)
     {
     }
 
 
     #region insert
-
 
     public override async Task<bool> InsertAsync<T>(T obj, CancellationToken cancellationToken)
     {
@@ -118,6 +116,11 @@ internal class SqlSugarDbContext : SpecialQueryableDbContext
         return await Client.Updateable(obj).ExecuteCommandAsync(cancellationToken);
     }
 
+    public override async Task<int> UpdateAsync<T>(T obj, string[] updateColumns, CancellationToken cancellationToken)
+    {
+        return await Client.Updateable(obj).UpdateColumns(updateColumns).ExecuteCommandAsync(cancellationToken);
+    }
+
     public override async Task<int> UpdateAsync<T>(List<T> objs, CancellationToken cancellationToken)
     {
         return await Client.Updateable(objs).ExecuteCommandAsync(cancellationToken);
@@ -128,13 +131,17 @@ internal class SqlSugarDbContext : SpecialQueryableDbContext
         return Client.Updateable(obj).ExecuteCommand();
     }
 
+    public override int Update<T>(T obj, string[] updateColumns)
+    {
+        return Client.Updateable(obj).UpdateColumns(updateColumns).ExecuteCommand();
+    }
+
     public override int Update<T>(List<T> objs)
     {
         return Client.Updateable(objs).ExecuteCommand();
     }
 
     #endregion
-
 }
 
 public static class DbContextExtensions

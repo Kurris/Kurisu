@@ -1,14 +1,13 @@
 ﻿using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Kurisu.AspNetCore.Abstractions.Startup;
 
 /// <summary>
-/// 程序包
+/// 程序模块
 /// </summary>
-public abstract class BaseAppPack : IAppPack
+public abstract class AppModule : IAppModule
 {
     /// <summary>
     /// appsettings.json配置或者外部动态配置
@@ -26,12 +25,12 @@ public abstract class BaseAppPack : IAppPack
     public virtual bool IsEnable => true;
 
     /// <summary>
-    /// 在Startup Configure请求管道中,以UseRouting分割添加自定义AppPack
+    /// 在Startup Configure请求管道中,以UseRouting分割添加自定义模块
     /// </summary>
     public virtual bool IsBeforeUseRouting { get; } = false;
 
     /// <summary>
-    /// 执行2
+    /// 2.执行
     /// </summary>
     /// <param name="serviceProvider"></param>
     public virtual void Invoke(IServiceProvider serviceProvider)
@@ -39,7 +38,7 @@ public abstract class BaseAppPack : IAppPack
     }
 
     /// <summary>
-    /// 配置ioc1
+    /// 1.配置ioc
     /// </summary>
     /// <param name="services"></param>
     public virtual void ConfigureServices(IServiceCollection services)
@@ -47,7 +46,7 @@ public abstract class BaseAppPack : IAppPack
     }
 
     /// <summary>
-    /// 配置管道3
+    /// 3.配置管道
     /// </summary>
     /// <param name="app"></param>
     public virtual void Configure(IApplicationBuilder app)

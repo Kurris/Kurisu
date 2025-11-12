@@ -7,7 +7,7 @@ namespace Kurisu.AspNetCore.Abstractions.Startup;
 /// <summary>
 /// 定义appPack行为,模拟标准Startup
 /// </summary>
-public interface IAppPack : IOrderedFilter
+public interface IAppModule : IOrderedFilter
 {
     /// <summary>
     /// 触发方法
