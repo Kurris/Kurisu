@@ -1,6 +1,6 @@
+using System.ComponentModel;
 using Kurisu.AspNetCore.Abstractions.DependencyInjection;
 using Kurisu.AspNetCore.Abstractions.UnifyResultAndValidation;
-using Kurisu.AspNetCore.CustomClass;
 using Kurisu.AspNetCore.Utils.Extensions;
 
 namespace Kurisu.AspNetCore.UnifyResultAndValidation;
@@ -64,10 +64,9 @@ public sealed class ApiResult<T> : IApiResult
     {
         data = default;
         if (Data is not TResponse response) return false;
-        
+
         data = response;
         return true;
-
     }
 
     /// <summary>
@@ -158,7 +157,7 @@ public class DefaultApiResult
     {
         return new ApiResult<T>
         {
-            Msg = ApiStateCode.Success.GetDisplay(),
+            Msg = ApiStateCode.Success.GetDescription(),
             Data = data,
             Code = ApiStateCode.Success
         };
@@ -233,36 +232,36 @@ public enum ApiStateCode
     /// <summary>
     /// 操作成功
     /// </summary>
-    [Lang("操作成功")]
+    [Description("success")]
     Success = 200,
 
     /// <summary>
     /// 鉴权失败
     /// </summary>
-    [Lang("鉴权失败")]
+    [Description("authentication failed")]
     Unauthorized = 401,
 
     /// <summary>
     /// 无权操作
     /// </summary>
-    [Lang("无权操作")]
+    [Description("forbidden")]
     Forbidden = 403,
 
     /// <summary>
     /// 资源不存在
     /// </summary>
-    [Lang("资源不存在")]
+    [Description("not found")]
     NotFound = 404,
 
     /// <summary>
     /// 请求参数有误
     /// </summary>
-    [Lang("请求参数有误")]
+    [Description("validate error")]
     ValidateError = 400,
 
     /// <summary>
     /// 执行异常
     /// </summary>
-    [Lang("执行异常")]
+    [Description("internal error")]
     Error = 500
 }

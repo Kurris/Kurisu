@@ -1,10 +1,9 @@
 ﻿using System.Threading.Tasks;
 using Kurisu.AspNetCore.Abstractions.DependencyInjection;
 using Kurisu.AspNetCore.Startup;
+using Kurisu.AspNetCore.Startup.Extensions;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
-using Serilog;
 
 // ReSharper disable once CheckNamespace
 namespace Microsoft.Extensions.DependencyInjection;
@@ -22,7 +21,8 @@ public static class ProgramExtensions
     /// <typeparam name="TStartup"></typeparam>
     public static void RunKurisu<TStartup>(this IHostBuilder hostBuilder) where TStartup : DefaultStartup
     {
-        hostBuilder.RunKurisuAsync<TStartup>().Wait();
+        var host = hostBuilder.CreateHostBuild<TStartup>();
+        host.Build().Run();
     }
 
     /// <summary>
@@ -33,15 +33,16 @@ public static class ProgramExtensions
     /// <returns></returns>
     public static async Task RunKurisuAsync<TStartup>(this IHostBuilder hostBuilder) where TStartup : DefaultStartup
     {
+        var host = hostBuilder.CreateHostBuild<TStartup>();
+        await host.Build().RunAsync();
+    }
+
+    private static IHostBuilder CreateHostBuild<TStartup>(this IHostBuilder hostBuilder) where TStartup : DefaultStartup
+    {
         var host = hostBuilder
-            .ConfigureLogging(builder =>
-            {
-                builder.ClearProviders();
-                builder.AddSerilog();
-            })
-            .UseSerilog((context, configuration) => configuration.ReadFrom.Configuration(context.Configuration))
+            .ConfigSerilog()
             .ConfigureWebHostDefaults(webBuilder => { webBuilder.UseStartup<TStartup>(); });
 
-        await host.Build().RunAsync();
+        return host;
     }
 }

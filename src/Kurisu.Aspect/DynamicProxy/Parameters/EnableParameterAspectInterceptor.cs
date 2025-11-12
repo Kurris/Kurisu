@@ -2,7 +2,7 @@
 
 namespace AspectCore.DynamicProxy.Parameters;
 
-public class EnableParameterAspectInterceptor : AbstractInterceptorAttribute
+public class EnableParameterAspectInterceptor : AopAttribute
 {
     public override int Order { get; set; } = -9;
 

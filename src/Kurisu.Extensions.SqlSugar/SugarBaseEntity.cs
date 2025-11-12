@@ -1,14 +1,14 @@
-﻿using System;
-using Kurisu.AspNetCore.Abstractions.DataAccess.Contract;
+﻿using Kurisu.AspNetCore.Abstractions.DataAccess.Contract;
+using Kurisu.AspNetCore.Abstractions.DataAccess.Contract.Field;
 using Kurisu.AspNetCore.DataAccess.SqlSugar.Attributes;
 using SqlSugar;
 
-namespace Kurisu.AspNetCore.DataAccess.SqlSugar;
+namespace Kurisu.Extensions.SqlSugar;
 
 /// <summary>
 /// SqlSugar Base实体
 /// </summary>
-public class SugarBaseEntity : BaseEntity<long, int>
+public class SugarEntity : BaseEntity<long, int>
 {
     /// <summary>
     /// 主键id
@@ -26,7 +26,7 @@ public class SugarBaseEntity : BaseEntity<long, int>
     /// 创建人
     /// </summary>
     [SugarColumn(IsNullable = true)]
-    public override string CreatedByName { get; set; }
+    public override string CreatedByN { get; set; }
 
     /// <summary>
     /// 创建时间
@@ -34,7 +34,7 @@ public class SugarBaseEntity : BaseEntity<long, int>
     [SugarColumn(IndexGroupNameList = ["idx_CreateTime"])]
     [InsertDateTimeGeneration]
 
-    public override DateTime CreateTime { get; set; }
+    public override DateTime CreateAt { get; set; }
 
     /// <summary>
     /// 修改人
@@ -47,12 +47,17 @@ public class SugarBaseEntity : BaseEntity<long, int>
     /// 修改人
     /// </summary>
     [SugarColumn(IsNullable = true)]
-    public override string ModifiedByName { get; set; }
+    public override string ModifiedByN { get; set; }
 
     /// <summary>
     /// 修改时间
     /// </summary>
     [UpdateDateTimeGeneration]
     [InsertDateTimeGeneration]
-    public override DateTime ModifiedTime { get; set; }
+    public override DateTime ModifiedAt { get; set; }
+}
+
+public class SugarEntityWithTenant : SugarEntity, ITenantId
+{
+    public string TenantId { get; set; }
 }

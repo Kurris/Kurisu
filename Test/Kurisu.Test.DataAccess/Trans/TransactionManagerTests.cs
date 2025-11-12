@@ -1,8 +1,11 @@
 using Kurisu.AspNetCore.Abstractions.DataAccess;
-using Kurisu.AspNetCore.Extensions;
 using Microsoft.Extensions.DependencyInjection;
 using SqlSugar;
 using Kurisu.Extensions.SqlSugar;
+using Kurisu.Extensions.SqlSugar.Extensions;
+using Kurisu.AspNetCore.Abstractions.DataAccess.Core;
+using Kurisu.AspNetCore.Abstractions.DataAccess.Extensions;
+using Kurisu.Extensions.SqlSugar.Core.Manager;
 
 namespace Kurisu.Test.DataAccess.Trans;
 

@@ -478,7 +478,7 @@ internal class ProxyGeneratorUtils
                 {
                     throw new MissingMethodException($"Type '{implType}' does not contain a method '{method}'.");
                 }
-                var @interface = interfaces.Where(f => f.GetCustomAttribute(typeof(AbstractInterceptorAttribute)) != null).ToArray();
+                var @interface = interfaces.Where(f => f.GetCustomAttribute(typeof(AopAttribute)) != null).ToArray();
                 if (@interface.Length > 0)
                 {
                     foreach (var item in @interface)

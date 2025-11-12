@@ -3,7 +3,6 @@
     <PropertyGroup>
         <LangVersion>latestmajor</LangVersion>
         <PackageVersion>0.9.39</PackageVersion>
-        <Description></Description>
         <Copyright>Kurisu Copyright</Copyright>
         <RepositoryUrl>https://github.com/Kurris/Kurisu</RepositoryUrl>
         <RepositoryType>Github</RepositoryType>
@@ -33,8 +32,8 @@
         <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks" Version="6.0.36" />
         <PackageReference Include="Serilog.AspNetCore" Version="6.1.0" />
         <PackageReference Include="StackExchange.Redis" Version="2.7.27" />
-        <PackageReference Include="Swashbuckle.AspNetCore" Version="8.1.4" />
-        <PackageReference Include="Swashbuckle.AspNetCore.Filters" Version="9.0.1" />
+        <PackageReference Include="Swashbuckle.AspNetCore" Version="6.5.0"/>
+        <PackageReference Include="Swashbuckle.AspNetCore.Filters" Version="7.0.8"/>
     </ItemGroup>
 
     <ItemGroup Condition=" '$(TargetFramework)' == 'net8.0' ">
@@ -46,11 +45,12 @@
         <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks" Version="8.0.20" />
         <PackageReference Include="Serilog.AspNetCore" Version="8.0.3" />
         <PackageReference Include="StackExchange.Redis" Version="2.7.27" />
-		<PackageReference Include="Swashbuckle.AspNetCore" Version="8.1.4" />
-		<PackageReference Include="Swashbuckle.AspNetCore.Filters" Version="9.0.1" />
+        <PackageReference Include="Swashbuckle.AspNetCore" Version="8.1.4"/>
+        <PackageReference Include="Swashbuckle.AspNetCore.Filters" Version="9.0.1"/>
     </ItemGroup>
 
     <ItemGroup>
+        <ProjectReference Include="..\Kurisu.Aspect\Kurisu.Aspect.csproj"/>
       <ProjectReference Include="..\Kurisu.AspNetCore.Abstractions\Kurisu.AspNetCore.Abstractions.csproj" />
     </ItemGroup>
 	

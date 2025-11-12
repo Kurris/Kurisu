@@ -1,8 +1,6 @@
 ﻿using System.Diagnostics.CodeAnalysis;
-using Kurisu.AspNetCore.Abstractions.DataAccess;
-using Kurisu.AspNetCore.DataAccess.SqlSugar.Services;
+using Kurisu.AspNetCore.Abstractions.DataAccess.Core.Context;
 using Kurisu.Extensions.SqlSugar.Extensions;
-using Kurisu.Extensions.SqlSugar.Services;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Kurisu.Test.DataAccess;
@@ -17,8 +15,7 @@ public class TestIgnore
     {
         _dbContext = TestHelper.GetServiceProvider().GetRequiredService<IDbContext>();
     }
-
-
+    
     [Fact]
     public void IgnoreSoftDeleted()
     {

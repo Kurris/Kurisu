@@ -46,4 +46,15 @@ public class PageDto
     /// 是否导出
     /// </summary>
     public bool IsExport { get; set; }
+
+
+    public List<string> GetSearched()
+    {
+        if (string.IsNullOrWhiteSpace(Search))
+        {
+            return [];
+        }
+
+        return Search.Split(" | ").ToList();
+    }
 }

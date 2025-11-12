@@ -1,4 +1,6 @@
-﻿using Kurisu.AspNetCore.Abstractions.DependencyInjection;
+﻿using System.Reflection;
+using Kurisu.AspNetCore.Abstractions.DependencyInjection;
+using Kurisu.AspNetCore.Authentication.Extensions;
 using Kurisu.AspNetCore.Startup.Extensions;
 using Kurisu.AspNetCore.UnifyResultAndValidation.Extensions;
 using Microsoft.AspNetCore.Builder;
@@ -80,18 +82,22 @@ public abstract class DefaultStartup
             .ConfigureApplicationPartManager(manager => { manager.FeatureProviders.Add(App.StartupOptions.DynamicApiOptions.ControllerFeatureProvider); })
             .AddControllersAsServices();
 
-        // MVC 约定配置
-        services.Configure<MvcOptions>(options => options.Conventions.Add(App.StartupOptions.DynamicApiOptions.ModelConvention));
+        services.Configure<MvcOptions>(options =>
+            {
+                options.Conventions.Add(App.StartupOptions.DynamicApiOptions.ModelConvention);
+                App.StartupOptions.MvcOptions?.Invoke(options);
+            }
+        );
 
 
         // 响应与异常格式统一
         services.AddUnifyResult();
 
         // 对象关系映射
-        services.AddObjectMapper();
+        services.AddObjectMapper(true, Assembly.GetExecutingAssembly());
 
         // 注入自定义 pack
-        services.AddAppPacks(Configuration);
+        services.AddAppModules(Configuration);
     }
 
     /// <summary>

@@ -3,6 +3,7 @@ using Kurisu.AspNetCore.DataProtection.Packs;
 using Kurisu.Extensions.SqlSugar.Extensions;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using SqlSugar;
 
 namespace Kurisu.Test.DataProtection;
 
@@ -19,7 +20,7 @@ public class Startup
         services.AddDependencyInjection();
         services.AddRedis();
 
-        services.AddSqlSugar();
+        services.AddSqlSugar(DbType.MySqlConnector);
         
         var pack = new DataProtectionPack
         {

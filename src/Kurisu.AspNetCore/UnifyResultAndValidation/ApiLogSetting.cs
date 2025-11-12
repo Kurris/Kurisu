@@ -47,15 +47,16 @@ internal class ApiLogSetting
             return;
         }
 
+        const Formatting formatting = Formatting.None; //Indented
         if (!DisableResponseLogout)
         {
-            var formattedParams = JsonConvert.SerializeObject(Parameters, Formatting.Indented);
-            var formattedResponse = JsonConvert.SerializeObject(Response, Formatting.Indented);
+            var formattedParams = JsonConvert.SerializeObject(Parameters, formatting);
+            var formattedResponse = JsonConvert.SerializeObject(Response, formatting);
             _logger.LogInformation("\r\nConnectionId:{connectionId} UserId:{userId} {httpMethod} {path}\r\nRequest:{params}\r\nResponse:{response}", ConnectionId, UserId, HttpMethod, Path, formattedParams, formattedResponse);
         }
         else
         {
-            var formattedParams = JsonConvert.SerializeObject(Parameters, Formatting.Indented);
+            var formattedParams = JsonConvert.SerializeObject(Parameters, formatting);
             _logger.LogInformation("\r\nConnectionId:{connectionId} UserId:{userId} {httpMethod} {path}\r\nRequest:{params}", ConnectionId, UserId, HttpMethod, Path, formattedParams);
         }
 
