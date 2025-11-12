@@ -1,12 +1,13 @@
 ﻿using Kurisu.AspNetCore.Abstractions.DataAccess.Contract;
 using Kurisu.AspNetCore.Abstractions.DataAccess.Contract.Field;
 using Kurisu.AspNetCore.DataAccess.SqlSugar;
+using Kurisu.Extensions.SqlSugar;
 using SqlSugar;
 
 namespace Kurisu.Test.DataAccess.Entities;
 
 [SugarTable("test1")]
-public class Test1Entity : SugarBaseEntity , ITenantId
+public class Test1Entity : SugarEntity, ITenantId
 {
     [SugarColumn(IsPrimaryKey = true, IsIdentity = true)]
     public new int Id { get; set; }
@@ -20,7 +21,7 @@ public class Test1Entity : SugarBaseEntity , ITenantId
 }
 
 [SugarTable("test1WithSoftDelete")]
-public class Test1WithSoftDeleteEntity : SugarBaseEntity, ISoftDeleted
+public class Test1WithSoftDeleteEntity : SugarEntity, ISoftDeleted
 {
     [SugarColumn(IsPrimaryKey = true, IsIdentity = true)]
     public new int Id { get; set; }
