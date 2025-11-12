@@ -1,5 +1,5 @@
 using Kurisu.AspNetCore.Cache.Extensions;
-using Kurisu.AspNetCore.DataProtection.Packs;
+using Kurisu.AspNetCore.DataProtection.Modules;
 using Kurisu.Extensions.SqlSugar.Extensions;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -21,8 +21,8 @@ public class Startup
         services.AddRedis();
 
         services.AddSqlSugar(DbType.MySqlConnector);
-        
-        var pack = new DataProtectionPack
+
+        var pack = new DataProtectionModule
         {
             Configuration = configuration
         };
