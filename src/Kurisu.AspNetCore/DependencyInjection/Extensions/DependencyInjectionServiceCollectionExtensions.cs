@@ -34,39 +34,39 @@ public static class DependencyInjectionServiceCollectionExtensions
     private static void RegisterServices(this IServiceCollection services)
     {
         services.AddScoped<INamedResolver, NamedResolver>();
-        var serviceTypes = DependencyInjectionHelper.DependencyServices.Value;
+        var implementTypes = DependencyInjectionHelper.DependencyServices.Value;
 
         var namedServices = new Dictionary<Tuple<Type, string>, Type>();
 
-        foreach (var service in serviceTypes)
+        foreach (var implementType in implementTypes)
         {
-            var (named, lifeTime, interfaceTypes) = DependencyInjectionHelper.GetInjectInfos(service);
+            var (named, lifeTime, serviceTypes) = DependencyInjectionHelper.GetInjectInfos(implementType);
 
             //注册服务
-            if (interfaceTypes.Length != 0)
+            if (serviceTypes.Length != 0)
             {
-                foreach (var interfaceType in interfaceTypes)
+                foreach (var serviceType in serviceTypes)
                 {
                     if (!string.IsNullOrEmpty(named))
                     {
-                        if (namedServices.TryAdd(new Tuple<Type, string>(interfaceType, named), service))
+                        if (namedServices.TryAdd(new Tuple<Type, string>(serviceType, named), implementType))
                         {
-                            DependencyInjectionHelper.Register(services, lifeTime, service);
+                            DependencyInjectionHelper.Register(services, lifeTime, implementType);
                         }
                         else
                         {
-                            throw new ArgumentException($"命名服务注册失败，接口：{interfaceType.FullName}，命名：{named} 已存在");
+                            throw new ArgumentException($"命名服务注册失败，服务类型：{serviceType.FullName}，命名：{named} 已存在");
                         }
                     }
                     else
                     {
-                        DependencyInjectionHelper.Register(services, lifeTime, service, interfaceType);
+                        DependencyInjectionHelper.Register(services, lifeTime, implementType, serviceType);
                     }
                 }
             }
             else
             {
-                DependencyInjectionHelper.Register(services, lifeTime, service);
+                DependencyInjectionHelper.Register(services, lifeTime, implementType);
             }
         }
 

@@ -28,11 +28,6 @@ internal class CommonUtils : ICommonUtils
     {
         result = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase);
 
-        if (obj == null)
-        {
-            return false;
-        }
-
         if (obj is not JToken jToken) return false;
 
         if (jToken is JValue jValue)

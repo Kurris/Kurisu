@@ -58,11 +58,30 @@ internal static class DependencyInjectionHelper
     public static readonly Lazy<List<Type>> Configurations = new(() => { return ActiveTypes.Value.Where(x => x.IsDefined(typeof(ConfigurationAttribute))).ToList(); });
 
 
-    public static (string named, ServiceLifetime lifeTime, Type[] interfaceTypes) GetInjectInfos(Type type)
+    public static (string named, ServiceLifetime lifeTime, Type[] serviceTypes) GetInjectInfos(Type type)
     {
         var interfaces = type.GetInterfaces();
+
+        var abstractBaseTypes = new List<Type>();
+        var baseType = type.BaseType;
+        while (baseType != null && baseType != typeof(object))
+        {
+            if (baseType.IsAbstract)
+                abstractBaseTypes.Add(baseType);
+
+            baseType = baseType.BaseType;
+        }
+
         var info = type.GetCustomAttribute<DiInjectAttribute>()!;
-        return (info.Named, info.Lifetime, interfaces);
+
+        var combined = interfaces.Concat(abstractBaseTypes).Distinct().ToArray();
+
+        if (info.IgnoreServiceTypes is { Length: > 0 })
+        {
+            combined = combined.Except(info.IgnoreServiceTypes).ToArray();
+        }
+
+        return (info.Named, info.Lifetime, combined.Where(x => x.IsVisible).ToArray());
     }
 
     /// <summary>
@@ -71,22 +90,21 @@ internal static class DependencyInjectionHelper
     /// <param name="services"></param>
     /// <param name="lifetime"></param>
     /// <param name="service"></param>
-    /// <param name="interfaceType"></param>
-    public static void Register(IServiceCollection services, ServiceLifetime lifetime, Type service, Type interfaceType = null)
+    /// <param name="serviceType"></param>
+    public static void Register(IServiceCollection services, ServiceLifetime lifetime, Type service, Type serviceType = null)
     {
         //范型类型转换
         service = GetGenericRealType(service);
 
-
         ServiceDescriptor descriptor;
-        if (interfaceType == null)
+        if (serviceType == null)
         {
             descriptor = ServiceDescriptor.Describe(service, service, lifetime);
         }
         else
         {
-            interfaceType = GetGenericRealType(interfaceType);
-            descriptor = ServiceDescriptor.Describe(interfaceType, service, lifetime);
+            serviceType = GetGenericRealType(serviceType);
+            descriptor = ServiceDescriptor.Describe(serviceType, service, lifetime);
         }
 
         services.Add(descriptor);
