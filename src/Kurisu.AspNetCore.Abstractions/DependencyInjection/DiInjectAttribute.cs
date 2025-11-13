@@ -26,6 +26,11 @@ public class DiInjectAttribute : Attribute
     }
 
     /// <summary>
+    /// 忽略注入的服务类型
+    /// </summary>
+    public Type[] IgnoreServiceTypes { get; set; }
+
+    /// <summary>
     /// 服务命名
     /// </summary>
     public string Named { get; }
