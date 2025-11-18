@@ -2,7 +2,7 @@
 
     <PropertyGroup>
         <LangVersion>latestmajor</LangVersion>
-        <PackageVersion>0.9.41</PackageVersion>
+        <PackageVersion>0.9.42</PackageVersion>
         <Copyright>Kurisu Copyright</Copyright>
         <RepositoryUrl>https://github.com/Kurris/Kurisu</RepositoryUrl>
         <RepositoryType>Github</RepositoryType>
