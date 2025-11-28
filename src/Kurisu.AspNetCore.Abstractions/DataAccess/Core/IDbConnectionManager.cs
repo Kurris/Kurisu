@@ -9,6 +9,10 @@ public interface IDbConnectionManager
 
     IDisposable CreateScope(string name);
 
+    IDisposable CreateScope(string name, Action onDispose);
+
+    bool NeedCreateScope(string name);
+
     /// <summary>
     /// 获取连接字符串
     /// </summary>

@@ -20,8 +20,8 @@ public class DatasourceAttribute : AopAttribute
 
     public override async Task Invoke(AspectContext context, AspectDelegate next)
     {
-        var connectionManager = context.ServiceProvider.GetRequiredService<IDbConnectionManager>();
-        using (connectionManager.CreateScope(_name))
+        var datasourceManager = context.ServiceProvider.GetRequiredService<IDatasourceManager>();
+        using (datasourceManager.CreateScope(_name))
         {
             await next(context);
         }

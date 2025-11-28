@@ -42,10 +42,11 @@ internal class ServiceValidator
 
         if (descriptor.ServiceType.GetTypeInfo().IsClass)
         {
-            if (descriptor.ImplementationType == null)
-            {
-                return false;
-            }
+            //todo keyedService
+            //if (descriptor.ImplementationType == null)
+            //{
+            //    return false;
+            //}
 
             if (!implementationType.GetTypeInfo().IsVisible())
             {

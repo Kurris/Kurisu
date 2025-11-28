@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Text.Json.Serialization;
 using Kurisu.AspNetCore.CustomClass.Periods.Abstractions;
+using Newtonsoft.Json;
 
 namespace Kurisu.AspNetCore.CustomClass.Periods;
 
@@ -24,7 +25,8 @@ public class DatePeriod : IPeriod<DateOnly>, IPeriodComparable<DateOnly, DatePer
     /// </summary>
     /// <param name="start">起始日期。</param>
     /// <param name="end">结束日期。</param>
-    [JsonConstructor]
+    [Newtonsoft.Json.JsonConstructor]
+    [System.Text.Json.Serialization.JsonConstructor]
     public DatePeriod(DateOnly start, DateOnly end)
     {
         Start = start;

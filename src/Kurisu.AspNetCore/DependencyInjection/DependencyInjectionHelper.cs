@@ -89,27 +89,32 @@ internal static class DependencyInjectionHelper
     /// </summary>
     /// <param name="services"></param>
     /// <param name="lifetime"></param>
-    /// <param name="service"></param>
+    /// <param name="implementType"></param>
     /// <param name="serviceType"></param>
-    public static void Register(IServiceCollection services, ServiceLifetime lifetime, Type service, Type serviceType = null)
+    /// <param name="isKeyed"></param>
+    /// <param name="named"></param>
+    public static void Register(IServiceCollection services, ServiceLifetime lifetime, Type implementType, Type serviceType = null, bool isKeyed = false, string named = null)
     {
         //范型类型转换
-        service = GetGenericRealType(service);
+        implementType = GetGenericRealType(implementType);
 
-        ServiceDescriptor descriptor;
         if (serviceType == null)
         {
-            descriptor = ServiceDescriptor.Describe(service, service, lifetime);
+            services.Add(ServiceDescriptor.Describe(implementType, implementType, lifetime));
         }
         else
         {
             serviceType = GetGenericRealType(serviceType);
-            descriptor = ServiceDescriptor.Describe(serviceType, service, lifetime);
+            if (isKeyed)
+            {
+
+#if NET8_0_OR_GREATER
+                services.Add(ServiceDescriptor.DescribeKeyed(serviceType, named, implementType, lifetime));
+#endif
+            }
+
+            services.Add(ServiceDescriptor.Describe(serviceType, implementType, lifetime));
         }
-
-        services.Add(descriptor);
-
-        App.Logger.LogDebug("注册{Lifetime}服务: {ServiceName} {ServiceInterface}", lifetime, service.Name, descriptor.ServiceType.Name);
     }
 
     /// <summary>

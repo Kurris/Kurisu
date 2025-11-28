@@ -5,18 +5,18 @@ namespace Kurisu.AspNetCore.Abstractions.DataAccess.Extensions;
 /// <summary>
 /// 分页扩展
 /// </summary>
-public static class PageDtoExtensions
+public static class PageQueryExtensions
 {
     /// <summary>
     /// 获取数据分页
     /// </summary>
     /// <param name="data"></param>
-    /// <param name="input"></param>
+    /// <param name="query"></param>
     /// <typeparam name="T"></typeparam>
     /// <returns></returns>
-    public static Pagination<T> ToPage<T>(this IEnumerable<T> data, PageDto input)
+    public static Pagination<T> ToPage<T>(this IEnumerable<T> data, PageQuery query)
     {
-        return data.ToPage(input.PageIndex, input.PageSize);
+        return data.ToPage(query.PageIndex, query.PageSize);
     }
 
     /// <summary>

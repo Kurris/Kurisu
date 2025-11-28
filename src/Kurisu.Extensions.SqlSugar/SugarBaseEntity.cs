@@ -1,6 +1,7 @@
 ﻿using Kurisu.AspNetCore.Abstractions.DataAccess.Contract;
 using Kurisu.AspNetCore.Abstractions.DataAccess.Contract.Field;
 using Kurisu.AspNetCore.DataAccess.SqlSugar.Attributes;
+using Kurisu.Extensions.SqlSugar.Attributes;
 using SqlSugar;
 
 namespace Kurisu.Extensions.SqlSugar;
@@ -19,34 +20,35 @@ public class SugarEntity : BaseEntity<long, int>
     /// <summary>
     /// 创建人
     /// </summary>
-    [InsertUserGeneration]
+    [InsertUserIdGeneration]
     public override int CreatedBy { get; set; }
 
     /// <summary>
     /// 创建人
     /// </summary>
     [SugarColumn(IsNullable = true)]
+    [InsertUserNameGeneration]
     public override string CreatedByN { get; set; }
 
     /// <summary>
     /// 创建时间
     /// </summary>
-    [SugarColumn(IndexGroupNameList = ["idx_CreateTime"])]
     [InsertDateTimeGeneration]
-
     public override DateTime CreateAt { get; set; }
 
     /// <summary>
     /// 修改人
     /// </summary>
-    [UpdateUserGeneration]
-    [InsertUserGeneration]
+    [UpdateUserIdGeneration]
+    [InsertUserIdGeneration]
     public override int ModifiedBy { get; set; }
 
     /// <summary>
     /// 修改人
     /// </summary>
     [SugarColumn(IsNullable = true)]
+    [InsertUserNameGeneration]
+    [UpdateUserNameGeneration]
     public override string ModifiedByN { get; set; }
 
     /// <summary>

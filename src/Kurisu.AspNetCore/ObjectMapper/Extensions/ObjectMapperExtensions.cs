@@ -41,6 +41,9 @@ public static class ObjectMapperExtensions
     /// <returns></returns>
     public static TDestination MapIgnoreNull<TSource, TDestination>(this TSource source, TDestination destination)
     {
-        return source.Adapt(destination, new TypeAdapterConfig().ForType<TSource, TDestination>().IgnoreNullValues(true).Config);
+        return source.Adapt(destination, TypeAdapterConfig.GlobalSettings.Clone()
+            .ForType<TSource, TDestination>()
+            .IgnoreNullValues(true).Config
+        );
     }
 }

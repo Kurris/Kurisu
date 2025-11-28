@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using Kurisu.AspNetCore.Abstractions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -8,8 +9,15 @@ namespace Kurisu.AspNetCore.DependencyInjection.Internal;
 /// 命名服务处理器
 /// </summary>
 [SkipScan]
-internal class NamedResolver(IServiceProvider serviceProvider) : INamedResolver
+internal class NamedResolver : INamedResolver
 {
+    private readonly IServiceProvider _serviceProvider;
+
+    public NamedResolver(IServiceProvider serviceProvider)
+    {
+        _serviceProvider = serviceProvider;
+    }
+
     /// <summary>
     /// 获取服务
     /// </summary>
@@ -18,9 +26,9 @@ internal class NamedResolver(IServiceProvider serviceProvider) : INamedResolver
     /// <returns></returns>
     public object GetService(Type interfaceType, string named)
     {
-        return DependencyInjectionHelper.NamedServices.TryGetValue(new Tuple<Type, string>(interfaceType, named), out var findType) 
-            ? serviceProvider.GetService(findType) 
-            : null;
+        return DependencyInjectionHelper.NamedServices.TryGetValue(new Tuple<Type, string>(interfaceType, named), out var findType)
+                        ? _serviceProvider.GetServices(interfaceType).Where(x => x.GetType() == findType).FirstOrDefault()
+                        : null;
     }
 
     /// <summary>
@@ -31,6 +39,10 @@ internal class NamedResolver(IServiceProvider serviceProvider) : INamedResolver
     /// <returns></returns>
     public TInterface GetService<TInterface>(string named) where TInterface : class
     {
+#if NET8_0_OR_GREATER
+        return _serviceProvider.GetKeyedService<TInterface>(named);
+#else
         return GetService(typeof(TInterface), named) as TInterface;
+#endif
     }
 }

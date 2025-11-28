@@ -23,6 +23,8 @@ public class DateTimePeriod : IPeriod<DateTime>, IPeriodComparable<DateTime, Dat
     /// </summary>
     /// <param name="start">起始时间。</param>
     /// <param name="end">结束时间。</param>
+    [Newtonsoft.Json.JsonConstructor]
+    [System.Text.Json.Serialization.JsonConstructor]
     public DateTimePeriod(DateTime start, DateTime end)
     {
         Start = start;

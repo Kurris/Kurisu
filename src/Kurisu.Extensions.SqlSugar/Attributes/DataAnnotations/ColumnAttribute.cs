@@ -21,4 +21,14 @@ public class ColumnAttribute : SugarColumn
             SqlParameterDbType = typeof(EnumToStringConvert);
         }
     }
+
+    public bool IsMoney
+    {
+        get => true;
+        set
+        {
+            if (!value) return;
+            ColumnDataType = "decimal(18,2)";
+        }
+    }
 }

@@ -94,7 +94,7 @@ public abstract class DefaultStartup
         services.AddUnifyResult();
 
         // 对象关系映射
-        services.AddObjectMapper(true, Assembly.GetExecutingAssembly());
+        services.AddObjectMapper();
 
         // 注入自定义 pack
         services.AddAppModules(Configuration);

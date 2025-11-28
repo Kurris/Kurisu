@@ -5,6 +5,7 @@ using Kurisu.AspNetCore.Abstractions.Startup;
 using Kurisu.AspNetCore.DependencyInjection;
 using Kurisu.AspNetCore.Startup;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Serilog;
@@ -25,17 +26,26 @@ public class App
     /// <summary>
     /// 框架应用程序日志
     /// </summary>
-    public static ILogger Logger { get; } = LoggerFactory.Create(builder =>
+    public static ILogger Logger
+    {
+        get
         {
-            builder.AddSerilog(new LoggerConfiguration()
-                .WriteTo.Console(
-                    outputTemplate: "[{Timestamp:yyyy-MM-dd HH:mm:ss} {Level:u3}] [{SourceContext}] {Message:lj}{NewLine}{Exception}"
-                )
-                .MinimumLevel.Debug()
-                .CreateLogger()
-            );
-        })
-        .CreateLogger("Kurisu.AspNetCore.App");
+            var builder = new ConfigurationBuilder();
+            builder.AddJsonFile("appsettings.json", optional: true, reloadOnChange: true);
+            builder.AddJsonFile("appsettings.Development.json", optional: true, reloadOnChange: true);
+
+            var configurationRoot = builder.Build();
+
+            return LoggerFactory.Create(config =>
+                {
+                    config.AddSerilog(new LoggerConfiguration()
+                        .ReadFrom.Configuration(configurationRoot)
+                        .CreateLogger()
+                    );
+                })
+                .CreateLogger("App");
+        }
+    }
 
     /// <summary>
     /// 服务提供器

@@ -1,6 +1,7 @@
 using System.Linq;
 using System.Reflection;
 using Kurisu.AspNetCore.Abstractions.DependencyInjection;
+using Kurisu.AspNetCore.ObjectMapper.Extensions;
 using Mapster;
 using MapsterMapper;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -24,6 +25,9 @@ public static class ObjectMapperServiceCollectionExtensions
     public static IServiceCollection AddObjectMapper(this IServiceCollection services, bool isCompile = false, params Assembly[] assemblies)
     {
         var globalSettings = TypeAdapterConfig.GlobalSettings;
+        
+        globalSettings.Apply(new RegisterStringToArrayString());
+        globalSettings.Apply(new RegisterArrayStringToString());
 
         //扫描IRegister
         if (assemblies.Any())

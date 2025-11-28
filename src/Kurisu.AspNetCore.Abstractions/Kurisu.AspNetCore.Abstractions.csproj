@@ -5,7 +5,7 @@
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>disable</Nullable>
         <TargetFrameworks>net6.0;net8.0</TargetFrameworks>
-        <Version>0.0.2</Version>
+        <Version>0.0.4</Version>
         <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     </PropertyGroup>
     <ItemGroup Condition=" '$(TargetFramework)' == 'net6.0' ">

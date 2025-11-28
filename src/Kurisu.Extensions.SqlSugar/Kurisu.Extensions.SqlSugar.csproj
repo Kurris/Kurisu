@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
         <LangVersion>latestmajor</LangVersion>
@@ -6,11 +6,11 @@
         <Nullable>disable</Nullable>
         <TargetFrameworks>net6.0;net8.0</TargetFrameworks>
         <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-        <Version>0.0.1</Version>
+        <Version>0.0.4</Version>
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="SqlSugarCore" Version="5.1.4.207"/>
+        <PackageReference Include="SqlSugarCore" Version="5.1.4.207" />
     </ItemGroup>
     
     <ItemGroup Condition=" '$(TargetFramework)' == 'net6.0' ">
@@ -20,7 +20,7 @@
     <ItemGroup Condition=" '$(TargetFramework)' == 'net8.0' ">
         <PackageReference Include="Microsoft.Extensions.Options" Version="8.0.2" />
     </ItemGroup>
-    
+
     <ItemGroup>
       <ProjectReference Include="..\Kurisu.AspNetCore.Abstractions\Kurisu.AspNetCore.Abstractions.csproj" />
     </ItemGroup>

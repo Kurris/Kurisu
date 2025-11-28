@@ -1,5 +1,6 @@
 ﻿using Kurisu.AspNetCore.Abstractions.DataAccess.Core;
 using Kurisu.Extensions.SqlSugar.Options;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace Kurisu.Extensions.SqlSugar.Core.Manager;
@@ -10,6 +11,7 @@ namespace Kurisu.Extensions.SqlSugar.Core.Manager;
 internal class SqlSugarConnectionManager : IDbConnectionManager
 {
     private readonly IDbConnectionRegistry _dbConnectionRegistry;
+    private readonly ILogger<SqlSugarConnectionManager> _logger;
     private readonly AsyncLocal<Stack<string>> _nameStack = new();
     private readonly string _default = "default";
 
@@ -18,9 +20,11 @@ internal class SqlSugarConnectionManager : IDbConnectionManager
     /// </summary>
     /// <param name="options"></param>
     /// <param name="dbConnectionRegistry"></param>
-    public SqlSugarConnectionManager(IOptions<SqlSugarOptions> options, IDbConnectionRegistry dbConnectionRegistry)
+    /// <param name="logger"></param>
+    public SqlSugarConnectionManager(IOptions<SqlSugarOptions> options, IDbConnectionRegistry dbConnectionRegistry, ILogger<SqlSugarConnectionManager> logger)
     {
         _dbConnectionRegistry = dbConnectionRegistry;
+        _logger = logger;
         dbConnectionRegistry.Register(_default, options.Value.DefaultConnectionString);
     }
 
@@ -36,6 +40,24 @@ internal class SqlSugarConnectionManager : IDbConnectionManager
 
             return _nameStack.Value;
         }
+    }
+
+    public IDisposable CreateScope(string name, Action onDispose)
+    {
+        return InternalCreateScope(name, onDispose);
+    }
+
+    public bool NeedCreateScope(string name)
+    {
+        if (string.IsNullOrWhiteSpace(name)) throw new ArgumentException("name cannot be null or empty", nameof(name));
+
+        if (!_dbConnectionRegistry.Exists(name))
+        {
+            throw new ArgumentException(nameof(name) + "连接字符串不存在");
+        }
+
+        // 如果当前名称和栈顶名称相同，则不需要创建新作用域
+        return !name.Equals(GetCurrent());
     }
 
     public string GetConnectionString(string name)
@@ -55,21 +77,25 @@ internal class SqlSugarConnectionManager : IDbConnectionManager
 
     public IDisposable CreateScope(string name)
     {
-        if (string.IsNullOrWhiteSpace(name)) throw new ArgumentException("name cannot be null or empty", nameof(name));
+        return InternalCreateScope(name, null);
+    }
 
-        if (!_dbConnectionRegistry.Exists(name))
-        {
-            throw new ArgumentException(nameof(name) + "连接字符串不存在");
-        }
-
-        // If it's the same as current, return a no-op disposable
-        if (name.Equals(GetCurrent()))
+    public IDisposable InternalCreateScope(string name, Action onDispose)
+    {
+        if (!NeedCreateScope(name))
         {
             return new NoopScope();
         }
 
-        Stack.Push(name);
-        return new NameScope(this);
+        try
+        {
+            Stack.Push(name);
+            return new NameScope(this, onDispose);
+        }
+        finally
+        {
+            _logger.LogDebug("Switched database connection to '{Name}'", name);
+        }
     }
 
     private void PopIfNeeded()
@@ -78,16 +104,20 @@ internal class SqlSugarConnectionManager : IDbConnectionManager
         {
             Stack.Pop();
         }
+
+        _logger.LogDebug("Reverted database connection to '{Name}'", GetCurrent());
     }
 
     private class NameScope : IDisposable
     {
         private readonly SqlSugarConnectionManager _manager;
+        private readonly Action _additionalDisposeAction;
         private bool _disposed;
 
-        public NameScope(SqlSugarConnectionManager manager)
+        public NameScope(SqlSugarConnectionManager manager, Action additionalDisposeAction = null)
         {
             _manager = manager;
+            _additionalDisposeAction = additionalDisposeAction;
         }
 
         public void Dispose()
@@ -95,6 +125,8 @@ internal class SqlSugarConnectionManager : IDbConnectionManager
             if (_disposed) return;
             _disposed = true;
             _manager.PopIfNeeded();
+
+            _additionalDisposeAction?.Invoke();
         }
     }
 

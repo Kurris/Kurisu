@@ -3,12 +3,12 @@
 /// <summary>
 /// 分页Dto
 /// </summary>
-public class PageDto
+public class PageQuery
 {
     /// <summary>
     /// ctor
     /// </summary>
-    public PageDto()
+    public PageQuery()
     {
         PageIndex = 1;
         PageSize = 20;
@@ -19,7 +19,7 @@ public class PageDto
     /// </summary>
     /// <param name="pageIndex"></param>
     /// <param name="pageSize"></param>
-    public PageDto(int pageIndex, int pageSize)
+    public PageQuery(int pageIndex, int pageSize)
     {
         PageIndex = pageIndex;
         PageSize = pageSize;

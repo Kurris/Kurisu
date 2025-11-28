@@ -121,6 +121,11 @@ internal class SqlSugarDbContext : SpecialQueryableDbContext
         return await Client.Updateable(obj).UpdateColumns(updateColumns).ExecuteCommandAsync(cancellationToken);
     }
 
+    public override async Task<int> UpdateAsync<T>(List<T> objs, string[] updateColumns, CancellationToken cancellationToken)
+    {
+        return await Client.Updateable(objs).UpdateColumns(updateColumns).ExecuteCommandAsync(cancellationToken);
+    }
+
     public override async Task<int> UpdateAsync<T>(List<T> objs, CancellationToken cancellationToken)
     {
         return await Client.Updateable(objs).ExecuteCommandAsync(cancellationToken);
@@ -139,6 +144,11 @@ internal class SqlSugarDbContext : SpecialQueryableDbContext
     public override int Update<T>(List<T> objs)
     {
         return Client.Updateable(objs).ExecuteCommand();
+    }
+
+    public override int Update<T>(List<T> objs, string[] updateColumns)
+    {
+        return Client.Updateable(objs).UpdateColumns(updateColumns).ExecuteCommand();
     }
 
     #endregion

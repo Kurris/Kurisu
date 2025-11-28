@@ -30,9 +30,13 @@ public abstract class WriteAbstractDbContext<TOperationClient> : ReadAbstractDbC
 
     public abstract int Update<T>(List<T> objs) where T : class, IEntity, new();
 
+    public abstract int Update<T>(List<T> objs, string[] updateColumns) where T : class, IEntity, new();
+
     public abstract Task<int> UpdateAsync<T>(T obj, CancellationToken cancellationToken) where T : class, IEntity, new();
 
     public abstract Task<int> UpdateAsync<T>(T obj, string[] updateColumns, CancellationToken cancellationToken) where T : class, IEntity, new();
 
     public abstract Task<int> UpdateAsync<T>(List<T> objs, CancellationToken cancellationToken) where T : class, IEntity, new();
+
+    public abstract Task<int> UpdateAsync<T>(List<T> objs, string[] updateColumns, CancellationToken cancellationToken) where T : class, IEntity, new();
 }

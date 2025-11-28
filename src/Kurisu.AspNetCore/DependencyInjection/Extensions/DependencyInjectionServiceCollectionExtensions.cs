@@ -51,7 +51,7 @@ public static class DependencyInjectionServiceCollectionExtensions
                     {
                         if (namedServices.TryAdd(new Tuple<Type, string>(serviceType, named), implementType))
                         {
-                            DependencyInjectionHelper.Register(services, lifeTime, implementType);
+                            DependencyInjectionHelper.Register(services, lifeTime, implementType, serviceType, true, named);
                         }
                         else
                         {

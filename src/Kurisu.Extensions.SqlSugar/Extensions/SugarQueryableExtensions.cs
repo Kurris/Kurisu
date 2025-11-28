@@ -1,9 +1,7 @@
-﻿using System.Threading.Tasks;
-using Kurisu.AspNetCore.Abstractions.DataAccess.Contract;
-using Kurisu.AspNetCore.Abstractions.DataAccess.Contract.Page;
+﻿using Kurisu.AspNetCore.Abstractions.DataAccess.Contract.Page;
 using SqlSugar;
 
-namespace Kurisu.AspNetCore.DataAccess.SqlSugar.Extensions;
+namespace Kurisu.Extensions.SqlSugar.Extensions;
 
 /// <summary>
 /// 查询扩展
@@ -15,19 +13,19 @@ public static class SugarQueryableExtensions
     /// </summary>
     /// <typeparam name="T"></typeparam>
     /// <param name="queryable"></param>
-    /// <param name="input"></param>
+    /// <param name="query"></param>
     /// <returns></returns>
-    public static async Task<Pagination<T>> ToPageListAsync<T>(this ISugarQueryable<T> queryable, PageDto input)
+    public static async Task<Pagination<T>> ToPageListAsync<T>(this ISugarQueryable<T> queryable, PageQuery query)
     {
         RefAsync<int> total = 0;
-        var result = input.IsExport
-            ? await queryable.ToPageListAsync(input.PageIndex, input.PageSize)
-            : await queryable.ToPageListAsync(input.PageIndex, input.PageSize, total);
+        var result = query.IsExport
+            ? await queryable.ToPageListAsync(query.PageIndex, query.PageSize)
+            : await queryable.ToPageListAsync(query.PageIndex, query.PageSize, total);
 
         return new Pagination<T>
         {
-            PageIndex = input.PageIndex,
-            PageSize = input.PageSize,
+            PageIndex = query.PageIndex,
+            PageSize = query.PageSize,
             Total = total,
             Data = result
         };
@@ -38,19 +36,19 @@ public static class SugarQueryableExtensions
     /// </summary>
     /// <typeparam name="T"></typeparam>
     /// <param name="queryable"></param>
-    /// <param name="input"></param>
+    /// <param name="query"></param>
     /// <returns></returns>
-    public static Pagination<T> ToPageList<T>(this ISugarQueryable<T> queryable, PageDto input)
+    public static Pagination<T> ToPageList<T>(this ISugarQueryable<T> queryable, PageQuery query)
     {
         int total = 0;
-        var result = input.IsExport
-            ? queryable.ToPageList(input.PageIndex, input.PageSize)
-            : queryable.ToPageList(input.PageIndex, input.PageSize, ref total);
+        var result = query.IsExport
+            ? queryable.ToPageList(query.PageIndex, query.PageSize)
+            : queryable.ToPageList(query.PageIndex, query.PageSize, ref total);
 
         return new Pagination<T>
         {
-            PageIndex = input.PageIndex,
-            PageSize = input.PageSize,
+            PageIndex = query.PageIndex,
+            PageSize = query.PageSize,
             Total = total,
             Data = result
         };

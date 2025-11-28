@@ -30,6 +30,8 @@ public class TimePeriod : IPeriod<TimeOnly>, IPeriodComparable<TimeOnly, TimePer
     /// </summary>
     /// <param name="start"></param>
     /// <param name="end"></param>
+    [Newtonsoft.Json.JsonConstructor]
+    [System.Text.Json.Serialization.JsonConstructor]
     public TimePeriod(TimeOnly start, TimeOnly end)
     {
         Start = start;

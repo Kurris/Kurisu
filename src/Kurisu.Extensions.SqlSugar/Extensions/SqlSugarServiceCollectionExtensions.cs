@@ -7,6 +7,7 @@ using Kurisu.AspNetCore.Abstractions.DataAccess.Core.Context;
 using Kurisu.AspNetCore.Abstractions.State;
 using Kurisu.AspNetCore.Abstractions.UnifyResultAndValidation;
 using Kurisu.AspNetCore.DataAccess.SqlSugar.Attributes;
+using Kurisu.Extensions.SqlSugar.Attributes;
 using Kurisu.Extensions.SqlSugar.Core.Context;
 using Kurisu.Extensions.SqlSugar.Core.Manager;
 using Kurisu.Extensions.SqlSugar.Options;
@@ -158,12 +159,21 @@ public class DefaultSqlSugarConfigHandler
                     model.SetValue(DateTime.Now);
                 }
 
-                if (_currentUser != null && model.IsAnyAttribute<InsertUserGenerationAttribute>())
+                if (_currentUser != null && model.IsAnyAttribute<InsertUserIdGenerationAttribute>())
                 {
                     var v = model.EntityColumnInfo.PropertyInfo.GetValue(model.EntityValue);
                     if (v == null || v.Equals(0) || v.ToString() == string.Empty || v.Equals(Guid.Empty))
                     {
                         model.SetValue(_currentUser.GetUserId());
+                    }
+                }
+
+                if (_currentUser != null && model.IsAnyAttribute<InsertUserNameGenerationAttribute>())
+                {
+                    var v = model.EntityColumnInfo.PropertyInfo.GetValue(model.EntityValue);
+                    if (string.IsNullOrEmpty(v?.ToString()))
+                    {
+                        model.SetValue(_currentUser.GetName());
                     }
                 }
 
@@ -176,9 +186,14 @@ public class DefaultSqlSugarConfigHandler
                     model.SetValue(DateTime.Now);
                 }
 
-                if (_currentUser != null && model.IsAnyAttribute<UpdateUserGenerationAttribute>())
+                if (_currentUser != null && model.IsAnyAttribute<UpdateUserIdGenerationAttribute>())
                 {
                     model.SetValue(_currentUser.GetUserId());
+                }
+
+                if (_currentUser != null && model.IsAnyAttribute<UpdateUserNameGenerationAttribute>())
+                {
+                    model.SetValue(_currentUser.GetName());
                 }
 
                 break;

@@ -48,7 +48,7 @@ public class RedisCache
     /// <returns></returns>
     public async Task<RedisLock> LockAsync(string lockKey, TimeSpan? expiry = null, TimeSpan? retryInterval = null, int retryCount = 3)
     {
-        var locker = new RedisLock(_db, lockKey, expiry);
+        var locker = new RedisLock(_logger, _db, lockKey, expiry);
         var retry = 0;
         do
         {
@@ -64,7 +64,7 @@ public class RedisCache
                 return handler;
             }
 
-            _logger.LogInformation("get {lockKey} fail {retry}. will retry in {interval}ms", lockKey, retry, retryInterval.Value.TotalMilliseconds);
+            _logger.LogInformation("获取 {lockKey} 失败 {retry}.下次重试时间为 {interval}ms", lockKey, retry, retryInterval.Value.TotalMilliseconds);
         } while (!locker.Acquired && retry < retryCount);
 
         return locker;
