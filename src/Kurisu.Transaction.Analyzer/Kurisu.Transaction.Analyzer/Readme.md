@@ -11,6 +11,10 @@ A .NET Standard project with implementations of sample analyzers and code fix pr
 - [SampleSyntaxAnalyzer.cs](SampleSyntaxAnalyzer.cs): An analyzer that reports the company name used in class definitions.
 - [SampleCodeFixProvider.cs](SampleCodeFixProvider.cs): A code fix that renames classes with company name in their definition. The fix is linked to [SampleSyntaxAnalyzer.cs](SampleSyntaxAnalyzer.cs).
 
+#### New analyzer rules
+
+- `KS1001` (Correctness, Error): Calling a method with `Propagation.Mandatory` requires an ambient method annotated with `[Transactional]` on the call chain. See `AnalyzerReleases.Unshipped.md` for details.
+
 ### Kurisu.Transaction.Analyzer.Sample
 A project that references the sample analyzers. Note the parameters of `ProjectReference` in [Kurisu.Transaction.Analyzer.Sample.csproj](../Kurisu.Transaction.Analyzer.Sample/Kurisu.Transaction.Analyzer.Sample.csproj), they make sure that the project is referenced as a set of analyzers. 
 
