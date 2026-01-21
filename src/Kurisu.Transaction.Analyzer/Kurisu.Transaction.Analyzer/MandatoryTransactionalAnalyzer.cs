@@ -16,7 +16,7 @@ namespace Kurisu.Transaction.Analyzer
     {
         public const string DiagnosticId = "KS1001";
         private static readonly LocalizableString Title = "Mandatory transaction propagation requires an ambient transactional method on the call chain";
-        private static readonly LocalizableString MessageFormat = "è°ƒç”¨å…·æœ‰ Propagation.Mandatory çš„äº‹åŠ¡æ–¹æ³• '{0}' å¿…é¡»åœ¨è°ƒç”¨é“¾ä¸Šå­˜åœ¨æ ‡æ³¨ [Transactional] çš„æ–¹æ³•ã€‚";
+        private static readonly LocalizableString MessageFormat = "µ÷ÓÃ¾ßÓĞ Propagation.Mandatory µÄÊÂÎñ·½·¨ '{0}' ±ØĞëÔÚµ÷ÓÃÁ´ÉÏ´æÔÚ±ê×¢ [Transactional] µÄ·½·¨¡£";
         private static readonly LocalizableString Description = "Methods annotated with Transactional(Propagation = Propagation.Mandatory) require that the caller chain contains a method annotated with Transactional.";
         private const string Category = "Correctness";
 
@@ -26,214 +26,365 @@ namespace Kurisu.Transaction.Analyzer
 
         public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => ImmutableArray.Create(Rule);
 
-        // æ–°å¢ï¼šç¼“å­˜æ–¹æ³•æ˜¯å¦â€œéœ€è¦ Mandatoryâ€ï¼ˆåŒ…å«è‡ªèº«æ ‡æ³¨æˆ–ä½“å†…é€’å½’è°ƒç”¨äº†æ ‡æ³¨ Mandatory çš„æ–¹æ³•ï¼‰
-        private static readonly ConcurrentDictionary<IMethodSymbol, bool> RequiresMandatoryCache = new(SymbolEqualityComparer.Default);
+        // ±àÒë¼¶±ğµÄ»º´æÀà£¬±ÜÃâ¾²Ì¬»º´æ¿ç±àÒë»á»°Ğ¹Â©
+        private sealed class AnalyzerCache
+        {
+            public ConcurrentDictionary<IMethodSymbol, bool?> HasMandatoryCache { get; } 
+                = new(SymbolEqualityComparer.Default);
+            
+            public ConcurrentDictionary<IMethodSymbol, bool?> HasTransactionalCache { get; } 
+                = new(SymbolEqualityComparer.Default);
+            
+            // »º´æ½Ó¿ÚÊµÏÖ²éÕÒ½á¹û£¬±ÜÃâÖØ¸´²éÕÒ
+            public ConcurrentDictionary<(INamedTypeSymbol, INamedTypeSymbol, IMethodSymbol), IMethodSymbol> InterfaceImplementationCache { get; }
+                = new(new InterfaceImplementationComparer());
+            
+            // »º´æ½Ó¿Ú·½·¨µÄËùÓĞÊµÏÖÀà·½·¨£¨·´Ïò²éÕÒ£©
+            public ConcurrentDictionary<IMethodSymbol, ImmutableArray<IMethodSymbol>> InterfaceToImplementationsCache { get; }
+                = new(SymbolEqualityComparer.Default);
+            
+            // ´æ´¢µ±Ç°±àÒëµÄËùÓĞÀàĞÍ£¨ÑÓ³Ù³õÊ¼»¯£©
+            private ImmutableArray<INamedTypeSymbol>? _allTypes;
+            public ImmutableArray<INamedTypeSymbol> AllTypes
+            {
+                get => _allTypes ?? ImmutableArray<INamedTypeSymbol>.Empty;
+                set => _allTypes = value;
+            }
+        }
+
+        // ÓÃÓÚ»º´æµÄÏàµÈ±È½ÏÆ÷
+        private sealed class InterfaceImplementationComparer : IEqualityComparer<(INamedTypeSymbol type, INamedTypeSymbol iface, IMethodSymbol method)>
+        {
+            public bool Equals((INamedTypeSymbol type, INamedTypeSymbol iface, IMethodSymbol method) x, 
+                             (INamedTypeSymbol type, INamedTypeSymbol iface, IMethodSymbol method) y)
+            {
+                return SymbolEqualityComparer.Default.Equals(x.type, y.type)
+                    && SymbolEqualityComparer.Default.Equals(x.iface, y.iface)
+                    && SymbolEqualityComparer.Default.Equals(x.method, y.method);
+            }
+
+            public int GetHashCode((INamedTypeSymbol type, INamedTypeSymbol iface, IMethodSymbol method) obj)
+            {
+                unchecked
+                {
+                    int hash = 17;
+                    hash = hash * 31 + SymbolEqualityComparer.Default.GetHashCode(obj.type);
+                    hash = hash * 31 + SymbolEqualityComparer.Default.GetHashCode(obj.iface);
+                    hash = hash * 31 + SymbolEqualityComparer.Default.GetHashCode(obj.method);
+                    return hash;
+                }
+            }
+        }
 
         public override void Initialize(AnalysisContext context)
         {
             context.ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.None);
             context.EnableConcurrentExecution();
 
-            context.RegisterOperationAction(AnalyzeInvocation, OperationKind.Invocation);
+            // Ê¹ÓÃ CompilationStartAction ´´½¨±àÒë¼¶±ğ»º´æ
+            context.RegisterCompilationStartAction(compilationContext =>
+            {
+                var cache = new AnalyzerCache();
+                
+                // ÑÓ³Ù³õÊ¼»¯ËùÓĞÀàĞÍ£¨½öÔÚĞèÒªÊ±ÊÕ¼¯£©
+                var allTypesInitialized = false;
+                void EnsureAllTypesInitialized()
+                {
+                    if (!allTypesInitialized)
+                    {
+                        var types = GetAllTypesInCompilation(compilationContext.Compilation);
+                        cache.AllTypes = types;
+                        allTypesInitialized = true;
+                    }
+                }
+                
+                compilationContext.RegisterOperationAction(
+                    operationContext =>
+                    {
+                        // ½öÔÚĞèÒªÊ±³õÊ¼»¯ËùÓĞÀàĞÍ
+                        EnsureAllTypesInitialized();
+                        AnalyzeInvocation(operationContext, cache);
+                    },
+                    OperationKind.Invocation);
+            });
         }
 
-        private static void AnalyzeInvocation(OperationAnalysisContext context)
+        private static void AnalyzeInvocation(OperationAnalysisContext context, AnalyzerCache cache)
         {
             var invocation = (IInvocationOperation)context.Operation;
             var targetMethod = invocation.TargetMethod;
             if (targetMethod == null) return;
 
-            // ä¿®æ”¹ï¼šä¼ å…¥ compilationï¼Œä½¿ HasTransactionalWithMandatory åŒæ—¶è€ƒè™‘æ¥å£/å®ç°å…³ç³»
-            var requiresMandatory = HasTransactionalWithMandatory(targetMethod, context.Compilation);
-            if (!requiresMandatory) return;
-
-            var containingSymbol = context.ContainingSymbol;
-            if (containingSymbol == null) return;
-
-            // ä¼ å…¥ invocation åŠ compilation ä»¥ä¾¿åœ¨æ“ä½œæ ‘/ç¬¦å·é“¾ä¸Šå‘ä¸ŠæŸ¥æ‰¾çˆ¶çº§è°ƒç”¨ï¼ˆæ”¶é›†è°ƒç”¨é“¾ä¸­çš„æ–¹æ³•ï¼‰
-            if (EnclosingChainHasTransactional(containingSymbol, invocation, context.Compilation, out var methodInfos))
-            {
+            // ¼ì²é±»µ÷ÓÃ·½·¨ÊÇ·ñÒªÇó Mandatory
+            if (!HasTransactionalWithMandatory(targetMethod, cache))
                 return;
-            }
 
-            // å¦åˆ™æŠ¥å‘Šé”™è¯¯ï¼ˆé’ˆå¯¹è¢«è°ƒç”¨çš„æ–¹æ³•ï¼‰
+            // ½öÍ¨¹ı Operation Ê÷ÏòÉÏ²éÕÒ£¬²»½øĞĞÈ«¾ÖËÑË÷
+            if (EnclosingChainHasTransactional(invocation, cache))
+                return;
+
+            // ±¨¸æ´íÎó
             var diagnostic = Diagnostic.Create(Rule, invocation.Syntax.GetLocation(), targetMethod.Name);
             context.ReportDiagnostic(diagnostic);
-
-            // methodInfos: List<(Location location, string invocationName)>
-            foreach (var (loc, invocationName) in methodInfos)
-            {
-                if (loc != null)
-                {
-                    context.ReportDiagnostic(Diagnostic.Create(Rule, loc, invocationName));
-                }
-            }
         }
 
-        // å°† HasTransactionalWithMandatory æ‰©å±•ä¸ºåŒæ—¶è€ƒè™‘æ¥å£/å®ç°ï¼ˆåŒå‘ï¼‰ï¼Œéœ€ä¼ å…¥ compilation
-        private static bool HasTransactionalWithMandatory(IMethodSymbol method, Compilation compilation)
+        // ÓÅ»¯£ºÌí¼Ó»º´æ£¬¼ò»¯½Ó¿Ú¼ì²é£¬Ò»Ö±ÍùÉÏ¼ì²é½Ó¿Ú²ã´Î£¨´øÉî¶ÈÏŞÖÆ£©
+        private static bool HasTransactionalWithMandatory(IMethodSymbol method, AnalyzerCache cache)
         {
             if (method == null) return false;
 
-            // 1) å…ˆæ£€æŸ¥æ–¹æ³•è‡ªèº«çš„ attribute
+            // ¼ì²é»º´æ
+            if (cache.HasMandatoryCache.TryGetValue(method, out var cached) && cached.HasValue)
+                return cached.Value;
+
+            bool result = HasTransactionalWithMandatoryIncludingInterfaces(method, cache, depth: 0);
+            cache.HasMandatoryCache[method] = result;
+            return result;
+        }
+
+        // µİ¹é¼ì²é·½·¨¼°Æä½Ó¿ÚÊµÏÖ/»ùÀàÊÇ·ñÓĞ Mandatory£¨Ò»Ö±ÍùÉÏ£¬´øÉî¶ÈÏŞÖÆ£©
+        private static bool HasTransactionalWithMandatoryIncludingInterfaces(IMethodSymbol method, AnalyzerCache cache, int depth = 0)
+        {
+            const int MaxRecursionDepth = 10; // ÏŞÖÆ×î´óµİ¹éÉî¶È
+            
+            if (method == null || depth > MaxRecursionDepth) 
+                return false;
+
+            // 1) ÏÈ¼ì²é·½·¨×ÔÉíµÄ attribute
             if (HasTransactionalWithMandatory_Self(method))
                 return true;
 
-            // 2) æ£€æŸ¥æ˜¾å¼æ¥å£å®ç°ï¼ˆmethod.ExplicitInterfaceImplementationsï¼‰
+            // 2) ¼ì²éÏÔÊ½½Ó¿ÚÊµÏÖ
             foreach (var ei in method.ExplicitInterfaceImplementations)
             {
                 if (HasTransactionalWithMandatory_Self(ei))
                     return true;
+                
+                // µİ¹é¼ì²é½Ó¿ÚµÄ¸¸½Ó¿Ú
+                if (HasTransactionalWithMandatoryIncludingInterfaces(ei, cache, depth + 1))
+                    return true;
             }
 
-            // 3) å¦‚æœ method æ˜¯æŸä¸ªå®ç°ï¼ˆç±»æ–¹æ³•ï¼‰ï¼Œæ£€æŸ¥å®ƒå®ç°çš„æ¥å£æˆå‘˜ï¼ˆéšå¼å®ç°ï¼‰
-            var containingType = method.ContainingType;
-            if (containingType != null)
+            // 3) ¼ì²éÒşÊ½½Ó¿ÚÊµÏÖ£¨½ö¶ÔÀà·½·¨£©
+            if (method.ContainingType != null && method.ContainingType.TypeKind == TypeKind.Class)
             {
+                var containingType = method.ContainingType;
                 foreach (var iface in containingType.AllInterfaces)
                 {
-                    foreach (var ifaceMember in iface.GetMembers().OfType<IMethodSymbol>())
+                    var interfaceMethod = SafeFindImplementation(containingType, iface, method, cache);
+                    if (interfaceMethod != null)
                     {
-                        try
-                        {
-                            var impl = containingType.FindImplementationForInterfaceMember(ifaceMember) as IMethodSymbol;
-                            if (impl != null && SymbolEqualityComparer.Default.Equals(impl.OriginalDefinition, method.OriginalDefinition))
-                            {
-                                if (HasTransactionalWithMandatory_Self(ifaceMember))
-                                    return true;
-                            }
-                        }
-                        catch
-                        {
-                            // å¿½ç•¥ FindImplementationForInterfaceMember å¯èƒ½æŠ›å‡ºçš„å¼‚å¸¸
-                        }
+                        if (HasTransactionalWithMandatory_Self(interfaceMethod))
+                            return true;
+                        
+                        // µİ¹é¼ì²é½Ó¿Ú·½·¨µÄ¸¸½Ó¿Ú
+                        if (HasTransactionalWithMandatoryIncludingInterfaces(interfaceMethod, cache, depth + 1))
+                            return true;
                     }
                 }
             }
 
-            // 4) å¦‚æœ method æœ¬èº«æ˜¯æ¥å£æˆå‘˜æˆ–æŠ½è±¡/æœªå®ç°ï¼ŒæŸ¥æ‰¾å…¶åœ¨ç¼–è¯‘å•å…ƒä¸­çš„å®ç°å¹¶æ£€æŸ¥å®ç°æ–¹æ³•
-            var impls = FindImplementations(method, compilation);
-            foreach (var impl in impls)
+            // 4) ? ĞÂÔö£ºÈç¹û·½·¨ÊÇ½Ó¿Ú·½·¨£¬¼ì²éÆäÔÚµ±Ç°±àÒëµ¥ÔªÖĞµÄËùÓĞÊµÏÖÀà
+            if (method.ContainingType?.TypeKind == TypeKind.Interface)
             {
-                if (HasTransactionalWithMandatory_Self(impl))
+                var implementations = FindImplementationsOfInterfaceMethod(method, cache);
+                foreach (var impl in implementations)
+                {
+                    if (HasTransactionalWithMandatory_Self(impl))
+                        return true;
+                    
+                    // µİ¹é¼ì²éÊµÏÖÀà·½·¨£¨¿ÉÄÜ»¹ÊµÏÖÁËÆäËû½Ó¿Ú£©
+                    if (HasTransactionalWithMandatoryIncludingInterfaces(impl, cache, depth + 1))
+                        return true;
+                }
+            }
+
+            // 5) ¼ì²éÖØĞ´µÄ»ùÀà·½·¨
+            if (method.OverriddenMethod != null)
+            {
+                if (HasTransactionalWithMandatoryIncludingInterfaces(method.OverriddenMethod, cache, depth + 1))
                     return true;
             }
 
             return false;
         }
 
-        // è¾…åŠ©ï¼šä»…æ£€æŸ¥æ–¹æ³•è‡ªèº«æ˜¯å¦å¸¦æœ‰ Propagation=Mandatory çš„ Transactional ç‰¹æ€§
+        // °²È«µØ²éÕÒ½Ó¿ÚÊµÏÖ£¬±ÜÃâ¹ı¶È±éÀú£¬Ìí¼Ó»º´æ
+        private static IMethodSymbol SafeFindImplementation(INamedTypeSymbol type, INamedTypeSymbol iface, IMethodSymbol method, AnalyzerCache cache)
+        {
+            if (type == null || iface == null || method == null)
+                return null;
+
+            var cacheKey = (type, iface, method);
+            
+            // ¼ì²é»º´æ
+            if (cache.InterfaceImplementationCache.TryGetValue(cacheKey, out var cachedResult))
+                return cachedResult;
+
+            IMethodSymbol result = null;
+            
+            try
+            {
+                // Ö»±éÀúµ±Ç°½Ó¿ÚµÄ³ÉÔ±£¨²»°üÀ¨¸¸½Ó¿Ú£©
+                foreach (var ifaceMember in iface.GetMembers().OfType<IMethodSymbol>())
+                {
+                    // Ìø¹ı²»Æ¥ÅäµÄ·½·¨Ãû£¨ÔçÆÚÓÅ»¯£©
+                    if (ifaceMember.Name != method.Name)
+                        continue;
+
+                    var impl = type.FindImplementationForInterfaceMember(ifaceMember) as IMethodSymbol;
+                    if (impl != null && SymbolEqualityComparer.Default.Equals(impl.OriginalDefinition, method.OriginalDefinition))
+                    {
+                        result = ifaceMember;
+                        break;
+                    }
+                }
+            }
+            catch
+            {
+                // ºöÂÔÒì³£
+            }
+
+            // »º´æ½á¹û£¨°üÀ¨ null£©
+            cache.InterfaceImplementationCache[cacheKey] = result;
+            return result;
+        }
+
+        // ¸¨Öú£º½ö¼ì²é·½·¨×ÔÉíÊÇ·ñ´øÓĞ Propagation=Mandatory µÄ Transactional ÌØĞÔ
         private static bool HasTransactionalWithMandatory_Self(IMethodSymbol method)
         {
+            if (method == null) return false;
+
             foreach (var attr in method.GetAttributes())
             {
                 var attrClass = attr.AttributeClass;
-                if (attrClass == null) continue;
+                if (attrClass == null || !attrClass.Name.Contains("Transactional")) 
+                    continue;
 
-                if (!attrClass.Name.Contains("Transactional")) continue;
-
-                // æ£€æŸ¥ constructor args å’Œå‘½åå‚æ•°æ˜¯å¦åŒ…å« Propagation.Mandatory
-                foreach (var ca in attr.ConstructorArguments)
-                {
-                    if (IsMandatoryPropagationTypedConstant(ca)) return true;
-                }
+                // ¼ì²é constructor args ºÍÃüÃû²ÎÊıÊÇ·ñ°üº¬ Propagation.Mandatory
+                if (attr.ConstructorArguments.Any(IsMandatoryPropagationTypedConstant))
+                    return true;
 
                 foreach (var na in attr.NamedArguments)
                 {
-                    if (na.Key.Equals("Propagation", System.StringComparison.OrdinalIgnoreCase) && IsMandatoryPropagationTypedConstant(na.Value))
+                    if (na.Key.Equals("Propagation", StringComparison.OrdinalIgnoreCase) 
+                        && IsMandatoryPropagationTypedConstant(na.Value))
                         return true;
                 }
-
-                // å¦‚æœæ²¡æœ‰æ˜¾å¼æä¾› Propagationï¼Œé»˜è®¤å¯èƒ½ä¸æ˜¯ Mandatoryï¼›è·³è¿‡
             }
 
             return false;
         }
 
-        private static bool HasTransactionalWithoutPropagation(IMethodSymbol method)
+        // ¼ì²é·½·¨ÊÇ·ñÓĞºÏ¸ñµÄ Transactional£¨°üÀ¨½Ó¿ÚÊµÏÖµÄ¼ì²é£©
+        private static bool HasTransactionalWithoutPropagation(IMethodSymbol method, AnalyzerCache cache)
         {
             if (method == null) return false;
+
+            // ¼ì²é»º´æ
+            if (cache.HasTransactionalCache.TryGetValue(method, out var cached) && cached.HasValue)
+                return cached.Value;
+
+            bool result = HasTransactionalWithoutPropagationIncludingInterfaces(method, cache, depth: 0);
+            cache.HasTransactionalCache[method] = result;
+            return result;
+        }
+
+        // ¼ì²é·½·¨¼°Æä½Ó¿ÚÊµÏÖÊÇ·ñÓĞºÏ¸ñµÄ Transactional£¨Ò»Ö±ÍùÉÏ¼ì²é£¬´øÉî¶ÈÏŞÖÆ£©
+        private static bool HasTransactionalWithoutPropagationIncludingInterfaces(IMethodSymbol method, AnalyzerCache cache, int depth = 0)
+        {
+            const int MaxRecursionDepth = 10; // ÏŞÖÆ×î´óµİ¹éÉî¶È
+            
+            if (method == null || depth > MaxRecursionDepth) 
+                return false;
+
+            // 1) ¼ì²é·½·¨×ÔÉí
+            if (HasTransactionalWithoutPropagation_Self(method))
+                return true;
+
+            // 2) ¼ì²éÏÔÊ½½Ó¿ÚÊµÏÖ
+            foreach (var ei in method.ExplicitInterfaceImplementations)
+            {
+                if (HasTransactionalWithoutPropagation_Self(ei))
+                    return true;
+                
+                // µİ¹é¼ì²é½Ó¿ÚµÄ¸¸½Ó¿Ú
+                if (HasTransactionalWithoutPropagationIncludingInterfaces(ei, cache, depth + 1))
+                    return true;
+            }
+
+            // 3) ¼ì²éÒşÊ½½Ó¿ÚÊµÏÖ£¨½ö¶ÔÀà·½·¨£©
+            var containingType = method.ContainingType;
+            if (containingType != null && containingType.TypeKind == TypeKind.Class)
+            {
+                foreach (var iface in containingType.AllInterfaces)
+                {
+                    var interfaceMethod = SafeFindImplementation(containingType, iface, method, cache);
+                    if (interfaceMethod != null)
+                    {
+                        if (HasTransactionalWithoutPropagation_Self(interfaceMethod))
+                            return true;
+                        
+                        // µİ¹é¼ì²é½Ó¿Ú·½·¨µÄ¸¸½Ó¿Ú
+                        if (HasTransactionalWithoutPropagationIncludingInterfaces(interfaceMethod, cache, depth + 1))
+                            return true;
+                    }
+                }
+            }
+
+            // 4) ? ĞÂÔö£ºÈç¹û·½·¨ÊÇ½Ó¿Ú·½·¨£¬¼ì²éÆäÔÚµ±Ç°±àÒëµ¥ÔªÖĞµÄËùÓĞÊµÏÖÀà
+            if (method.ContainingType?.TypeKind == TypeKind.Interface)
+            {
+                var implementations = FindImplementationsOfInterfaceMethod(method, cache);
+                foreach (var impl in implementations)
+                {
+                    if (HasTransactionalWithoutPropagation_Self(impl))
+                        return true;
+                    
+                    // µİ¹é¼ì²éÊµÏÖÀà·½·¨
+                    if (HasTransactionalWithoutPropagationIncludingInterfaces(impl, cache, depth + 1))
+                        return true;
+                }
+            }
+
+            // 5) ¼ì²éÖØĞ´µÄ»ùÀà·½·¨
+            if (method.OverriddenMethod != null)
+            {
+                if (HasTransactionalWithoutPropagationIncludingInterfaces(method.OverriddenMethod, cache, depth + 1))
+                    return true;
+            }
+
+            return false;
+        }
+
+        // ½ö¼ì²é·½·¨×ÔÉíµÄ Transactional ÊôĞÔ
+        private static bool HasTransactionalWithoutPropagation_Self(IMethodSymbol method)
+        {
+            if (method == null) return false;
+
             foreach (var attr in method.GetAttributes())
             {
                 var attrClass = attr.AttributeClass;
-                if (attrClass == null) continue;
-                if (!attrClass.Name.Contains("Transactional")) continue;
+                if (attrClass == null || !attrClass.Name.Contains("Transactional")) 
+                    continue;
 
-                // å¦‚æœæœ‰å‘½åå‚æ•° Propagationï¼Œä¸”å…¶å€¼ä¸º Mandatoryï¼Œåˆ™è§†ä¸ºä¸åˆæ ¼ï¼ˆè¿”å› falseï¼‰
+                // ¼ì²éÃüÃû²ÎÊı Propagation
                 foreach (var na in attr.NamedArguments)
                 {
-                    if (na.Key.Equals("Propagation", System.StringComparison.OrdinalIgnoreCase))
+                    if (na.Key.Equals("Propagation", StringComparison.OrdinalIgnoreCase))
                     {
                         if (IsMandatoryPropagationTypedConstant(na.Value))
                             return false;
-                        // æ˜ç¡®æŒ‡å®šäº†é Mandatoryï¼Œè®¤ä¸ºé“¾ä¸Šå­˜åœ¨å¯æ¥å—çš„ Transactional
                         return true;
                     }
                 }
 
-                // å¦‚æœæ„é€ å‚æ•°ä¸­åŒ…å« Propagation æšä¸¾ï¼ˆæŸäº›å†™æ³•å¯èƒ½é€šè¿‡æ„é€ å‚æ•°ä¼ é€’ï¼‰ï¼Œæ£€æŸ¥æ˜¯å¦ä¸º Mandatory
-                foreach (var ca in attr.ConstructorArguments)
-                {
-                    if (IsMandatoryPropagationTypedConstant(ca))
-                    {
-                        // æ„é€ å‚æ•°æ˜¾å¼ä¸º Mandatoryï¼Œè§†ä¸ºä¸åˆæ ¼
-                        return false;
-                    }
-                }
+                // ¼ì²é¹¹Ôì²ÎÊı
+                if (attr.ConstructorArguments.Any(IsMandatoryPropagationTypedConstant))
+                    return false;
 
-                // æœªæ˜¾å¼æŒ‡å®š Propagationï¼Œé»˜è®¤è®¤ä¸ºä¸æ˜¯ Mandatoryï¼Œå› æ­¤è§†ä¸ºåˆæ ¼
+                // Î´ÏÔÊ½Ö¸¶¨ Propagation£¬Ä¬ÈÏÈÏÎª²»ÊÇ Mandatory
                 return true;
-            }
-
-            return false;
-        }
-
-        // æ–°å¢ï¼šè€ƒè™‘å®ç°/æ¥å£å…³è”çš„åˆæ ¼ Transactionalï¼ˆPropagation != Mandatoryï¼‰
-        private static bool HasTransactionalWithoutPropagationIncludingRelated(IMethodSymbol method, Compilation compilation)
-        {
-            if (method == null) return false;
-
-            // 1) æ–¹æ³•è‡ªèº«æˆ–æ˜¾å¼æ¥å£å®ç°
-            if (HasTransactionalWithoutPropagation(method))
-                return true;
-
-            foreach (var ei in method.ExplicitInterfaceImplementations)
-            {
-                if (HasTransactionalWithoutPropagation(ei))
-                    return true;
-            }
-
-            // 2) å¦‚æœè¯¥æ–¹æ³•å±äºæŸä¸ªå®ç°ç±»å‹ï¼Œæ£€æŸ¥å®ƒæ‰€å®ç°çš„æ¥å£æˆå‘˜ï¼ˆéšå¼å®ç°ï¼‰
-            var containingType = method.ContainingType;
-            if (containingType != null)
-            {
-                foreach (var iface in containingType.AllInterfaces)
-                {
-                    foreach (var ifaceMember in iface.GetMembers().OfType<IMethodSymbol>())
-                    {
-                        try
-                        {
-                            var impl = containingType.FindImplementationForInterfaceMember(ifaceMember) as IMethodSymbol;
-                            if (impl != null && SymbolEqualityComparer.Default.Equals(impl.OriginalDefinition, method.OriginalDefinition))
-                            {
-                                if (HasTransactionalWithoutPropagation(ifaceMember))
-                                    return true;
-                            }
-                        }
-                        catch
-                        {
-                            // å¿½ç•¥å¯èƒ½çš„å¼‚å¸¸
-                        }
-                    }
-                }
-            }
-
-            // 3) å¦‚æœ method æœ¬èº«æ˜¯æ¥å£æˆ–æŠ½è±¡/æœªå®ç°ï¼Œæ£€æŸ¥ç¼–è¯‘å•å…ƒä¸­çš„å®ç°æ–¹æ³•æ˜¯å¦å¸¦æœ‰åˆæ ¼çš„ Transactional
-            var impls = FindImplementations(method, compilation);
-            foreach (var impl in impls)
-            {
-                if (HasTransactionalWithoutPropagation(impl))
-                    return true;
             }
 
             return false;
@@ -244,423 +395,125 @@ namespace Kurisu.Transaction.Analyzer
             return tc.ToCSharpString().Contains("Propagation.Mandatory");
         }
 
-        // æ–°å¢ï¼šé€’å½’æ£€æŸ¥æ–¹æ³•ä½“å†…çš„è°ƒç”¨ï¼Œåˆ¤æ–­æ–¹æ³•æ˜¯å¦â€œéœ€è¦ Mandatoryâ€
-        private static bool MethodRequiresMandatory(IMethodSymbol method, Compilation compilation, HashSet<IMethodSymbol>? visiting = null)
+        // ÓÅ»¯£º½öÍ¨¹ı Operation Ê÷ÏòÉÏ²éÕÒ£¬²»½øĞĞÈ«¾ÖËÑË÷
+        private static bool EnclosingChainHasTransactional(IOperation invocationOperation, AnalyzerCache cache)
         {
-            if (method == null) return false;
-
-            // ä¿®æ”¹ï¼šä½¿ç”¨å¸¦ compilation çš„ç‰ˆæœ¬ï¼Œè€ƒè™‘æ¥å£/å®ç°å…³ç³»
-            if (HasTransactionalWithMandatory(method, compilation))
-                return true;
-
-            if (RequiresMandatoryCache.TryGetValue(method, out var cached))
-                return cached;
-
-            visiting ??= new HashSet<IMethodSymbol>(SymbolEqualityComparer.Default);
-            if (!visiting.Add(method))
-            {
-                // å·²åœ¨è®¿é—®é“¾ä¸Šï¼Œé¿å…å¾ªç¯ä¾èµ–å¯¼è‡´æ— é™é€’å½’
-                return false;
-            }
-
-            bool result = false;
-
-            foreach (var decl in method.DeclaringSyntaxReferences)
-            {
-                var node = decl.GetSyntax();
-                var tree = node.SyntaxTree;
-                var semanticModel = compilation.GetSemanticModel(tree);
-
-                // æ”¶é›†æ–¹æ³•ä½“å†…æ‰€æœ‰è°ƒç”¨è¡¨è¾¾å¼ï¼Œæ£€æŸ¥å…¶ç›®æ ‡æ–¹æ³•
-                var invocations = node.DescendantNodes().OfType<InvocationExpressionSyntax>();
-                foreach (var inv in invocations)
-                {
-                    // æ”¹ä¸ºä½¿ç”¨ GetInvokedMethodSymbol æ¥æ›´å‡†ç¡®è¯†åˆ«æ¥å£è°ƒç”¨ç­‰æƒ…å†µ
-                    var sym = GetInvokedMethodSymbol(inv, semanticModel);
-                    if (sym == null) continue;
-
-                    // å…ˆæ£€æŸ¥è¢«è§£æåˆ°çš„æ–¹æ³•æœ¬èº«ï¼ˆåŠå…¶ç›¸å…³æ¥å£/å®ç°ï¼‰
-                    if (HasTransactionalWithMandatory(sym, compilation))
-                    {
-                        result = true;
-                        break;
-                    }
-
-                    // è‹¥è¢«è§£æçš„æ–¹æ³•æ˜¯æ¥å£/æŠ½è±¡ï¼Œå°è¯•æŸ¥æ‰¾å…¶åœ¨ç¼–è¯‘å•å…ƒä¸­çš„å®ç°ï¼Œå¹¶ä¸€å¹¶æ£€æŸ¥å®ç°
-                    var impls = FindImplementations(sym, compilation);
-                    foreach (var impl in impls)
-                    {
-                        if (HasTransactionalWithMandatory(impl, compilation))
-                        {
-                            result = true;
-                            break;
-                        }
-                    }
-
-                    if (result) break;
-
-                    // é€’å½’æ£€æŸ¥è¢«è°ƒç”¨çš„æ–¹æ³•ï¼ˆåŠå…¶å®ç°ï¼‰æ˜¯å¦éœ€è¦ Mandatory
-                    if (MethodRequiresMandatory(sym, compilation, visiting))
-                    {
-                        result = true;
-                        break;
-                    }
-
-                    foreach (var impl in impls)
-                    {
-                        if (MethodRequiresMandatory(impl, compilation, visiting))
-                        {
-                            result = true;
-                            break;
-                        }
-                    }
-
-                    if (result) break;
-                }
-
-                if (result) break;
-            }
-
-            visiting.Remove(method);
-            RequiresMandatoryCache[method] = result;
-            return result;
-        }
-
-        // ä¿®æ”¹ï¼šå¢åŠ  Compilation å‚æ•°ï¼Œé“¾ä¸Šä¼ æ’­è§„åˆ™ï¼š
-        // - é‡åˆ° HasTransactional(åˆæ ¼) => æ•´é“¾åˆæ ¼ï¼Œè¿”å› true
-        // - é‡åˆ° MethodRequiresMandatory => æŠŠè¯¥æ–¹æ³•è§†ä¸ºé“¾ä¸ŠèŠ‚ç‚¹å¹¶ç»§ç»­å‘ä¸Š
-        // - é‡åˆ°æ—¢éåˆæ ¼ä¹Ÿä¸éœ€è¦ Mandatory çš„æ–¹æ³• => é“¾æ–­ï¼Œè¿”å› false
-        // ä¿®æ”¹ï¼šEnclosingChainHasTransactional æ”¹ä¸ºåŸºäºé˜Ÿåˆ—ï¼ˆBFS/DFSï¼‰éå†è°ƒç”¨è€…é“¾ï¼ˆåŒ…æ‹¬é—´æ¥è°ƒç”¨è€…ï¼‰
-        private static bool EnclosingChainHasTransactional(ISymbol startingSymbol, IOperation? invocationOperation, Compilation compilation, out List<(Location location, string invocationName)> methodInfos)
-        {
-            methodInfos = new List<(Location, string)>();
-            var seen = new HashSet<IMethodSymbol>(SymbolEqualityComparer.Default);
-            var queue = new Queue<IMethodSymbol>();
-
-            // 1) ä»æ“ä½œæ ‘çš„çˆ¶çº§è°ƒç”¨å¼€å§‹æ”¶é›†åˆå§‹æ–¹æ³•ï¼ˆä¾‹å¦‚å¤–å±‚çš„ IInvocationOperationï¼‰
             var op = invocationOperation?.Parent;
+            var visitedMethods = new HashSet<IMethodSymbol>(SymbolEqualityComparer.Default);
+
             while (op != null)
             {
+                // 1) ¼ì²éÊÇ·ñÔÚÁíÒ»¸ö·½·¨µ÷ÓÃÄÚ£¨Ç¶Ì×µ÷ÓÃ£©
                 if (op is IInvocationOperation parentInvocation)
                 {
                     var parentMethod = parentInvocation.TargetMethod;
-                    if (parentMethod != null && !seen.Contains(parentMethod))
+                    if (parentMethod != null && visitedMethods.Add(parentMethod))
                     {
-                        seen.Add(parentMethod);
-                        queue.Enqueue(parentMethod);
-
-                        // è®°å½•è°ƒç”¨ä½ç½®ä¸è°ƒç”¨åç§°ï¼ˆä½¿ç”¨è¢«è°ƒç”¨æ–¹æ³•åä½œä¸ºè°ƒç”¨åç§°ï¼‰
-                        var loc = parentInvocation.Syntax.GetLocation();
-                        var name = parentMethod.Name;
-                        methodInfos.Add((loc, name));
+                        // Ê¹ÓÃÍ³Ò»µÄ½Ó¿Ú¼ì²é·½·¨£¬»áÒ»Ö±ÍùÉÏ¼ì²é
+                        if (HasTransactionalWithoutPropagation(parentMethod, cache))
+                            return true;
                     }
                 }
+
+                // 2) ¼ì²é°üº¬·½·¨£¨Í¨¹ı SemanticModel£©
+                var semanticModel = op.SemanticModel;
+                if (semanticModel != null && op.Syntax != null)
+                {
+                    var enclosingSymbol = semanticModel.GetEnclosingSymbol(op.Syntax.SpanStart);
+                    if (enclosingSymbol is IMethodSymbol enclosingMethod && visitedMethods.Add(enclosingMethod))
+                    {
+                        // Ê¹ÓÃÍ³Ò»µÄ½Ó¿Ú¼ì²é·½·¨£¬»áÒ»Ö±ÍùÉÏ¼ì²é
+                        if (HasTransactionalWithoutPropagation(enclosingMethod, cache))
+                            return true;
+                    }
+                }
+
 
                 op = op.Parent;
             }
 
-            // 2) å¦‚æœèµ·å§‹ç¬¦å·æœ¬èº«æ˜¯æ–¹æ³•ï¼ˆä¾‹å¦‚ç›´æ¥åœ¨æ–¹æ³•ä½“å†…è°ƒç”¨ï¼‰ï¼Œä¹ŸæŠŠå®ƒä½œä¸ºèµ·ç‚¹
-            if (startingSymbol is IMethodSymbol startMethod && !seen.Contains(startMethod))
-            {
-                seen.Add(startMethod);
-                queue.Enqueue(startMethod);
-
-                Location? loc = startMethod.Locations.Length > 0
-                    ? startMethod.Locations[0]
-                    : startMethod.DeclaringSyntaxReferences.FirstOrDefault()?.GetSyntax().GetLocation();
-
-                methodInfos.Add((loc ?? Location.None, startMethod.Name));
-            }
-
-            // 3) é€šè¿‡é˜Ÿåˆ—éå†ï¼šå¯¹äºæ¯ä¸ªæ–¹æ³•ï¼Œåˆ¤æ–­æ˜¯å¦å­˜åœ¨åˆæ ¼çš„ [Transactional]ï¼ˆPropagation != Mandatoryï¼‰
-            //    è‹¥å­˜åœ¨åˆ™æ•´é“¾åˆæ ¼ï¼›å¦åˆ™è‹¥è¯¥æ–¹æ³•â€œéœ€è¦ Mandatoryâ€åˆ™å°†å®ƒçš„è°ƒç”¨è€…åŠ å…¥é˜Ÿåˆ—ç»§ç»­å‘ä¸Šæ‰©å±•ï¼ˆé—´æ¥è°ƒç”¨ï¼‰
-            while (queue.Count > 0)
-            {
-                var m = queue.Dequeue();
-
-                // å¦‚æœè¯¥æ–¹æ³•ä¸Šå­˜åœ¨åˆæ ¼çš„ [Transactional]ï¼ˆPropagation != Mandatoryï¼‰ï¼Œåˆ™æ•´é“¾åˆæ ¼
-                // åŒæ—¶è€ƒè™‘æ¥å£/å®ç°å…³è”ï¼ˆä»»æ„ç›¸å…³æ–¹æ³•åªè¦æ˜¯åˆæ ¼å°±è®¤ä¸ºæ•´é“¾åˆæ ¼ï¼‰
-                if (HasTransactionalWithoutPropagationIncludingRelated(m, compilation))
-                    return true;
-
-                // è‹¥è¯¥æ–¹æ³•éœ€è¦ Mandatoryï¼Œåˆ™ç»§ç»­æŸ¥æ‰¾è°ƒç”¨å®ƒçš„æ–¹æ³•ï¼ˆcallersï¼‰
-                if (MethodRequiresMandatory(m, compilation))
-                {
-                    var callers = FindCallers(m, compilation);
-                    foreach (var (caller, loc, invocationName) in callers)
-                    {
-                        if (!seen.Contains(caller))
-                        {
-                            seen.Add(caller);
-                            queue.Enqueue(caller);
-                            methodInfos.Add((loc, invocationName));
-                        }
-                    }
-
-                    // å¦å¤–ä¹Ÿå°è¯•å‘ä¸ŠåŒ…å«ç¬¦å·é“¾ï¼ˆä¾‹å¦‚å±€éƒ¨å‡½æ•°åŒ…å«åœ¨æ–¹æ³•å†…çš„æƒ…å†µï¼‰
-                    var container = m.ContainingSymbol;
-                    while (container != null)
-                    {
-                        if (container is IMethodSymbol containerMethod && !seen.Contains(containerMethod))
-                        {
-                            seen.Add(containerMethod);
-                            queue.Enqueue(containerMethod);
-
-                            Location? loc = containerMethod.Locations.Length > 0
-                                ? containerMethod.Locations[0]
-                                : containerMethod.DeclaringSyntaxReferences.FirstOrDefault()?.GetSyntax().GetLocation();
-
-                            methodInfos.Add((loc ?? Location.None, containerMethod.Name));
-                        }
-
-                        container = container.ContainingSymbol;
-                    }
-                }
-                else
-                {
-                    // å¦‚æœæ—¢ä¸æ˜¯åˆæ ¼çš„ Transactionalï¼Œä¹Ÿä¸éœ€è¦ Mandatoryï¼Œåˆ™è¯¥åˆ†æ”¯åœæ­¢æ‰©å±•
-                    continue;
-                }
-            }
-
-            // æœªæ‰¾åˆ°åˆæ ¼çš„ Transactional
             return false;
         }
 
-        // æ–°å¢ï¼šåˆ¤æ–­ä¸¤ä¸ªæ–¹æ³•æ˜¯å¦ç›¸åŒæˆ–é€šè¿‡æ¥å£/å®ç°å…³ç³»ç›¸å…³è”ï¼ˆç”¨äºè¯†åˆ«æ¥å£æ–¹æ³•è°ƒç”¨ï¼‰
-        private static bool AreMethodsRelated(IMethodSymbol? a, IMethodSymbol? b, Compilation compilation)
+        // »ñÈ¡±àÒëµ¥ÔªÖĞµÄËùÓĞÃüÃûÀàĞÍ£¨½öÏŞµ±Ç°ÏîÄ¿£¬²»°üÀ¨ÒıÓÃµÄ³ÌĞò¼¯£©
+        private static ImmutableArray<INamedTypeSymbol> GetAllTypesInCompilation(Compilation compilation)
         {
-            if (a == null || b == null) return false;
-
-            // ç›´æ¥æ¯”è¾ƒåŸå§‹å®šä¹‰
-            if (SymbolEqualityComparer.Default.Equals(a.OriginalDefinition, b.OriginalDefinition))
-                return true;
-
-            try
-            {
-                // explicit interface implementations on a
-                if (a.ExplicitInterfaceImplementations.Any(e => SymbolEqualityComparer.Default.Equals(e.OriginalDefinition, b.OriginalDefinition)))
-                    return true;
-
-                // explicit interface implementations on b
-                if (b.ExplicitInterfaceImplementations.Any(e => SymbolEqualityComparer.Default.Equals(e.OriginalDefinition, a.OriginalDefinition)))
-                    return true;
-
-                // a is interface member, check if b's type implements it
-                if (a.ContainingType?.TypeKind == TypeKind.Interface && b.ContainingType != null)
-                {
-                    var impl = b.ContainingType.FindImplementationForInterfaceMember(a);
-                    if (impl is IMethodSymbol implMethod && SymbolEqualityComparer.Default.Equals(implMethod.OriginalDefinition, b.OriginalDefinition))
-                        return true;
-                }
-
-                // b is interface member, check if a's type implements it
-                if (b.ContainingType?.TypeKind == TypeKind.Interface && a.ContainingType != null)
-                {
-                    var impl2 = a.ContainingType.FindImplementationForInterfaceMember(b);
-                    if (impl2 is IMethodSymbol implMethod2 && SymbolEqualityComparer.Default.Equals(implMethod2.OriginalDefinition, a.OriginalDefinition))
-                        return true;
-                }
-            }
-            catch
-            {
-                // å¿½ç•¥åœ¨æŸäº›ç‰¹æ®Šç±»å‹ä¸Š FindImplementationForInterfaceMember å¯èƒ½æŠ›å‡ºçš„å¼‚å¸¸
-            }
-
-            return false;
-        }
-
-        private static IEnumerable<(IMethodSymbol caller, Location location, string invocationName)> FindCallers(IMethodSymbol targetMethod, Compilation compilation)
-        {
-            var callers = new HashSet<(IMethodSymbol, Location, string)>();
-            if (targetMethod == null) return callers;
-
-            var targetDef = targetMethod.OriginalDefinition;
-
+            var types = new List<INamedTypeSymbol>();
+            
+            // Ö»±éÀúµ±Ç°±àÒëµ¥ÔªµÄÓï·¨Ê÷£¨²»°üÀ¨ÒıÓÃµÄ³ÌĞò¼¯£©
             foreach (var tree in compilation.SyntaxTrees)
             {
                 var semanticModel = compilation.GetSemanticModel(tree);
                 var root = tree.GetRoot();
-
-                var invocations = root.DescendantNodes().OfType<InvocationExpressionSyntax>();
-                foreach (var inv in invocations)
+                
+                var typeDeclarations = root.DescendantNodes()
+                    .Where(n => n is ClassDeclarationSyntax || n is StructDeclarationSyntax || n is RecordDeclarationSyntax);
+                
+                foreach (var typeDecl in typeDeclarations)
                 {
-                    // ä½¿ç”¨ GetInvokedMethodSymbol æé«˜è¯†åˆ«ç‡ï¼ˆåŒ…æ‹¬æ¥å£è°ƒç”¨ï¼‰
-                    var called = GetInvokedMethodSymbol(inv, semanticModel);
-                    if (called == null) continue;
-
-                    // æ„é€ å€™é€‰åˆ—è¡¨ï¼šè¢«è§£æåˆ°çš„æ–¹æ³•æœ¬èº« + å®ƒçš„å®ç°ï¼ˆè‹¥æ˜¯æ¥å£/æŠ½è±¡ï¼‰
-                    var calledCandidates = new List<IMethodSymbol> { called };
-                    calledCandidates.AddRange(FindImplementations(called, compilation));
-
-                    bool matched = false;
-                    foreach (var candidate in calledCandidates)
+                    var symbol = semanticModel.GetDeclaredSymbol(typeDecl);
+                    if (symbol is INamedTypeSymbol namedType)
                     {
-                        if (SymbolEqualityComparer.Default.Equals(candidate.OriginalDefinition, targetDef)
-                            || AreMethodsRelated(candidate, targetDef, compilation)
-                            || AreMethodsRelated(targetDef, candidate, compilation))
-                        {
-                            matched = true;
-                            break;
-                        }
-                    }
-
-                    if (!matched) continue;
-
-                    var loc = inv.GetLocation();
-                    var invocationName = called.Name;
-
-                    var containing = semanticModel.GetEnclosingSymbol(inv.SpanStart);
-                    if (containing is IMethodSymbol callerMethod)
-                    {
-                        callers.Add((callerMethod, loc, invocationName));
-                    }
-                    else
-                    {
-                        var ancestorMethodNode = inv.Ancestors().FirstOrDefault(a =>
-                            a is MethodDeclarationSyntax
-                            || a is LocalFunctionStatementSyntax);
-                        if (ancestorMethodNode != null)
-                        {
-                            var sym = semanticModel.GetDeclaredSymbol(ancestorMethodNode);
-                            if (sym is IMethodSymbol ms)
-                                callers.Add((ms, loc, invocationName));
-                        }
+                        types.Add(namedType);
                     }
                 }
             }
-
-            return callers;
+            
+            return types.ToImmutableArray();
         }
 
-        // æ–°å¢ï¼šåœ¨ Compilation ä¸­æŸ¥æ‰¾æŸä¸ªæ¥å£/æŠ½è±¡æ–¹æ³•çš„å®ç°æ–¹æ³•ï¼ˆå¯èƒ½æœ‰å¤šä¸ªï¼‰
-        private static IEnumerable<IMethodSymbol> FindImplementations(IMethodSymbol? method, Compilation compilation)
+        // ²éÕÒ½Ó¿Ú·½·¨ÔÚµ±Ç°±àÒëµ¥ÔªÖĞµÄËùÓĞÊµÏÖ£¨·´Ïò²éÕÒ£©
+        private static ImmutableArray<IMethodSymbol> FindImplementationsOfInterfaceMethod(
+            IMethodSymbol interfaceMethod, 
+            AnalyzerCache cache)
         {
-            var results = new List<IMethodSymbol>();
-            if (method == null) return results;
+            if (interfaceMethod == null)
+                return ImmutableArray<IMethodSymbol>.Empty;
 
-            // åªå¯¹æ¥å£æˆå‘˜æˆ–æŠ½è±¡æˆå‘˜å°è¯•æŸ¥æ‰¾å®ç°
-            var container = method.ContainingType;
-            if (container == null) return results;
-            if (container.TypeKind != TypeKind.Interface && !method.IsAbstract) return results;
+            // ¼ì²é»º´æ
+            if (cache.InterfaceToImplementationsCache.TryGetValue(interfaceMethod, out var cached))
+                return cached;
 
-            // éå†å…¨å±€å‘½åç©ºé—´çš„ç±»å‹ï¼ˆå«åµŒå¥—ç±»å‹ï¼‰
-            foreach (var type in GetAllNamedTypes(compilation.GlobalNamespace))
+            var implementations = new List<IMethodSymbol>();
+            
+            // Ö»ÓĞ½Ó¿Ú·½·¨²ÅĞèÒª²éÕÒÊµÏÖ
+            if (interfaceMethod.ContainingType?.TypeKind != TypeKind.Interface)
             {
+                cache.InterfaceToImplementationsCache[interfaceMethod] = ImmutableArray<IMethodSymbol>.Empty;
+                return ImmutableArray<IMethodSymbol>.Empty;
+            }
+
+            var interfaceType = interfaceMethod.ContainingType;
+
+            // ±éÀúµ±Ç°±àÒëµ¥ÔªÖĞµÄËùÓĞÀàĞÍ
+            foreach (var type in cache.AllTypes)
+            {
+                // Ö»¼ì²éÀà£¨²»¼ì²é½á¹¹Ìå¡¢½Ó¿ÚµÈ£©
+                if (type.TypeKind != TypeKind.Class)
+                    continue;
+
+                // ¼ì²é¸ÃÀàĞÍÊÇ·ñÊµÏÖÁËÄ¿±ê½Ó¿Ú
+                if (!type.AllInterfaces.Contains(interfaceType, SymbolEqualityComparer.Default))
+                    continue;
+
                 try
                 {
-                    // æ£€æŸ¥ç±»å‹æ˜¯å¦å®ç°äº†æ¥å£æˆå‘˜æˆ–èƒ½ä¸ºæŠ½è±¡æˆå‘˜æä¾›å®ç°
-                    var impl = type.FindImplementationForInterfaceMember(method);
-                    if (impl is IMethodSymbol implMethod)
+                    // ²éÕÒ¸Ã½Ó¿Ú·½·¨ÔÚ´ËÀàĞÍÖĞµÄÊµÏÖ
+                    var implementation = type.FindImplementationForInterfaceMember(interfaceMethod) as IMethodSymbol;
+                    if (implementation != null)
                     {
-                        results.Add(implMethod);
-                    }
-                    else
-                    {
-                        // å¯¹éæ¥å£æŠ½è±¡æƒ…å½¢ï¼ŒæŸ¥æ‰¾é‡å†™å®ç°
-                        foreach (var m in type.GetMembers().OfType<IMethodSymbol>())
-                        {
-                            if (SymbolEqualityComparer.Default.Equals(m.OverriddenMethod?.OriginalDefinition, method.OriginalDefinition))
-                            {
-                                results.Add(m);
-                            }
-                        }
+                        implementations.Add(implementation);
                     }
                 }
                 catch
                 {
-                    // æŸäº›ç±»å‹ä¸Š FindImplementationForInterfaceMember å¯èƒ½æŠ›å¼‚å¸¸ï¼Œå¿½ç•¥
+                    // ºöÂÔÒì³£
                 }
             }
 
-            return results;
-        }
-
-        // æ–°å¢ï¼šé€’å½’è·å–å‘½åç©ºé—´ä¸‹æ‰€æœ‰å‘½åç±»å‹ï¼ˆåŒ…å«åµŒå¥—ç±»å‹ï¼‰
-        private static IEnumerable<INamedTypeSymbol> GetAllNamedTypes(INamespaceSymbol @namespace)
-        {
-            var stack = new Stack<INamespaceSymbol>();
-            stack.Push(@namespace);
-            while (stack.Count > 0)
-            {
-                var ns = stack.Pop();
-                foreach (var nested in ns.GetNamespaceMembers())
-                    stack.Push(nested);
-
-                foreach (var t in ns.GetTypeMembers())
-                {
-                    yield return t;
-                    foreach (var nestedType in GetNestedTypesRecursive(t))
-                        yield return nestedType;
-                }
-            }
-        }
-
-        private static IEnumerable<INamedTypeSymbol> GetNestedTypesRecursive(INamedTypeSymbol type)
-        {
-            foreach (var nested in type.GetTypeMembers())
-            {
-                yield return nested;
-                foreach (var deeper in GetNestedTypesRecursive(nested))
-                    yield return deeper;
-            }
-        }
-
-        private static IMethodSymbol? GetInvokedMethodSymbol(InvocationExpressionSyntax invocation, SemanticModel semanticModel)
-        {
-            if (invocation == null || semanticModel == null) return null;
-
-            // ä¼˜å…ˆé€šè¿‡ Operation è·å–æ›´ç²¾ç¡®çš„ç›®æ ‡æ–¹æ³•
-            var op = semanticModel.GetOperation(invocation) as IInvocationOperation;
-            if (op?.TargetMethod != null) return op.TargetMethod;
-
-            // å…¶æ¬¡é€šè¿‡ SymbolInfo ç›´æ¥è·å–
-            var symInfo = ModelExtensions.GetSymbolInfo(semanticModel, invocation);
-            if (symInfo.Symbol is IMethodSymbol ms) return ms;
-
-            // å€™é€‰ç¬¦å·ï¼ˆä¾‹å¦‚é‡è½½è§£æä¸å”¯ä¸€æ—¶ï¼‰
-            var candidate = symInfo.CandidateSymbols.FirstOrDefault() as IMethodSymbol;
-            if (candidate != null) return candidate;
-
-            // å°è¯•åˆ†æ invocation.Expression çš„ä¸ï¿½ï¿½ï¿½è¯­æ³•å½¢æ€
-            var expr = invocation.Expression;
-            if (expr != null)
-            {
-                // å¯¹äº member access / generic name / identifier ç­‰ï¼Œåˆ†åˆ«å°è¯•è§£æå…¶ç¬¦å·
-                var exprInfo = ModelExtensions.GetSymbolInfo(semanticModel, expr);
-                if (exprInfo.Symbol is IMethodSymbol exprMs) return exprMs;
-                var exprCandidate = exprInfo.CandidateSymbols.FirstOrDefault() as IMethodSymbol;
-                if (exprCandidate != null) return exprCandidate;
-
-                if (expr is MemberAccessExpressionSyntax memberAccess)
-                {
-                    var nameInfo = ModelExtensions.GetSymbolInfo(semanticModel, memberAccess.Name);
-                    if (nameInfo.Symbol is IMethodSymbol nameMs) return nameMs;
-                    var nameCand = nameInfo.CandidateSymbols.FirstOrDefault() as IMethodSymbol;
-                    if (nameCand != null) return nameCand;
-                }
-                else if (expr is IdentifierNameSyntax idName)
-                {
-                    var idInfo = ModelExtensions.GetSymbolInfo(semanticModel, idName);
-                    if (idInfo.Symbol is IMethodSymbol idMs) return idMs;
-                    var idCand = idInfo.CandidateSymbols.FirstOrDefault() as IMethodSymbol;
-                    if (idCand != null) return idCand;
-                }
-                else if (expr is GenericNameSyntax genName)
-                {
-                    var genInfo = ModelExtensions.GetSymbolInfo(semanticModel, genName);
-                    if (genInfo.Symbol is IMethodSymbol genMs) return genMs;
-                    var genCand = genInfo.CandidateSymbols.FirstOrDefault() as IMethodSymbol;
-                    if (genCand != null) return genCand;
-                }
-
-                // ä½œä¸ºæœ€åå…œåº•ï¼Œå†å°è¯•å–è¡¨è¾¾å¼çš„ Operationï¼ˆä¾‹å¦‚å§”æ‰˜è°ƒç”¨ç­‰æƒ…å†µï¼‰
-                var exprOp = semanticModel.GetOperation(expr) as IInvocationOperation;
-                if (exprOp?.TargetMethod != null) return exprOp.TargetMethod;
-            }
-
-            return null;
+            var result = implementations.ToImmutableArray();
+            cache.InterfaceToImplementationsCache[interfaceMethod] = result;
+            return result;
         }
     }
 }
-

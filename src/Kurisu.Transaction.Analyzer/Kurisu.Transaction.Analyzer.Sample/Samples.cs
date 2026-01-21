@@ -21,12 +21,13 @@ class Program
 
 public interface IService
 {
+    [Transactional(Propagation = Propagation.Mandatory)]
     void DoMandatory();
 }
 
 public class Service : IService
 {
-    [Transactional(Propagation = Propagation.Mandatory)]
+    
     public void DoMandatory()
     {
     }
@@ -54,6 +55,7 @@ public class TriggerCaller : ITriggerCaller
         _service = service;
     }
 
+    [Transactional]
     public void Run()
     {
         _svc.DoMandatory();
