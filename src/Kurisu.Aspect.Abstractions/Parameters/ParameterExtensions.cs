@@ -8,14 +8,20 @@ public static class ParameterExtensions
     private static readonly ConcurrentDictionary<MethodInfo, ParameterInfo[]> _reflectorsCache = new();
     private static readonly ParameterCollection _emptyParameterCollection = new(Array.Empty<Parameter>());
 
-    public static ParameterCollection GetParameters(this AspectContext aspectContext)
+    public static ParameterCollection GetParameters(this AspectContext aspectContext, bool isStrictValidation)
     {
-        if (aspectContext == null)
-        {
-            throw new ArgumentNullException(nameof(aspectContext));
-        }
+        if (aspectContext == null) throw new ArgumentNullException(nameof(aspectContext));
 
-        var reflectors = _reflectorsCache.GetOrAdd(aspectContext.ServiceMethod, m => m.GetParameters());
+
+        var genericDef = isStrictValidation
+         ? aspectContext.ServiceMethod.IsGenericMethod
+                ? aspectContext.ServiceMethod.GetGenericMethodDefinition()
+                : aspectContext.ServiceMethod
+         : aspectContext.ImplementationMethod.IsGenericMethod
+                ? aspectContext.ImplementationMethod.GetGenericMethodDefinition()
+                : aspectContext.ImplementationMethod;
+
+        var reflectors = _reflectorsCache.GetOrAdd(genericDef, m => m.GetParameters());
         var length = reflectors.Length;
         if (length == 0)
         {

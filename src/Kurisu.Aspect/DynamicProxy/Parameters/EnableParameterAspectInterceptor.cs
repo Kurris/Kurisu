@@ -10,8 +10,32 @@ public class EnableParameterAspectInterceptor : AopAttribute
     {
         var selector = context.ServiceProvider.GetRequiredService<IParameterInterceptorSelector>();
 
-        var parameters = context.GetParameters();
+        var parameters = context.GetParameters(true);
+     
         var count = parameters.Count;
+        if (count > 0)
+        {
+            var parameterAspectInvoker = new ParameterAspectInvoker();
+            for (var i = 0; i < count; i++)
+            {
+                var parameter = parameters[i];
+                var interceptors = selector.Select(parameter.ParameterInfo);
+                if (interceptors.Length > 0)
+                {
+                    var parameterAspectContext = new ParameterAspectContext(context, parameter);
+                    foreach (var interceptor in interceptors)
+                    {
+                        parameterAspectInvoker.AddDelegate(interceptor.Invoke);
+                    }
+
+                    await parameterAspectInvoker.Invoke(parameterAspectContext);
+                    parameterAspectInvoker.Reset();
+                }
+            }
+        }
+
+        parameters = context.GetParameters(false);
+        count = parameters.Count;
         if (count > 0)
         {
             var parameterAspectInvoker = new ParameterAspectInvoker();
