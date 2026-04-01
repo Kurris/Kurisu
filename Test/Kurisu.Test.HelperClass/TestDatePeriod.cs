@@ -1,5 +1,5 @@
 ﻿using System.Text.Json;
-using Kurisu.AspNetCore.CustomClass.Periods;
+using Kurisu.AspNetCore.Abstractions.Utils.Periods;
 
 namespace Kurisu.Test.HelperClass;
 

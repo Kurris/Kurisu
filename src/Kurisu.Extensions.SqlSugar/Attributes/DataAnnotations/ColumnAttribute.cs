@@ -31,4 +31,14 @@ public class ColumnAttribute : SugarColumn
             ColumnDataType = "decimal(18,2)";
         }
     }
+
+    public bool IsBoolean
+    {
+        get => true;
+        set
+        {
+            if (!value) return;
+            ColumnDataType = "bit";
+        }
+    }
 }

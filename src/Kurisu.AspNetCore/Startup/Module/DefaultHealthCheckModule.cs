@@ -9,6 +9,8 @@ namespace Kurisu.AspNetCore.Startup.Module;
 /// </summary>
 public class DefaultHealthCheckModule : AppModule
 {
+    public override string Name => "健康检查模块";
+
     /// <inheritdoc />
     public override void ConfigureServices(IServiceCollection services)
     {

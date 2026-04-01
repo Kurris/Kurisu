@@ -6,4 +6,9 @@ namespace Kurisu.AspNetCore.Abstractions.DataAccess.Core.Context;
 /// 数据库上下文
 /// </summary>
 [SkipScan]
-public interface IDbContext : IFilterOperator, IReadDbContext, IWriteDbContext;
+public interface IDbContext : IFilterOperator, IReadDbContext, IWriteDbContext
+{
+    public ICodeFirstMode CodeFirst { get; }
+
+    public IServiceProvider ServiceProvider { get; }
+}

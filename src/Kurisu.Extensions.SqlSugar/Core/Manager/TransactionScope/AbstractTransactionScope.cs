@@ -2,17 +2,8 @@
 
 namespace Kurisu.Extensions.SqlSugar.Core.Manager.TransactionScope;
 
-public enum TransactionMarkType
+internal abstract class AbstractTransactionScope : ITransactionScope
 {
-    Unknown,
-    Rollback,
-    Committed
-}
-
-public abstract class AbstractTransactionScope : ITransactionScope
-{
-    public TransactionMarkType MarkType { get; set; }
-
     public abstract Task BeginAsync();
 
     public abstract Task CommitAsync();

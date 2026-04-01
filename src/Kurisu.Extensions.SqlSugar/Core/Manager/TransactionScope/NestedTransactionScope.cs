@@ -1,18 +1,19 @@
 ﻿using System.Data;
 using SqlSugar;
+using SqlSugarDbType = SqlSugar.DbType;
 
 namespace Kurisu.Extensions.SqlSugar.Core.Manager.TransactionScope;
 
-public class NestedTransactionScope : AbstractTransactionScope
+internal class NestedTransactionScope : AbstractTransactionScope
 {
     private readonly ISqlSugarClient _client;
     private readonly IsolationLevel? _isolationLevel;
-    private readonly Action<bool> _afterScope;
+    private readonly Action _afterScope;
     private readonly string _savepointName;
     private bool _isSavepointCreated;
     private readonly bool _hasTransaction;
 
-    public NestedTransactionScope(ISqlSugarClient client, IsolationLevel? isolationLevel, Action<bool> afterScope)
+    public NestedTransactionScope(ISqlSugarClient client, IsolationLevel? isolationLevel, Action afterScope)
     {
         _client = client;
         _isolationLevel = isolationLevel;
@@ -39,8 +40,9 @@ public class NestedTransactionScope : AbstractTransactionScope
             return;
         }
 
+
         // 创建 savepoint（MySQL/Postgres 风格）
-        await _client.Ado.ExecuteCommandAsync($"SAVEPOINT {_savepointName};");
+        await _client.CreateSavepointAsync(_savepointName);
         _isSavepointCreated = true;
     }
 
@@ -56,7 +58,7 @@ public class NestedTransactionScope : AbstractTransactionScope
         // 对于 savepoint，通常不需要显式释放，部分数据库支持 RELEASE SAVEPOINT
         try
         {
-            await _client.Ado.ExecuteCommandAsync($"RELEASE SAVEPOINT {_savepointName};");
+            await _client.ReleaseSavepointAsync(_savepointName);
         }
         catch
         {
@@ -74,11 +76,68 @@ public class NestedTransactionScope : AbstractTransactionScope
         }
 
         // 回滚到 savepoint（只撤销内层改动）
-        await _client.Ado.ExecuteCommandAsync($"ROLLBACK TO SAVEPOINT {_savepointName};");
+        await _client.RollbackToSavepointAsync(_savepointName);
     }
 
     public override void Dispose()
     {
-        _afterScope?.Invoke(!_hasTransaction);
+        _afterScope?.Invoke();
+    }
+}
+
+internal static class SavePointExtensions
+{
+    private static SqlSugarDbType GetDbType(ISqlSugarClient client)
+    {
+        return (client as SqlSugarClient).Context.CurrentConnectionConfig.DbType;
+    }
+
+    public static async Task CreateSavepointAsync(this ISqlSugarClient client, string savepointName)
+    {
+        var dbType = GetDbType(client);
+
+        if (dbType == SqlSugarDbType.SqlServer)
+        {
+            // SQL Server uses SAVE TRANSACTION
+            await client.Ado.ExecuteCommandAsync($"SAVE TRANSACTION {savepointName};");
+            return;
+        }
+
+        // MySQL/Postgres and others support SAVEPOINT
+        await client.Ado.ExecuteCommandAsync($"SAVEPOINT {savepointName};");
+    }
+
+    public static async Task ReleaseSavepointAsync(this ISqlSugarClient client, string savepointName)
+    {
+        var dbType = GetDbType(client);
+
+        if (dbType == SqlSugarDbType.SqlServer)
+        {
+            // SQL Server does not support RELEASE SAVEPOINT and doesn't need it
+            return;
+        }
+
+        try
+        {
+            await client.Ado.ExecuteCommandAsync($"RELEASE SAVEPOINT {savepointName};");
+        }
+        catch
+        {
+            // ignore if not supported by driver
+        }
+    }
+
+    public static async Task RollbackToSavepointAsync(this ISqlSugarClient client, string savepointName)
+    {
+        var dbType = GetDbType(client);
+
+        if (dbType == SqlSugarDbType.SqlServer)
+        {
+            // SQL Server rolls back to a named savepoint using ROLLBACK TRANSACTION name
+            await client.Ado.ExecuteCommandAsync($"ROLLBACK TRANSACTION {savepointName};");
+            return;
+        }
+
+        await client.Ado.ExecuteCommandAsync($"ROLLBACK TO SAVEPOINT {savepointName};");
     }
 }

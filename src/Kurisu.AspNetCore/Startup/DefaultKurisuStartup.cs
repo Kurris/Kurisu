@@ -1,6 +1,6 @@
-﻿using System.Reflection;
-using Kurisu.AspNetCore.Abstractions.DependencyInjection;
-using Kurisu.AspNetCore.Authentication.Extensions;
+﻿using Kurisu.AspNetCore.Abstractions.DependencyInjection;
+using Kurisu.AspNetCore.Abstractions.ObjectMapper;
+using Kurisu.AspNetCore.Abstractions.Startup;
 using Kurisu.AspNetCore.Startup.Extensions;
 using Kurisu.AspNetCore.UnifyResultAndValidation.Extensions;
 using Microsoft.AspNetCore.Builder;
@@ -65,29 +65,26 @@ public abstract class DefaultStartup
         services.AddRouting(App.StartupOptions.RouteOptions);
 
         // 控制器与 JSON 配置
-        services.AddControllers()
-            .AddNewtonsoftJson(options =>
-            {
-                options.SerializerSettings.ReferenceLoopHandling = ReferenceLoopHandling.Ignore;
-                options.SerializerSettings.DateFormatString = "yyyy-MM-dd HH:mm:ss";
+        var mvcBuilder = services.AddControllers()
+               .AddNewtonsoftJson(options =>
+               {
+                   options.SerializerSettings.ReferenceLoopHandling = ReferenceLoopHandling.Ignore;
+                   options.SerializerSettings.DateTimeZoneHandling = DateTimeZoneHandling.Local;
+                   options.SerializerSettings.DateFormatString = "yyyy-MM-dd HH:mm:ss";
 
-                options.SerializerSettings.ContractResolver = new DefaultContractResolver
-                {
-                    NamingStrategy = new CamelCaseNamingStrategy
-                    {
-                        OverrideSpecifiedNames = false
-                    }
-                };
-            })
-            .ConfigureApplicationPartManager(manager => { manager.FeatureProviders.Add(App.StartupOptions.DynamicApiOptions.ControllerFeatureProvider); })
-            .AddControllersAsServices();
+                   options.SerializerSettings.ContractResolver = new DefaultContractResolver
+                   {
+                       NamingStrategy = new CamelCaseNamingStrategy
+                       {
+                           OverrideSpecifiedNames = false
+                       }
+                   };
+               }).ConfigureApplicationPartManager(manager => { manager.FeatureProviders.Add(App.StartupOptions.DynamicApiOptions.ControllerFeatureProvider); })
+            .AddControllersAsServices()
+            ;
 
-        services.Configure<MvcOptions>(options =>
-            {
-                options.Conventions.Add(App.StartupOptions.DynamicApiOptions.ModelConvention);
-                App.StartupOptions.MvcOptions?.Invoke(options);
-            }
-        );
+        // MVC 约定配置
+        services.Configure<MvcOptions>(options => options.Conventions.Add(App.StartupOptions.DynamicApiOptions.ModelConvention));
 
 
         // 响应与异常格式统一
@@ -112,9 +109,13 @@ public abstract class DefaultStartup
         // 创建作用域，初始化 pack
         using (var scope = app.ApplicationServices.CreateScope())
         {
-            app.UseAppPacks(scope.ServiceProvider, true);
-            app.UseRouting();
-            app.UseAppPacks(scope.ServiceProvider, false);
+            var sp = scope.ServiceProvider;
+            using (sp.InitLifecycle())
+            {
+                app.UseAppPacks(scope.ServiceProvider, true);
+                app.UseRouting();
+                app.UseAppPacks(scope.ServiceProvider, false);
+            }
         }
 
         // 映射控制器路由

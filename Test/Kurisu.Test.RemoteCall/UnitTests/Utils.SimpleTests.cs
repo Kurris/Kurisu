@@ -7,20 +7,6 @@ namespace Kurisu.Test.RemoteCall.UnitTests;
 
 public class Utils_SimpleTests
 {
-    [Fact]
-    public void RemoteCallStatic_DefaultClientName_GetSet()
-    {
-        var original = RemoteCallStatic.DefaultClientName;
-        try
-        {
-            RemoteCallStatic.DefaultClientName = "test-client";
-            Assert.Equal("test-client", RemoteCallStatic.DefaultClientName);
-        }
-        finally
-        {
-            RemoteCallStatic.DefaultClientName = original;
-        }
-    }
 
     [Fact]
     public void NewtonsoftJsonSerializer_DeserializeWithType_Works()

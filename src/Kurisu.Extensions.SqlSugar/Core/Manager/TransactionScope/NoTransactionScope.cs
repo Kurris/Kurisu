@@ -3,11 +3,11 @@ using SqlSugar;
 
 namespace Kurisu.Extensions.SqlSugar.Core.Manager.TransactionScope;
 
-public class NoTransactionScope : AbstractTransactionScope
+internal class NoTransactionScope : AbstractTransactionScope
 {
-    private readonly Action<bool> _afterScope;
+    private readonly Action _afterScope;
 
-    public NoTransactionScope(ISqlSugarClient client, IsolationLevel? isolationLevel, Action<bool> afterScope)
+    public NoTransactionScope(ISqlSugarClient client, IsolationLevel? isolationLevel, Action afterScope)
     {
         // client 参数 保留以便在需要时执行 SQL；但 NoTransactionScope 本身不管理事务
         // 使用 isolationLevel 参数以避免未使用参数的分析器警告
@@ -35,7 +35,6 @@ public class NoTransactionScope : AbstractTransactionScope
 
     public override void Dispose()
     {
-        // 调用 afterScope，但不弹出 client（因为未创建新 client/事务）
-        _afterScope?.Invoke(false);
+        _afterScope?.Invoke();
     }
 }

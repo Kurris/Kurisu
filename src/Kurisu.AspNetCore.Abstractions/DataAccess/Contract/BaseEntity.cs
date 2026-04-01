@@ -5,40 +5,30 @@
 /// </summary>
 /// <typeparam name="TId"></typeparam>
 /// <typeparam name="TUser"></typeparam>
-public abstract class BaseEntity<TId, TUser> : IEntity
+public abstract class BaseEntity : IEntity
 {
     /// <summary>
     /// 主键
     /// </summary>
-    public abstract TId Id { get; set; }
+    public abstract long Id { get; set; }
 
     /// <summary>
     /// 创建人
     /// </summary>
-    public abstract TUser CreatedBy { get; set; }
-
-    /// <summary>
-    /// 创建人
-    /// </summary>
-    public abstract string CreatedByN { get; set; }
+    public abstract int CreatedBy { get; set; }
 
     /// <summary>
     /// 创建时间
     /// </summary>
-    public abstract DateTime CreateAt { get; set; }
+    public abstract DateTime CreateTime { get; set; }
 
     /// <summary>
     /// 修改人
     /// </summary>
-    public abstract TUser ModifiedBy { get; set; }
-
-    /// <summary>
-    /// 修改人
-    /// </summary>
-    public abstract string ModifiedByN { get; set; }
+    public abstract int ModifiedBy { get; set; }
 
     /// <summary>
     /// 修改时间
     /// </summary>
-    public abstract DateTime ModifiedAt { get; set; }
+    public abstract DateTime ModifiedTime { get; set; }
 }

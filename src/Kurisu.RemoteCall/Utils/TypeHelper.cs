@@ -12,9 +12,9 @@ internal static class TypeHelper
         if (type.IsPrimitive || type.IsEnum) return true;
 
         if (type == typeof(string)
-            || type == typeof(int) 
-            || type == typeof(uint) 
-            || type == typeof(long) 
+            || type == typeof(int)
+            || type == typeof(uint)
+            || type == typeof(long)
             || type == typeof(ulong)
             || type == typeof(decimal)
             || type == typeof(DateTime)
@@ -30,7 +30,12 @@ internal static class TypeHelper
         return false;
     }
 
-    // 改进：优先识别 IEnumerable<T> 接口并返回具体元素类型
+    /// <summary>
+    /// 是否为集合类型
+    /// </summary>
+    /// <param name="type"></param>
+    /// <param name="elementType"></param>
+    /// <returns></returns>
     public static bool IsEnumerable(Type type, out Type elementType)
     {
         elementType = null;
@@ -94,7 +99,7 @@ internal static class TypeHelper
         return false;
     }
 
-   
+
     public static bool IsComplexType(Type type)
     {
         if (type == null) return false;
@@ -110,6 +115,12 @@ internal static class TypeHelper
         return false;
     }
 
+
+    /// <summary>
+    /// 是否为引用类型
+    /// </summary>
+    /// <param name="type"></param>
+    /// <returns></returns>
     public static bool IsReferenceType(Type type)
     {
         if (type == null) return false;

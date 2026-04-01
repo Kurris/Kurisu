@@ -3,7 +3,6 @@ using System.Linq;
 using System.Reflection;
 using Kurisu.AspNetCore.Abstractions.ConfigurableOptions;
 using Kurisu.AspNetCore.Abstractions.DependencyInjection;
-using Kurisu.AspNetCore.ConfigurableOptions;
 using Kurisu.AspNetCore.DependencyInjection;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -29,26 +28,13 @@ public static class ConfigurationServiceCollectionExtensions
         var types = DependencyInjectionHelper.Configurations.Value;
         if (types.Count == 0) return services;
 
-        //后置配置
+
+        //先处理后置配置
         var postConfigureOptions = types.Where(x =>
             x.GetInterfaces()
                 .Any(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IPostConfigureOptions<>))
         ).ToList();
-
-        foreach (var item in postConfigureOptions)
-        {
-            var @interface = item.GetInterfaces().First(x => x.GetGenericTypeDefinition() == typeof(IPostConfigureOptions<>));
-            services.TryAddEnumerable(ServiceDescriptor.Singleton(@interface, item));
-        }
-
-        types.RemoveAll(x => postConfigureOptions.Contains(x));
-
-        //Configure
-        var configureMethod = typeof(OptionsConfigurationServiceCollectionExtensions)
-            .GetRuntimeMethod(nameof(OptionsConfigurationServiceCollectionExtensions.Configure), [typeof(IServiceCollection), typeof(IConfiguration)])!;
-
-        //ValidateDataAnnotations
-        var validateDataAnnotationsMethod = typeof(OptionsBuilderDataAnnotationsExtensions).GetMethod(nameof(OptionsBuilderDataAnnotationsExtensions.ValidateDataAnnotations))!;
+        types.RemoveAll(postConfigureOptions.Contains);
 
         //Options
         var addOptionsMethod = typeof(OptionsServiceCollectionExtensions)
@@ -59,6 +45,9 @@ public static class ConfigurationServiceCollectionExtensions
             .Where(x => x.Name.Equals(nameof(OptionsBuilderConfigurationExtensions.Bind)))
             .Where(x => x.IsGenericMethod)
             .First(x => x.GetParameters().Length == 2 && x.GetParameters().Last().ParameterType == typeof(IConfiguration));
+
+        //ValidateDataAnnotations
+        var validateDataAnnotationsMethod = typeof(OptionsBuilderDataAnnotationsExtensions).GetMethod(nameof(OptionsBuilderDataAnnotationsExtensions.ValidateDataAnnotations))!;
 
         var get = typeof(ConfigurationBinder)
             .GetMethods()
@@ -73,9 +62,6 @@ public static class ConfigurationServiceCollectionExtensions
             var path = type.GetSectionPath();
             var section = configuration.GetSection(path);
 
-            //绑定配置  services.Configure<T>(section);
-            configureMethod.MakeGenericMethod(type).Invoke(null, [services, section]);
-
             //绑定配置 services.AddOptions<T>().Bind(section).ValidateDataAnnotations()
             var optionsBuilder = addOptionsMethod.MakeGenericMethod(type).Invoke(null, [services]);
             optionsBuilder = bind.MakeGenericMethod(type).Invoke(null, [optionsBuilder, section]);
@@ -83,10 +69,22 @@ public static class ConfigurationServiceCollectionExtensions
 
             if (type.IsAssignableTo((Type)getType.MakeGenericMethod(type).Invoke(null, null)!))
             {
-                var o = get.MakeGenericMethod(type).Invoke(null, [section]);
-                startupConfigure.MakeGenericMethod(type).Invoke(null, [o]);
+                // 构造 Action<T> 类型
+                var actionType = typeof(Action<>).MakeGenericType(type);
+                var PostConfigureMethod = optionsBuilder.GetType().GetMethod(nameof(OptionsBuilder<>.PostConfigure), new Type[] { actionType })!;
+
+                var del = Delegate.CreateDelegate(actionType, null, startupConfigure.MakeGenericMethod(type));
+                PostConfigureMethod.Invoke(optionsBuilder, [del]);
             }
         }
+
+
+        foreach (var item in postConfigureOptions)
+        {
+            var @interface = item.GetInterfaces().First(x => x.GetGenericTypeDefinition() == typeof(IPostConfigureOptions<>));
+            services.TryAddEnumerable(ServiceDescriptor.Singleton(@interface, item));
+        }
+
 
         return services;
     }
@@ -98,7 +96,10 @@ public static class ConfigurationServiceCollectionExtensions
 
     private static void StartupConfigure<T>(T value) where T : class
     {
-        (value as IStartupConfigure<T>)?.StartupConfigure(value);
+        if (value is IStartupConfigure<T> configure)
+        {
+            configure.StartupConfigure(value);
+        }
     }
 
     private static string GetSectionPath(this Type type)

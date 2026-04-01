@@ -37,7 +37,7 @@ public interface ICurrentUser : ICurrentTenant
     /// 获取当前用户的所有角色信息。
     /// </summary>
     /// <returns>所有角色集合，如无则为空集合。</returns>
-    IEnumerable<string> GetRoles();
+    List<string> GetRoles();
 
     /// <summary>
     /// 根据声明类型获取当前用户的声明值。

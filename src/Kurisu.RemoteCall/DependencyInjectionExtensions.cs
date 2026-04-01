@@ -21,26 +21,9 @@ public static class DependencyInjectionExtensions
     /// </summary>
     /// <param name="services"></param>
     /// <param name="activeTypes"></param>
+    /// <returns></returns>
     public static void AddRemoteCall(this IServiceCollection services, IEnumerable<Type> activeTypes)
     {
-        services.AddRemoteCall(string.Empty, activeTypes);
-    }
-
-
-    /// <summary>
-    /// 添加远程调用
-    /// </summary>
-    /// <param name="services"></param>
-    /// <param name="defaultClientName"></param>
-    /// <param name="activeTypes"></param>
-    /// <returns></returns>
-    public static void AddRemoteCall(this IServiceCollection services, string defaultClientName, IEnumerable<Type> activeTypes)
-    {
-        if (!string.IsNullOrEmpty(defaultClientName))
-        {
-            RemoteCallStatic.DefaultClientName = defaultClientName;
-        }
-
         services.TryAddSingleton<IRemoteCallUrlResolver, DefaultRemoteCallUrlResolver>();
         services.TryAddSingleton<IRemoteCallParameterValidator, DefaultParameterValidator>();
         services.TryAddSingleton<DefaultRemoteCallResponseResultHandler>();

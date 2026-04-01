@@ -5,9 +5,9 @@ using Microsoft.AspNetCore.Mvc.Filters;
 namespace Kurisu.AspNetCore;
 
 /// <summary>
-/// 日志
+/// 标记日志输出
 /// </summary>
-[AttributeUsage(AttributeTargets.Method | AttributeTargets.Class)]
+[AttributeUsage(AttributeTargets.Method)]
 public class LogAttribute : Attribute, IAsyncActionFilter
 {
     /// <summary>

@@ -11,6 +11,8 @@ namespace Kurisu.AspNetCore.Authentication.Modules;
 /// </summary>
 public class DefaultOAuth2AuthenticationModule : AppModule
 {
+    public override string Name => "OAuth2.0认证模块";
+
     /// <summary>
     /// 执行顺序
     /// </summary>
@@ -32,4 +34,5 @@ public class DefaultOAuth2AuthenticationModule : AppModule
         app.UseAuthentication();
         app.UseAuthorization();
     }
+
 }

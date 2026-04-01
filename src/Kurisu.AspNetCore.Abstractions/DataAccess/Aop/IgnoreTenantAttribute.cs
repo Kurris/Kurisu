@@ -5,7 +5,7 @@ using Microsoft.Extensions.DependencyInjection;
 namespace Kurisu.AspNetCore.Abstractions.DataAccess.Aop;
 
 /// <summary>
-/// 忽略租户
+/// 忽略租户自动赋值和过滤功能
 /// </summary>
 [AttributeUsage(AttributeTargets.Method | AttributeTargets.Class)]
 public class IgnoreTenantAttribute : AopAttribute
@@ -13,6 +13,9 @@ public class IgnoreTenantAttribute : AopAttribute
     public override async Task Invoke(AspectContext context, AspectDelegate next)
     {
         var dbContext = context.ServiceProvider.GetRequiredService<IDbContext>();
-        await dbContext.IgnoreTenantAsync(async () => { await next(context); });
+        using (dbContext.IgnoreTenant())
+        {
+            await next(context);
+        }
     }
 }

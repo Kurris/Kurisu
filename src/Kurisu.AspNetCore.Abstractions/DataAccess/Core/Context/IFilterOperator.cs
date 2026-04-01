@@ -2,15 +2,18 @@
 
 public interface IFilterOperator
 {
-    void IgnoreTenant(Action todo);
-    Task IgnoreTenantAsync(Func<Task> todo);
+    IDisposable CreateDatasourceScope(string name);
+    IDisposable CreateDatasourceScope();
 
-    void IgnoreSoftDeleted(Action todo);
-    Task IgnoreSoftDeletedAsync(Func<Task> todo);
 
-    void EnableDataPermission(Type[] ignoreTypes, Action todo);
-    Task EnableDataPermissionAsync(Type[] ignoreTypes, Func<Task> todo);
+    IDisposable IgnoreTenant();
 
-    void EnableCrossTenant(Type[] ignoreTypes, Action todo);
-    Task EnableCrossTenantAsync(Type[] ignoreTypes, Func<Task> todo);
+    IDisposable IgnoreSoftDeleted();
+
+    IDisposable EnableDataPermission();
+
+    IDisposable EnableCrossTenant();
+
+
+    IDisposable IgnoreSharding();
 }

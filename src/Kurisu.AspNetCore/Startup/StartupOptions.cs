@@ -1,6 +1,4 @@
 ﻿using System;
-using Kurisu.AspNetCore.DataProtection.Settings;
-using Kurisu.AspNetCore.Document.Settings;
 using Kurisu.AspNetCore.DynamicApi;
 using Kurisu.AspNetCore.DynamicApi.Defaults;
 using Microsoft.AspNetCore.Mvc;
@@ -18,6 +16,8 @@ public class StartupOptions
     /// </summary>
     public StartupOptions()
     {
+
+
         RouteOptions = options => options.LowercaseUrls = true;
 
         MvcOptions = options => options.SuppressImplicitRequiredAttributeForNonNullableReferenceTypes = true;
@@ -27,23 +27,9 @@ public class StartupOptions
             ModelConvention = new DefaultDynamicApiConvention(),
             ControllerFeatureProvider = new DefaultDynamicApiControllerFeatureProvider()
         };
-
-        DataProtectionOptions = new DataProtectionOptions
-        {
-            Enable = false,
-            AppName = "KurisuApp"
-        };
     }
 
-    /// <summary>
-    /// 多语言key
-    /// </summary>
-    public string MultiLanguageKey { get; set; } = "X-Language";
-
-    /// <summary>
-    /// Api文档配置
-    /// </summary>
-    public DocumentOptions DocumentOptions { get; set; }
+    public string LanguageHeaderName { get; set; }
 
     /// <summary>
     /// 路由配置
@@ -70,9 +56,4 @@ public class StartupOptions
     /// 动态api配置
     /// </summary>
     public DynamicApiOptions DynamicApiOptions { get; set; }
-
-    /// <summary>
-    /// 数据保护配置
-    /// </summary>
-    public DataProtectionOptions DataProtectionOptions { get; set; }
 }

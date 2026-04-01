@@ -6,8 +6,7 @@ using Kurisu.AspNetCore.Abstractions.Authentication;
 using Kurisu.AspNetCore.Authentication;
 using Kurisu.AspNetCore.Authentication.Defaults;
 using Kurisu.AspNetCore.Authentication.Options;
-using Kurisu.Extensions.SqlSugar.Extensions;
-using Kurisu.Test.DataAccess.Trans;
+using Kurisu.Extensions.SqlSugar;
 using Kurisu.Test.DataAccess.Trans.Mock;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
@@ -26,6 +25,7 @@ public class TestHelper
         var configuration = new ConfigurationBuilder()
             .AddJsonFile("appsettings.json")
             .Build();
+
         services.AddSingleton(typeof(IConfiguration), configuration);
         services.AddConfiguration(configuration);
         services.AddSingleton<ICurrentUser>(sp =>
@@ -47,6 +47,8 @@ public class TestHelper
             return GetResolver(token);
         });
 
+        services.AddLogging();
+        services.AddDependencyInjection();
         services.AddSqlSugar(DbType.MySqlConnector);
         // register split services: inner and outer implementations located in Trans/mock
         services.AddScoped<ITransactionalInnerService, TransactionalInnerService>();

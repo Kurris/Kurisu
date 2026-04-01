@@ -3,47 +3,33 @@ using Kurisu.AspNetCore.Abstractions.Authentication;
 using Kurisu.AspNetCore.Abstractions.DataAccess;
 using Kurisu.AspNetCore.Abstractions.DataAccess.Contract;
 using Kurisu.AspNetCore.Abstractions.DataAccess.Contract.Field;
+using Kurisu.AspNetCore.Abstractions.DataAccess.Core;
 using Kurisu.AspNetCore.Abstractions.DataAccess.Core.Context;
-using Kurisu.AspNetCore.Abstractions.State;
 using Kurisu.AspNetCore.DataAccess.SqlSugar.Attributes;
+using Kurisu.Extensions.ContextAccessor.Abstractions;
+using Kurisu.Extensions.SqlSugar.Options;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using SqlSugar;
 
 namespace Kurisu.Extensions.SqlSugar.Core.Context;
 
-internal abstract class SpecialQueryableDbContext : AbstractDbContext<ISqlSugarClient>, ISqlSugarDbContext
+public abstract class SpecialQueryableDbContext : AbstractDbContext<ISqlSugarClient>, ISqlSugarDbContext
 {
-    private readonly IStateSnapshotManager<DbOperationState> _snapshotManager;
+    private readonly IContextSnapshotManager<DbOperationState> _snapshotManager;
 
     protected SpecialQueryableDbContext(IServiceProvider serviceProvider) : base(serviceProvider)
     {
-        _snapshotManager = ServiceProvider.GetRequiredService<IStateSnapshotManager<DbOperationState>>();
+        _snapshotManager = ServiceProvider.GetRequiredService<IContextSnapshotManager<DbOperationState>>();
     }
 
-    public virtual void CodeFirstInitTables(params Type[] tables)
+    public ISqlSugarClient GetClient()
     {
-        Client.DbMaintenance.CreateDatabase();
-        foreach (var table in tables)
-        {
-            Client.CodeFirst.InitTables(table);
-
-            if (table.IsAssignableTo(typeof(IIndexConfigurator)))
-            {
-                var tableName = Client.EntityMaintenance.GetTableName(table);
-                var handler = (IIndexConfigurator)Activator.CreateInstance(table)!;
-                var indexModels = handler.GetIndexConfigs();
-                foreach (var indexModel in indexModels)
-                {
-                    if (!Client.DbMaintenance.IsAnyIndex(indexModel.IndexName))
-                    {
-                        Client.DbMaintenance.CreateIndex(tableName, indexModel.ColumnNames, indexModel.IndexName, indexModel.IsUnique);
-                    }
-                }
-            }
-        }
+        return Client;
     }
 
-    public new virtual ISqlSugarClient Client => base.Client;
+    public override ICodeFirstMode CodeFirst => new SqlsugarCodeFirstMode(Client);
+
 
     public virtual ISugarQueryable<T> Queryable<T>()
     {
@@ -56,7 +42,7 @@ internal abstract class SpecialQueryableDbContext : AbstractDbContext<ISqlSugarC
     private ISugarQueryable<T> TryEnableTenantFilter<T>(ISugarQueryable<T> query)
     {
         var type = typeof(T);
-        if (!_snapshotManager.Current.GetEnableCrossTenant<T>())
+        if (!_snapshotManager.ContextAccessor.Current.EnableCrossTenant)
             return query;
 
         // 获取租户Id属性名（接口优先，其次查特性）
@@ -80,7 +66,7 @@ internal abstract class SpecialQueryableDbContext : AbstractDbContext<ISqlSugarC
 
     private ISugarQueryable<T> TryEnableDataPermission<T>(ISugarQueryable<T> query)
     {
-        if (!_snapshotManager.Current.GetEnableDataPermission<T>())
+        if (!_snapshotManager.ContextAccessor.Current.EnableDataPermission)
             return query;
 
         var permissionData = ServiceProvider.GetRequiredService<IGetDataPermissions>().GetData<T>() ?? new Dictionary<string, List<Guid>>();
@@ -118,127 +104,62 @@ internal abstract class SpecialQueryableDbContext : AbstractDbContext<ISqlSugarC
     }
 
 
-    public override void IgnoreTenant(Action action)
+    public override IDisposable IgnoreTenant()
     {
-        using (_snapshotManager.BeginScope(s =>
+        return _snapshotManager.CreateScope(s =>
                {
                    s.IgnoreTenant = true;
                    Client.QueryFilter.ClearAndBackup<ITenantId>();
-               }))
-        {
-            try
-            {
-                action();
-            }
-            finally
-            {
-                Client.QueryFilter.Restore();
-            }
-        }
+               },
+               Client.QueryFilter.Restore);
     }
 
-    public override async Task IgnoreTenantAsync(Func<Task> func)
+    public override IDisposable IgnoreSoftDeleted()
     {
-        await using (_snapshotManager.BeginScopeAsync(s =>
-                     {
-                         s.IgnoreTenant = true;
-                         Client.QueryFilter.ClearAndBackup<ITenantId>();
-                     }))
-        {
-            try
-            {
-                await func();
-            }
-            finally
-            {
-                Client.QueryFilter.Restore();
-            }
-        }
+        return _snapshotManager.CreateScope(s =>
+                {
+                    s.IgnoreSoftDeleted = true;
+                    Client.QueryFilter.ClearAndBackup<ISoftDeleted>();
+                }, Client.QueryFilter.Restore);
     }
 
-    public override void IgnoreSoftDeleted(Action todo)
+
+    public override IDisposable EnableCrossTenant()
     {
-        using (_snapshotManager.BeginScope(s =>
-               {
-                   s.IgnoreSoftDeleted = true;
-                   Client.QueryFilter.ClearAndBackup<ISoftDeleted>();
-               }))
+        var snapshotScope = _snapshotManager.CreateScope(s =>
         {
-            try
-            {
-                todo();
-            }
-            finally
-            {
-                Client.QueryFilter.Restore();
-            }
-        }
+            s.EnableCrossTenant = true;
+        });
+
+        var tenantScope = IgnoreTenant();
+
+        return new CompositeDisposableAction(tenantScope, snapshotScope);
     }
 
-    public override async Task IgnoreSoftDeletedAsync(Func<Task> todo)
+    public override IDisposable EnableDataPermission()
     {
-        await using (_snapshotManager.BeginScopeAsync(s =>
-                     {
-                         s.IgnoreSoftDeleted = true;
-                         Client.QueryFilter.ClearAndBackup<ISoftDeleted>();
-                     }))
-        {
-            try
-            {
-                await todo();
-            }
-            finally
-            {
-                Client.QueryFilter.Restore();
-            }
-        }
+        return _snapshotManager.CreateScope(s =>
+                {
+                    s.EnableDataPermission = true;
+                });
     }
 
-    public override void EnableCrossTenant(Type[] ignoreTypes, Action todo)
+    public override IDisposable IgnoreSharding()
     {
-        using (_snapshotManager.BeginScope(s =>
-               {
-                   s.EnableCrossTenant = true;
-                   s.CrossTenantIgnoreTypes = ignoreTypes ?? Array.Empty<Type>();
-               }))
+        return _snapshotManager.CreateScope(s =>
         {
-            IgnoreTenant(todo);
-        }
+            s.IgnoreSharding = true;
+        });
     }
 
-    public override async Task EnableCrossTenantAsync(Type[] ignoreTypes, Func<Task> todo)
+    public override IDisposable CreateDatasourceScope(string name)
     {
-        await using (_snapshotManager.BeginScopeAsync(s =>
-                     {
-                         s.EnableCrossTenant = true;
-                         s.CrossTenantIgnoreTypes = ignoreTypes ?? Array.Empty<Type>();
-                     }))
-        {
-            await IgnoreTenantAsync(todo);
-        }
+        return DatasourceManager.CreateScope(name);
     }
 
-    public override void EnableDataPermission(Type[] ignoreTypes, Action todo)
+    public override IDisposable CreateDatasourceScope()
     {
-        using (_snapshotManager.BeginScope(s =>
-               {
-                   s.EnableDataPermission = true;
-                   s.DataPermissionIgnoreTypes = ignoreTypes ?? Array.Empty<Type>();
-               }))
-        {
-            todo();
-        }
-    }
-
-    public override async Task EnableDataPermissionAsync(Type[] ignoreTypes, Func<Task> todo)
-    {
-        await using (_snapshotManager.BeginScopeAsync(s =>
-                     {
-                         s.EnableDataPermission = true;
-                         s.DataPermissionIgnoreTypes = ignoreTypes ?? Array.Empty<Type>();
-                     }))
-        {
-            await todo();
-        }
+        var dbOptions = ServiceProvider.GetService<IOptions<DbOptions>>().Value;
+        return CreateDatasourceScope(nameof(dbOptions.DefaultConnectionString));
     }
 }

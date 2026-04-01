@@ -5,11 +5,12 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
 using System.Reflection;
 using System.Security.Claims;
+using AspectCore.Extensions.DependencyInjection;
 using Kurisu.AspNetCore.Abstractions.Authentication;
 using Kurisu.AspNetCore.Authentication;
 using Kurisu.AspNetCore.Authentication.Defaults;
 using Kurisu.AspNetCore.Authentication.Options;
-using Kurisu.Extensions.SqlSugar.Extensions;
+using Kurisu.Extensions.SqlSugar;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -50,7 +51,7 @@ public class TestHelper
         services.AddDependencyInjection();
         services.AddSqlSugar(DbType.MySqlConnector);
 
-        var serviceProvider = services.BuildServiceProvider();
+        var serviceProvider = services.BuildDynamicProxyProvider();
 
         var type = Assembly.Load("Kurisu.AspNetCore").GetTypes().First(x => x.Name.Equals("InternalApp"));
         var propertyInfo = type.GetProperty("RootServices", BindingFlags.Static | BindingFlags.NonPublic)!;

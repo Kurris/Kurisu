@@ -1,7 +1,6 @@
-using Kurisu.AspNetCore.Cache;
+using Kurisu.Extensions.Cache.Implements;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.Extensions.Options;
-using DataProtectionOptions = Kurisu.AspNetCore.DataProtection.Settings.DataProtectionOptions;
 
 namespace Kurisu.Test.DataProtection;
 

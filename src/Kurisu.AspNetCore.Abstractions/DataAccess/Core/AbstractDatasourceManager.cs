@@ -2,26 +2,17 @@
 
 namespace Kurisu.AspNetCore.Abstractions.DataAccess.Core;
 
-public interface IDatasourceManager : ITransactionManager
-{
-    object GetCurrentClient();
 
-    IDisposable CreateScope(string name);
-}
-
-public interface ITransactionScope : IDisposable
+public abstract class AbstractDatasourceManager<TClient> : IDatasourceManager<TClient>
 {
-    Task BeginAsync();
-    Task CommitAsync();
-    Task RollbackAsync();
-}
+    //<inheritdoc/>
+    public abstract TClient GetCurrentClient();
 
-public abstract class AbstractDatasourceManager<TClient> : IDatasourceManager
-{
-    public abstract object GetCurrentClient();
+    //<inheritdoc/>
     public abstract IDisposable CreateScope(string name);
 
-    public abstract TClient CreateClient();
-
+    //<inheritdoc/>
     public abstract ITransactionScope CreateTransScope(Propagation propagation, IsolationLevel? isolationLevel = null);
+
+    public abstract TClientDefined GetCurrentClient<TClientDefined>();
 }

@@ -1,6 +1,6 @@
 using System.ComponentModel;
 using Kurisu.AspNetCore.Abstractions.DependencyInjection;
-using Kurisu.AspNetCore.Abstractions.UnifyResultAndValidation;
+using Kurisu.AspNetCore.Abstractions.Result;
 using Kurisu.AspNetCore.Utils.Extensions;
 
 namespace Kurisu.AspNetCore.UnifyResultAndValidation;
@@ -139,6 +139,26 @@ public sealed class ApiResult<T> : IApiResult
         {
             Code = ApiStateCode.Error,
             Msg = errorMessage
+        };
+    }
+
+    public object GetData()
+    {
+        return Data;
+    }
+
+    public string GetMsg()
+    {
+        return Msg;
+    }
+
+    public IApiResult Reset<TResult>(TResult data, string msg)
+    {
+        return new ApiResult<TResult>
+        {
+            Code = this.Code,
+            Msg = msg,
+            Data = data
         };
     }
 }

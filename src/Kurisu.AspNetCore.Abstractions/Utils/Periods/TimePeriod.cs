@@ -1,0 +1,135 @@
+﻿using Kurisu.AspNetCore.Abstractions.Utils.Periods.Abstractions;
+
+namespace Kurisu.AspNetCore.Abstractions.Utils.Periods;
+
+/// <summary>
+/// 时分段
+/// </summary>
+public class TimePeriod : IPeriod<TimeOnly>, IPeriodComparable<TimeOnly, TimePeriod>
+{
+    /// <summary>
+    /// 初始化一个<see cref="TimePeriod"/>类型的实例
+    /// </summary>
+    public TimePeriod()
+    {
+    }
+
+    /// <summary>
+    /// 初始化一个<see cref="TimePeriod"/>类型的实例
+    /// </summary>
+    /// <param name="start"></param>
+    /// <param name="end"></param>
+    public TimePeriod(string start, string end)
+        : this(TimeOnly.Parse(start), TimeOnly.Parse(end))
+    {
+    }
+
+    /// <summary>
+    /// 初始化一个<see cref="TimePeriod"/>类型的实例
+    /// </summary>
+    /// <param name="start"></param>
+    /// <param name="end"></param>
+    public TimePeriod(TimeOnly start, TimeOnly end)
+    {
+        Start = start;
+        End = end;
+
+        Validate();
+    }
+
+    /// <inheritdoc />
+    public TimeOnly Start { get;init; }
+
+    /// <inheritdoc />
+    public TimeOnly End { get; init; }
+
+    /// <inheritdoc />
+    public bool IsCrossDay => End < Start;
+
+    /// <inheritdoc />
+    public bool IsPresent(TimeOnly value)
+    {
+        var s = Start!;
+        var e = End!;
+        if (IsCrossDay)
+        {
+            return value >= s || value <= e;
+        }
+
+        return value >= s && value <= e;
+    }
+
+    /// <summary>
+    /// 判断是否重合
+    /// </summary>
+    /// <returns></returns>
+    public bool IsOverlap(TimePeriod period)
+    {
+        return !Check(period);
+    }
+
+    private bool Check(TimePeriod period)
+    {
+        if (IsCrossDay)
+        {
+            if (period.IsCrossDay)
+            {
+                return true;
+            }
+
+            return period.Start > End && period.End < Start;
+        }
+
+        if (period.IsCrossDay)
+        {
+            return period.Start > End && period.End < Start;
+        }
+
+        return period.Start > End || period.End < Start;
+    }
+
+    /// <summary>
+    /// 当前时间在区间内
+    /// </summary>
+    /// <param name="dateTime">当前时间</param>
+    /// <returns></returns>
+    public bool IsPresent(DateTime dateTime)
+    {
+        DateTime start;
+        DateTime end;
+
+        if (IsCrossDay)
+        {
+            //period = [22:00:00,03:00:00]
+            var currentStart = dateTime.Date.Add(Start.ToTimeSpan());
+            var endOfDay = dateTime.Date.AddDays(1).AddSeconds(-1);
+
+            //assume is left range . then currentStart is 2024-04-16 22:00:00 and endOfDay is 2024-04-16 23:59:59
+            if (dateTime >= currentStart && dateTime <= endOfDay)
+            {
+                start = currentStart; //2024-04-16 22:00:00
+                end = dateTime.Date.AddDays(1).Add(End.ToTimeSpan()); //2024-04-17 03:00:00
+            }
+            else
+            {
+                start = dateTime.Date.AddDays(-1).Add(Start.ToTimeSpan());
+                end = dateTime.Date.Add(End.ToTimeSpan());
+            }
+        }
+        else
+        {
+            start = dateTime.Date.Add(Start.ToTimeSpan());
+            end = dateTime.Date.Add(End.ToTimeSpan());
+        }
+
+        return dateTime >= start && dateTime <= end;
+    }
+
+    public void Validate()
+    {
+        if (Start > End)
+        {
+            throw new ArgumentException("开始时分秒不能大于结束时分秒.", nameof(Start));
+        }
+    }
+}

@@ -32,6 +32,11 @@ public sealed class EnableRemoteClientAttribute : Attribute
         }
 
         Name = name;
+        if (string.IsNullOrEmpty(name))
+        {
+            Name = "default-remote-client";
+        }
+       
         BaseUrl = baseUrl;
     }
 
@@ -56,11 +61,6 @@ public sealed class EnableRemoteClientAttribute : Attribute
     /// <param name="services"></param>
     public void ConfigureServices(IServiceCollection services)
     {
-        if (string.IsNullOrEmpty(Name))
-        {
-            Name = RemoteCallStatic.DefaultClientName;
-        }
-
         var builder = services.AddHttpClient(Name);
         if (PolicyHandler.IsInheritedFrom<IRemoteCallPolicyHandler>())
         {

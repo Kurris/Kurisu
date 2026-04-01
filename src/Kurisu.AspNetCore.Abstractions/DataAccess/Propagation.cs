@@ -1,5 +1,8 @@
 namespace Kurisu.AspNetCore.Abstractions.DataAccess;
 
+/// <summary>
+/// 事务传播性
+/// </summary>
 public enum Propagation
 {
     /// <summary>
@@ -23,7 +26,7 @@ public enum Propagation
     Never,
 
     /// <summary>
-    /// 若存在事务则在嵌套事务中执行，否则行为同 <see cref="Required"/>。
+    /// 若存在事务则在嵌套事务中执行保存点，否则行为同 <see cref="Required"/>。
     /// </summary>
     Nested
 }

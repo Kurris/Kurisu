@@ -1,6 +1,7 @@
 using Kurisu.AspNetCore.Cache.Extensions;
 using Kurisu.AspNetCore.DataProtection.Modules;
-using Kurisu.Extensions.SqlSugar.Extensions;
+using Kurisu.Extensions.Cache;
+using Kurisu.Extensions.SqlSugar;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using SqlSugar;

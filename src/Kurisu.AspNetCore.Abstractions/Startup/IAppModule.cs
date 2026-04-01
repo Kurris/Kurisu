@@ -12,11 +12,7 @@ public interface IAppModule : IOrderedFilter
     /// <summary>
     /// 触发方法
     /// </summary>
-    /// <remarks>
-    /// 执行当前pack相关的处理
-    /// </remarks>
     /// <param name="serviceProvider">临时scope服务提供器</param>
-    // ReSharper disable once UnusedParameter.Global
     void Invoke(IServiceProvider serviceProvider);
 
     /// <summary>

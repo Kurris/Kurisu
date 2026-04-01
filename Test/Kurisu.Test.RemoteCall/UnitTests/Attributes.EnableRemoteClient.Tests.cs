@@ -32,7 +32,6 @@ namespace Kurisu.Test.RemoteCall.UnitTests
             var services = new ServiceCollection();
             var attr = new EnableRemoteClientAttribute("", "http://localhost");
             // ensure RemoteCallStatic.DefaultClientName set
-            Kurisu.RemoteCall.RemoteCallStatic.DefaultClientName = "defname";
             attr.ConfigureServices(services);
             var sp = services.BuildServiceProvider();
             var factory = sp.GetRequiredService<IHttpClientFactory>();

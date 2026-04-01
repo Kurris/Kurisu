@@ -3,14 +3,17 @@ using SqlSugar;
 
 namespace Kurisu.Extensions.SqlSugar.Core.Manager.TransactionScope;
 
-public class RequiredTransactionScope : AbstractTransactionScope
+internal class RequiredTransactionScope : AbstractTransactionScope
 {
     private readonly ISqlSugarClient _client;
     private readonly IsolationLevel? _isolationLevel;
     private readonly bool _hasTransaction;
-    private readonly Action<bool> _afterScope;
+    private readonly Action _afterScope;
 
-    public RequiredTransactionScope(ISqlSugarClient client, IsolationLevel? isolationLevel, bool hasTransaction = false, Action<bool> afterScope = null)
+    public RequiredTransactionScope(ISqlSugarClient client,
+        IsolationLevel? isolationLevel,
+        bool hasTransaction,
+        Action afterScope)
     {
         _client = client;
         _isolationLevel = isolationLevel;
@@ -20,11 +23,13 @@ public class RequiredTransactionScope : AbstractTransactionScope
 
     public override async Task BeginAsync()
     {
+        //存在事务则不创建新事务
         if (_hasTransaction)
         {
             return;
         }
 
+        //开启事务
         if (_isolationLevel.HasValue)
         {
             await _client.Ado.BeginTranAsync(_isolationLevel.Value);
@@ -57,6 +62,6 @@ public class RequiredTransactionScope : AbstractTransactionScope
 
     public override void Dispose()
     {
-        _afterScope?.Invoke(!_hasTransaction);
+        _afterScope?.Invoke();
     }
 }

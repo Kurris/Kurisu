@@ -58,4 +58,27 @@ public class Pagination<T>
 /// <summary>
 /// 分页
 /// </summary>
-public class Pagination : Pagination<object>;
+public class Pagination : Pagination<object>
+{
+    public static Pagination<T> Empty<T>(int pageIndex, int pageSize, int total)
+    {
+        return new Pagination<T>
+        {
+            PageIndex = pageIndex,
+            PageSize = pageSize,
+            Total = 0,
+            Data = new List<T>()
+        };
+    }
+
+    public static Pagination<T> Empty<T>(PageQuery query, int total)
+    {
+        return new Pagination<T>
+        {
+            PageIndex = query.PageIndex,
+            PageSize = query.PageSize,
+            Total = 0,
+            Data = new List<T>()
+        };
+    }
+}

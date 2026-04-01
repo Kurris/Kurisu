@@ -3,21 +3,45 @@
 /// <summary>
 /// 数据库连接字符串管理器
 /// </summary>
-public interface IDbConnectionManager
+public interface IDbConnectionStringManager
 {
-    string GetCurrent();
+    /// <summary>
+    /// 获取当前连接名称
+    /// </summary>
+    /// <returns></returns>
+    public string Current { get; }
 
+    /// <summary>
+    /// 创建指定连接作用域
+    /// </summary>
+    /// <param name="name"></param>
+    /// <returns></returns>
     IDisposable CreateScope(string name);
 
+    /// <summary>
+    /// 创建指定连接作用域
+    /// </summary>
+    /// <param name="name"></param>
+    /// <param name="onDispose"></param>
+    /// <returns></returns>
     IDisposable CreateScope(string name, Action onDispose);
 
+    /// <summary>
+    /// 判断是否需要开启新的连接操作作用域
+    /// </summary>
+    /// <param name="name"></param>
+    /// <returns></returns>
     bool NeedCreateScope(string name);
 
     /// <summary>
-    /// 获取连接字符串
+    /// 获取指定连接字符串
     /// </summary>
     /// <returns></returns>
     string GetConnectionString(string name);
 
+    /// <summary>
+    /// 获取当前连接
+    /// </summary>
+    /// <returns></returns>
     string GetCurrentConnectionString();
 }

@@ -4,6 +4,8 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using Kurisu.AspNetCore.Abstractions.Startup;
+using Kurisu.AspNetCore.Document.OperationFilters;
+using Kurisu.AspNetCore.Document.Options;
 using Kurisu.AspNetCore.MVC;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
@@ -18,10 +20,13 @@ using Swashbuckle.AspNetCore.SwaggerGen;
 namespace Kurisu.AspNetCore.Document.Modules;
 
 /// <summary>
-/// swagger默认pack
+/// swagger模块配置
 /// </summary>
 public class DefaultSwaggerModule : AppModule
 {
+    public override string Name => "Swagger模块";
+
+
     private static List<OpenApiInfo> _apiInfos;
 
     /// <summary>
@@ -36,7 +41,7 @@ public class DefaultSwaggerModule : AppModule
     public override int Order => 0;
 
     /// <inheritdoc />
-    public override bool IsEnable => App.StartupOptions.DocumentOptions != null;
+    public override bool IsEnable => Configuration.GetSection("DocumentOptions").Get<DocumentOptions>() != null;
 
 
     /// <summary>
@@ -44,8 +49,6 @@ public class DefaultSwaggerModule : AppModule
     /// </summary>
     private static void Initialize()
     {
-        //var other = new DefaultControllerSelector();
-
         //获取用户自定义分组的API
         var assembly = Assembly.GetEntryAssembly()!;
         var controllers = assembly.GetTypes().Where(x =>
@@ -74,7 +77,7 @@ public class DefaultSwaggerModule : AppModule
     /// <inheritdoc />
     public override void ConfigureServices(IServiceCollection services)
     {
-        var setting = App.StartupOptions.DocumentOptions;
+        var setting = Configuration.GetSection("DocumentOptions").Get<DocumentOptions>();
 
         services.AddSwaggerGen(c =>
         {
@@ -140,6 +143,12 @@ public class DefaultSwaggerModule : AppModule
             c.OperationFilter<AppendAuthorizeToSummaryOperationFilter>();
             c.OperationFilter<SecurityRequirementsOperationFilter>(JwtBearerDefaults.AuthenticationScheme);
 
+            //多语言标记
+            if (!string.IsNullOrEmpty(App.StartupOptions.LanguageHeaderName))
+            {
+                c.OperationFilter<AddLanguageHeaderOperationFilter>();
+            }
+
             //************************************************* OAuth2.0 Token *****************************************************//
 
             //eg:配置文件appsettings.json的key如果存在":"，那么解析将会失败
@@ -182,7 +191,7 @@ public class DefaultSwaggerModule : AppModule
     /// <inheritdoc />
     public override void Configure(IApplicationBuilder app)
     {
-        var setting = App.StartupOptions.DocumentOptions;
+        var setting = Configuration.GetSection("DocumentOptions").Get<DocumentOptions>();
         var virtualPath = Configuration.GetValue("VirtualPath", string.Empty);
 
         app.UseSwagger();
@@ -199,4 +208,5 @@ public class DefaultSwaggerModule : AppModule
                 c.OAuthUsePkce();
         });
     }
+
 }

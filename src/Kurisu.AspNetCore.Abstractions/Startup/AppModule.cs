@@ -7,8 +7,13 @@ namespace Kurisu.AspNetCore.Abstractions.Startup;
 /// <summary>
 /// 程序模块
 /// </summary>
+/// <remarks>
+/// 执行顺序ConfigureServices --> Invoke --> Configure
+/// </remarks>
 public abstract class AppModule : IAppModule
 {
+    public abstract string Name { get; }
+
     /// <summary>
     /// appsettings.json配置或者外部动态配置
     /// </summary>
@@ -25,12 +30,12 @@ public abstract class AppModule : IAppModule
     public virtual bool IsEnable => true;
 
     /// <summary>
-    /// 在Startup Configure请求管道中,以UseRouting分割添加自定义模块
+    /// 在Startup Configure请求管道中,以UseRouting分割添加自定义模块, true表示在UseRouting之前添加, false表示在UseRouting之后添加
     /// </summary>
     public virtual bool IsBeforeUseRouting { get; } = false;
 
     /// <summary>
-    /// 2.执行
+    /// 执行特定操作
     /// </summary>
     /// <param name="serviceProvider"></param>
     public virtual void Invoke(IServiceProvider serviceProvider)
@@ -38,7 +43,7 @@ public abstract class AppModule : IAppModule
     }
 
     /// <summary>
-    /// 1.配置ioc
+    /// 配置模块功能所需的服务
     /// </summary>
     /// <param name="services"></param>
     public virtual void ConfigureServices(IServiceCollection services)
@@ -46,7 +51,7 @@ public abstract class AppModule : IAppModule
     }
 
     /// <summary>
-    /// 3.配置管道
+    /// 配置管道中间件
     /// </summary>
     /// <param name="app"></param>
     public virtual void Configure(IApplicationBuilder app)

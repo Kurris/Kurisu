@@ -9,6 +9,8 @@ namespace Kurisu.AspNetCore.Startup.Module;
 /// </summary>
 public class DefaultGlobalExceptionModule : AppModule
 {
+    public override string Name => "全局异常处理模块";
+
     /// <summary>
     /// 优先级
     /// </summary>
@@ -22,4 +24,6 @@ public class DefaultGlobalExceptionModule : AppModule
     {
         app.UseMiddleware<GlobalExceptionMiddleware>();
     }
+
+
 }

@@ -4,7 +4,7 @@ using SqlSugar;
 
 namespace Kurisu.Extensions.SqlSugar.Core.Context;
 
-internal class SqlSugarDbContext : SpecialQueryableDbContext
+public class SqlSugarDbContext : SpecialQueryableDbContext
 {
     public SqlSugarDbContext(IServiceProvider serviceProvider) : base(serviceProvider)
     {
@@ -15,22 +15,27 @@ internal class SqlSugarDbContext : SpecialQueryableDbContext
 
     public override async Task<bool> InsertAsync<T>(T obj, CancellationToken cancellationToken)
     {
-        return await Client.Insertable(obj).ExecuteCommandIdentityIntoEntityAsync();
+        return await this.InsertAsync(new List<T> { obj }, cancellationToken);
     }
 
     public override async Task<bool> InsertAsync<T>(List<T> objs, CancellationToken cancellationToken)
     {
-        return await Client.Insertable(objs.ToArray()).ExecuteCommandIdentityIntoEntityAsync();
+        if (objs.Count > 0)
+        {
+            return (await Client.Insertable(objs).ExecuteCommandAsync()) > 0;
+        }
+
+        return true;
     }
 
     public override bool Insert<T>(T obj)
     {
-        return Client.Insertable(obj).ExecuteCommandIdentityIntoEntity();
+        return this.Insert(new List<T> { obj });
     }
 
     public override bool Insert<T>(List<T> objs)
     {
-        return Client.Insertable(objs.ToArray()).ExecuteCommandIdentityIntoEntity();
+        return Client.Insertable(objs).ExecuteCommandIdentityIntoEntity();
     }
 
     #endregion
@@ -40,60 +45,56 @@ internal class SqlSugarDbContext : SpecialQueryableDbContext
 
     public override async Task<int> DeleteAsync<T>(T obj, bool isReally, CancellationToken cancellationToken)
     {
-        if (isReally || !typeof(T).IsAssignableTo(typeof(ISoftDeleted)))
-        {
-            return await this.Deleteable(obj).ExecuteCommandAsync(cancellationToken);
-        }
-
-        obj.SetPropertyValue(nameof(ISoftDeleted.IsDeleted), true);
-        return await this.UpdateAsync(obj, cancellationToken);
+        return await DeleteAsync(new List<T> { obj }, isReally, cancellationToken);
     }
 
     public override async Task<int> DeleteAsync<T>(List<T> objs, bool isReally, CancellationToken cancellationToken)
     {
-        var list = objs.ToList();
-
-        if (isReally || !typeof(T).IsAssignableTo(typeof(ISoftDeleted)))
+        if (typeof(T).IsAssignableTo(typeof(ISoftDeleted)))
         {
-            var total = 0;
-            foreach (var item in list)
+            if (isReally)
             {
-                total += await this.DeleteAsync(item, isReally, cancellationToken);
+                return await Client.Deleteable(objs).ExecuteCommandAsync(cancellationToken);
             }
 
-            return total;
-        }
+            foreach (ISoftDeleted item in objs)
+            {
+                item.IsDeleted = true;
+            }
 
-        list.ForEach(x => x.SetPropertyValue(nameof(ISoftDeleted.IsDeleted), true));
-        return await this.UpdateAsync(list, cancellationToken);
+            return await UpdateAsync(objs, cancellationToken);
+        }
+        else
+        {
+            return await Client.Deleteable(objs).ExecuteCommandAsync(cancellationToken);
+        }
     }
 
     public override int Delete<T>(T obj, bool isReally)
     {
-        if (isReally || !typeof(T).IsAssignableTo(typeof(ISoftDeleted)))
-        {
-            return this.Deleteable(obj).ExecuteCommand();
-        }
-
-        obj.SetPropertyValue(nameof(ISoftDeleted.IsDeleted), true);
-        return this.Update(obj);
+        return Delete(new List<T> { obj }, isReally);
     }
 
     public override int Delete<T>(List<T> objs, bool isReally)
     {
-        if (isReally || !typeof(T).IsAssignableTo(typeof(ISoftDeleted)))
+        if (typeof(T).IsAssignableTo(typeof(ISoftDeleted)))
         {
-            var total = 0;
-            foreach (var item in objs)
+            if (isReally)
             {
-                total += Delete(item, isReally);
+                return Client.Deleteable(objs).ExecuteCommand();
             }
 
-            return total;
-        }
+            foreach (ISoftDeleted item in objs)
+            {
+                item.IsDeleted = true;
+            }
 
-        objs.ForEach(x => x.SetPropertyValue(nameof(ISoftDeleted.IsDeleted), true));
-        return Update(objs);
+            return Update(objs);
+        }
+        else
+        {
+            return Client.Deleteable(objs).ExecuteCommand();
+        }
     }
 
     public IDeleteable<T> Deleteable<T>(T obj) where T : class, IEntity, new()
@@ -113,55 +114,49 @@ internal class SqlSugarDbContext : SpecialQueryableDbContext
 
     public override async Task<int> UpdateAsync<T>(T obj, CancellationToken cancellationToken)
     {
-        return await Client.Updateable(obj).ExecuteCommandAsync(cancellationToken);
+        return await UpdateAsync(obj, null, cancellationToken);
     }
 
     public override async Task<int> UpdateAsync<T>(T obj, string[] updateColumns, CancellationToken cancellationToken)
     {
-        return await Client.Updateable(obj).UpdateColumns(updateColumns).ExecuteCommandAsync(cancellationToken);
+        return await UpdateAsync(new List<T> { obj }, updateColumns, cancellationToken);
+    }
+
+
+    public override async Task<int> UpdateAsync<T>(List<T> objs, CancellationToken cancellationToken)
+    {
+        return await UpdateAsync(objs, null, cancellationToken);
     }
 
     public override async Task<int> UpdateAsync<T>(List<T> objs, string[] updateColumns, CancellationToken cancellationToken)
     {
-        return await Client.Updateable(objs).UpdateColumns(updateColumns).ExecuteCommandAsync(cancellationToken);
+        if (objs.Count > 0)
+        {
+            return await Client.Updateable(objs).UpdateColumnsIF(updateColumns != null && updateColumns.Length > 0, updateColumns).ExecuteCommandAsync(cancellationToken);
+        }
+        return 0;
     }
 
-    public override async Task<int> UpdateAsync<T>(List<T> objs, CancellationToken cancellationToken)
-    {
-        return await Client.Updateable(objs).ExecuteCommandAsync(cancellationToken);
-    }
 
     public override int Update<T>(T obj)
     {
-        return Client.Updateable(obj).ExecuteCommand();
+        return Update(obj, null);
     }
 
     public override int Update<T>(T obj, string[] updateColumns)
     {
-        return Client.Updateable(obj).UpdateColumns(updateColumns).ExecuteCommand();
+        return Update(new List<T> { obj }, updateColumns);
     }
 
     public override int Update<T>(List<T> objs)
     {
-        return Client.Updateable(objs).ExecuteCommand();
+        return Update(objs, null);
     }
 
     public override int Update<T>(List<T> objs, string[] updateColumns)
     {
-        return Client.Updateable(objs).UpdateColumns(updateColumns).ExecuteCommand();
+        return Client.Updateable(objs).UpdateColumnsIF(updateColumns != null && updateColumns.Length > 0, updateColumns).ExecuteCommand();
     }
 
     #endregion
-}
-
-public static class DbContextExtensions
-{
-    public static void SetPropertyValue<T>(this T obj, string propertyName, object value)
-    {
-        var prop = typeof(T).GetProperty(propertyName);
-        if (prop != null && prop.CanWrite)
-        {
-            prop.SetValue(obj, value);
-        }
-    }
 }

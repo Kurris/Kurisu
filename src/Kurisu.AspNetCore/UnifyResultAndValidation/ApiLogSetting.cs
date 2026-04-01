@@ -21,6 +21,7 @@ internal class ApiLogSetting
     public bool EnableApiRequestLog { get; set; } = true;
 
     public bool DisableResponseLogout { get; set; }
+
     public string ConnectionId { get; set; }
 
     public string Path { get; set; }

@@ -6,13 +6,10 @@ namespace Kurisu.Extensions.SqlSugar.Core.Context;
 public interface ISqlSugarDbContext
 {
     /// <summary>
-    /// code-first生成表结构
+    /// 获取操作客户端
     /// </summary>
-    /// <param name="tables"></param>
-    void CodeFirstInitTables(params Type[] tables);
-    
-    
-    ISqlSugarClient Client { get; }
+    /// <returns></returns>
+    ISqlSugarClient GetClient();
 
     /// <summary>
     /// 查询

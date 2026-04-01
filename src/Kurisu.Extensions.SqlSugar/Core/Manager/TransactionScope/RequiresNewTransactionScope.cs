@@ -3,9 +3,9 @@ using SqlSugar;
 
 namespace Kurisu.Extensions.SqlSugar.Core.Manager.TransactionScope;
 
-public class RequiresNewTransactionScope : RequiredTransactionScope
+internal class RequiresNewTransactionScope : RequiredTransactionScope
 {
-    public RequiresNewTransactionScope(ISqlSugarClient client, IsolationLevel? isolationLevel, Action<bool> afterScope)
+    public RequiresNewTransactionScope(ISqlSugarClient client, IsolationLevel? isolationLevel, Action afterScope)
         : base(client, isolationLevel, false, afterScope)
     {
     }

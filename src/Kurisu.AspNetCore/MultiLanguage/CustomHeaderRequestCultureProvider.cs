@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Linq;
 using System.Threading.Tasks;
+using System.Globalization;
+using System.Collections.Generic;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Localization;
 
@@ -13,14 +15,35 @@ namespace Kurisu.AspNetCore.MultiLanguage;
 public class CustomHeaderRequestCultureProvider : IRequestCultureProvider
 {
     private readonly string _multiLanguageKey;
+    private readonly HashSet<string> _supportedCultures = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, string> _aliasMap = new(StringComparer.OrdinalIgnoreCase);
 
     /// <summary>
-    /// 构造函数，初始化请求头键名。
+    /// 便捷构造函数：仅传入请求头键名和别名映射（使用默认支持文化）。
+    /// 例如：new CustomHeaderRequestCultureProvider("X-Language", myAliasMap)
     /// </summary>
     /// <param name="multiLanguageKey">多语言请求头键名</param>
-    public CustomHeaderRequestCultureProvider(string multiLanguageKey)
+    /// <param name="aliasMap">别名映射</param>
+    public CustomHeaderRequestCultureProvider(string multiLanguageKey, IDictionary<string, string> aliasMap)
     {
+        if (string.IsNullOrEmpty(multiLanguageKey))
+            throw new ArgumentNullException(nameof(multiLanguageKey));
+
         _multiLanguageKey = multiLanguageKey;
+        aliasMap ??= new Dictionary<string, string>()
+        {
+            { "zh", "zh-CN" },
+            { "en", "en-US" },
+             // 可以添加更多默认别名映射
+        };
+
+        foreach (var kv in aliasMap)
+        {
+            if (string.IsNullOrWhiteSpace(kv.Key) || string.IsNullOrWhiteSpace(kv.Value)) continue;
+            var ci = CultureInfo.GetCultureInfo(kv.Value);
+            _aliasMap[kv.Key.Trim()] = ci.Name;
+            _supportedCultures.Add(ci.Name);
+        }
     }
 
     /// <summary>
@@ -44,10 +67,35 @@ public class CustomHeaderRequestCultureProvider : IRequestCultureProvider
             return Task.FromResult<ProviderCultureResult>(null);
         }
 
-        var supportedCultures = new[] { "en-US", "zh-CN", "fr-FR", "de-DE" };
-        if (supportedCultures.Contains(headerValue))
+        // parse header: handle values like "en-US,en;q=0.9" or "en;q=0.8"
+        var raw = headerValue.Split(',').First().Split(';').First().Trim();
+        if (string.IsNullOrEmpty(raw)) return Task.FromResult<ProviderCultureResult>(null);
+
+        // try alias map first (e.g. "zh" -> "zh-CN")
+        if (_aliasMap.TryGetValue(raw, out var mapped))
         {
-            return Task.FromResult(new ProviderCultureResult(headerValue, headerValue));
+            if (_supportedCultures.Contains(mapped))
+                return Task.FromResult(new ProviderCultureResult(mapped, mapped));
+            // if mapped culture not in supported, still try to return mapped if valid
+            return Task.FromResult(new ProviderCultureResult(mapped, mapped));
+        }
+
+        // try to normalize to a valid culture
+        try
+        {
+            var ci = CultureInfo.GetCultureInfo(raw);
+            var name = ci.Name;
+            if (_supportedCultures.Contains(name))
+            {
+                return Task.FromResult(new ProviderCultureResult(name, name));
+            }
+
+            // if not explicitly in supported list, still return the culture (best-effort)
+            return Task.FromResult(new ProviderCultureResult(name, name));
+        }
+        catch
+        {
+            // unknown culture string
         }
 
         return Task.FromResult<ProviderCultureResult>(null);

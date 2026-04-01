@@ -8,6 +8,8 @@ internal class SqlSugarConnectionRegistry : IDbConnectionRegistry
 
     public void Register(Dictionary<string, string> connectionStrings)
     {
+        if (connectionStrings == null) throw new ArgumentNullException(nameof(connectionStrings));
+
         foreach (var kvp in connectionStrings)
         {
             _connectionStrings[kvp.Key] = kvp.Value;
@@ -16,21 +18,38 @@ internal class SqlSugarConnectionRegistry : IDbConnectionRegistry
 
     public void Register(string name, string connectionString)
     {
+        if (Exists(name))
+        {
+            throw new InvalidDataException($"重复注册'{name}'连接字符串");
+        }
+
         _connectionStrings[name] = connectionString;
     }
 
     public string GetConnectionString(string name)
     {
-        if (_connectionStrings.TryGetValue(name, out var connectionString))
+        var realName = GetRealName(name);
+        if (_connectionStrings.TryGetValue(realName, out var connectionString))
         {
             return connectionString;
         }
 
-        throw new KeyNotFoundException($"Connection string with name '{name}' not found.");
+        throw new KeyNotFoundException($"找不到名为'{name}'的连接字符串");
     }
 
     public bool Exists(string name)
     {
-        return _connectionStrings.ContainsKey(name);
+        var realName = GetRealName(name);
+        return _connectionStrings.ContainsKey(realName);
+    }
+
+    /// <summary>
+    /// 获取实际名称,去除可能的后缀
+    /// </summary>
+    /// <param name="name"></param>
+    /// <returns></returns>
+    private static string GetRealName(string name)
+    {
+        return name.Split('_', StringSplitOptions.RemoveEmptyEntries)[0];
     }
 }

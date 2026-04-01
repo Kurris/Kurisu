@@ -4,9 +4,7 @@ using System.Linq;
 using System.Reflection;
 using Kurisu.AspNetCore.Abstractions.ConfigurableOptions;
 using Kurisu.AspNetCore.Abstractions.DependencyInjection;
-using Kurisu.AspNetCore.Abstractions.State;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
 
 namespace Kurisu.AspNetCore.DependencyInjection;
 
@@ -25,37 +23,21 @@ internal static class DependencyInjectionHelper
     /// <summary>
     /// 依赖注入类
     /// </summary>
-    public static readonly Lazy<List<Type>> DependencyServices = new(() =>
-    {
-        return ActiveTypes.Value
+    public static readonly Lazy<List<Type>> DependencyServices = new(
+        () => ActiveTypes.Value
             .Where(x => x is { IsClass: true, IsPublic: true, IsAbstract: false, IsInterface: false })
             .Where(x => x.IsDefined(typeof(DiInjectAttribute), false))
-            .ToList();
-    });
-
-    public static readonly Lazy<List<Type>> StateTypes = new(() =>
-    {
-        var targetGeneric = typeof(ICopyable<>);
-
-        return ActiveTypes.Value
-            .Where(x => x is { IsClass: true, IsPublic: true, IsAbstract: false, IsInterface: false })
-            .Where(x => IsImplementFromGenericInterfaceBySelf(x, targetGeneric)
-            )
-            .ToList();
-    });
-
-    private static bool IsImplementFromGenericInterfaceBySelf(Type implementType, Type targetGenericInterface)
-    {
-        return implementType.GetInterfaces()
-            .Where(i => i.IsGenericType && i.GetGenericTypeDefinition() == targetGenericInterface)
-            .Any(i => i.GetGenericArguments()[0] == implementType);
-    }
-
+            .ToList()
+    );
 
     /// <summary>
     /// 配置类
     /// </summary>
-    public static readonly Lazy<List<Type>> Configurations = new(() => { return ActiveTypes.Value.Where(x => x.IsDefined(typeof(ConfigurationAttribute))).ToList(); });
+    public static readonly Lazy<List<Type>> Configurations = new(
+        () => ActiveTypes.Value
+            .Where(x => x.IsDefined(typeof(ConfigurationAttribute)))
+            .ToList()
+    );
 
 
     public static (string named, ServiceLifetime lifeTime, Type[] serviceTypes) GetInjectInfos(Type type)
@@ -111,9 +93,14 @@ internal static class DependencyInjectionHelper
 #if NET8_0_OR_GREATER
                 services.Add(ServiceDescriptor.DescribeKeyed(serviceType, named, implementType, lifetime));
 #endif
+#if NET6_0
+                services.Add(ServiceDescriptor.Describe(serviceType, implementType, lifetime));
+#endif
             }
-
-            services.Add(ServiceDescriptor.Describe(serviceType, implementType, lifetime));
+            else
+            {
+                services.Add(ServiceDescriptor.Describe(serviceType, implementType, lifetime));
+            }
         }
     }
 

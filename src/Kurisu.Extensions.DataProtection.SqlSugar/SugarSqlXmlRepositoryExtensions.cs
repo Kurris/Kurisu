@@ -1,7 +1,7 @@
 ﻿using System.Xml.Linq;
 using Kurisu.AspNetCore.Abstractions.DataAccess.Contract;
 using Kurisu.AspNetCore.Abstractions.DataAccess.Core.Context;
-using Kurisu.Extensions.SqlSugar.Extensions;
+using Kurisu.Extensions.SqlSugar.Utils;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.DataProtection.KeyManagement;
 using Microsoft.AspNetCore.DataProtection.Repositories;

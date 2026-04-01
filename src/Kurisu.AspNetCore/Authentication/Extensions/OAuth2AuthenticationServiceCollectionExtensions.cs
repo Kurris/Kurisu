@@ -4,7 +4,7 @@ using System.Net.Http;
 using Kurisu.AspNetCore.Abstractions.DependencyInjection;
 using Kurisu.AspNetCore.Authentication.Extensions;
 using Kurisu.AspNetCore.Authentication.Options;
-using Kurisu.AspNetCore.Utils.Extensions;
+using Kurisu.AspNetCore.Utils;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
@@ -41,7 +41,7 @@ public static class OAuth2AuthenticationServiceCollectionExtensions
                     httpClient.DefaultRequestHeaders.Add("X-Requested-Internal", "internal");
                 }
             })
-            .NotVerifyCertificate();
+            .SkipVerifyCertificate();
 
         //使用配置的HttpClient
         services.AddOptions<JwtBearerOptions>(JwtBearerDefaults.AuthenticationScheme)

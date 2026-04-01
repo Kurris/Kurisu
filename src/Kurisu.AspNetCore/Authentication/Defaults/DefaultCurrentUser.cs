@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
@@ -82,11 +81,11 @@ public class DefaultCurrentUser : DefaultCurrentTenant, ICurrentUser
     /// 获取所有角色
     /// </summary>
     /// <returns>所有角色集合，如无则为空集合</returns>
-    public IEnumerable<string> GetRoles()
+    public List<string> GetRoles()
     {
         return HttpContextAccessor.HttpContext?
                    .User.FindAll(ClaimTypes.Role)
                    .Select(c => c.Value)
-               ?? [];
+                   .ToList() ?? [];
     }
 }

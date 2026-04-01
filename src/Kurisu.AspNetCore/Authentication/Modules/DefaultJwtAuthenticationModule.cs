@@ -11,6 +11,9 @@ namespace Kurisu.AspNetCore.Authentication.Modules;
 /// </summary>
 public class DefaultJwtAuthenticationModule : AppModule
 {
+
+    public override string Name => "jwt认证模块";
+
     /// <inheritdoc />
     public override int Order => 2;
 
@@ -30,4 +33,6 @@ public class DefaultJwtAuthenticationModule : AppModule
         app.UseAuthentication();
         app.UseAuthorization();
     }
+
+    
 }

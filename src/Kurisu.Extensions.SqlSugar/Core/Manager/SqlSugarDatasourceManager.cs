@@ -1,188 +1,166 @@
 using System.Data;
 using Kurisu.AspNetCore.Abstractions.DataAccess;
 using Kurisu.AspNetCore.Abstractions.DataAccess.Core;
-using Kurisu.AspNetCore.Abstractions.DataAccess.Extensions;
 using Kurisu.Extensions.SqlSugar.Core.Manager.TransactionScope;
 using Microsoft.Extensions.DependencyInjection;
-using SqlSugar;
 using Microsoft.Extensions.Logging;
+using SqlSugar;
 
 namespace Kurisu.Extensions.SqlSugar.Core.Manager;
 
+/// <summary>
+/// 数据源管理器
+/// </summary>
 public sealed class SqlSugarDatasourceManager : AbstractDatasourceManager<ISqlSugarClient>
 {
-    private readonly Stack<ISqlSugarClient> _clients = new();
-    private readonly Stack<Propagation> _propagations = new();
+    private readonly NameClientCollection _nameClientCollection = new();
     private readonly IServiceProvider _serviceProvider;
-    private readonly ILogger<SqlSugarDatasourceManager> _logger;
+    private readonly ILogger<ISqlSugarClient> _logger;
 
-    private readonly Action<bool> _onAfterTransScope;
-    private readonly Action _onAfterScope;
+    private readonly Action _onAfterTransScope;
+    private readonly Action _onDatesourceAfterScope;
+
+    private int _newClientIndex = 0;
 
 
-    public int ClientCount => _clients.Count;
-    public int PropagationCount => _propagations.Count;
+    private readonly IDbConnectionStringManager _dbConnectionManager;
+
+    public int ClientCount => _nameClientCollection.Count;
 
     public SqlSugarDatasourceManager(IServiceProvider serviceProvider)
     {
         _serviceProvider = serviceProvider;
-        _logger = _serviceProvider.GetService<ILogger<SqlSugarDatasourceManager>>();
+        _logger = _serviceProvider.GetService<ILogger<ISqlSugarClient>>();
+        _dbConnectionManager = _serviceProvider.GetService<IDbConnectionStringManager>();
 
-        _logger.LogDebug("SqlSugarDatasourceManager initialized. Initial ClientCount={ClientCount}, PropagationCount={PropagationCount}", _clients.Count, _propagations.Count);
-
-        _onAfterScope = () =>
+        _onDatesourceAfterScope = () =>
         {
-            //保存最后一个，避免栈空,用于后续数据库操作
-            if (_clients.Count > 1)
-            {
-                _clients.Pop();
-                _logger.LogDebug("Client popped after transaction end. Current client count: {ClientCount}", _clients.Count);
-            }
+            _logger.LogDebug("数据源作用域结束. 当前连接作用域为'{Current}'", _dbConnectionManager.Current);
         };
 
-        _onAfterTransScope = pop =>
+        _onAfterTransScope = () =>
         {
-            // capture counts for logging
-            var prevPropCount = _propagations.Count;
-            _propagations.Pop();
-            var newPropCount = _propagations.Count;
-            _logger.LogDebug("Transaction scope ended. pop={Pop}. PropagationCount: {Prev}-> {New}", pop, prevPropCount, newPropCount);
-
-            if (!pop) return;
-
-            _onAfterScope();
+            _onDatesourceAfterScope();
         };
     }
 
     public override IDisposable CreateScope(string name)
     {
-        var dbConnectionManager = _serviceProvider.GetRequiredService<IDbConnectionManager>();
-        if (!dbConnectionManager.NeedCreateScope(name))
+        try
         {
-            return dbConnectionManager.CreateScope(name, null);
-        }
+            //通过当前数据源判断是否需要切换数据源
+            if (!_dbConnectionManager.NeedCreateScope(name))
+            {
+                _logger.LogDebug("当前连接作用域为'{Name}',无需创建.", name);
+                return _dbConnectionManager.CreateScope(name, null);
+            }
 
-        var scope = dbConnectionManager.CreateScope(name, () => _onAfterScope());
-        _logger.LogDebug("Created new scope with name '{Name}'.", name);
-        CreateClient();
-        return scope;
+            return _dbConnectionManager.CreateScope(name, () => _onDatesourceAfterScope());
+        }
+        finally
+        {
+            if (!_nameClientCollection.Exists(name))
+            {
+                var client = _serviceProvider.GetService<ISqlSugarClient>();
+                _nameClientCollection.TryAddClient(name, client);
+            }
+        }
     }
 
-    public override ISqlSugarClient CreateClient()
+    public override TClientDefined GetCurrentClient<TClientDefined>()
     {
-        var client = _serviceProvider.GetRequiredService<ISqlSugarClient>();
-        _clients.Push(client);
-        _logger.LogDebug("Created new Client and pushed to stack. ClientCount={ClientCount}", _clients.Count);
-        return client;
-    }
-
-
-    // public override ISqlSugarClient CreateClient(string name)
-    // {
-    //     var dbConnectionManager = _serviceProvider.GetRequiredService<IDbConnectionManager>();
-    //     using (dbConnectionManager.CreateScope(name))
-    //     {
-    //         var client = _serviceProvider.GetRequiredService<ISqlSugarClient>();
-    //         _clients.Push(client);
-    //         _logger.LogDebug("Created new Client with scope '{Name}' and pushed to stack. ClientCount={ClientCount}", name, _clients.Count);
-    //         return _clients.Peek();
-    //     }
-    // }
-
-
-    public override object GetCurrentClient()
-    {
-        var current = _clients.Count > 0 ? _clients.Peek() : null;
-        if (current == null)
+        var client = GetCurrentClient();
+        if (client is TClientDefined typedClient)
         {
-            _logger.LogDebug("No current Client found. Creating a new client.");
-            return CreateClient();
+            return typedClient;
         }
 
-        _logger.LogDebug("Returning current Client. ClientCount={ClientCount}", _clients.Count);
-        return current;
+        throw new InvalidCastException($"无法将当前客户端转换为类型 {typeof(TClientDefined).FullName}.");
+    }
+
+    public override ISqlSugarClient GetCurrentClient()
+    {
+        var name = _dbConnectionManager.Current;
+        return _nameClientCollection.GetClient(name);
     }
 
     public override ITransactionScope CreateTransScope(Propagation propagation, IsolationLevel? isolationLevel = null)
     {
         var scope = CreateTransScopeInternal(propagation, isolationLevel);
-        _propagations.Push(propagation);
         return scope;
     }
 
+
     private ITransactionScope CreateTransScopeInternal(Propagation propagation, IsolationLevel? isolationLevel = null)
     {
-        _logger.LogDebug("CreateTransScopeInternal called. propagation={Propagation}, isolationLevel={IsolationLevel}, clients={ClientCount}, propagations={PropagationCount}", propagation, isolationLevel, _clients.Count, _propagations.Count);
-
+        var isolationLevelName = isolationLevel.HasValue ? isolationLevel.Value.ToString() : "Default";
         switch (propagation)
         {
             case Propagation.Required:
-            {
-                var client = _clients.Count > 0
-                    ? this.GetCurrentClient<ISqlSugarClient>()
-                    : CreateClient();
+                {
+                    var client = GetCurrentClient();
+                    var hasTran = client.Ado.IsAnyTran();
 
-                var hasTran = client.Ado.IsAnyTran();
-                _logger.LogDebug("Creating RequiredTransactionScope. hasAmbientTransaction={HasTran}", hasTran);
-
-                return new RequiredTransactionScope(client,
-                    isolationLevel,
-                    hasTran,
-                    _onAfterTransScope
-                );
-            }
+                    return new RequiredTransactionScope(client,
+                        isolationLevel,
+                        hasTran,
+                        _onAfterTransScope
+                    );
+                }
             case Propagation.RequiresNew:
-            {
-                var client = CreateClient();
-                _logger.LogDebug("Creating RequiresNewTransactionScope. ClientCount={ClientCount}", _clients.Count);
-                return new RequiresNewTransactionScope(client, isolationLevel, _onAfterTransScope);
-            }
+                {
+                    _newClientIndex++;
+                    var name = $"{_dbConnectionManager.Current}_New{_newClientIndex}";
+                    var tempScope = this.CreateScope(name);
+                    var client = GetCurrentClient();
+                    return new RequiresNewTransactionScope(client, isolationLevel, () =>
+                    {
+                        _onAfterTransScope();
+                        tempScope.Dispose();
+                        _newClientIndex--;
+                    });
+                }
             case Propagation.Mandatory:
-            {
-                var client = _propagations.Count > 0
-                    ? this.GetCurrentClient<ISqlSugarClient>()
-                    : throw new InvalidOperationException("No existing transaction found for transaction marked with propagation 'Mandatory'.");
+                {
+                    var client = GetCurrentClient();
+                    var hasTrans = client.Ado.IsAnyTran();
+                    if (!hasTrans)
+                    {
+                        throw new InvalidOperationException("当前事务传播性为'Mandatory',请确保调用链中存在事务.");
+                    }
 
-                _logger.LogDebug("Creating MandatoryTransactionScope. PropagationCount={PropagationCount}", _propagations.Count);
-
-                return new MandatoryTransactionScope(client,
-                    isolationLevel, _onAfterTransScope
-                );
-            }
+                    return new MandatoryTransactionScope(client,
+                        isolationLevel, _onAfterTransScope
+                    );
+                }
             case Propagation.Nested:
-            {
-                // 如果没有 ambient transaction，则与 Required 行为一致（新建事务）
-                var client = _clients.Count > 0 ? this.GetCurrentClient<ISqlSugarClient>() : CreateClient();
-                var hasTran = client.Ado.IsAnyTran();
-
-                if (!hasTran)
                 {
-                    // 无外层事务：像 Required 一样新建事务，并确保在 Dispose 时清理
-                    _logger.LogDebug("No ambient transaction found for Nested propagation. Falling back to Required behavior.");
-                    return new RequiredTransactionScope(client, isolationLevel, false, _onAfterTransScope);
-                }
+                    var client = GetCurrentClient();
+                    var hasTran = client.Ado.IsAnyTran();
 
-                // 有外层事务：使用 savepoint 实现嵌套事务
-                _logger.LogDebug("Creating NestedTransactionScope. Ambient transaction exists.");
-                return new NestedTransactionScope(client, isolationLevel, _onAfterTransScope);
-            }
+                    if (!hasTran)
+                    {
+                        return new RequiredTransactionScope(client, isolationLevel, false, _onAfterTransScope);
+                    }
+
+                    return new NestedTransactionScope(client, isolationLevel, _onAfterTransScope);
+                }
             case Propagation.Never:
-            {
-                // 如果当前存在任何 transaction propagation，则不允许在事务中运行
-                if (_propagations.Count > 0)
                 {
-                    _logger.LogDebug("Propagation 'Never' requested but existing propagation detected. PropagationCount={PropagationCount}", _propagations.Count);
-                    throw new InvalidOperationException("Existing transaction found for transaction marked with propagation 'Never'.");
-                }
+                    // 无 ambient：按非事务方式执行（Begin/Commit/Rollback 都为 no-op）
+                    var client = GetCurrentClient();
+                    var hasTrans = client.Ado.IsAnyTran();
+                    if (hasTrans)
+                    {
+                        throw new InvalidOperationException($"当前事务传播性标记为'Never',不允许执行作用域中开启事务");
+                    }
 
-                // 无 ambient：按非事务方式执行（Begin/Commit/Rollback 都为 no-op）
-                var client = _clients.Count > 0 ? this.GetCurrentClient<ISqlSugarClient>() : CreateClient();
-                _logger.LogDebug("Creating NoTransactionScope. ClientCount={ClientCount}", _clients.Count);
-                return new NoTransactionScope(client, isolationLevel, _onAfterTransScope);
-            }
+                    _logger.LogDebug("创建NoTransactionScope. 客户端个数={ClientCount}", _nameClientCollection.Count);
+                    return new NoTransactionScope(client, isolationLevel, _onAfterTransScope);
+                }
 
             default:
-                throw new NotSupportedException($"Propagation {propagation} not supported.");
+                throw new NotSupportedException($"事务传播性 {propagation} 不支持.");
         }
     }
 }

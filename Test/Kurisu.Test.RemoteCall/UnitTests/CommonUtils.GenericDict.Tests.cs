@@ -4,7 +4,6 @@ using System.Collections;
 using System.Reflection;
 using Kurisu.RemoteCall.Utils;
 using Kurisu.RemoteCall.Abstractions;
-using Kurisu.RemoteCall.Utils;
 using Xunit;
 using Newtonsoft.Json.Linq;
 

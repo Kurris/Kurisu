@@ -17,18 +17,6 @@ namespace Kurisu.Test.RemoteCall.Generated
             Assert.Throws<ArgumentException>(() => new EnableRemoteClientAttribute("name", "http://a/b/"));
         }
 
-        [Fact]
-        public void EnableRemoteClientAttribute_DefaultName_AssignedOnConfigureServices()
-        {
-            var attr = new EnableRemoteClientAttribute("http://example.com");
-            var services = new ServiceCollection();
-            attr.ConfigureServices(services);
-            // Ensure http client registration exists with default name
-            var provider = services.BuildServiceProvider();
-            var factory = provider.GetService<IHttpClientFactory>();
-            // just assert services built and registration didn't throw and Name defaulted
-            Assert.Equal(Kurisu.RemoteCall.RemoteCallStatic.DefaultClientName, attr.Name);
-        }
 
         [Fact]
         public void RequestQueryAttribute_NameProperty_Works()

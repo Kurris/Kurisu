@@ -9,6 +9,8 @@ namespace Kurisu.AspNetCore.Startup.Module;
 /// </summary>
 public class DefaultCorsModule : AppModule
 {
+    public override string Name => "跨域模块";
+
     private const string Cors = "defaultCors";
 
     /// <inheritdoc />

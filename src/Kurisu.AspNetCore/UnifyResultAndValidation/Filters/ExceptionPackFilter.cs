@@ -1,8 +1,6 @@
 using System.Threading.Tasks;
 using Kurisu.AspNetCore.Abstractions.DependencyInjection;
-using Kurisu.AspNetCore.Abstractions.UnifyResultAndValidation;
-using Kurisu.AspNetCore.CustomClass;
-using Kurisu.AspNetCore.UnifyResultAndValidation.Exceptions;
+using Kurisu.AspNetCore.Abstractions.Result;
 using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -12,7 +10,6 @@ namespace Kurisu.AspNetCore.UnifyResultAndValidation.Filters;
 /// 异常过滤器
 /// </summary>
 [SkipScan]
-// ReSharper disable once ClassNeverInstantiated.Global
 public class ExceptionPackFilter : IAsyncExceptionFilter
 {
     /// <summary>

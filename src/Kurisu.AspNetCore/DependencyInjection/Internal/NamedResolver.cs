@@ -26,9 +26,11 @@ internal class NamedResolver : INamedResolver
     /// <returns></returns>
     public object GetService(Type interfaceType, string named)
     {
-        return DependencyInjectionHelper.NamedServices.TryGetValue(new Tuple<Type, string>(interfaceType, named), out var findType)
-                        ? _serviceProvider.GetServices(interfaceType).Where(x => x.GetType() == findType).FirstOrDefault()
-                        : null;
+        if (DependencyInjectionHelper.NamedServices.TryGetValue(new Tuple<Type, string>(interfaceType, named), out var findType))
+        {
+            return _serviceProvider.GetServices(interfaceType).Where(x => x.GetType() == findType).FirstOrDefault();
+        }
+        return null;
     }
 
     /// <summary>

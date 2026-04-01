@@ -1,16 +1,22 @@
 using Kurisu.AspNetCore.Abstractions.DataAccess;
 using Microsoft.Extensions.DependencyInjection;
 using SqlSugar;
-using Kurisu.Extensions.SqlSugar;
-using Kurisu.Extensions.SqlSugar.Extensions;
 using Kurisu.AspNetCore.Abstractions.DataAccess.Core;
-using Kurisu.AspNetCore.Abstractions.DataAccess.Extensions;
 using Kurisu.Extensions.SqlSugar.Core.Manager;
+using Kurisu.AspNetCore.Abstractions.Startup;
+using Kurisu.AspNetCore.Abstractions.DataAccess.Core.Context;
 
 namespace Kurisu.Test.DataAccess.Trans;
 
+[Trait("Db","Trans")]
 public class TransactionManagerTests
 {
+    private readonly IServiceProvider _sp;
+    public TransactionManagerTests()
+    {
+        _sp = TestHelper.GetServiceProvider();
+    }
+
     /// <summary>
     /// 准备测试用表：若不存在则创建，并清空数据。根据 TEST_DB_PROVIDER 生成兼容的建表语句（mysql / sqlserver）。
     /// </summary>
@@ -44,37 +50,45 @@ public class TransactionManagerTests
     [Fact]
     public async Task Required_JoinsAmbientAndCommitByOuter_PersistsAllInnerAndOuterInserts()
     {
-        var sp = TestHelper.GetServiceProvider();
-        var manager = sp.GetRequiredService<IDatasourceManager>();
 
-        await PrepareTableAsync(manager);
-
-        using (var outer = manager.CreateTransScope(Propagation.Required))
+        var scope = _sp.CreateScope();
+        var sp = scope.ServiceProvider;
+        using (sp.InitLifecycle())
         {
-            await outer.BeginAsync();
-
-            var outerClient = manager.GetCurrentClient<ISqlSugarClient>();
-            await outerClient!.Ado.ExecuteCommandAsync("INSERT INTO tx_test (name) VALUES (@name)", new { name = "outer" });
-
-            using (var inner = manager.CreateTransScope(Propagation.Required))
+            using (sp.GetService<IDbContext>().CreateDatasourceScope())
             {
-                await inner.BeginAsync(); // 加入外层事务
-                var innerClient = manager.GetCurrentClient<ISqlSugarClient>();
-                await innerClient!.Ado.ExecuteCommandAsync("INSERT INTO tx_test (name) VALUES (@name)", new { name = "inner" });
+                var manager = sp.GetRequiredService<IDatasourceManager>();
 
-                // 内层 Commit 对于 join 情况为 no-op
-                await inner.CommitAsync();
+                await PrepareTableAsync(manager);
+
+                using (var outer = manager.CreateTransScope(Propagation.Required))
+                {
+                    await outer.BeginAsync();
+
+                    var outerClient = manager.GetCurrentClient<ISqlSugarClient>();
+                    await outerClient!.Ado.ExecuteCommandAsync("INSERT INTO tx_test (name) VALUES (@name)", new { name = "outer" });
+
+                    using (var inner = manager.CreateTransScope(Propagation.Required))
+                    {
+                        await inner.BeginAsync(); // 加入外层事务
+                        var innerClient = manager.GetCurrentClient<ISqlSugarClient>();
+                        await innerClient!.Ado.ExecuteCommandAsync("INSERT INTO tx_test (name) VALUES (@name)", new { name = "inner" });
+
+                        // 内层 Commit 对于 join 情况为 no-op
+                        await inner.CommitAsync();
+                    }
+
+                    // 外层提交：应持久化内外两条记录
+                    await outer.CommitAsync();
+                }
+
+                var countOuter = await CountAsync(manager, "outer");
+                var countInner = await CountAsync(manager, "inner");
+
+                Assert.Equal(1, countOuter);
+                Assert.Equal(1, countInner);
             }
-
-            // 外层提交：应持久化内外两条记录
-            await outer.CommitAsync();
         }
-
-        var countOuter = await CountAsync(manager, "outer");
-        var countInner = await CountAsync(manager, "inner");
-
-        Assert.Equal(1, countOuter);
-        Assert.Equal(1, countInner);
     }
 
     /// <summary>
@@ -83,35 +97,43 @@ public class TransactionManagerTests
     [Fact]
     public async Task Required_RollbackInInner_CancelsAmbientAndNoRowsPersisted()
     {
-        var sp = TestHelper.GetServiceProvider();
-        var manager = sp.GetRequiredService<IDatasourceManager>();
-
-        await PrepareTableAsync(manager);
-
-        using (var outer = manager.CreateTransScope(Propagation.Required))
+        var scope = _sp.CreateScope();
+        var sp = scope.ServiceProvider;
+        using (sp.InitLifecycle())
         {
-            await outer.BeginAsync();
-            var outerClient = manager.GetCurrentClient<ISqlSugarClient>();
-            await outerClient!.Ado.ExecuteCommandAsync("INSERT INTO tx_test (name) VALUES (@name)", new { name = "outer" });
-
-            using (var inner = manager.CreateTransScope(Propagation.Required))
+            using (sp.GetService<IDbContext>().CreateDatasourceScope())
             {
-                await inner.BeginAsync(); // 加入外层事务
-                var innerClient = manager.GetCurrentClient<ISqlSugarClient>();
-                await innerClient!.Ado.ExecuteCommandAsync("INSERT INTO tx_test (name) VALUES (@name)", new { name = "inner" });
+                var manager = sp.GetRequiredService<IDatasourceManager>();
 
-                // 内层回滚：应回滚 ambient 事务
-                await inner.RollbackAsync();
+                await PrepareTableAsync(manager);
+
+                using (var outer = manager.CreateTransScope(Propagation.Required))
+                {
+                    await outer.BeginAsync();
+                    var outerClient = manager.GetCurrentClient<ISqlSugarClient>();
+                    await outerClient!.Ado.ExecuteCommandAsync("INSERT INTO tx_test (name) VALUES (@name)", new { name = "outer" });
+
+                    using (var inner = manager.CreateTransScope(Propagation.Required))
+                    {
+                        await inner.BeginAsync(); // 加入外层事务
+                        var innerClient = manager.GetCurrentClient<ISqlSugarClient>();
+                        await innerClient!.Ado.ExecuteCommandAsync("INSERT INTO tx_test (name) VALUES (@name)", new { name = "inner" });
+
+                        // 内层回滚：应回滚 ambient 事务
+                        await inner.RollbackAsync();
+                    }
+
+                    await outer.RollbackAsync();
+                }
+
+                var countOuter = await CountAsync(manager, "outer");
+                var countInner = await CountAsync(manager, "inner");
+
+                Assert.Equal(0, countOuter);
+                Assert.Equal(0, countInner);
             }
-
-            await outer.RollbackAsync();
         }
 
-        var countOuter = await CountAsync(manager, "outer");
-        var countInner = await CountAsync(manager, "inner");
-
-        Assert.Equal(0, countOuter);
-        Assert.Equal(0, countInner);
     }
 
     /// <summary>
@@ -120,36 +142,44 @@ public class TransactionManagerTests
     [Fact]
     public async Task RequiresNew_IndependentCommit_PersistsBoth()
     {
-        var sp = TestHelper.GetServiceProvider();
-        var manager = sp.GetRequiredService<IDatasourceManager>();
-
-        await PrepareTableAsync(manager);
-
-        using (var outer = manager.CreateTransScope(Propagation.Required))
+        var scope = _sp.CreateScope();
+        var sp = scope.ServiceProvider;
+        using (sp.InitLifecycle())
         {
-            await outer.BeginAsync();
-            var outerClient = manager.GetCurrentClient<ISqlSugarClient>();
-            await outerClient!.Ado.ExecuteCommandAsync("INSERT INTO tx_test (name) VALUES (@name)", new { name = "outer" });
-
-            using (var inner = manager.CreateTransScope(Propagation.RequiresNew))
+            using (sp.GetService<IDbContext>().CreateDatasourceScope())
             {
-                await inner.BeginAsync();
-                var innerClient = manager.GetCurrentClient<ISqlSugarClient>();
-                await innerClient!.Ado.ExecuteCommandAsync("INSERT INTO tx_test (name) VALUES (@name)", new { name = "inner" });
+                var manager = sp.GetRequiredService<IDatasourceManager>();
 
-                // 独立提交内层事务
-                await inner.CommitAsync();
+                await PrepareTableAsync(manager);
+
+                using (var outer = manager.CreateTransScope(Propagation.Required))
+                {
+                    await outer.BeginAsync();
+                    var outerClient = manager.GetCurrentClient<ISqlSugarClient>();
+                    await outerClient!.Ado.ExecuteCommandAsync("INSERT INTO tx_test (name) VALUES (@name)", new { name = "outer" });
+
+                    using (var inner = manager.CreateTransScope(Propagation.RequiresNew))
+                    {
+                        await inner.BeginAsync();
+                        var innerClient = manager.GetCurrentClient<ISqlSugarClient>();
+                        await innerClient!.Ado.ExecuteCommandAsync("INSERT INTO tx_test (name) VALUES (@name)", new { name = "inner" });
+
+                        // 独立提交内层事务
+                        await inner.CommitAsync();
+                    }
+
+                    // 提交外层事务
+                    await outer.CommitAsync();
+                }
+
+                var countOuter = await CountAsync(manager, "outer");
+                var countInner = await CountAsync(manager, "inner");
+
+                Assert.Equal(1, countOuter);
+                Assert.Equal(1, countInner);
             }
-
-            // 提交外层事务
-            await outer.CommitAsync();
         }
 
-        var countOuter = await CountAsync(manager, "outer");
-        var countInner = await CountAsync(manager, "inner");
-
-        Assert.Equal(1, countOuter);
-        Assert.Equal(1, countInner);
     }
 
     /// <summary>
@@ -158,36 +188,43 @@ public class TransactionManagerTests
     [Fact]
     public async Task RequiresNew_RollbackInner_DoesNotAffectOuter()
     {
-        var sp = TestHelper.GetServiceProvider();
-        var manager = sp.GetRequiredService<IDatasourceManager>();
-
-        await PrepareTableAsync(manager);
-
-        using (var outer = manager.CreateTransScope(Propagation.Required))
+        var scope = _sp.CreateScope();
+        var sp = scope.ServiceProvider;
+        using (sp.InitLifecycle())
         {
-            await outer.BeginAsync();
-            var outerClient = manager.GetCurrentClient<ISqlSugarClient>();
-            await outerClient!.Ado.ExecuteCommandAsync("INSERT INTO tx_test (name) VALUES (@name)", new { name = "outer" });
-
-            using (var inner = manager.CreateTransScope(Propagation.RequiresNew))
+            using (sp.GetService<IDbContext>().CreateDatasourceScope())
             {
-                await inner.BeginAsync();
-                var innerClient = manager.GetCurrentClient<ISqlSugarClient>();
-                await innerClient!.Ado.ExecuteCommandAsync("INSERT INTO tx_test (name) VALUES (@name)", new { name = "inner" });
+                var manager = sp.GetRequiredService<IDatasourceManager>();
 
-                // 回滚内层事务
-                await inner.RollbackAsync();
+                await PrepareTableAsync(manager);
+
+                using (var outer = manager.CreateTransScope(Propagation.Required))
+                {
+                    await outer.BeginAsync();
+                    var outerClient = manager.GetCurrentClient<ISqlSugarClient>();
+                    await outerClient!.Ado.ExecuteCommandAsync("INSERT INTO tx_test (name) VALUES (@name)", new { name = "outer" });
+
+                    using (var inner = manager.CreateTransScope(Propagation.RequiresNew))
+                    {
+                        await inner.BeginAsync();
+                        var innerClient = manager.GetCurrentClient<ISqlSugarClient>();
+                        await innerClient!.Ado.ExecuteCommandAsync("INSERT INTO tx_test (name) VALUES (@name)", new { name = "inner" });
+
+                        // 回滚内层事务
+                        await inner.RollbackAsync();
+                    }
+
+                    // 提交外层事务
+                    await outer.CommitAsync();
+                }
+
+                var countOuter = await CountAsync(manager, "outer");
+                var countInner = await CountAsync(manager, "inner");
+
+                Assert.Equal(1, countOuter);
+                Assert.Equal(0, countInner);
             }
-
-            // 提交外层事务
-            await outer.CommitAsync();
         }
-
-        var countOuter = await CountAsync(manager, "outer");
-        var countInner = await CountAsync(manager, "inner");
-
-        Assert.Equal(1, countOuter);
-        Assert.Equal(0, countInner);
     }
 
     /// <summary>
@@ -196,13 +233,20 @@ public class TransactionManagerTests
     [Fact]
     public async Task Mandatory_WithoutAmbient_ThrowsInvalidOperationException()
     {
-        var sp = TestHelper.GetServiceProvider();
-        var manager = sp.GetRequiredService<IDatasourceManager>();
+        var scope = _sp.CreateScope();
+        var sp = scope.ServiceProvider;
+        using (sp.InitLifecycle())
+        {
+            using (sp.GetService<IDbContext>().CreateDatasourceScope())
+            {
+                var manager = sp.GetRequiredService<IDatasourceManager>();
 
-        await PrepareTableAsync(manager);
+                await PrepareTableAsync(manager);
 
-        // CreateTransScope should throw because there is no ambient transaction
-        Assert.Throws<InvalidOperationException>(() => manager.CreateTransScope(Propagation.Mandatory));
+                // CreateTransScope should throw because there is no ambient transaction
+                Assert.Throws<InvalidOperationException>(() => manager.CreateTransScope(Propagation.Mandatory));
+            }
+        }
     }
 
     /// <summary>
@@ -211,37 +255,44 @@ public class TransactionManagerTests
     [Fact]
     public async Task Mandatory_JoinsAmbientAndCommitByOuter_PersistsAllInnerAndOuterInserts()
     {
-        var sp = TestHelper.GetServiceProvider();
-        var manager = sp.GetRequiredService<IDatasourceManager>();
-
-        await PrepareTableAsync(manager);
-
-        using (var outer = manager.CreateTransScope(Propagation.Required))
+        var scope = _sp.CreateScope();
+        var sp = scope.ServiceProvider;
+        using (sp.InitLifecycle())
         {
-            await outer.BeginAsync();
-
-            var outerClient = manager.GetCurrentClient<ISqlSugarClient>();
-            await outerClient!.Ado.ExecuteCommandAsync("INSERT INTO tx_test (name) VALUES (@name)", new { name = "outer_m" });
-
-            using (var inner = manager.CreateTransScope(Propagation.Mandatory))
+            using (sp.GetService<IDbContext>().CreateDatasourceScope())
             {
-                await inner.BeginAsync(); // 加入外层事务
-                var innerClient = manager.GetCurrentClient<ISqlSugarClient>();
-                await innerClient!.Ado.ExecuteCommandAsync("INSERT INTO tx_test (name) VALUES (@name)", new { name = "inner_m" });
+                var manager = sp.GetRequiredService<IDatasourceManager>();
 
-                // 内层 Commit 对于 join 情况为 no-op
-                await inner.CommitAsync();
+                await PrepareTableAsync(manager);
+
+                using (var outer = manager.CreateTransScope(Propagation.Required))
+                {
+                    await outer.BeginAsync();
+
+                    var outerClient = manager.GetCurrentClient<ISqlSugarClient>();
+                    await outerClient!.Ado.ExecuteCommandAsync("INSERT INTO tx_test (name) VALUES (@name)", new { name = "outer_m" });
+
+                    using (var inner = manager.CreateTransScope(Propagation.Mandatory))
+                    {
+                        await inner.BeginAsync(); // 加入外层事务
+                        var innerClient = manager.GetCurrentClient<ISqlSugarClient>();
+                        await innerClient!.Ado.ExecuteCommandAsync("INSERT INTO tx_test (name) VALUES (@name)", new { name = "inner_m" });
+
+                        // 内层 Commit 对于 join 情况为 no-op
+                        await inner.CommitAsync();
+                    }
+
+                    // 外层提交：应持久化内外两条记录
+                    await outer.CommitAsync();
+                }
+
+                var countOuter = await CountAsync(manager, "outer_m");
+                var countInner = await CountAsync(manager, "inner_m");
+
+                Assert.Equal(1, countOuter);
+                Assert.Equal(1, countInner);
             }
-
-            // 外层提交：应持久化内外两条记录
-            await outer.CommitAsync();
         }
-
-        var countOuter = await CountAsync(manager, "outer_m");
-        var countInner = await CountAsync(manager, "inner_m");
-
-        Assert.Equal(1, countOuter);
-        Assert.Equal(1, countInner);
     }
 
     /// <summary>
@@ -250,35 +301,42 @@ public class TransactionManagerTests
     [Fact]
     public async Task Mandatory_InnerThrows_OuterDoesNotCatch_RollbackAll()
     {
-        var sp = TestHelper.GetServiceProvider();
-        var manager = sp.GetRequiredService<IDatasourceManager>();
-
-        await PrepareTableAsync(manager);
-
-        using (var outer = manager.CreateTransScope(Propagation.Required))
+        var scope = _sp.CreateScope();
+        var sp = scope.ServiceProvider;
+        using (sp.InitLifecycle())
         {
-            await outer.BeginAsync();
-            var outerClient = manager.GetCurrentClient<ISqlSugarClient>();
-            await outerClient!.Ado.ExecuteCommandAsync("INSERT INTO tx_test (name) VALUES (@name)", new { name = "outer_m2" });
-
-            using (var inner = manager.CreateTransScope(Propagation.Mandatory))
+            using (sp.GetService<IDbContext>().CreateDatasourceScope())
             {
-                await inner.BeginAsync(); // 加入外层事务
-                var innerClient = manager.GetCurrentClient<ISqlSugarClient>();
-                await innerClient!.Ado.ExecuteCommandAsync("INSERT INTO tx_test (name) VALUES (@name)", new { name = "inner_m2" });
+                var manager = sp.GetRequiredService<IDatasourceManager>();
 
-                // 内层抛异常：回滚 ambient 事务
-                await inner.RollbackAsync();
+                await PrepareTableAsync(manager);
+
+                using (var outer = manager.CreateTransScope(Propagation.Required))
+                {
+                    await outer.BeginAsync();
+                    var outerClient = manager.GetCurrentClient<ISqlSugarClient>();
+                    await outerClient!.Ado.ExecuteCommandAsync("INSERT INTO tx_test (name) VALUES (@name)", new { name = "outer_m2" });
+
+                    using (var inner = manager.CreateTransScope(Propagation.Mandatory))
+                    {
+                        await inner.BeginAsync(); // 加入外层事务
+                        var innerClient = manager.GetCurrentClient<ISqlSugarClient>();
+                        await innerClient!.Ado.ExecuteCommandAsync("INSERT INTO tx_test (name) VALUES (@name)", new { name = "inner_m2" });
+
+                        // 内层抛异常：回滚 ambient 事务
+                        await inner.RollbackAsync();
+                    }
+
+                    await outer.RollbackAsync();
+                }
+
+                var countOuter = await CountAsync(manager, "outer_m2");
+                var countInner = await CountAsync(manager, "inner_m2");
+
+                Assert.Equal(0, countOuter);
+                Assert.Equal(0, countInner);
             }
-
-            await outer.RollbackAsync();
         }
-
-        var countOuter = await CountAsync(manager, "outer_m2");
-        var countInner = await CountAsync(manager, "inner_m2");
-
-        Assert.Equal(0, countOuter);
-        Assert.Equal(0, countInner);
     }
 
     /// <summary>
@@ -287,21 +345,28 @@ public class TransactionManagerTests
     [Fact]
     public async Task Nested_WithoutAmbient_BehavesLikeRequired()
     {
-        var sp = TestHelper.GetServiceProvider();
-        var manager = sp.GetRequiredService<IDatasourceManager>();
-
-        await PrepareTableAsync(manager);
-
-        using (var scope = manager.CreateTransScope(Propagation.Nested))
+        var scope = _sp.CreateScope();
+        var sp = scope.ServiceProvider;
+        using (sp.InitLifecycle())
         {
-            await scope.BeginAsync();
-            var client = manager.GetCurrentClient<ISqlSugarClient>();
-            await client!.Ado.ExecuteCommandAsync("INSERT INTO tx_test (name) VALUES (@name)", new { name = "nested_no_ambient" });
-            await scope.CommitAsync();
-        }
+            using (sp.GetService<IDbContext>().CreateDatasourceScope())
+            {
+                var manager = sp.GetRequiredService<IDatasourceManager>();
 
-        var count = await CountAsync(manager, "nested_no_ambient");
-        Assert.Equal(1, count);
+                await PrepareTableAsync(manager);
+
+                using (var scopeTrans = manager.CreateTransScope(Propagation.Nested))
+                {
+                    await scopeTrans.BeginAsync();
+                    var client = manager.GetCurrentClient<ISqlSugarClient>();
+                    await client!.Ado.ExecuteCommandAsync("INSERT INTO tx_test (name) VALUES (@name)", new { name = "nested_no_ambient" });
+                    await scopeTrans.CommitAsync();
+                }
+
+                var count = await CountAsync(manager, "nested_no_ambient");
+                Assert.Equal(1, count);
+            }
+        }
     }
 
     /// <summary>
@@ -310,37 +375,44 @@ public class TransactionManagerTests
     [Fact]
     public async Task Nested_JoinsAmbientAndCommitByOuter_PersistsAllInnerAndOuterInserts()
     {
-        var sp = TestHelper.GetServiceProvider();
-        var manager = sp.GetRequiredService<IDatasourceManager>();
-
-        await PrepareTableAsync(manager);
-
-        using (var outer = manager.CreateTransScope(Propagation.Required))
+        var scope = _sp.CreateScope();
+        var sp = scope.ServiceProvider;
+        using (sp.InitLifecycle())
         {
-            await outer.BeginAsync();
-
-            var outerClient = manager.GetCurrentClient<ISqlSugarClient>();
-            await outerClient!.Ado.ExecuteCommandAsync("INSERT INTO tx_test (name) VALUES (@name)", new { name = "outer_nested" });
-
-            using (var inner = manager.CreateTransScope(Propagation.Nested))
+            using (sp.GetService<IDbContext>().CreateDatasourceScope())
             {
-                await inner.BeginAsync(); // 创建 savepoint
-                var innerClient = manager.GetCurrentClient<ISqlSugarClient>();
-                await innerClient!.Ado.ExecuteCommandAsync("INSERT INTO tx_test (name) VALUES (@name)", new { name = "inner_nested" });
+                var manager = sp.GetRequiredService<IDatasourceManager>();
 
-                // 内层 Commit 对于 savepoint 情形应释放 savepoint（或为 no-op）
-                await inner.CommitAsync();
+                await PrepareTableAsync(manager);
+
+                using (var outer = manager.CreateTransScope(Propagation.Required))
+                {
+                    await outer.BeginAsync();
+
+                    var outerClient = manager.GetCurrentClient<ISqlSugarClient>();
+                    await outerClient!.Ado.ExecuteCommandAsync("INSERT INTO tx_test (name) VALUES (@name)", new { name = "outer_nested" });
+
+                    using (var inner = manager.CreateTransScope(Propagation.Nested))
+                    {
+                        await inner.BeginAsync(); // 创建 savepoint
+                        var innerClient = manager.GetCurrentClient<ISqlSugarClient>();
+                        await innerClient!.Ado.ExecuteCommandAsync("INSERT INTO tx_test (name) VALUES (@name)", new { name = "inner_nested" });
+
+                        // 内层 Commit 对于 savepoint 情形应释放 savepoint（或为 no-op）
+                        await inner.CommitAsync();
+                    }
+
+                    // 外层提交：应持久化内外两条记录
+                    await outer.CommitAsync();
+                }
+
+                var countOuter = await CountAsync(manager, "outer_nested");
+                var countInner = await CountAsync(manager, "inner_nested");
+
+                Assert.Equal(1, countOuter);
+                Assert.Equal(1, countInner);
             }
-
-            // 外层提交：应持久化内外两条记录
-            await outer.CommitAsync();
         }
-
-        var countOuter = await CountAsync(manager, "outer_nested");
-        var countInner = await CountAsync(manager, "inner_nested");
-
-        Assert.Equal(1, countOuter);
-        Assert.Equal(1, countInner);
     }
 
     /// <summary>
@@ -349,36 +421,43 @@ public class TransactionManagerTests
     [Fact]
     public async Task Nested_InnerRollback_RollsBackToSavepoint_OuterCanCommitOnlyOuterPersists()
     {
-        var sp = TestHelper.GetServiceProvider();
-        var manager = sp.GetRequiredService<IDatasourceManager>();
-
-        await PrepareTableAsync(manager);
-
-        using (var outer = manager.CreateTransScope(Propagation.Required))
+        var scope = _sp.CreateScope();
+        var sp = scope.ServiceProvider;
+        using (sp.InitLifecycle())
         {
-            await outer.BeginAsync();
-            var outerClient = manager.GetCurrentClient<ISqlSugarClient>();
-            await outerClient!.Ado.ExecuteCommandAsync("INSERT INTO tx_test (name) VALUES (@name)", new { name = "outer_nested2" });
-
-            using (var inner = manager.CreateTransScope(Propagation.Nested))
+            using (sp.GetService<IDbContext>().CreateDatasourceScope())
             {
-                await inner.BeginAsync(); // 创建 savepoint
-                var innerClient = manager.GetCurrentClient<ISqlSugarClient>();
-                await innerClient!.Ado.ExecuteCommandAsync("INSERT INTO tx_test (name) VALUES (@name)", new { name = "inner_nested2" });
+                var manager = sp.GetRequiredService<IDatasourceManager>();
 
-                // 内层回滚到 savepoint：仅撤销内层改动
-                await inner.RollbackAsync();
+                await PrepareTableAsync(manager);
+
+                using (var outer = manager.CreateTransScope(Propagation.Required))
+                {
+                    await outer.BeginAsync();
+                    var outerClient = manager.GetCurrentClient<ISqlSugarClient>();
+                    await outerClient!.Ado.ExecuteCommandAsync("INSERT INTO tx_test (name) VALUES (@name)", new { name = "outer_nested2" });
+
+                    using (var inner = manager.CreateTransScope(Propagation.Nested))
+                    {
+                        await inner.BeginAsync(); // 创建 savepoint
+                        var innerClient = manager.GetCurrentClient<ISqlSugarClient>();
+                        await innerClient!.Ado.ExecuteCommandAsync("INSERT INTO tx_test (name) VALUES (@name)", new { name = "inner_nested2" });
+
+                        // 内层回滚到 savepoint：仅撤销内层改动
+                        await inner.RollbackAsync();
+                    }
+
+                    // 外层提交：应仅持久化 outer 的改动
+                    await outer.CommitAsync();
+                }
+
+                var countOuter = await CountAsync(manager, "outer_nested2");
+                var countInner = await CountAsync(manager, "inner_nested2");
+
+                Assert.Equal(1, countOuter);
+                Assert.Equal(0, countInner);
             }
-
-            // 外层提交：应仅持久化 outer 的改动
-            await outer.CommitAsync();
         }
-
-        var countOuter = await CountAsync(manager, "outer_nested2");
-        var countInner = await CountAsync(manager, "inner_nested2");
-
-        Assert.Equal(1, countOuter);
-        Assert.Equal(0, countInner);
     }
 
     /// <summary>
@@ -387,21 +466,28 @@ public class TransactionManagerTests
     [Fact]
     public async Task Never_WithoutAmbient_ExecutesWithoutTransaction()
     {
-        var sp = TestHelper.GetServiceProvider();
-        var manager = sp.GetRequiredService<IDatasourceManager>();
-
-        await PrepareTableAsync(manager);
-
-        using (var scope = manager.CreateTransScope(Propagation.Never))
+        var scope = _sp.CreateScope();
+        var sp = scope.ServiceProvider;
+        using (sp.InitLifecycle())
         {
-            await scope.BeginAsync();
-            var client = manager.GetCurrentClient<ISqlSugarClient>();
-            await client!.Ado.ExecuteCommandAsync("INSERT INTO tx_test (name) VALUES (@name)", new { name = "never_mgr" });
-            await scope.CommitAsync();
-        }
+            using (sp.GetService<IDbContext>().CreateDatasourceScope())
+            {
+                var manager = sp.GetRequiredService<IDatasourceManager>();
 
-        var count = await CountAsync(manager, "never_mgr");
-        Assert.Equal(1, count);
+                await PrepareTableAsync(manager);
+
+                using (var scopeTrans = manager.CreateTransScope(Propagation.Never))
+                {
+                    await scopeTrans.BeginAsync();
+                    var client = manager.GetCurrentClient<ISqlSugarClient>();
+                    await client!.Ado.ExecuteCommandAsync("INSERT INTO tx_test (name) VALUES (@name)", new { name = "never_mgr" });
+                    await scopeTrans.CommitAsync();
+                }
+
+                var count = await CountAsync(manager, "never_mgr");
+                Assert.Equal(1, count);
+            }
+        }
     }
 
     /// <summary>
@@ -410,51 +496,24 @@ public class TransactionManagerTests
     [Fact]
     public async Task Never_WithAmbient_ThrowsInvalidOperationException()
     {
-        var sp = TestHelper.GetServiceProvider();
-        var manager = sp.GetRequiredService<IDatasourceManager>();
-
-        await PrepareTableAsync(manager);
-
-        using (var outer = manager.CreateTransScope(Propagation.Required))
+        var scope = _sp.CreateScope();
+        var sp = scope.ServiceProvider;
+        using (sp.InitLifecycle())
         {
-            await outer.BeginAsync();
-            // 在有外层事务的情况下，创建 Never scope 应抛异常
-            Assert.Throws<InvalidOperationException>(() => manager.CreateTransScope(Propagation.Never));
-            await outer.RollbackAsync();
-        }
-    }
-
-    /// <summary>
-    /// 测试：Dispose 后 Propagation 栈应清空，ClientCount 应为 1
-    /// </summary>
-    [Fact]
-    public async Task Dispose_ClearsPropagationStack_And_LeavesOneClient()
-    {
-        var sp = TestHelper.GetServiceProvider();
-        var manager = sp.GetRequiredService<IDatasourceManager>();
-        var concrete = (SqlSugarDatasourceManager)manager;
-
-        await PrepareTableAsync(manager);
-
-        using (var outer = manager.CreateTransScope(Propagation.Required))
-        {
-            await outer.BeginAsync();
-            var outerClient = manager.GetCurrentClient<ISqlSugarClient>();
-            await outerClient!.Ado.ExecuteCommandAsync("INSERT INTO tx_test (name) VALUES (@name)", new { name = "dispose_outer" });
-
-            using (var inner = manager.CreateTransScope(Propagation.RequiresNew))
+            using (sp.GetService<IDbContext>().CreateDatasourceScope())
             {
-                await inner.BeginAsync();
-                var innerClient = manager.GetCurrentClient<ISqlSugarClient>();
-                await innerClient!.Ado.ExecuteCommandAsync("INSERT INTO tx_test (name) VALUES (@name)", new { name = "dispose_inner" });
-                await inner.CommitAsync();
+                var manager = sp.GetRequiredService<IDatasourceManager>();
+
+                await PrepareTableAsync(manager);
+
+                using (var outer = manager.CreateTransScope(Propagation.Required))
+                {
+                    await outer.BeginAsync();
+                    // 在有外层事务的情况下，创建 Never scope 应抛异常
+                    Assert.Throws<InvalidOperationException>(() => manager.CreateTransScope(Propagation.Never));
+                    await outer.RollbackAsync();
+                }
             }
-
-            await outer.CommitAsync();
         }
-
-        // 在所有作用域 Dispose 后，检查栈与 client 状态
-        Assert.Equal(0, concrete.PropagationCount);
-        Assert.Equal(1, concrete.ClientCount);
     }
 }

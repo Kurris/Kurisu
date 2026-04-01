@@ -1,6 +1,5 @@
 using System;
 using System.Text;
-using System.Threading.Tasks;
 using Kurisu.AspNetCore.Authentication.Extensions;
 using Kurisu.AspNetCore.Authentication.Options;
 using Microsoft.AspNetCore.Authentication.JwtBearer;

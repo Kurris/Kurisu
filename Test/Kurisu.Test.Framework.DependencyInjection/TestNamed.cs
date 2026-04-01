@@ -31,5 +31,26 @@ public class TestNamed
             Assert.Equal(typeof(EmailSendMessage), emailService.GetType());
             Assert.Equal("email3", emailService.Send());
         }
+
+#if NET8_0
+using (var scope = sp.CreateScope())
+        {
+            var dingDingService = sp.GetKeyedService<ISendMessage>("dingding");
+            //Assert.Equal(typeof(DingDingSendMessage), dingDingService.GetType());
+            Assert.Equal("dingding", dingDingService.Send());
+
+            var wechatService = sp.GetKeyedService<ISendMessage>("wechat");
+            Assert.Equal(typeof(WechatSendMessage), wechatService.GetType());
+            Assert.Equal("wechat", wechatService.Send());
+
+            var emailService = sp.GetKeyedService<ISendMessage>("email");
+            emailService.Send();
+
+            emailService = sp.GetKeyedService<ISendMessage>("email");
+            emailService.Send();
+            Assert.Equal(typeof(EmailSendMessage), emailService.GetType());
+            Assert.Equal("email6", emailService.Send());
+        }
+#endif
     }
 }

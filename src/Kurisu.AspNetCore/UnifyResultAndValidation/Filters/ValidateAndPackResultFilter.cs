@@ -1,8 +1,10 @@
 using System.Reflection;
 using System.Threading.Tasks;
 using Kurisu.AspNetCore.Abstractions.Authentication;
+using Kurisu.AspNetCore.Abstractions.DataAccess.Core;
 using Kurisu.AspNetCore.Abstractions.DependencyInjection;
-using Kurisu.AspNetCore.Abstractions.UnifyResultAndValidation;
+using Kurisu.AspNetCore.Abstractions.Result;
+using Kurisu.AspNetCore.Abstractions.Utils.Extensions;
 using Kurisu.AspNetCore.UnifyResultAndValidation.Exceptions;
 using Kurisu.AspNetCore.Utils.Extensions;
 using Microsoft.AspNetCore.Mvc;
@@ -48,16 +50,25 @@ public class ValidateAndPackResultFilter : IAsyncActionFilter, IAsyncResultFilte
         apiLogSetting.Title = logAttribute.Title;
         apiLogSetting.DisableResponseLogout = logAttribute.DisableResponseLogout;
 
+
+        var datasourceMgr = context.HttpContext.RequestServices.GetRequiredService<IDatasourceManager>();
+        var connectionMgr = context.HttpContext.RequestServices.GetService<IDbConnectionStringManager>();
         if (apiLogSetting.Title.IsPresent())
         {
             using (LogContext.PushProperty("Prefix", $"[{apiLogSetting.Title}]"))
             {
-                await next();
+                using (datasourceMgr.CreateScope(connectionMgr.Current))
+                {
+                    await next();
+                }
             }
         }
         else
         {
-            await next();
+            using (datasourceMgr.CreateScope(connectionMgr.Current))
+            {
+                await next();
+            }
         }
     }
 
@@ -123,18 +134,18 @@ public class ValidateAndPackResultFilter : IAsyncActionFilter, IAsyncResultFilte
         {
             //实体对象，如果是FileResultContent则不会进入
             case ObjectResult objectResult:
-            {
-                var result = objectResult.Value;
-                var type = result?.GetType() ?? typeof(object);
-
-                var isApiResult = type.IsAssignableTo(typeof(IApiResult));
-                if (!isApiResult)
                 {
-                    context.Result = new ObjectResult(apiResult.GetDefaultSuccessApiResult(result));
-                }
+                    var result = objectResult.Value;
+                    var type = result?.GetType() ?? typeof(object);
 
-                break;
-            }
+                    var isApiResult = type.IsAssignableTo(typeof(IApiResult));
+                    if (!isApiResult)
+                    {
+                        context.Result = new ObjectResult(apiResult.GetDefaultSuccessApiResult(result));
+                    }
+
+                    break;
+                }
             //空task
             case EmptyResult:
                 context.Result = new ObjectResult(apiResult.GetDefaultSuccessApiResult(null as object));

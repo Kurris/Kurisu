@@ -1,7 +1,8 @@
 ﻿using System.Diagnostics.CodeAnalysis;
 using Kurisu.AspNetCore.Abstractions.DataAccess.Contract.Field;
 using Kurisu.AspNetCore.Abstractions.DataAccess.Core.Context;
-using Kurisu.Extensions.SqlSugar.Extensions;
+using Kurisu.AspNetCore.Abstractions.Startup;
+using Kurisu.Extensions.SqlSugar.Utils;
 using Kurisu.Test.DataAccess.Entities;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -10,68 +11,89 @@ namespace Kurisu.Test.DataAccess;
 [Trait("db", "delete")]
 public class TestSoftDelete
 {
-    private readonly IDbContext _dbContext;
+    private readonly IServiceProvider _sp;
 
     [ExcludeFromCodeCoverage]
     public TestSoftDelete()
     {
-        _dbContext = TestHelper.GetServiceProvider().GetRequiredService<IDbContext>();
+        _sp = TestHelper.GetServiceProvider();
     }
 
     [Fact]
     public async Task SoftDelete()
     {
-        await _dbContext.AsSqlSugarDbContext().Deleteable<Test1WithSoftDeleteEntity>().ExecuteCommandAsync();
-
-        await _dbContext.InsertAsync(new Test1WithSoftDeleteEntity
+        var sp = TestHelper.GetServiceProvider();
+        var scope = sp.CreateScope();
+        using (scope.ServiceProvider.InitLifecycle())
         {
-            Name = "ligy",
-            Type = "normal",
-            Age = 28,
-        });
+            var ctx = scope.ServiceProvider.GetRequiredService<IDbContext>();
+            using (ctx.CreateDatasourceScope())
+            {
+                var _dbContext = scope.ServiceProvider.GetRequiredService<IDbContext>();
+                await _dbContext.AsSqlSugarDbContext().Deleteable<Test1WithSoftDeleteEntity>().ExecuteCommandAsync();
 
-        var data = await _dbContext.Queryable<Test1WithSoftDeleteEntity>().ToListAsync();
-        Assert.Single(data);
+                await _dbContext.InsertAsync(new Test1WithSoftDeleteEntity
+                {
+                    Name = "ligy",
+                    Type = "normal",
+                    Age = 28,
+                });
 
-        await _dbContext.DeleteAsync(data);
-        data = await _dbContext.Queryable<Test1WithSoftDeleteEntity>().ToListAsync();
-        Assert.Empty(data);
+                var data = await _dbContext.Queryable<Test1WithSoftDeleteEntity>().ToListAsync();
+                Assert.Single(data);
 
-        _dbContext.AsSqlSugarDbContext().Client.QueryFilter.ClearAndBackup<ISoftDeleted>();
-        data = await _dbContext.Queryable<Test1WithSoftDeleteEntity>().ToListAsync();
-        Assert.Single(data);
-        _dbContext.AsSqlSugarDbContext().Client.QueryFilter.Restore();
+                await _dbContext.DeleteAsync(data);
+                data = await _dbContext.Queryable<Test1WithSoftDeleteEntity>().ToListAsync();
+                Assert.Empty(data);
 
-        data = await _dbContext.Queryable<Test1WithSoftDeleteEntity>().ToListAsync();
-        Assert.Empty(data);
+                using (_dbContext.IgnoreSoftDeleted())
+                {
+                    data = await _dbContext.Queryable<Test1WithSoftDeleteEntity>().ToListAsync();
+                    Assert.Single(data);
+                }
+
+                data = await _dbContext.Queryable<Test1WithSoftDeleteEntity>().ToListAsync();
+                Assert.Empty(data);
+            }
+        }
     }
 
 
     [Fact]
     public async Task RealDelete()
     {
-        await _dbContext.AsSqlSugarDbContext().Deleteable<Test1WithSoftDeleteEntity>().ExecuteCommandAsync();
-
-        await _dbContext.InsertAsync(new Test1WithSoftDeleteEntity
+        var sp = TestHelper.GetServiceProvider();
+        var scope = sp.CreateScope();
+        using (scope.ServiceProvider.InitLifecycle())
         {
-            Name = "ligy",
-            Type = "normal",
-            Age = 28,
-        });
+            var _dbContext = scope.ServiceProvider.GetRequiredService<IDbContext>();
+            using (_dbContext.CreateDatasourceScope())
+            {
+                await _dbContext.AsSqlSugarDbContext().Deleteable<Test1WithSoftDeleteEntity>().ExecuteCommandAsync();
 
-        var data = await _dbContext.Queryable<Test1WithSoftDeleteEntity>().ToListAsync();
-        Assert.Single(data);
+                await _dbContext.InsertAsync(new Test1WithSoftDeleteEntity
+                {
+                    Name = "ligy",
+                    Type = "normal",
+                    Age = 28,
+                });
 
-        await _dbContext.DeleteAsync(data, true);
-        data = await _dbContext.Queryable<Test1WithSoftDeleteEntity>().ToListAsync();
-        Assert.Empty(data);
+                var data = await _dbContext.Queryable<Test1WithSoftDeleteEntity>().ToListAsync();
+                Assert.Single(data);
 
-        _dbContext.AsSqlSugarDbContext().Client.QueryFilter.ClearAndBackup<ISoftDeleted>();
-        data = await _dbContext.Queryable<Test1WithSoftDeleteEntity>().ToListAsync();
-        Assert.Empty(data);
-        _dbContext.AsSqlSugarDbContext().Client.QueryFilter.Restore();
+                await _dbContext.DeleteAsync(data, true);
+                data = await _dbContext.Queryable<Test1WithSoftDeleteEntity>().ToListAsync();
+                Assert.Empty(data);
 
-        data = await _dbContext.Queryable<Test1WithSoftDeleteEntity>().ToListAsync();
-        Assert.Empty(data);
+                using (_dbContext.IgnoreSoftDeleted())
+                {
+                    data = await _dbContext.Queryable<Test1WithSoftDeleteEntity>().ToListAsync();
+                    Assert.Empty(data);
+                }
+
+                data = await _dbContext.Queryable<Test1WithSoftDeleteEntity>().ToListAsync();
+                Assert.Empty(data);
+            }
+        }
     }
 }

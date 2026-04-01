@@ -2,5 +2,5 @@
 
 public interface IUrlResource
 {
-    public string Url { get; set; }
+    public string ResourceUrl { get; set; }
 }

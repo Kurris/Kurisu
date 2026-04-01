@@ -1,5 +1,4 @@
-﻿using Kurisu.AspNetCore.Abstractions.DataAccess.Extensions;
-using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.Extensions.DependencyInjection;
 
 namespace Kurisu.AspNetCore.Abstractions.DataAccess.Core.Context;
 
@@ -8,23 +7,28 @@ public abstract class AbstractDbContext<TOperationClient> : WriteAbstractDbConte
     protected AbstractDbContext(IServiceProvider serviceProvider) : base(serviceProvider)
     {
         ServiceProvider = serviceProvider;
-        DatasourceManager = serviceProvider.GetRequiredService<IDatasourceManager>();
+        DatasourceManager = serviceProvider.GetRequiredService<IDatasourceManager<TOperationClient>>();
     }
 
-    protected TOperationClient Client => DatasourceManager.GetCurrentClient<TOperationClient>();
-    protected IServiceProvider ServiceProvider { get; }
-    protected IDatasourceManager DatasourceManager { get; }
+    protected TOperationClient Client => DatasourceManager.GetCurrentClient();
+    protected IDatasourceManager<TOperationClient> DatasourceManager { get; }
 
 
-    public abstract void IgnoreTenant(Action todo);
-    public abstract Task IgnoreTenantAsync(Func<Task> todo);
+    public IServiceProvider ServiceProvider { get; }
+    public abstract ICodeFirstMode CodeFirst { get; }
 
-    public abstract void IgnoreSoftDeleted(Action todo);
-    public abstract Task IgnoreSoftDeletedAsync(Func<Task> todo);
 
-    public abstract void EnableDataPermission(Type[] ignoreTypes, Action todo);
-    public abstract Task EnableDataPermissionAsync(Type[] ignoreTypes, Func<Task> todo);
+    public abstract IDisposable CreateDatasourceScope(string name);
+    public abstract IDisposable CreateDatasourceScope();
 
-    public abstract void EnableCrossTenant(Type[] ignoreTypes, Action todo);
-    public abstract Task EnableCrossTenantAsync(Type[] ignoreTypes, Func<Task> todo);
+
+    public abstract IDisposable IgnoreTenant();
+
+    public abstract IDisposable IgnoreSoftDeleted();
+
+    public abstract IDisposable EnableDataPermission();
+
+    public abstract IDisposable EnableCrossTenant();
+
+    public abstract IDisposable IgnoreSharding();
 }

@@ -6,7 +6,7 @@ using Microsoft.Extensions.DependencyInjection;
 namespace Kurisu.AspNetCore.Abstractions.DataAccess.Aop;
 
 /// <summary>
-/// 事务
+/// 定义事务功能
 /// </summary>
 [AttributeUsage(AttributeTargets.Method)]
 public class TransactionalAttribute : AopAttribute
@@ -28,32 +28,28 @@ public class TransactionalAttribute : AopAttribute
 
     public override async Task Invoke(AspectContext context, AspectDelegate next)
     {
-        var mgr = context.ServiceProvider.GetRequiredService<IDatasourceManager>();
+        var datasourceManager = context.ServiceProvider.GetRequiredService<IDatasourceManager>();
 
-        // ReSharper disable once ConvertToUsingDeclaration
-        using (var transactionScope = IsolationLevel.HasValue
-                   ? mgr.CreateTransScope(Propagation, IsolationLevel.Value)
-                   : mgr.CreateTransScope(Propagation))
+        using var transactionScope = datasourceManager.CreateTransScope(Propagation, IsolationLevel);
+
+        await transactionScope.BeginAsync();
+        try
         {
-            await transactionScope.BeginAsync();
-            try
+            await next(context);
+            await transactionScope.CommitAsync();
+        }
+        catch (Exception ex)
+        {
+            if (NoRollbackFor != null && NoRollbackFor.IsAssignableFrom(ex.GetType()))
             {
-                await next(context);
                 await transactionScope.CommitAsync();
             }
-            catch (Exception ex)
+            else
             {
-                if (NoRollbackFor != null && NoRollbackFor.IsAssignableFrom(ex.GetType()))
-                {
-                    await transactionScope.CommitAsync();
-                }
-                else
-                {
-                    await transactionScope.RollbackAsync();
-                }
-
-                throw;
+                await transactionScope.RollbackAsync();
             }
+
+            throw;
         }
     }
 }

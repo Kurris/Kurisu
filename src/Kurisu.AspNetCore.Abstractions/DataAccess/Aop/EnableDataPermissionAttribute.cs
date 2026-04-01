@@ -24,6 +24,9 @@ public class EnableDataPermissionAttribute : AopAttribute
     public override async Task Invoke(AspectContext context, AspectDelegate next)
     {
         var dbContext = context.ServiceProvider.GetRequiredService<IDbContext>();
-        await dbContext.EnableDataPermissionAsync(_ignoreTypes, async () => { await next(context); });
+        using (dbContext.EnableDataPermission())
+        {
+            await next(context);
+        }
     }
 }

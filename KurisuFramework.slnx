@@ -1,25 +1,35 @@
-﻿<Solution>
+<Solution>
   <Folder Name="/analyser/">
-    <Project Path="src\Kurisu.Transaction.Analyzer\Kurisu.Transaction.Analyzer.Sample\Kurisu.Transaction.Analyzer.Sample.csproj" Type="Classic C#" />
-    <Project Path="src\Kurisu.Transaction.Analyzer\Kurisu.Transaction.Analyzer.Tests\Kurisu.Transaction.Analyzer.Tests.csproj" Type="Classic C#" />
-    <Project Path="src\Kurisu.Transaction.Analyzer\Kurisu.Transaction.Analyzer\Kurisu.Transaction.Analyzer.csproj" Type="Classic C#" />
+    <Project Path="src\Kurisu.Transaction.Analyzer\Kurisu.Transaction.Analyzer.Sample\Kurisu.Transaction.Analyzer.Sample.csproj" />
+    <Project Path="src\Kurisu.Transaction.Analyzer\Kurisu.Transaction.Analyzer.Tests\Kurisu.Transaction.Analyzer.Tests.csproj" />
+    <Project Path="src\Kurisu.Transaction.Analyzer\Kurisu.Transaction.Analyzer\Kurisu.Transaction.Analyzer.csproj" />
+  </Folder>
+  <Folder Name="/samples/">
+    <Project Path="../../dl/新宿舍酒店民宿/Yaens.Hdms.AdminApi/Yaens.Hdms.AdminApi.csproj" />
+    <Project Path="../../dl/新宿舍酒店民宿/Yaens.Hdms.Common/Yaens.Hdms.Common.csproj" Id="d1fd23b9-a545-4d8c-9fb6-dcc409119182" />
+    <Project Path="../../dl/新宿舍酒店民宿/Yaens.Hdms.Model/Yaens.Hdms.Model.csproj" />
+    <Project Path="../../dl/新宿舍酒店民宿/Yaens.Hdms.Trans/Yaens.Hdms.Trans.csproj" Id="560e0a62-b194-420b-a279-1ae0d2907b57" />
   </Folder>
   <Folder Name="/src/">
-    <Project Path="src\Kurisu.Aspect.Abstractions\Kurisu.Aspect.Abstractions.csproj" Type="Classic C#" />
+    <Project Path="src/Kurisu.Extension.DataProtection/Kurisu.Extensions.DataProtection.Redis.csproj" Id="7a5a6f25-bf34-49b9-b09b-361d5b99a659" />
+    <Project Path="src/Kurisu.Extensions.Cache/Kurisu.Extensions.Cache.csproj" Id="a18aadcd-34a2-476e-95af-dde738229767" />
+    <Project Path="src/Kurisu.Extensions.ContextAccessor/Kurisu.Extensions.ContextAccessor.csproj" Id="5f536544-e6b3-4465-b956-9c642a36376d" />
+    <Project Path="src/Kurisu.Extensions.EventBus/Kurisu.Extensions.EventBus.csproj" Id="b069c175-3ac9-493a-9a78-e3d8a331357b" />
+    <Project Path="src\Kurisu.Aspect.Abstractions\Kurisu.Aspect.Abstractions.csproj" />
     <Project Path="src\Kurisu.Aspect\Kurisu.Aspect.csproj" />
-    <Project Path="src\Kurisu.AspNetCore.Abstractions\Kurisu.AspNetCore.Abstractions.csproj" Type="Classic C#" />
+    <Project Path="src\Kurisu.AspNetCore.Abstractions\Kurisu.AspNetCore.Abstractions.csproj" />
     <Project Path="src\Kurisu.AspNetCore\Kurisu.AspNetCore.csproj" />
-    <Project Path="src\Kurisu.Extensions.DataProtection.SqlSugar\Kurisu.Extensions.DataProtection.SqlSugar.csproj" Type="Classic C#" />
-    <Project Path="src\Kurisu.Extensions.SqlSugar\Kurisu.Extensions.SqlSugar.csproj" Type="Classic C#" />
-    <Project Path="src\Kurisu.RemoteCall\Kurisu.RemoteCall.csproj" Type="Classic C#" />
+    <Project Path="src\Kurisu.Extensions.DataProtection.SqlSugar\Kurisu.Extensions.DataProtection.SqlSugar.csproj" />
+    <Project Path="src\Kurisu.Extensions.SqlSugar\Kurisu.Extensions.SqlSugar.csproj" />
+    <Project Path="src\Kurisu.RemoteCall\Kurisu.RemoteCall.csproj" />
   </Folder>
   <Folder Name="/test/">
-    <Project Path="test\Kurisu.Test.DataAccess\Kurisu.Test.DataAccess.csproj" Type="Classic C#" />
-    <Project Path="test\Kurisu.Test.DataProtection\Kurisu.Test.DataProtection.csproj" Type="Classic C#" />
-    <Project Path="test\Kurisu.Test.Framework.Authentication\Kurisu.Test.Framework.Authentication.csproj" Type="Classic C#" />
-    <Project Path="test\Kurisu.Test.Framework.Configurations\Kurisu.Test.Framework.Configurations.csproj" Type="Classic C#" />
-    <Project Path="test\Kurisu.Test.Framework.DependencyInjection\Kurisu.Test.Framework.DependencyInjection.csproj" Type="Classic C#" />
-    <Project Path="test\Kurisu.Test.HelperClass\Kurisu.Test.HelperClass.csproj" Type="Classic C#" />
-    <Project Path="test\Kurisu.Test.RemoteCall\Kurisu.Test.RemoteCall.csproj" Type="Classic C#" />
+    <Project Path="test/Kurisu.Test.ContextAccessor/Kurisu.Test.ContextAccessor.csproj" Id="765398db-b37e-4188-af39-0d45b981f85a" />
+    <Project Path="test\Kurisu.Test.DataAccess\Kurisu.Test.DataAccess.csproj" />
+    <Project Path="test\Kurisu.Test.Framework.Authentication\Kurisu.Test.Framework.Authentication.csproj" />
+    <Project Path="test\Kurisu.Test.Framework.Configurations\Kurisu.Test.Framework.Configurations.csproj" />
+    <Project Path="test\Kurisu.Test.Framework.DependencyInjection\Kurisu.Test.Framework.DependencyInjection.csproj" />
+    <Project Path="test\Kurisu.Test.HelperClass\Kurisu.Test.HelperClass.csproj" />
+    <Project Path="test\Kurisu.Test.RemoteCall\Kurisu.Test.RemoteCall.csproj" />
   </Folder>
 </Solution>
