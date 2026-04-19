@@ -160,7 +160,7 @@ public static class ServiceCollectionBuildExtensions
 #if NET8_0_OR_GREATER
     private static Func<IServiceProvider, object, object> CreateKeyedFactory(ServiceDescriptor descriptor, Type proxyType)
     {
-        var proxyConstructor = proxyType.GetTypeInfo().GetConstructor(new Type[] {typeof(IAspectActivatorFactory), descriptor.ServiceType});
+        var proxyConstructor = proxyType.GetTypeInfo().GetConstructor(new Type[] { typeof(IAspectActivatorFactory), descriptor.ServiceType });
         var reflector = proxyConstructor.GetReflector();
         if (descriptor.KeyedImplementationInstance != null)
         {
