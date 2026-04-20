@@ -1,6 +1,6 @@
 ﻿using System.Data;
 using AspectCore.DynamicProxy;
-using Kurisu.AspNetCore.Abstractions.DataAccess.Core;
+using Kurisu.AspNetCore.Abstractions.DataAccess.Core.Context;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Kurisu.AspNetCore.Abstractions.DataAccess.Aop;
@@ -28,7 +28,8 @@ public class TransactionalAttribute : AopAttribute
 
     public override async Task Invoke(AspectContext context, AspectDelegate next)
     {
-        var datasourceManager = context.ServiceProvider.GetRequiredService<IDatasourceManager>();
+        var dbContext = context.ServiceProvider.GetRequiredService<IDbContext>();
+        var datasourceManager = dbContext.DatasourceManager;
 
         using var transactionScope = datasourceManager.CreateTransScope(Propagation, IsolationLevel);
 

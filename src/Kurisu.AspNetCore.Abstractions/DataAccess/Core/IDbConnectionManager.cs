@@ -27,13 +27,6 @@ public interface IDbConnectionStringManager
     IDisposable CreateScope(string name, Action onDispose);
 
     /// <summary>
-    /// 判断是否需要开启新的连接操作作用域
-    /// </summary>
-    /// <param name="name"></param>
-    /// <returns></returns>
-    bool NeedCreateScope(string name);
-
-    /// <summary>
     /// 获取指定连接字符串
     /// </summary>
     /// <returns></returns>

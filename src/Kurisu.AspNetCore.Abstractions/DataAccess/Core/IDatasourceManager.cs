@@ -12,14 +12,15 @@ public interface IDatasourceManager<TClient> : IDatasourceManager
     TClient GetCurrentClient();
 }
 
+/// <summary>
+/// 数据源管理器
+/// </summary>
 public interface IDatasourceManager : ITransactionManager
 {
-    TClient GetCurrentClient<TClient>();
-
     /// <summary>
-    /// 创建新的数据源作用域
+    /// 获取当前Db客户端
     /// </summary>
-    /// <param name="name"></param>
+    /// <typeparam name="TClient"></typeparam>
     /// <returns></returns>
-    IDisposable CreateScope(string name);
+    TClient GetCurrentClient<TClient>();
 }

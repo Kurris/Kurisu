@@ -3,12 +3,25 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Kurisu.AspNetCore.Abstractions.Startup;
 
+/// <summary>
+/// 初始化和移除生命周期接口
+/// </summary>
 public interface IAppAsyncLocalLifecycle
 {
+    /// <summary>
+    /// 初始化
+    /// </summary>
     void Initialize();
+
+    /// <summary>
+    /// 移除销毁
+    /// </summary>
     void Remove();
 }
 
+/// <summary>
+/// AppExtensions
+/// </summary>
 public static class AppExtensions
 {
     /// <summary>
