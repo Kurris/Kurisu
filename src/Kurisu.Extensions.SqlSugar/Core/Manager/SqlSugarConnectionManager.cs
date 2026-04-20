@@ -25,19 +25,6 @@ internal class SqlSugarConnectionStringManager(
         return InternalCreateScope(name, onDispose);
     }
 
-    public bool NeedCreateScope(string name)
-    {
-        if (string.IsNullOrWhiteSpace(name)) throw new ArgumentException("数据源名称不能为空", nameof(name));
-
-        if (!dbConnectionStringRegistry.Exists(name))
-        {
-            throw new ArgumentException(name + "连接字符串不存在");
-        }
-
-        // 如果当前名称和栈顶名称相同，则不需要创建新作用域
-        return !name.Equals(Current);
-    }
-
     public string GetConnectionString(string name)
     {
         return dbConnectionStringRegistry.GetConnectionString(name);
@@ -72,11 +59,6 @@ internal class SqlSugarConnectionStringManager(
     {
         try
         {
-            if (!NeedCreateScope(name))
-            {
-                return new NoopScope();
-            }
-
             namesAccessor.Current.Names.Push(name);
             return new ActionScope(() =>
             {
@@ -87,7 +69,6 @@ internal class SqlSugarConnectionStringManager(
         finally
         {
             logger.LogDebug("使用数据源'{CurrentName}'", name);
-
         }
     }
 

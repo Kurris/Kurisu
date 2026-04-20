@@ -59,9 +59,23 @@ public interface IIndexConfigurator
 
 public class IndexModel
 {
+    public IndexModel(bool isUnique, string indexName, string[] columnNames)
+    {
+        IsUnique = isUnique;
+        IndexName = indexName;
+        ColumnNames = columnNames;
+    }
+
+    public IndexModel()
+    {
+        
+    }
+
+    public bool IsUnique { get; set; }
+
     public string IndexName { get; set; }
 
     public string[] ColumnNames { get; set; }
 
-    public bool IsUnique { get; set; }
+  
 }

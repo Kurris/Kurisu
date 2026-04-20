@@ -3,7 +3,6 @@ using Kurisu.AspNetCore.Abstractions.Authentication;
 using Kurisu.AspNetCore.Abstractions.DataAccess.Contract.Field;
 using Kurisu.AspNetCore.Abstractions.DataAccess.Core;
 using Kurisu.AspNetCore.Abstractions.DataAccess.Core.Context;
-using Kurisu.AspNetCore.Abstractions.Result;
 using Kurisu.AspNetCore.DataAccess.SqlSugar.Attributes;
 using Kurisu.Extensions.ContextAccessor;
 using Kurisu.Extensions.ContextAccessor.Abstractions;
@@ -46,8 +45,9 @@ public static class SqlSugarServiceCollectionExtensions
         services.AddContextAccessor<NamesDbConnectionStringStack>();
 
         services.TryAddSingleton<IDbConnectionStringManager, SqlSugarConnectionStringManager>();
-        services.TryAddScoped<IDatasourceManager<ISqlSugarClient>, SqlSugarDatasourceManager>();
-        services.TryAddScoped<IDatasourceManager>(sp => sp.GetRequiredService<IDatasourceManager<ISqlSugarClient>>());
+        // Transient：
+        services.TryAddTransient<IDatasourceManager<ISqlSugarClient>, SqlSugarDatasourceManager>();
+        services.TryAddTransient<IDatasourceManager>(sp => sp.GetRequiredService<IDatasourceManager<ISqlSugarClient>>());
 
         services.TryAddSingleton<DefaultSqlSugarConfigHandler>();
 
@@ -241,10 +241,7 @@ public class DefaultSqlSugarConfigHandler
                     if (model.IsAnyAttribute<UpdateDateTimeGenerationAttribute>())
                     {
                         var v = model.EntityColumnInfo.PropertyInfo.GetValue(model.EntityValue);
-                        if (v == null || (DateTime)v == default)
-                        {
-                            model.SetValue(DateTime.Now);
-                        }
+                        model.SetValue(DateTime.Now);
                     }
 
                     if (_currentUser != null && model.IsAnyAttribute<UpdateUserIdGenerationAttribute>())

@@ -25,5 +25,10 @@ internal class NameClientCollection
         return _clients.ContainsKey(name);
     }
 
+    public void Release(string name)
+    {
+        _clients.Remove(name);
+    }
+
     public int Count => _clients.Count;
 }

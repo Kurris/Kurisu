@@ -15,14 +15,14 @@ public class SqlSugarDbContext : SpecialQueryableDbContext
 
     public override async Task<bool> InsertAsync<T>(T obj, CancellationToken cancellationToken)
     {
-        return await this.InsertAsync(new List<T> { obj }, cancellationToken);
+        return await this.InsertAsync([obj], cancellationToken);
     }
 
     public override async Task<bool> InsertAsync<T>(List<T> objs, CancellationToken cancellationToken)
     {
         if (objs.Count > 0)
         {
-            return (await Client.Insertable(objs).ExecuteCommandAsync()) > 0;
+            return (await Client.Insertable(objs).ExecuteCommandAsync(cancellationToken)) > 0;
         }
 
         return true;
@@ -30,7 +30,7 @@ public class SqlSugarDbContext : SpecialQueryableDbContext
 
     public override bool Insert<T>(T obj)
     {
-        return this.Insert(new List<T> { obj });
+        return this.Insert([obj]);
     }
 
     public override bool Insert<T>(List<T> objs)

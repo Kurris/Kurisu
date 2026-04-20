@@ -1,5 +1,4 @@
 ﻿using Kurisu.AspNetCore.Abstractions.DataAccess.Core;
-using Kurisu.Extensions.SqlSugar.Options;
 using SqlSugar;
 
 namespace Kurisu.Extensions.SqlSugar.Core.Context;

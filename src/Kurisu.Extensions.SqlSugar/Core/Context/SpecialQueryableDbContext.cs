@@ -1,4 +1,5 @@
-﻿using System.Linq.Expressions;
+﻿using System.Data;
+using System.Linq.Expressions;
 using Kurisu.AspNetCore.Abstractions.Authentication;
 using Kurisu.AspNetCore.Abstractions.DataAccess;
 using Kurisu.AspNetCore.Abstractions.DataAccess.Contract;
@@ -150,11 +151,6 @@ public abstract class SpecialQueryableDbContext : AbstractDbContext<ISqlSugarCli
         {
             s.IgnoreSharding = true;
         });
-    }
-
-    public override IDisposable CreateDatasourceScope(string name)
-    {
-        return DatasourceManager.CreateScope(name);
     }
 
     public override IDisposable CreateDatasourceScope()
