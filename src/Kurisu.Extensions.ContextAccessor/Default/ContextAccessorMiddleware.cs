@@ -1,5 +1,4 @@
-﻿using System.ComponentModel.Design;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 using Kurisu.AspNetCore.Abstractions.Startup;
 using Microsoft.AspNetCore.Http;
 
@@ -24,16 +23,16 @@ public class ContextAccessorMiddleware : BaseMiddleware
     /// <param name="context"></param>
     public override async Task Invoke(HttpContext context)
     {
-        if (!context.Request.Path.Value.StartsWith("/api/"))
-        {
-            await Next(context);
-        }
-        else
+        if (context.Request.Path.Value.StartsWith("/api/") || context.Request.Path.Value.StartsWith("/openapi/"))
         {
             using (context.RequestServices.InitLifecycle())
             {
                 await Next(context);
             }
+        }
+        else
+        {
+            await Next(context);
         }
     }
 }
