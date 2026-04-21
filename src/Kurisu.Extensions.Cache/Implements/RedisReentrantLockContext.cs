@@ -1,0 +1,156 @@
+using System;
+using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
+using Kurisu.AspNetCore.Abstractions.Cache;
+
+namespace Kurisu.Extensions.Cache.Implements;
+
+/// <summary>
+/// Redis 本地可重入锁上下文（同一异步调用链内生效）。
+/// </summary>
+internal sealed class RedisReentrantLockContext
+{
+    private readonly AsyncLocal<Dictionary<string, LocalLockScope>> _localLockScopes = new();
+
+    /// <summary>
+    /// 确保当前异步调用链已初始化本地锁容器。
+    /// </summary>
+    public Dictionary<string, LocalLockScope> EnsureScopes()
+    {
+        var scopes = _localLockScopes.Value;
+        if (scopes != null)
+        {
+            return scopes;
+        }
+
+        scopes = new Dictionary<string, LocalLockScope>(StringComparer.Ordinal);
+        _localLockScopes.Value = scopes;
+        return scopes;
+    }
+
+    /// <summary>
+    /// 当容器为空时清理当前异步调用链中的本地锁容器。
+    /// </summary>
+    public void ClearIfEmpty(Dictionary<string, LocalLockScope> scopes)
+    {
+        if (scopes.Count == 0 && ReferenceEquals(_localLockScopes.Value, scopes))
+        {
+            _localLockScopes.Value = null;
+        }
+    }
+
+    /// <summary>
+    /// 尝试复用已持有的同名锁。
+    /// </summary>
+    public bool TryEnter(string lockKey, out ILockHandler handler)
+    {
+        var scopes = _localLockScopes.Value;
+        if (scopes != null && scopes.TryGetValue(lockKey, out var scope))
+        {
+            if (scope.LockHandler.Acquired)
+            {
+                scope.AddReference();
+                handler = new ReentrantLockHandler(this, lockKey, scope);
+                return true;
+            }
+
+            scopes.Remove(lockKey);
+            if (scopes.Count == 0)
+            {
+                _localLockScopes.Value = null;
+            }
+        }
+
+        handler = default!;
+        return false;
+    }
+
+    /// <summary>
+    /// 注册新锁并返回可重入句柄。
+    /// </summary>
+    public ILockHandler Register(string lockKey, ILockHandler lockHandler, Dictionary<string, LocalLockScope>? scopes = null)
+    {
+        scopes ??= EnsureScopes();
+
+        var localScope = new LocalLockScope(lockHandler);
+        scopes[lockKey] = localScope;
+        return new ReentrantLockHandler(this, lockKey, localScope);
+    }
+
+    /// <summary>
+    /// 释放当前异步调用链内的本地锁引用。
+    /// </summary>
+    private async ValueTask ReleaseAsync(string lockKey, LocalLockScope localScope)
+    {
+        var remaining = localScope.ReleaseReference();
+        if (remaining > 0)
+        {
+            return;
+        }
+
+        if (remaining < 0)
+        {
+            return;
+        }
+
+        var scopes = _localLockScopes.Value;
+        if (scopes != null && scopes.TryGetValue(lockKey, out var registeredScope) && ReferenceEquals(registeredScope, localScope))
+        {
+            scopes.Remove(lockKey);
+            if (scopes.Count == 0)
+            {
+                _localLockScopes.Value = null;
+            }
+        }
+
+        await localScope.LockHandler.DisposeAsync();
+    }
+
+    public sealed class LocalLockScope
+    {
+        public LocalLockScope(ILockHandler lockHandler)
+        {
+            LockHandler = lockHandler;
+            _referenceCount = 1;
+        }
+
+        public ILockHandler LockHandler { get; }
+
+        private int _referenceCount;
+
+        public int AddReference() => Interlocked.Increment(ref _referenceCount);
+
+        public int ReleaseReference() => Interlocked.Decrement(ref _referenceCount);
+    }
+
+    /// <summary>
+    /// 同一调用链内的可重入锁句柄，真实释放由引用计数归零触发。
+    /// </summary>
+    private sealed class ReentrantLockHandler : ILockHandler
+    {
+        private readonly RedisReentrantLockContext _context;
+        private readonly string _lockKey;
+        private readonly LocalLockScope _localScope;
+        private int _disposed;
+
+        public ReentrantLockHandler(RedisReentrantLockContext context, string lockKey, LocalLockScope localScope)
+        {
+            _context = context;
+            _lockKey = lockKey;
+            _localScope = localScope;
+        }
+
+        public bool Acquired => true;
+
+        public async ValueTask DisposeAsync()
+        {
+            if (Interlocked.Exchange(ref _disposed, 1) == 1)
+            {
+                return;
+            }
+
+            await _context.ReleaseAsync(_lockKey, _localScope);
+        }
+    }
+}

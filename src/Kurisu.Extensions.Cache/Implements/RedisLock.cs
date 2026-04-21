@@ -18,6 +18,7 @@ internal sealed class RedisLock : ILockHandler
     private readonly string _lockValue = Guid.NewGuid().ToString().Replace("-", string.Empty);
     private readonly TimeSpan _expiry;
     private readonly TimeSpan _interval;
+    private readonly bool _enableAutoRenew;
 
     // 通过 int + Interlocked 保证原子性与可见性（0 = false, 1 = true）
     private int _acquired; // 0/1
@@ -52,6 +53,7 @@ end";
         _logger = logger;
         _db = db ?? throw new ArgumentNullException(nameof(db));
         _lockKey = lockKey ?? throw new ArgumentNullException(nameof(lockKey));
+        _enableAutoRenew = !expiry.HasValue;
         _expiry = expiry ?? TimeSpan.FromSeconds(6);
 
         if (_expiry <= TimeSpan.Zero)
@@ -66,7 +68,7 @@ end";
 
         _acquired = 0;
 
-        _logger.LogDebug("Redis锁handler初始化 | 键名={LockKey} | 锁值={LockValue} | 过期时间={Expiry}", _lockKey, _lockValue, _expiry);
+        _logger.LogDebug("Redis锁handler初始化 | 键名={LockKey} | 锁值={LockValue} | 过期时间={Expiry} | 自动续期={AutoRenew}", _lockKey, _lockValue, _expiry, _enableAutoRenew);
     }
 
     /// <summary>
@@ -88,13 +90,16 @@ end";
             // 原子标记已获取
             Interlocked.Exchange(ref _acquired, 1);
 
-            // 创建并发布续期任务（不等待）
-            var cts = new CancellationTokenSource();
-            // 以原子方式设置 _cts，防止竞态释放时访问到旧实例
-            var old = Interlocked.Exchange(ref _cts, cts);
-            old?.Dispose();
+            if (_enableAutoRenew)
+            {
+                // 创建并发布续期任务（不等待）
+                var cts = new CancellationTokenSource();
+                // 以原子方式设置 _cts，防止竞态释放时访问到旧实例
+                var old = Interlocked.Exchange(ref _cts, cts);
+                old?.Dispose();
 
-            _ = StartRenewalAsync(cts.Token);
+                _ = StartRenewalAsync(cts.Token);
+            }
         }
 
         return this;

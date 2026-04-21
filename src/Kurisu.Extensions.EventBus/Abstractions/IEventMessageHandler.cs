@@ -1,12 +1,17 @@
-using System.Threading;
-using System.Threading.Tasks;
-
+using Kurisu.AspNetCore.Abstractions.Cache;
 
 namespace Kurisu.Extensions.EventBus.Abstractions;
 
-public abstract class EventMessage
+public abstract class EventMessage : ITryLockKey
 {
+    public string Code { get; set; }
+
+    public string GetKey(IServiceProvider serviceProvider)
+    {
+        return Code;
+    }
 }
+
 
 /// <summary>
 /// channel 消息处理

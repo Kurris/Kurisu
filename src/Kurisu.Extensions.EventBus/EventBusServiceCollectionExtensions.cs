@@ -1,5 +1,6 @@
 using System.Threading.Channels;
 using Kurisu.Extensions.EventBus.Abstractions;
+using Kurisu.Extensions.EventBus.Defaults;
 using Kurisu.Extensions.EventBus.Internal;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -29,9 +30,14 @@ public static class EventBusServiceCollectionExtensions
         services.AddSingleton(sp => sp.GetRequiredService<Channel<EventMessage>>().Writer);
         services.AddSingleton(sp => sp.GetRequiredService<Channel<EventMessage>>().Reader);
 
-        services.AddHostedService<MessageConsumer>();
-        services.TryAddSingleton<IEventBus, InternalEventBus>();
-
+        services.AddHostedService<MessageConsumerBackgroundService>();
+        services.AddHostedService<LocalMessageRetryBackgroundService>();
+        services.TryAddSingleton<IEventBusSerializer, DefaultEventBusSerializer>();
+        services.TryAddScoped<IEventBusLocalMessageHandler, DefaultEventBusLocalMessageHandler>();
+        services.TryAddScoped<IEventBusMessageHandler, DefaultEventBusMessageHandler>();
+        services.TryAddScoped<IEventBusUniqueCodeGenerator, DefaultEventBusUniqueCodeGenerator>();
+        services.TryAddScoped<IEventBus, DefaultEventBus>();
+       
         return services;
     }
 }

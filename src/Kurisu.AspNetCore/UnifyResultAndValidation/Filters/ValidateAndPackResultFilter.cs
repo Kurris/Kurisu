@@ -1,7 +1,7 @@
 using System.Reflection;
 using System.Threading.Tasks;
 using Kurisu.AspNetCore.Abstractions.Authentication;
-using Kurisu.AspNetCore.Abstractions.DataAccess.Core;
+using Kurisu.AspNetCore.Abstractions.DataAccess.Core.Context;
 using Kurisu.AspNetCore.Abstractions.DependencyInjection;
 using Kurisu.AspNetCore.Abstractions.Result;
 using Kurisu.AspNetCore.Abstractions.Utils.Extensions;
@@ -50,14 +50,12 @@ public class ValidateAndPackResultFilter : IAsyncActionFilter, IAsyncResultFilte
         apiLogSetting.Title = logAttribute.Title;
         apiLogSetting.DisableResponseLogout = logAttribute.DisableResponseLogout;
 
-
-        var datasourceMgr = context.HttpContext.RequestServices.GetRequiredService<IDatasourceManager>();
-        var connectionMgr = context.HttpContext.RequestServices.GetService<IDbConnectionStringManager>();
+        var db = context.HttpContext.RequestServices.GetService<IDbContext>();
         if (apiLogSetting.Title.IsPresent())
         {
             using (LogContext.PushProperty("Prefix", $"[{apiLogSetting.Title}]"))
             {
-                using (datasourceMgr.CreateScope(connectionMgr.Current))
+                using (db.CreateDatasourceScope())
                 {
                     await next();
                 }
@@ -65,7 +63,7 @@ public class ValidateAndPackResultFilter : IAsyncActionFilter, IAsyncResultFilte
         }
         else
         {
-            using (datasourceMgr.CreateScope(connectionMgr.Current))
+            using (db.CreateDatasourceScope())
             {
                 await next();
             }

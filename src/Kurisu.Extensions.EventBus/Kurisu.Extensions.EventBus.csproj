@@ -1,13 +1,12 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-
 	<PropertyGroup>
-		<TargetFrameworks>net6.0;net8.0</TargetFrameworks>
-		<ImplicitUsings>disable</ImplicitUsings>
+		<TargetFramework>net8.0</TargetFramework>
+		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>disable</Nullable>
+		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+		<Version>0.2.3</Version>
 	</PropertyGroup>
-
 	<ItemGroup>
-		<ProjectReference Include="..\Kurisu.AspNetCore.Abstractions\Kurisu.AspNetCore.Abstractions.csproj" />
+		<PackageReference Include="Kurisu.Extensions.SqlSugar" Version="0.2.5" />
 	</ItemGroup>
-
 </Project>

@@ -14,6 +14,8 @@ namespace Kurisu.Extensions.Cache.Implements;
 /// </summary>
 public class RedisCache : ILockable
 {
+    private readonly RedisReentrantLockContext _reentrantLockContext = new();
+
     /// <summary>
     /// 数据库
     /// </summary>
@@ -43,12 +45,27 @@ public class RedisCache : ILockable
     /// lock
     /// </summary>
     /// <param name="lockKey">key</param>
-    /// <param name="expiry">过期时间</param>
+    /// <param name="expiry">过期时间(如果不存在则启用自动续期)</param>
     /// <param name="retryInterval">重试间隔</param>
     /// <param name="retryCount">重试次数</param>
     /// <returns></returns>
-    public async Task<ILockHandler> LockAsync(string lockKey, TimeSpan? expiry = null, TimeSpan? retryInterval = null, int retryCount = 3)
+    public Task<ILockHandler> LockAsync(string lockKey, TimeSpan? expiry = null, TimeSpan? retryInterval = null, int retryCount = 3)
     {
+        if (_reentrantLockContext.TryEnter(lockKey, out var reentrantHandler))
+        {
+            _logger.LogDebug("同一请求内复用锁 {lockKey}，跳过重复Redis加锁", lockKey);
+            return Task.FromResult(reentrantHandler);
+        }
+
+        // 先在当前异步调用链初始化作用域容器，确保首次成功后可被同链路后续调用读取。
+        var scopes = _reentrantLockContext.EnsureScopes();
+
+        return LockCoreAsync(lockKey, expiry, retryInterval, retryCount, scopes);
+    }
+
+    private async Task<ILockHandler> LockCoreAsync(string lockKey, TimeSpan? expiry, TimeSpan? retryInterval, int retryCount, Dictionary<string, RedisReentrantLockContext.LocalLockScope> scopes)
+    {
+
         var locker = new RedisLock(_logger, _db, lockKey, expiry);
         var retry = 0;
         do
@@ -56,17 +73,25 @@ public class RedisCache : ILockable
             var handler = await locker.LockAsync();
             retry++;
 
-            if (!handler.Acquired && retryInterval.HasValue)
+            if (handler.Acquired)
+            {
+                return _reentrantLockContext.Register(lockKey, handler, scopes);
+            }
+
+            if (retryInterval.HasValue)
             {
                 await Task.Delay(retryInterval.Value);
             }
             else
             {
+                _reentrantLockContext.ClearIfEmpty(scopes);
                 return handler;
             }
 
             _logger.LogInformation("获取 {lockKey} 失败 {retry}.下次重试时间为 {interval}ms", lockKey, retry, retryInterval.Value.TotalMilliseconds);
         } while (!locker.Acquired && retry < retryCount);
+
+        _reentrantLockContext.ClearIfEmpty(scopes);
 
         return locker;
     }
@@ -133,7 +158,7 @@ public class RedisCache : ILockable
 
     /// <summary>
     /// 获取单个值
-    /// </summary>
+    /// </param>
     /// <param name="key"></param>
     /// <returns></returns>
     public async Task<string> StringGetAsync(RedisKey key)

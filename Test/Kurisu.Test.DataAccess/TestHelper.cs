@@ -53,6 +53,7 @@ public class TestHelper
         // register split services: inner and outer implementations located in Trans/mock
         services.AddScoped<ITransactionalInnerService, TransactionalInnerService>();
         services.AddScoped<ITransactionalOuterService, TransactionalOuterService>();
+        services.AddScoped<IDatasourceScopeService, DatasourceScopeService>();
 
         var serviceProvider = services.BuildDynamicProxyProvider();
 

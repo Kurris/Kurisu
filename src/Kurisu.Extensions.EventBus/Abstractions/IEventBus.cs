@@ -1,5 +1,3 @@
-using System.Threading.Tasks;
-
 namespace Kurisu.Extensions.EventBus.Abstractions;
 
 /// <summary>
@@ -8,7 +6,7 @@ namespace Kurisu.Extensions.EventBus.Abstractions;
 public interface IEventBus
 {
     /// <summary>
-    /// 推送
+    /// 发布事件
     /// </summary>
     /// <param name="message"></param>
     /// <typeparam name="TMessage"></typeparam>
