@@ -60,24 +60,39 @@ public class Pagination<T>
 /// </summary>
 public class Pagination : Pagination<object>
 {
+    /// <summary>
+    /// 根据类型创建新的空数据分页结构
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <param name="pageIndex"></param>
+    /// <param name="pageSize"></param>
+    /// <param name="total"></param>
+    /// <returns></returns>
     public static Pagination<T> Empty<T>(int pageIndex, int pageSize, int total)
     {
         return new Pagination<T>
         {
             PageIndex = pageIndex,
             PageSize = pageSize,
-            Total = 0,
+            Total = total,
             Data = new List<T>()
         };
     }
 
+    /// <summary>
+    /// 根据类型创建新的空数据分页结构
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <param name="query"></param>
+    /// <param name="total"></param>
+    /// <returns></returns>
     public static Pagination<T> Empty<T>(PageQuery query, int total)
     {
         return new Pagination<T>
         {
             PageIndex = query.PageIndex,
             PageSize = query.PageSize,
-            Total = 0,
+            Total = total,
             Data = new List<T>()
         };
     }

@@ -10,20 +10,21 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="coverlet.collector" Version="6.0.4"/>
+        <PackageReference Include="coverlet.collector" Version="6.0.4" />
         <PackageReference Include="Microsoft.Data.Sqlite" Version="9.0.3" />
-        <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.8.0"/>
+        <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.8.0" />
         <PackageReference Include="Moq" Version="4.20.72" />
-        <PackageReference Include="xunit" Version="2.5.3"/>
+        <PackageReference Include="xunit" Version="2.5.3" />
 <!--        <PackageReference Include="Xunit.DependencyInjection" Version="8.9.0" />-->
-        <PackageReference Include="xunit.runner.visualstudio" Version="2.5.3"/>
+        <PackageReference Include="xunit.runner.visualstudio" Version="2.5.3" />
     </ItemGroup>
 
     <ItemGroup>
-        <Using Include="Xunit"/>
+        <Using Include="Xunit" />
     </ItemGroup>
 
     <ItemGroup>
+        <ProjectReference Include="..\..\src\Kurisu.AspNetCore.Abstractions\Kurisu.AspNetCore.Abstractions.csproj" />
         <ProjectReference Include="..\..\src\Kurisu.AspNetCore\Kurisu.AspNetCore.csproj" />
         <ProjectReference Include="..\..\src\Kurisu.Extensions.Cache\Kurisu.Extensions.Cache.csproj" />
     </ItemGroup>
