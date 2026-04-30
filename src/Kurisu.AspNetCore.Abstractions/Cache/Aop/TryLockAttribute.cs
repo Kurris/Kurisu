@@ -1,6 +1,5 @@
 using AspectCore.DynamicProxy;
 using AspectCore.DynamicProxy.Parameters;
-using Kurisu.AspNetCore.Abstractions.Result;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Kurisu.AspNetCore.Abstractions.Cache.Aop;
@@ -37,7 +36,6 @@ public class TryLockAttribute(string scene, string tips) : AopAttribute
     public override async Task Invoke(AspectContext context, AspectDelegate next)
     {
         var keyParam = context.GetParameters(true)[KeyParameterIndex];
-        var keys = ResolveLockKeys(context.ServiceProvider, keyParam.Name, context.Parameters[KeyParameterIndex]);
         var lockable = context.ServiceProvider.GetRequiredService<ILockable>();
         var options = new DistributedLockAcquisitionOptions
         {
@@ -45,26 +43,12 @@ public class TryLockAttribute(string scene, string tips) : AopAttribute
             RetryStrategy = GetRetryStrategy()
         };
 
-        var acquiredLocks = new List<ILockHandler>(keys.Length);
-
-        try
-        {
-            foreach (var key in keys)
-            {
-                var locker = await lockable.LockAsync(GetLockKey(key), options);
-                acquiredLocks.Add(locker);
-                locker.Acquired.ThrowIfFalse(tips);
-            }
-
-            await next(context);
-        }
-        finally
-        {
-            for (var i = acquiredLocks.Count - 1; i >= 0; i--)
-            {
-                await acquiredLocks[i].DisposeAsync();
-            }
-        }
+        await using var multiLock = await MultiLock.AcquireAsync(lockable,
+        scene,
+        context.Parameters[KeyParameterIndex],
+        keyParam.Name, KeyParameterIndex,
+        options, tips);
+        await next(context);
     }
 
     /// <summary>
@@ -81,29 +65,5 @@ public class TryLockAttribute(string scene, string tips) : AopAttribute
     protected virtual IDistributedLockRetryStrategy GetRetryStrategy()
     {
         return new DefaultLockRetryStrategy(RetryInterval, RetryCount);
-    }
-
-    private string GetLockKey(string key)
-    {
-        return $"Locker:{scene}:{key}";
-    }
-
-    private string[] ResolveLockKeys(IServiceProvider serviceProvider, string parameter, object value)
-    {
-        IEnumerable<string> keys = value switch
-        {
-            string s => [s],
-            ITryLockKey k => [k.GetKey(serviceProvider)],
-            ITryLockKeys k => k.GetKeys(serviceProvider),
-            _ => throw new ArgumentException($"方法第{KeyParameterIndex}个参数必须为string类型,或者实现{nameof(ITryLockKey)}/{nameof(ITryLockKeys)}接口.")
-        };
-
-        var lockKeys = keys?.Where(x => !string.IsNullOrWhiteSpace(x)).ToArray() ?? Array.Empty<string>();
-        if (lockKeys.Length == 0)
-        {
-            throw new ArgumentException("必须提供至少一个有效的锁定Key.", parameter);
-        }
-
-        return lockKeys;
     }
 }

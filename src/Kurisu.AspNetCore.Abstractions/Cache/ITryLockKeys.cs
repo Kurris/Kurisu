@@ -6,9 +6,8 @@ namespace Kurisu.AspNetCore.Abstractions.Cache;
 public interface ITryLockKeys
 {
     /// <summary>
-    /// 获取分布式锁的Key 
+    /// 获取分布式锁的Key
     /// </summary>
-    /// <param name="serviceProvider"></param>
     /// <returns></returns>
-    IEnumerable<string> GetKeys(IServiceProvider serviceProvider);
+    IEnumerable<string> GetKeys();
 }

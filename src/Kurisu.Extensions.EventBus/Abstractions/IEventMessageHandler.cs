@@ -6,7 +6,7 @@ public abstract class EventMessage : ITryLockKey
 {
     public string Code { get; set; }
 
-    public string GetKey(IServiceProvider serviceProvider)
+    public string GetKey()
     {
         return Code;
     }

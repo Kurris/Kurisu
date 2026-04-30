@@ -9,4 +9,7 @@
 	<ItemGroup>
 		<PackageReference Include="Kurisu.Extensions.SqlSugar" Version="0.2.5" />
 	</ItemGroup>
+	<ItemGroup>
+		<ProjectReference Include="..\Kurisu.AspNetCore.Abstractions\Kurisu.AspNetCore.Abstractions.csproj" />
+	</ItemGroup>
 </Project>
