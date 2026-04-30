@@ -3,16 +3,17 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Kurisu.AspNetCore.Abstractions.Cache;
+using Kurisu.Extensions.Cache.Locking;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using StackExchange.Redis;
 
-namespace Kurisu.Extensions.Cache.Implements;
+namespace Kurisu.Extensions.Cache.Providers;
 
 /// <summary>
 /// RedisCache
 /// </summary>
-public class RedisCache : ILockable
+public class RedisCache : ILockable, ICache
 {
     private readonly RedisReentrantLockContext _reentrantLockContext = new();
 
@@ -31,8 +32,6 @@ public class RedisCache : ILockable
     /// <summary>
     /// ctor
     /// </summary>
-    /// <param name="connectionMultiplexer"></param>
-    /// <param name="logger"></param>
     public RedisCache(IConnectionMultiplexer connectionMultiplexer, ILogger<RedisCache> logger)
     {
         _logger = logger;
@@ -45,54 +44,85 @@ public class RedisCache : ILockable
     /// lock
     /// </summary>
     /// <param name="lockKey">key</param>
-    /// <param name="expiry">过期时间(如果不存在则启用自动续期)</param>
-    /// <param name="retryInterval">重试间隔</param>
-    /// <param name="retryCount">重试次数</param>
+    /// <param name="options">锁获取参数</param>
     /// <returns></returns>
-    public Task<ILockHandler> LockAsync(string lockKey, TimeSpan? expiry = null, TimeSpan? retryInterval = null, int retryCount = 3)
+    public Task<ILockHandler> LockAsync(string lockKey, DistributedLockAcquisitionOptions options)
     {
+        ArgumentException.ThrowIfNullOrWhiteSpace(lockKey);
+        ArgumentNullException.ThrowIfNull(options);
+
         if (_reentrantLockContext.TryEnter(lockKey, out var reentrantHandler))
         {
-            _logger.LogDebug("同一请求内复用锁 {lockKey}，跳过重复Redis加锁", lockKey);
+            _logger.LogDebug("同一请求内复用锁 {lockKey},跳过重复Redis加锁", lockKey);
             return Task.FromResult(reentrantHandler);
         }
 
         // 先在当前异步调用链初始化作用域容器，确保首次成功后可被同链路后续调用读取。
         var scopes = _reentrantLockContext.EnsureScopes();
 
-        return LockCoreAsync(lockKey, expiry, retryInterval, retryCount, scopes);
+        return LockCoreAsync(lockKey, options, scopes);
     }
 
-    private async Task<ILockHandler> LockCoreAsync(string lockKey, TimeSpan? expiry, TimeSpan? retryInterval, int retryCount, Dictionary<string, RedisReentrantLockContext.LocalLockScope> scopes)
+    public async Task<T> GetAsync<T>(string key)
     {
+        ArgumentException.ThrowIfNullOrWhiteSpace(key);
 
-        var locker = new RedisLock(_logger, _db, lockKey, expiry);
-        var retry = 0;
+        return JsonConvert.DeserializeObject<T>(await _db.StringGetAsync(key));
+    }
+
+    public async Task<bool> SetAsync<T>(string key, T value, TimeSpan? expiry = null)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(key);
+
+        var json = JsonConvert.SerializeObject(value);
+        return await _db.StringSetAsync(key, json, expiry);
+    }
+
+    public async Task<bool> RemoveAsync(string key)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(key);
+
+        return await _db.KeyDeleteAsync(key);
+    }
+
+    public async Task<bool> ExistsAsync(string key)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(key);
+
+        return await _db.KeyExistsAsync(key);
+    }
+
+    private async Task<ILockHandler> LockCoreAsync(string lockKey, DistributedLockAcquisitionOptions options, Dictionary<string, RedisReentrantLockContext.LocalLockScope> scopes)
+    {
+        ArgumentNullException.ThrowIfNull(options);
+
+        var timeSettings = options.TimeModeHandler.Resolve();
+        var retryStrategy = options.RetryStrategy;
+
+        var locker = new RedisLock(_logger, _db, lockKey, timeSettings.Expiry, timeSettings.EnableAutoRenewal, timeSettings.MaxRenewalCount);
+        var attempt = 0;
         do
         {
             var handler = await locker.LockAsync();
-            retry++;
 
             if (handler.Acquired)
             {
                 return _reentrantLockContext.Register(lockKey, handler, scopes);
             }
 
-            if (retryInterval.HasValue)
-            {
-                await Task.Delay(retryInterval.Value);
-            }
-            else
+            attempt++;
+            if (!await retryStrategy.ShouldRetryAsync(attempt))
             {
                 _reentrantLockContext.ClearIfEmpty(scopes);
                 return handler;
             }
 
-            _logger.LogInformation("获取 {lockKey} 失败 {retry}.下次重试时间为 {interval}ms", lockKey, retry, retryInterval.Value.TotalMilliseconds);
-        } while (!locker.Acquired && retry < retryCount);
+            await retryStrategy.DelayBeforeRetryAsync(attempt);
+
+            _logger.LogInformation("获取 {lockKey} 失败 {attempt}，正在重试", lockKey, attempt);
+        } while (!locker.Acquired);
 
         _reentrantLockContext.ClearIfEmpty(scopes);
-
         return locker;
     }
 
@@ -110,6 +140,19 @@ public class RedisCache : ILockable
         return _db.StringSet(key, value, expiry);
     }
 
+    /// <summary>
+    /// 设置key并保存字符串，可通过 when 控制覆盖策略。
+    /// </summary>
+    /// <param name="key"></param>
+    /// <param name="value"></param>
+    /// <param name="expiry"></param>
+    /// <param name="when">写入条件（如 NotExists 表示仅在键不存在时写入）。</param>
+    /// <returns></returns>
+    public bool StringSet(RedisKey key, string value, TimeSpan? expiry, When when)
+    {
+        return _db.StringSet(key, value, expiry, when);
+    }
+
 
     /// <summary>
     /// 保存一个字符串值
@@ -121,6 +164,19 @@ public class RedisCache : ILockable
     public async Task<bool> StringSetAsync(RedisKey key, string value, TimeSpan? expiry = null)
     {
         return await _db.StringSetAsync(key, value, expiry);
+    }
+
+    /// <summary>
+    /// 异步保存一个字符串值，可通过 when 控制覆盖策略。
+    /// </summary>
+    /// <param name="key"></param>
+    /// <param name="value"></param>
+    /// <param name="expiry"></param>
+    /// <param name="when">写入条件（如 NotExists 表示仅在键不存在时写入）。</param>
+    /// <returns></returns>
+    public async Task<bool> StringSetAsync(RedisKey key, string value, TimeSpan? expiry, When when)
+    {
+        return await _db.StringSetAsync(key, value, expiry, when);
     }
 
     /// <summary>
@@ -761,14 +817,14 @@ public class RedisCache : ILockable
     }
 
     /// <summary>
-    /// 返回有序集合的元素个数
+    /// 移除有序集合中的指定元素
     /// </summary>
     /// <param name="key"></param>
-    /// <param name="memebr"></param>
+    /// <param name="member"></param>
     /// <returns></returns>
-    public bool SortedSetLength(RedisKey key, string memebr)
+    public bool SortedSetRemove(RedisKey key, string member)
     {
-        return _db.SortedSetRemove(key, memebr);
+        return _db.SortedSetRemove(key, member);
     }
 
     /// <summary>
@@ -819,14 +875,14 @@ public class RedisCache : ILockable
     }
 
     /// <summary>
-    /// 返回有序集合的元素个数
+    /// 移除有序集合中的指定元素
     /// </summary>
     /// <param name="key"></param>
-    /// <param name="memebr"></param>
+    /// <param name="member"></param>
     /// <returns></returns>
-    public async Task<bool> SortedSetRemoveAsync(RedisKey key, string memebr)
+    public async Task<bool> SortedSetRemoveAsync(RedisKey key, string member)
     {
-        return await _db.SortedSetRemoveAsync(key, memebr);
+        return await _db.SortedSetRemoveAsync(key, member);
     }
 
     /// <summary>
@@ -1056,69 +1112,39 @@ public class RedisCache : ILockable
     /// </summary>
     /// <param name="sender"></param>
     /// <param name="e"></param>
-    private static void ConnMultiplexer_ConfigurationChangedBroadcast(object sender, EndPointEventArgs e)
+    private void ConnMultiplexer_ConfigurationChangedBroadcast(object sender, EndPointEventArgs e)
     {
-        Console.WriteLine($"{nameof(ConnMultiplexer_ConfigurationChangedBroadcast)}: {e.EndPoint}");
+        _logger.LogDebug("Redis 集群配置广播: {EndPoint}", e.EndPoint);
     }
 
-    /// <summary>
-    /// 发生内部错误时（主要用于调试）
-    /// </summary>
-    /// <param name="sender"></param>
-    /// <param name="e"></param>
-    private static void ConnMultiplexer_InternalError(object sender, InternalErrorEventArgs e)
+    private void ConnMultiplexer_InternalError(object sender, InternalErrorEventArgs e)
     {
-        Console.WriteLine($"{nameof(ConnMultiplexer_InternalError)}: {e.Exception}");
+        _logger.LogError(e.Exception, "Redis 内部错误");
     }
 
-    /// <summary>
-    /// 更改集群时
-    /// </summary>
-    /// <param name="sender"></param>
-    /// <param name="e"></param>
-    private static void ConnMultiplexer_HashSlotMoved(object sender, HashSlotMovedEventArgs e)
+    private void ConnMultiplexer_HashSlotMoved(object sender, HashSlotMovedEventArgs e)
     {
-        Console.WriteLine($"{nameof(ConnMultiplexer_HashSlotMoved)}: {nameof(e.OldEndPoint)}-{e.OldEndPoint} To {nameof(e.NewEndPoint)}-{e.NewEndPoint}, ");
+        _logger.LogDebug("Redis 哈希槽迁移: {OldEndPoint} -> {NewEndPoint}", e.OldEndPoint, e.NewEndPoint);
     }
 
-    /// <summary>
-    /// 配置更改时
-    /// </summary>
-    /// <param name="sender"></param>
-    /// <param name="e"></param>
-    private static void ConnMultiplexer_ConfigurationChanged(object sender, EndPointEventArgs e)
+    private void ConnMultiplexer_ConfigurationChanged(object sender, EndPointEventArgs e)
     {
-        Console.WriteLine($"{nameof(ConnMultiplexer_ConfigurationChanged)}: {e.EndPoint}");
+        _logger.LogInformation("Redis 配置变更: {EndPoint}", e.EndPoint);
     }
 
-    /// <summary>
-    /// 发生错误时
-    /// </summary>
-    /// <param name="sender"></param>
-    /// <param name="e"></param>
-    private static void ConnMultiplexer_ErrorMessage(object sender, RedisErrorEventArgs e)
+    private void ConnMultiplexer_ErrorMessage(object sender, RedisErrorEventArgs e)
     {
-        Console.WriteLine($"{nameof(ConnMultiplexer_ErrorMessage)}: {e.Message}");
+        _logger.LogError("Redis 错误: {Message}", e.Message);
     }
 
-    /// <summary>
-    /// 物理连接失败时
-    /// </summary>
-    /// <param name="sender"></param>
-    /// <param name="e"></param>
-    private static void ConnMultiplexer_ConnectionFailed(object sender, ConnectionFailedEventArgs e)
+    private void ConnMultiplexer_ConnectionFailed(object sender, ConnectionFailedEventArgs e)
     {
-        Console.WriteLine($"{nameof(ConnMultiplexer_ConnectionFailed)}: {e.Exception}");
+        _logger.LogError(e.Exception, "Redis 连接失败");
     }
 
-    /// <summary>
-    /// 建立物理连接时
-    /// </summary>
-    /// <param name="sender"></param>
-    /// <param name="e"></param>
-    private static void ConnMultiplexer_ConnectionRestored(object sender, ConnectionFailedEventArgs e)
+    private void ConnMultiplexer_ConnectionRestored(object sender, ConnectionFailedEventArgs e)
     {
-        Console.WriteLine($"{nameof(ConnMultiplexer_ConnectionRestored)}: {e.Exception}");
+        _logger.LogInformation("Redis 连接恢复");
     }
 
     #endregion 注册事件

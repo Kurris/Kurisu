@@ -5,7 +5,7 @@ using Kurisu.AspNetCore.Abstractions.Cache;
 using Microsoft.Extensions.Logging;
 using StackExchange.Redis;
 
-namespace Kurisu.Extensions.Cache.Implements;
+namespace Kurisu.Extensions.Cache.Locking;
 
 /// <summary>
 /// redis分布式锁，支持自动续期。
@@ -19,9 +19,11 @@ internal sealed class RedisLock : ILockHandler
     private readonly TimeSpan _expiry;
     private readonly TimeSpan _interval;
     private readonly bool _enableAutoRenew;
+    private readonly int? _maxRenewalCount;
 
     // 通过 int + Interlocked 保证原子性与可见性（0 = false, 1 = true）
     private int _acquired; // 0/1
+    private int _renewedCount;
     private CancellationTokenSource _cts;
 
     // Lua 脚本：只有当 key 的值等于 ARGV[1] 时，才设置过期（毫秒）
@@ -47,17 +49,23 @@ end";
     /// <param name="logger"></param>
     /// <param name="db">Redis 数据库实例。</param>
     /// <param name="lockKey">锁的键名。</param>
-    /// <param name="expiry">锁的过期时间，默认 6 秒。</param>
-    public RedisLock(ILogger logger, IDatabase db, string lockKey, TimeSpan? expiry = null)
+    /// <param name="expiry">锁的过期时间。</param>
+    /// <param name="enableAutoRenew">是否自动续期。</param>
+    /// <param name="maxRenewalCount">最大续期次数。null 表示无限续期。</param>
+    public RedisLock(ILogger logger, IDatabase db, string lockKey, TimeSpan expiry, bool enableAutoRenew, int? maxRenewalCount)
     {
         _logger = logger;
         _db = db ?? throw new ArgumentNullException(nameof(db));
         _lockKey = lockKey ?? throw new ArgumentNullException(nameof(lockKey));
-        _enableAutoRenew = !expiry.HasValue;
-        _expiry = expiry ?? TimeSpan.FromSeconds(6);
+        _enableAutoRenew = enableAutoRenew;
+        _expiry = expiry;
+        _maxRenewalCount = maxRenewalCount;
 
         if (_expiry <= TimeSpan.Zero)
             throw new ArgumentException("必须设置有效的过期时间", nameof(expiry));
+
+        if (_maxRenewalCount.HasValue && _maxRenewalCount.Value <= 0)
+            throw new ArgumentException("最大续期次数必须大于0", nameof(maxRenewalCount));
 
         // 以 ticks 精确计算三等分，避免浮点误差；确保最小间隔（比如 50ms）
         var ticks = _expiry.Ticks / 3;
@@ -68,7 +76,7 @@ end";
 
         _acquired = 0;
 
-        _logger.LogDebug("Redis锁handler初始化 | 键名={LockKey} | 锁值={LockValue} | 过期时间={Expiry} | 自动续期={AutoRenew}", _lockKey, _lockValue, _expiry, _enableAutoRenew);
+        _logger.LogDebug("Redis锁handler初始化 | 键名={LockKey} | 锁值={LockValue} | 过期时间={Expiry} | 自动续期={AutoRenew} | 最大续期次数={MaxRenewalCount}", _lockKey, _lockValue, _expiry, _enableAutoRenew, _maxRenewalCount);
     }
 
     /// <summary>
@@ -145,6 +153,13 @@ end";
                         cts?.Dispose();
                     }
 
+                    break;
+                }
+
+                var renewed = Interlocked.Increment(ref _renewedCount);
+                if (_maxRenewalCount.HasValue && renewed >= _maxRenewalCount.Value)
+                {
+                    _logger.LogDebug("Redis锁达到续期次数上限 | 键名={LockKey} | 已续期次数={RenewedCount}", _lockKey, renewed);
                     break;
                 }
             }

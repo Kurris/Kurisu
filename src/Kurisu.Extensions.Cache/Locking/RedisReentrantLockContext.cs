@@ -4,13 +4,14 @@ using System.Threading;
 using System.Threading.Tasks;
 using Kurisu.AspNetCore.Abstractions.Cache;
 
-namespace Kurisu.Extensions.Cache.Implements;
+namespace Kurisu.Extensions.Cache.Locking;
 
 /// <summary>
 /// Redis 本地可重入锁上下文（同一异步调用链内生效）。
 /// </summary>
 internal sealed class RedisReentrantLockContext
 {
+    // AsyncLocal 绑定 ExecutionContext：同一异步调用链跨 await 会继承该值，从而支持本地可重入。
     private readonly AsyncLocal<Dictionary<string, LocalLockScope>> _localLockScopes = new();
 
     /// <summary>
@@ -45,6 +46,7 @@ internal sealed class RedisReentrantLockContext
     /// </summary>
     public bool TryEnter(string lockKey, out ILockHandler handler)
     {
+        // 这里读取的是“当前异步调用链”的本地作用域，而不是线程静态变量。
         var scopes = _localLockScopes.Value;
         if (scopes != null && scopes.TryGetValue(lockKey, out var scope))
         {

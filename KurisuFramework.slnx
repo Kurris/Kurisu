@@ -19,6 +19,7 @@
     <Project Path="src\Kurisu.RemoteCall\Kurisu.RemoteCall.csproj" />
   </Folder>
   <Folder Name="/test/">
+    <Project Path="test/Kurisu.Test.Cache/Kurisu.Test.Cache.csproj" />
     <Project Path="test/Kurisu.Test.ContextAccessor/Kurisu.Test.ContextAccessor.csproj" Id="765398db-b37e-4188-af39-0d45b981f85a" />
     <Project Path="test\Kurisu.Test.DataAccess\Kurisu.Test.DataAccess.csproj" />
     <Project Path="test\Kurisu.Test.Framework.Authentication\Kurisu.Test.Framework.Authentication.csproj" />
