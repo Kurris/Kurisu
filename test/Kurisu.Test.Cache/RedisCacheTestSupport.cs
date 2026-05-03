@@ -32,15 +32,15 @@ internal static class RedisCacheTestSupport
     }
 
     public static DistributedLockAcquisitionOptions BuildLockOptions(
-        TimeSpan? expiry = null, TimeSpan? retryInterval = null, int retryCount = 3)
+        TimeSpan? expiry = null, int retryCount = 3, bool enableRetry = true)
     {
         return new DistributedLockAcquisitionOptions
         {
             TimeModeHandler = expiry.HasValue
                 ? LockTimeModeHandler.FixedExpiry(expiry)
                 : LockTimeModeHandler.InfiniteRenewal(),
-            RetryStrategy = retryInterval.HasValue
-                ? new DefaultLockRetryStrategy(retryInterval, retryCount)
+            RetryStrategy = enableRetry
+                ? new DefaultLockRetryStrategy(retryCount)
                 : new NoRetryDistributedLockRetryStrategy()
         };
     }

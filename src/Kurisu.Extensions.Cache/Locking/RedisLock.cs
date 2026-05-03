@@ -10,7 +10,7 @@ namespace Kurisu.Extensions.Cache.Locking;
 /// <summary>
 /// redis分布式锁，支持自动续期。
 /// </summary>
-internal sealed class RedisLock : ILockHandler
+internal sealed class RedisLock : ILocalReentryAwareLockHandler
 {
     private readonly ILogger _logger;
     private readonly IDatabase _db;
@@ -88,13 +88,20 @@ end";
     /// 异步尝试获取锁，并自动续期。
     /// </summary>
     /// <returns>返回自身实例。</returns>
-    public async Task<RedisLock> LockAsync()
+    public async Task<RedisLock> LockAsync(int attempt = 1, CancellationToken cancellationToken = default)
     {
-        _logger.LogDebug("尝试获取Redis锁 | 键名={LockKey} | 状态: 尝试中", _lockKey);
+        cancellationToken.ThrowIfCancellationRequested();
+        _logger.LogDebug("尝试获取Redis锁 | 键名={LockKey} | 尝试次数={Attempt} | 状态: 尝试中", _lockKey, attempt);
         var got = await _db.StringSetAsync(_lockKey, _lockValue, _expiry, when: When.NotExists).ConfigureAwait(false);
-        _logger.LogDebug("Redis锁获取结果 | 键名={LockKey} | 是否成功={Got} | 请检查: 锁是否被抢占", _lockKey, got);
+        _logger.LogDebug("Redis锁获取结果 | 键名={LockKey} | 尝试次数={Attempt} | 是否成功={Got} | 请检查: 锁是否被抢占", _lockKey, attempt, got);
         if (got)
         {
+            if (cancellationToken.IsCancellationRequested)
+            {
+                await ReleaseAsync().ConfigureAwait(false);
+                cancellationToken.ThrowIfCancellationRequested();
+            }
+
             // 原子标记已获取
             Interlocked.Exchange(ref _acquired, 1);
 
@@ -113,6 +120,21 @@ end";
         return this;
     }
 
+    public ValueTask<bool> TryReenterAsync(CancellationToken cancellationToken = default)
+    {
+        if (!Acquired)
+        {
+            return ValueTask.FromResult(false);
+        }
+
+        if (_enableAutoRenew && !_maxRenewalCount.HasValue)
+        {
+            return ValueTask.FromResult(true);
+        }
+
+        return TryRenewAsync(consumeQuota: _maxRenewalCount.HasValue, cancellationToken);
+    }
+
     /// <summary>
     /// 后台自动续期任务（安全：仅当值匹配时才续期）。
     /// </summary>
@@ -124,42 +146,12 @@ end";
         var expiryMillis = (long)_expiry.TotalMilliseconds;
         while (Volatile.Read(ref _acquired) == 1 && !token.IsCancellationRequested)
         {
-            await Task.Delay(_interval, token).ConfigureAwait(false);
-
             try
             {
-                var result = (long)await _db.ScriptEvaluateAsync(
-                    RenewScript,
-                    new RedisKey[] { _lockKey },
-                    new RedisValue[] { _lockValue, expiryMillis }).ConfigureAwait(false);
+                await Task.Delay(_interval, token).ConfigureAwait(false);
 
-                _logger.LogDebug("Redis锁续期结果 | 键名={LockKey} | 结果={Result}", _lockKey, result);
-                if (result == 0)
+                if (!await TryRenewAsync(consumeQuota: _maxRenewalCount.HasValue, token).ConfigureAwait(false))
                 {
-                    _logger.LogDebug("Redis锁续期失败 | 键名={LockKey} | 当前Redis锁值={RedisValue} | 本机锁值={LockValue} | 原因: 被其他实例抢占 | 请检查: 锁值一致性", _lockKey, await _db.StringGetAsync(_lockKey), _lockValue);
-                    // 无法续期：可能 key 不存在或值已被替换
-                    // 原子清理 acquired 标志并取消/释放 token source（一次性）
-                    if (Interlocked.Exchange(ref _acquired, 0) == 1)
-                    {
-                        var cts = Interlocked.Exchange(ref _cts, null);
-                        try
-                        {
-                            cts?.Cancel();
-                        }
-                        catch
-                        {
-
-                        }
-                        cts?.Dispose();
-                    }
-
-                    break;
-                }
-
-                var renewed = Interlocked.Increment(ref _renewedCount);
-                if (_maxRenewalCount.HasValue && renewed >= _maxRenewalCount.Value)
-                {
-                    _logger.LogDebug("Redis锁达到续期次数上限 | 键名={LockKey} | 已续期次数={RenewedCount}", _lockKey, renewed);
                     break;
                 }
             }
@@ -191,11 +183,7 @@ end";
             try
             {
                 _logger.LogDebug("释放Redis锁 | 键名={LockKey} | 锁值={LockValue} | 状态: 正在释放", _lockKey, _lockValue);
-                // 原子删除：只有当 value 匹配时才删除
-                _ = (long)await _db.ScriptEvaluateAsync(
-                    ReleaseScript,
-                    new RedisKey[] { _lockKey },
-                    new RedisValue[] { _lockValue }).ConfigureAwait(false);
+                await ReleaseAsync().ConfigureAwait(false);
                 _logger.LogDebug("RedisLock 成功释放: {LockKey}", _lockKey);
             }
             catch (Exception ex)
@@ -209,5 +197,110 @@ end";
             var leftover = Interlocked.Exchange(ref _cts, null);
             leftover?.Dispose();
         }
+    }
+
+    private async Task ReleaseAsync()
+    {
+        // 原子删除：只有当 value 匹配时才删除
+        _ = (long)await _db.ScriptEvaluateAsync(
+            ReleaseScript,
+            new RedisKey[] { _lockKey },
+            new RedisValue[] { _lockValue }).ConfigureAwait(false);
+    }
+
+    private async ValueTask<bool> TryRenewAsync(bool consumeQuota, CancellationToken cancellationToken)
+    {
+        if (!Acquired)
+        {
+            return false;
+        }
+
+        var quotaReserved = false;
+        try
+        {
+            if (consumeQuota && !TryReserveRenewalQuota())
+            {
+                _logger.LogDebug("Redis锁续期次数已达上限 | 键名={LockKey} | 已续期次数={RenewedCount}", _lockKey, Volatile.Read(ref _renewedCount));
+                return false;
+            }
+
+            quotaReserved = consumeQuota;
+
+            var result = (long)await _db.ScriptEvaluateAsync(
+                RenewScript,
+                new RedisKey[] { _lockKey },
+                new RedisValue[] { _lockValue, (long)_expiry.TotalMilliseconds }).ConfigureAwait(false);
+
+            _logger.LogDebug("Redis锁续期结果 | 键名={LockKey} | 结果={Result}", _lockKey, result);
+            if (result == 0)
+            {
+                if (quotaReserved)
+                {
+                    Interlocked.Decrement(ref _renewedCount);
+                    quotaReserved = false;
+                }
+
+                _logger.LogDebug("Redis锁续期失败 | 键名={LockKey} | 当前Redis锁值={RedisValue} | 本机锁值={LockValue} | 原因: 被其他实例抢占 | 请检查: 锁值一致性", _lockKey, await _db.StringGetAsync(_lockKey), _lockValue);
+                MarkLostOwnership();
+                return false;
+            }
+
+            if (quotaReserved && _maxRenewalCount.HasValue)
+            {
+                _logger.LogDebug("Redis锁续期成功并消耗次数 | 键名={LockKey} | 已续期次数={RenewedCount}", _lockKey, Volatile.Read(ref _renewedCount));
+            }
+
+            return true;
+        }
+        catch
+        {
+            if (quotaReserved)
+            {
+                Interlocked.Decrement(ref _renewedCount);
+            }
+
+            throw;
+        }
+    }
+
+    private bool TryReserveRenewalQuota()
+    {
+        if (!_maxRenewalCount.HasValue)
+        {
+            return true;
+        }
+
+        while (true)
+        {
+            var current = Volatile.Read(ref _renewedCount);
+            if (current >= _maxRenewalCount.Value)
+            {
+                return false;
+            }
+
+            if (Interlocked.CompareExchange(ref _renewedCount, current + 1, current) == current)
+            {
+                return true;
+            }
+        }
+    }
+
+    private void MarkLostOwnership()
+    {
+        if (Interlocked.Exchange(ref _acquired, 0) != 1)
+        {
+            return;
+        }
+
+        var cts = Interlocked.Exchange(ref _cts, null);
+        try
+        {
+            cts?.Cancel();
+        }
+        catch
+        {
+        }
+
+        cts?.Dispose();
     }
 }

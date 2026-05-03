@@ -13,7 +13,8 @@ public interface ILockable
     /// </summary>
     /// <param name="lockKey">锁的Key</param>
     /// <param name="options">分布式锁的获取选项</param>
+    /// <param name="cancellationToken">取消令牌</param>
     /// <returns>返回分布式锁的处理器</returns>
-    Task<ILockHandler> LockAsync(string lockKey, DistributedLockAcquisitionOptions options);
+    Task<ILockHandler> LockAsync(string lockKey, DistributedLockAcquisitionOptions options, CancellationToken cancellationToken = default);
 
 }

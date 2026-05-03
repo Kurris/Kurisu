@@ -26,8 +26,8 @@ public class RedisCacheLockFailureTests
         Assert.False(await cache.KeyExistsAsync(lockKey));
     }
 
-    [Fact(DisplayName = "未配置重试间隔且锁被占用时应返回失败句柄")]
-    public async Task LockAsync_ShouldReturnFailedHandler_WhenAcquireFailedAndNoRetryInterval()
+    [Fact(DisplayName = "禁用重试且锁被占用时应返回失败句柄")]
+    public async Task LockAsync_ShouldReturnFailedHandler_WhenRetryIsDisabled()
     {
         using var serviceProvider = RedisCacheTestSupport.BuildServiceProvider();
         var cache = serviceProvider.GetRequiredService<RedisCache>();
@@ -38,7 +38,7 @@ public class RedisCacheLockFailureTests
         var occupied = await cache.StringSetAsync(lockKey, "external-holder", TimeSpan.FromSeconds(10), When.NotExists);
         Assert.True(occupied);
 
-        var handler = await cache.LockAsync(lockKey, RedisCacheTestSupport.BuildLockOptions(TimeSpan.FromSeconds(10), retryInterval: null, retryCount: 3));
+        var handler = await cache.LockAsync(lockKey, RedisCacheTestSupport.BuildLockOptions(TimeSpan.FromSeconds(10), enableRetry: false));
         Assert.False(handler.Acquired);
 
         await cache.KeyDeleteAsync(lockKey);
@@ -62,7 +62,7 @@ public class RedisCacheLockFailureTests
             await cache.KeyDeleteAsync(lockKey);
         });
 
-        var handler = await cache.LockAsync(lockKey, RedisCacheTestSupport.BuildLockOptions(TimeSpan.FromSeconds(3), retryInterval: TimeSpan.FromMilliseconds(100), retryCount: 15));
+        var handler = await cache.LockAsync(lockKey, RedisCacheTestSupport.BuildLockOptions(TimeSpan.FromSeconds(3), retryCount: 15));
 
         Assert.True(handler.Acquired);
         await handler.DisposeAsync();
@@ -81,7 +81,7 @@ public class RedisCacheLockFailureTests
         var occupied = await cache.StringSetAsync(lockKey, "external-holder", TimeSpan.FromSeconds(10), When.NotExists);
         Assert.True(occupied);
 
-        var handler = await cache.LockAsync(lockKey, RedisCacheTestSupport.BuildLockOptions(TimeSpan.FromSeconds(10), retryInterval: null, retryCount: 1));
+        var handler = await cache.LockAsync(lockKey, RedisCacheTestSupport.BuildLockOptions(TimeSpan.FromSeconds(10), retryCount: 1, enableRetry: false));
 
         Assert.False(handler.Acquired);
 
@@ -108,7 +108,7 @@ public class RedisCacheLockFailureTests
             await cache.KeyDeleteAsync(lockKey);
         });
 
-        var handler = await cache.LockAsync(lockKey, RedisCacheTestSupport.BuildLockOptions(TimeSpan.FromSeconds(3), retryInterval: TimeSpan.FromMilliseconds(100), retryCount: 10));
+        var handler = await cache.LockAsync(lockKey, RedisCacheTestSupport.BuildLockOptions(TimeSpan.FromSeconds(3), retryCount: 10));
 
         Assert.True(handler.Acquired);
         await handler.DisposeAsync();
@@ -122,7 +122,7 @@ public class RedisCacheLockFailureTests
         {
             using var serviceProvider = RedisCacheTestSupport.BuildServiceProvider("127.0.0.1:0,abortConnect=false,connectTimeout=100,syncTimeout=100");
             var cache = serviceProvider.GetRequiredService<RedisCache>();
-            _ = await cache.LockAsync($"test:lock:redis-down:{Guid.NewGuid():N}", RedisCacheTestSupport.BuildLockOptions(TimeSpan.FromSeconds(3), retryInterval: null, retryCount: 1));
+            _ = await cache.LockAsync($"test:lock:redis-down:{Guid.NewGuid():N}", RedisCacheTestSupport.BuildLockOptions(TimeSpan.FromSeconds(3), retryCount: 1, enableRetry: false));
         });
     }
 }

@@ -24,6 +24,7 @@ public class MultiLock : IAsyncDisposable
     /// <param name="parameterIndex">参数索引</param>
     /// <param name="options">锁获取选项</param>
     /// <param name="tips">获取失败时的提示信息</param>
+    /// <param name="cancellationToken">取消令牌</param>
     /// <returns>多锁持有器实例</returns>
     public static async Task<MultiLock> AcquireAsync(
         ILockable lockable,
@@ -32,7 +33,8 @@ public class MultiLock : IAsyncDisposable
         string parameterName,
         int parameterIndex,
         DistributedLockAcquisitionOptions options,
-        string tips)
+        string tips,
+        CancellationToken cancellationToken = default)
     {
         var lockKeys = ResolveLockKeys(parameterValue, parameterName, parameterIndex)
             .Select(k => $"Locker:{scene}:{k}");
@@ -42,7 +44,8 @@ public class MultiLock : IAsyncDisposable
         {
             foreach (var key in lockKeys)
             {
-                var handler = await lockable.LockAsync(key, options);
+                cancellationToken.ThrowIfCancellationRequested();
+                var handler = await lockable.LockAsync(key, options, cancellationToken);
                 handlers.Push(handler);
                 handler.Acquired.ThrowIfFalse(tips);
             }

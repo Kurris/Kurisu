@@ -16,11 +16,6 @@ public class TryLockAttribute(string scene, string tips) : AopAttribute
     public TimeSpan? Expiry { get; set; }
 
     /// <summary>
-    /// 重试间隔
-    /// </summary>
-    public TimeSpan? RetryInterval { get; set; }
-
-    /// <summary>
     /// 重试次数
     /// </summary>
     public int RetryCount { get; set; } = 3;
@@ -35,8 +30,10 @@ public class TryLockAttribute(string scene, string tips) : AopAttribute
     /// </summary>
     public override async Task Invoke(AspectContext context, AspectDelegate next)
     {
-        var keyParam = context.GetParameters(true)[KeyParameterIndex];
+        var parameters = context.GetParameters(true);
+        var keyParam = parameters[KeyParameterIndex];
         var lockable = context.ServiceProvider.GetRequiredService<ILockable>();
+        var cancellationToken = ResolveCancellationToken(parameters);
         var options = new DistributedLockAcquisitionOptions
         {
             TimeModeHandler = GetTimeModeHandler(),
@@ -45,10 +42,24 @@ public class TryLockAttribute(string scene, string tips) : AopAttribute
 
         await using var multiLock = await MultiLock.AcquireAsync(lockable,
         scene,
-        context.Parameters[KeyParameterIndex],
+        keyParam.Value,
         keyParam.Name, KeyParameterIndex,
-        options, tips);
+        options, tips, cancellationToken);
         await next(context);
+    }
+
+    private static CancellationToken ResolveCancellationToken(ParameterCollection parameters)
+    {
+        for (var i = 0; i < parameters.Count; i++)
+        {
+            var parameter = parameters[i];
+            if (parameter.Type == typeof(CancellationToken) && parameter.Value is CancellationToken cancellationToken)
+            {
+                return cancellationToken;
+            }
+        }
+
+        return CancellationToken.None;
     }
 
     /// <summary>
@@ -64,6 +75,6 @@ public class TryLockAttribute(string scene, string tips) : AopAttribute
     /// </summary>
     protected virtual IDistributedLockRetryStrategy GetRetryStrategy()
     {
-        return new DefaultLockRetryStrategy(RetryInterval, RetryCount);
+        return new DefaultLockRetryStrategy(RetryCount);
     }
 }

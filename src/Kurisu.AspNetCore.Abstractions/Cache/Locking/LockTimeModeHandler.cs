@@ -1,5 +1,3 @@
-using System;
-
 namespace Kurisu.AspNetCore.Abstractions.Cache;
 
 /// <summary>

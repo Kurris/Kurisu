@@ -7,7 +7,7 @@ namespace Kurisu.Extensions.Cache.Locking;
 public sealed class NoRetryDistributedLockRetryStrategy : AbstractDistributedLockRetryStrategy
 {
     public NoRetryDistributedLockRetryStrategy()
-        : base(null, 0)
+        : base(0)
     {
     }
 

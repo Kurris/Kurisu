@@ -1,20 +1,14 @@
 namespace Kurisu.AspNetCore.Abstractions.Cache;
 
 /// <summary>
-/// 重试策略基类，提供构造参数承载与默认等待实现。
+/// 重试策略基类，提供重试次数承载与默认等待实现。
 /// </summary>
 public abstract class AbstractDistributedLockRetryStrategy : IDistributedLockRetryStrategy
 {
-    protected AbstractDistributedLockRetryStrategy(TimeSpan? retryInterval, int retryCount)
+    protected AbstractDistributedLockRetryStrategy(int retryCount)
     {
-        RetryInterval = retryInterval;
         RetryCount = retryCount;
     }
-
-    /// <summary>
-    /// 重试间隔。
-    /// </summary>
-    public TimeSpan? RetryInterval { get; }
 
     /// <summary>
     /// 重试次数。
@@ -27,11 +21,6 @@ public abstract class AbstractDistributedLockRetryStrategy : IDistributedLockRet
     /// <inheritdoc />
     public virtual Task DelayBeforeRetryAsync(int attempt, CancellationToken cancellationToken = default)
     {
-        if (!RetryInterval.HasValue)
-        {
-            return Task.CompletedTask;
-        }
-
-        return Task.Delay(RetryInterval.Value, cancellationToken);
+        return Task.CompletedTask;
     }
 }

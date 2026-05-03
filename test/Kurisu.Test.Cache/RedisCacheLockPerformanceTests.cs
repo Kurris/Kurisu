@@ -19,7 +19,7 @@ public class RedisCacheLockPerformanceTests
             {
                 using var sp = RedisCacheTestSupport.BuildServiceProvider();
                 var cache = sp.GetRequiredService<RedisCache>();
-                var handler = await cache.LockAsync($"test:lock:perf:{Guid.NewGuid():N}:{i}", RedisCacheTestSupport.BuildLockOptions(TimeSpan.FromSeconds(3), retryInterval: null, retryCount: 1));
+                var handler = await cache.LockAsync($"test:lock:perf:{Guid.NewGuid():N}:{i}", RedisCacheTestSupport.BuildLockOptions(TimeSpan.FromSeconds(3), retryCount: 1, enableRetry: false));
                 return handler;
             }));
 

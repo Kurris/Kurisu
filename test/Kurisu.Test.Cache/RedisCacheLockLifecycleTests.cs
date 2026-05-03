@@ -23,7 +23,7 @@ public class RedisCacheLockLifecycleTests
 
         await Task.Delay(1400);
 
-        var secondHandler = await contenderCache.LockAsync(lockKey, RedisCacheTestSupport.BuildLockOptions(TimeSpan.FromSeconds(3), retryInterval: null, retryCount: 1));
+        var secondHandler = await contenderCache.LockAsync(lockKey, RedisCacheTestSupport.BuildLockOptions(TimeSpan.FromSeconds(3), retryCount: 1, enableRetry: false));
         Assert.True(secondHandler.Acquired);
 
         await firstHandler.DisposeAsync();
@@ -48,7 +48,7 @@ public class RedisCacheLockLifecycleTests
 
         await Task.Delay(1300);
 
-        var secondHandler = await anotherCache.LockAsync(lockKey, RedisCacheTestSupport.BuildLockOptions(TimeSpan.FromSeconds(3), retryInterval: null, retryCount: 1));
+        var secondHandler = await anotherCache.LockAsync(lockKey, RedisCacheTestSupport.BuildLockOptions(TimeSpan.FromSeconds(3), retryCount: 1, enableRetry: false));
         Assert.True(secondHandler.Acquired);
         Assert.True(await cache.KeyExistsAsync(lockKey));
 
@@ -75,7 +75,7 @@ public class RedisCacheLockLifecycleTests
         await Task.Delay(7500);
         Assert.True(await cache.KeyExistsAsync(lockKey));
 
-        var contender = await contenderCache.LockAsync(lockKey, RedisCacheTestSupport.BuildLockOptions(TimeSpan.FromSeconds(2), retryInterval: null, retryCount: 1));
+        var contender = await contenderCache.LockAsync(lockKey, RedisCacheTestSupport.BuildLockOptions(TimeSpan.FromSeconds(2), retryCount: 1, enableRetry: false));
         Assert.False(contender.Acquired);
 
         await contender.DisposeAsync();

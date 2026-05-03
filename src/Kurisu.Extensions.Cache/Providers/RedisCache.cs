@@ -13,7 +13,7 @@ namespace Kurisu.Extensions.Cache.Providers;
 /// <summary>
 /// RedisCache
 /// </summary>
-public class RedisCache : ILockable, ICache
+public class RedisCache : ILockable, ICache, IDisposable
 {
     private readonly RedisReentrantLockContext _reentrantLockContext = new();
 
@@ -28,6 +28,7 @@ public class RedisCache : ILockable, ICache
     private readonly IConnectionMultiplexer _connectionMultiplexer;
 
     private readonly ILogger<RedisCache> _logger;
+    private int _disposed;
 
     /// <summary>
     /// ctor
@@ -45,22 +46,52 @@ public class RedisCache : ILockable, ICache
     /// </summary>
     /// <param name="lockKey">key</param>
     /// <param name="options">锁获取参数</param>
+    /// <param name="cancellationToken">取消令牌</param>
     /// <returns></returns>
-    public Task<ILockHandler> LockAsync(string lockKey, DistributedLockAcquisitionOptions options)
+    public Task<ILockHandler> LockAsync(string lockKey, DistributedLockAcquisitionOptions options, CancellationToken cancellationToken = default)
     {
+        cancellationToken.ThrowIfCancellationRequested();
         ArgumentException.ThrowIfNullOrWhiteSpace(lockKey);
         ArgumentNullException.ThrowIfNull(options);
-
-        if (_reentrantLockContext.TryEnter(lockKey, out var reentrantHandler))
-        {
-            _logger.LogDebug("同一请求内复用锁 {lockKey},跳过重复Redis加锁", lockKey);
-            return Task.FromResult(reentrantHandler);
-        }
+        ArgumentNullException.ThrowIfNull(options.TimeModeHandler);
+        ArgumentNullException.ThrowIfNull(options.RetryStrategy);
 
         // 先在当前异步调用链初始化作用域容器，确保首次成功后可被同链路后续调用读取。
         var scopes = _reentrantLockContext.EnsureScopes();
+        var reentrantAttempt = _reentrantLockContext.TryEnterAsync(lockKey, cancellationToken);
+        if (reentrantAttempt.IsCompletedSuccessfully)
+        {
+            var reentrantHandler = reentrantAttempt.Result;
+            if (reentrantHandler != null)
+            {
+                _logger.LogDebug("同一请求内复用锁 {lockKey},跳过重复Redis加锁", lockKey);
+                return Task.FromResult(reentrantHandler);
+            }
 
-        return LockCoreAsync(lockKey, options, scopes);
+            return LockCoreAsync(lockKey, options, scopes, cancellationToken);
+        }
+
+        return LockWithReentryAsync(lockKey, options, scopes, reentrantAttempt, cancellationToken);
+    }
+
+    private async Task<ILockHandler> LockWithReentryAsync(string lockKey, DistributedLockAcquisitionOptions options, Dictionary<string, RedisReentrantLockContext.LocalLockScope> scopes, ValueTask<ILockHandler?> reentrantAttempt, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var reentrantHandler = await reentrantAttempt.ConfigureAwait(false);
+            if (reentrantHandler != null)
+            {
+                _logger.LogDebug("同一请求内复用锁 {lockKey},跳过重复Redis加锁", lockKey);
+                return reentrantHandler;
+            }
+
+            return await LockCoreAsync(lockKey, options, scopes, cancellationToken).ConfigureAwait(false);
+        }
+        catch
+        {
+            _reentrantLockContext.ClearIfEmpty(scopes);
+            throw;
+        }
     }
 
     public async Task<T> GetAsync<T>(string key)
@@ -92,38 +123,62 @@ public class RedisCache : ILockable, ICache
         return await _db.KeyExistsAsync(key);
     }
 
-    private async Task<ILockHandler> LockCoreAsync(string lockKey, DistributedLockAcquisitionOptions options, Dictionary<string, RedisReentrantLockContext.LocalLockScope> scopes)
+    private async Task<ILockHandler> LockCoreAsync(string lockKey, DistributedLockAcquisitionOptions options, Dictionary<string, RedisReentrantLockContext.LocalLockScope> scopes, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(options);
+        ArgumentNullException.ThrowIfNull(options.TimeModeHandler);
+        ArgumentNullException.ThrowIfNull(options.RetryStrategy);
 
         var timeSettings = options.TimeModeHandler.Resolve();
         var retryStrategy = options.RetryStrategy;
 
         var locker = new RedisLock(_logger, _db, lockKey, timeSettings.Expiry, timeSettings.EnableAutoRenewal, timeSettings.MaxRenewalCount);
         var attempt = 0;
-        do
+        try
         {
-            var handler = await locker.LockAsync();
-
-            if (handler.Acquired)
+            while (true)
             {
-                return _reentrantLockContext.Register(lockKey, handler, scopes);
+                cancellationToken.ThrowIfCancellationRequested();
+                var currentAttempt = attempt + 1;
+                var handler = await locker.LockAsync(currentAttempt, cancellationToken).ConfigureAwait(false);
+
+                if (handler.Acquired)
+                {
+                    return _reentrantLockContext.Register(lockKey, handler, scopes);
+                }
+
+                attempt++;
+                if (!await retryStrategy.ShouldRetryAsync(attempt, cancellationToken).ConfigureAwait(false))
+                {
+                    _reentrantLockContext.ClearIfEmpty(scopes);
+                    return handler;
+                }
+
+                _logger.LogInformation("获取 {lockKey} 失败，第 {attempt} 次尝试后准备重试", lockKey, attempt);
+                await retryStrategy.DelayBeforeRetryAsync(attempt, cancellationToken).ConfigureAwait(false);
             }
+        }
+        catch
+        {
+            _reentrantLockContext.ClearIfEmpty(scopes);
+            throw;
+        }
+    }
 
-            attempt++;
-            if (!await retryStrategy.ShouldRetryAsync(attempt))
-            {
-                _reentrantLockContext.ClearIfEmpty(scopes);
-                return handler;
-            }
+    public void Dispose()
+    {
+        if (Interlocked.Exchange(ref _disposed, 1) == 1)
+        {
+            return;
+        }
 
-            await retryStrategy.DelayBeforeRetryAsync(attempt);
-
-            _logger.LogInformation("获取 {lockKey} 失败 {attempt}，正在重试", lockKey, attempt);
-        } while (!locker.Acquired);
-
-        _reentrantLockContext.ClearIfEmpty(scopes);
-        return locker;
+        _connectionMultiplexer.ConnectionRestored -= ConnMultiplexer_ConnectionRestored;
+        _connectionMultiplexer.ConnectionFailed -= ConnMultiplexer_ConnectionFailed;
+        _connectionMultiplexer.ErrorMessage -= ConnMultiplexer_ErrorMessage;
+        _connectionMultiplexer.ConfigurationChanged -= ConnMultiplexer_ConfigurationChanged;
+        _connectionMultiplexer.HashSlotMoved -= ConnMultiplexer_HashSlotMoved;
+        _connectionMultiplexer.InternalError -= ConnMultiplexer_InternalError;
+        _connectionMultiplexer.ConfigurationChangedBroadcast -= ConnMultiplexer_ConfigurationChangedBroadcast;
     }
 
     #region String 操作

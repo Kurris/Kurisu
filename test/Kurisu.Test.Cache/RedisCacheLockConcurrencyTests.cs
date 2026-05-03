@@ -20,7 +20,7 @@ public class RedisCacheLockConcurrencyTests
         var tasks = Enumerable.Range(0, workers).Select(async _ =>
         {
             await gate.Task;
-            var handler = await cache.LockAsync(lockKey, RedisCacheTestSupport.BuildLockOptions(TimeSpan.FromSeconds(3), retryInterval: null, retryCount: 1));
+            var handler = await cache.LockAsync(lockKey, RedisCacheTestSupport.BuildLockOptions(TimeSpan.FromSeconds(3), retryCount: 1, enableRetry: false));
             return handler;
         }).ToArray();
 

@@ -44,17 +44,16 @@ internal sealed class RedisReentrantLockContext
     /// <summary>
     /// 尝试复用已持有的同名锁。
     /// </summary>
-    public bool TryEnter(string lockKey, out ILockHandler handler)
+    public async ValueTask<ILockHandler> TryEnterAsync(string lockKey, CancellationToken cancellationToken = default)
     {
         // 这里读取的是“当前异步调用链”的本地作用域，而不是线程静态变量。
         var scopes = _localLockScopes.Value;
         if (scopes != null && scopes.TryGetValue(lockKey, out var scope))
         {
-            if (scope.LockHandler.Acquired)
+            if (await CanReuseLocallyAsync(scope.LockHandler, cancellationToken).ConfigureAwait(false))
             {
                 scope.AddReference();
-                handler = new ReentrantLockHandler(this, lockKey, scope);
-                return true;
+                return new ReentrantLockHandler(this, lockKey, scope);
             }
 
             scopes.Remove(lockKey);
@@ -64,8 +63,17 @@ internal sealed class RedisReentrantLockContext
             }
         }
 
-        handler = default!;
-        return false;
+        return null;
+    }
+
+    private static async ValueTask<bool> CanReuseLocallyAsync(ILockHandler lockHandler, CancellationToken cancellationToken)
+    {
+        if (lockHandler is ILocalReentryAwareLockHandler reentryAwareHandler)
+        {
+            return await reentryAwareHandler.TryReenterAsync(cancellationToken).ConfigureAwait(false);
+        }
+
+        return lockHandler.Acquired;
     }
 
     /// <summary>
@@ -143,7 +151,7 @@ internal sealed class RedisReentrantLockContext
             _localScope = localScope;
         }
 
-        public bool Acquired => true;
+        public bool Acquired => _localScope.LockHandler.Acquired;
 
         public async ValueTask DisposeAsync()
         {
