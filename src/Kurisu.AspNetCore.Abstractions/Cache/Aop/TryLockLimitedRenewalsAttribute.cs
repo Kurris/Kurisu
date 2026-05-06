@@ -9,16 +9,25 @@ public sealed class TryLockLimitedRenewalsAttribute : TryLockAttribute
     /// <summary>
     /// 有限续期模式下的最大续期次数。
     /// </summary>
-    public int? MaxRenewalCount { get; set; }
+    public int MaxRenewalCount { get; }
 
-    public TryLockLimitedRenewalsAttribute(string scene, string tips)
+    /// <summary>
+    /// 有限续期模式必须显式指定过期时间和最大续期次数。
+    /// </summary>
+    /// <param name="scene"></param>
+    /// <param name="tips"></param>
+    /// <param name="expirySeconds">锁过期时间，单位秒。</param>
+    /// <param name="maxRenewalCount">最大续期次数。</param>
+    public TryLockLimitedRenewalsAttribute(string scene, string tips, int expirySeconds, int maxRenewalCount)
         : base(scene, tips)
     {
+        ExpirySeconds = expirySeconds;
+        MaxRenewalCount = maxRenewalCount;
     }
 
     /// <inheritdoc />
     protected override IDistributedLockTimeModeHandler GetTimeModeHandler()
     {
-        return LockTimeModeHandler.LimitedRenewal(Expiry, MaxRenewalCount ?? 3);
+        return LockTimeModeHandler.LimitedRenewal(GetExpiry(), MaxRenewalCount);
     }
 }

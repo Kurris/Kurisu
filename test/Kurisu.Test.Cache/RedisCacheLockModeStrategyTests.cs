@@ -1,6 +1,5 @@
 using Kurisu.AspNetCore.Abstractions.Cache;
 using Kurisu.Extensions.Cache;
-using Kurisu.Extensions.Cache.Locking;
 using Kurisu.Extensions.Cache.Options;
 using Kurisu.Extensions.Cache.Providers;
 using Microsoft.Extensions.DependencyInjection;
@@ -24,7 +23,7 @@ public class RedisCacheLockModeStrategyTests
         var options = new DistributedLockAcquisitionOptions
         {
             TimeModeHandler = LockTimeModeHandler.LimitedRenewal(TimeSpan.FromMilliseconds(500), maxRenewalCount: 1),
-            RetryStrategy = new NoRetryDistributedLockRetryStrategy()
+            RetryStrategy = new DefaultLockRetryStrategy(0)
         };
 
         var handler = await cache.LockAsync(lockKey, options);
@@ -48,7 +47,7 @@ public class RedisCacheLockModeStrategyTests
         var options = new DistributedLockAcquisitionOptions
         {
             TimeModeHandler = new CustomNoRenewalTimeModeHandler(),
-            RetryStrategy = new NoRetryDistributedLockRetryStrategy()
+            RetryStrategy = new DefaultLockRetryStrategy(0)
         };
 
         var handler = await cache.LockAsync(lockKey, options);
@@ -85,8 +84,8 @@ public class RedisCacheLockModeStrategyTests
         Assert.False(await cache.KeyExistsAsync(lockKey));
     }
 
-    [Fact(DisplayName = "重试模式为NoRetry时不应发生重试")]
-    public async Task LockAsync_ShouldNotRetry_WhenRetryModeIsNoRetry()
+    [Fact(DisplayName = "重试次数为0时不应发生重试")]
+    public async Task LockAsync_ShouldNotRetry_WhenRetryCountIsZero()
     {
         using var serviceProvider = RedisCacheTestSupport.BuildServiceProvider();
         var cache = serviceProvider.GetRequiredService<RedisCache>();
@@ -99,7 +98,7 @@ public class RedisCacheLockModeStrategyTests
         var options = new DistributedLockAcquisitionOptions
         {
             TimeModeHandler = LockTimeModeHandler.FixedExpiry(TimeSpan.FromSeconds(1)),
-            RetryStrategy = new NoRetryDistributedLockRetryStrategy()
+            RetryStrategy = new DefaultLockRetryStrategy(0)
         };
 
         var handler = await cache.LockAsync(lockKey, options);

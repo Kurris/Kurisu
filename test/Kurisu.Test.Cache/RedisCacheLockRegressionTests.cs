@@ -1,6 +1,5 @@
 using Kurisu.AspNetCore.Abstractions.Cache;
 using Kurisu.Extensions.Cache;
-using Kurisu.Extensions.Cache.Locking;
 using Kurisu.Extensions.Cache.Options;
 using Kurisu.Extensions.Cache.Providers;
 using Microsoft.Extensions.DependencyInjection;
@@ -51,7 +50,7 @@ public class RedisCacheLockRegressionTests
         var options = new DistributedLockAcquisitionOptions
         {
             TimeModeHandler = LockTimeModeHandler.LimitedRenewal(TimeSpan.FromMilliseconds(2500), maxRenewalCount: 1),
-            RetryStrategy = new NoRetryDistributedLockRetryStrategy()
+            RetryStrategy = new DefaultLockRetryStrategy(0)
         };
 
         var firstHandler = await cache.LockAsync(lockKey, options);
@@ -88,7 +87,7 @@ public class RedisCacheLockRegressionTests
         var options = new DistributedLockAcquisitionOptions
         {
             TimeModeHandler = LockTimeModeHandler.LimitedRenewal(TimeSpan.FromMilliseconds(300), maxRenewalCount: 1),
-            RetryStrategy = new NoRetryDistributedLockRetryStrategy()
+            RetryStrategy = new DefaultLockRetryStrategy(0)
         };
 
         var firstHandler = await cache.LockAsync(lockKey, options);
@@ -118,7 +117,7 @@ public class RedisCacheLockRegressionTests
         var options = new DistributedLockAcquisitionOptions
         {
             TimeModeHandler = null!,
-            RetryStrategy = new NoRetryDistributedLockRetryStrategy()
+            RetryStrategy = new DefaultLockRetryStrategy(0)
         };
 
         await Assert.ThrowsAsync<ArgumentNullException>(() => cache.LockAsync($"test:lock:missing-time-handler:{Guid.NewGuid():N}", options));

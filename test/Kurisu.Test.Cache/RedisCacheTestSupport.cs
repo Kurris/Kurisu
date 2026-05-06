@@ -1,6 +1,5 @@
 using Kurisu.AspNetCore.Abstractions.Cache;
 using Kurisu.Extensions.Cache;
-using Kurisu.Extensions.Cache.Locking;
 using Kurisu.Extensions.Cache.Options;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -41,7 +40,7 @@ internal static class RedisCacheTestSupport
                 : LockTimeModeHandler.InfiniteRenewal(),
             RetryStrategy = enableRetry
                 ? new DefaultLockRetryStrategy(retryCount)
-                : new NoRetryDistributedLockRetryStrategy()
+                : new DefaultLockRetryStrategy(0)
         };
     }
 }

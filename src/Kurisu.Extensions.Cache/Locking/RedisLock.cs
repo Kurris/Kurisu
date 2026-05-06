@@ -98,6 +98,7 @@ end";
         {
             if (cancellationToken.IsCancellationRequested)
             {
+                _logger.LogWarning("获取Redis锁后发现请求已取消，立即回滚锁 | LockKey={LockKey} | Attempt={Attempt}", _lockKey, attempt);
                 await ReleaseAsync().ConfigureAwait(false);
                 cancellationToken.ThrowIfCancellationRequested();
             }
@@ -115,6 +116,8 @@ end";
 
                 _ = StartRenewalAsync(cts.Token);
             }
+
+            _logger.LogInformation("Redis锁获取成功 | LockKey={LockKey} | Attempt={Attempt} | AutoRenew={AutoRenew}", _lockKey, attempt, _enableAutoRenew);
         }
 
         return this;
@@ -165,6 +168,12 @@ end";
             }
         }
 
+        _logger.LogInformation(
+            "Redis锁续期任务停止 | LockKey={LockKey} | Acquired={Acquired} | CancellationRequested={CancellationRequested} | RenewedCount={RenewedCount}",
+            _lockKey,
+            Acquired,
+            token.IsCancellationRequested,
+            Volatile.Read(ref _renewedCount));
     }
 
     /// <summary>
@@ -183,8 +192,15 @@ end";
             try
             {
                 _logger.LogDebug("释放Redis锁 | 键名={LockKey} | 锁值={LockValue} | 状态: 正在释放", _lockKey, _lockValue);
-                await ReleaseAsync().ConfigureAwait(false);
-                _logger.LogDebug("RedisLock 成功释放: {LockKey}", _lockKey);
+                var released = await ReleaseAsync().ConfigureAwait(false);
+                if (released)
+                {
+                    _logger.LogInformation("Redis锁释放完成 | LockKey={LockKey}", _lockKey);
+                }
+                else
+                {
+                    _logger.LogWarning("Redis锁释放时未删除键，锁可能已失去所有权 | LockKey={LockKey}", _lockKey);
+                }
             }
             catch (Exception ex)
             {
@@ -199,13 +215,14 @@ end";
         }
     }
 
-    private async Task ReleaseAsync()
+    private async Task<bool> ReleaseAsync()
     {
         // 原子删除：只有当 value 匹配时才删除
-        _ = (long)await _db.ScriptEvaluateAsync(
+        var result = (long)await _db.ScriptEvaluateAsync(
             ReleaseScript,
             new RedisKey[] { _lockKey },
             new RedisValue[] { _lockValue }).ConfigureAwait(false);
+        return result > 0;
     }
 
     private async ValueTask<bool> TryRenewAsync(bool consumeQuota, CancellationToken cancellationToken)
@@ -291,6 +308,8 @@ end";
         {
             return;
         }
+
+        _logger.LogWarning("Redis锁已失去所有权 | LockKey={LockKey} | LockValue={LockValue}", _lockKey, _lockValue);
 
         var cts = Interlocked.Exchange(ref _cts, null);
         try

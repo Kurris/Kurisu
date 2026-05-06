@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 using Kurisu.AspNetCore.Abstractions.Cache;
@@ -131,6 +132,14 @@ public class RedisCache : ILockable, ICache, IDisposable
 
         var timeSettings = options.TimeModeHandler.Resolve();
         var retryStrategy = options.RetryStrategy;
+        var stopwatch = Stopwatch.StartNew();
+
+        _logger.LogInformation(
+            "开始获取分布式锁 | LockKey={LockKey} | Expiry={Expiry} | AutoRenew={AutoRenew} | MaxRenewalCount={MaxRenewalCount}",
+            lockKey,
+            timeSettings.Expiry,
+            timeSettings.EnableAutoRenewal,
+            timeSettings.MaxRenewalCount);
 
         var locker = new RedisLock(_logger, _db, lockKey, timeSettings.Expiry, timeSettings.EnableAutoRenewal, timeSettings.MaxRenewalCount);
         var attempt = 0;
@@ -144,22 +153,51 @@ public class RedisCache : ILockable, ICache, IDisposable
 
                 if (handler.Acquired)
                 {
+                    _logger.LogInformation(
+                        "成功获取分布式锁 | LockKey={LockKey} | Attempts={Attempts} | ElapsedMs={ElapsedMs}",
+                        lockKey,
+                        currentAttempt,
+                        stopwatch.ElapsedMilliseconds);
                     return _reentrantLockContext.Register(lockKey, handler, scopes);
                 }
 
                 attempt++;
                 if (!await retryStrategy.ShouldRetryAsync(attempt, cancellationToken).ConfigureAwait(false))
                 {
+                    _logger.LogWarning(
+                        "获取分布式锁失败且不再重试 | LockKey={LockKey} | Attempts={Attempts} | ElapsedMs={ElapsedMs}",
+                        lockKey,
+                        attempt,
+                        stopwatch.ElapsedMilliseconds);
                     _reentrantLockContext.ClearIfEmpty(scopes);
                     return handler;
                 }
 
-                _logger.LogInformation("获取 {lockKey} 失败，第 {attempt} 次尝试后准备重试", lockKey, attempt);
+                _logger.LogInformation(
+                    "获取分布式锁失败，准备重试 | LockKey={LockKey} | FailedAttempts={Attempts} | ElapsedMs={ElapsedMs}",
+                    lockKey,
+                    attempt,
+                    stopwatch.ElapsedMilliseconds);
                 await retryStrategy.DelayBeforeRetryAsync(attempt, cancellationToken).ConfigureAwait(false);
             }
         }
+        catch (OperationCanceledException)
+        {
+            _logger.LogInformation(
+                "获取分布式锁被取消 | LockKey={LockKey} | Attempts={Attempts} | ElapsedMs={ElapsedMs}",
+                lockKey,
+                attempt + 1,
+                stopwatch.ElapsedMilliseconds);
+            _reentrantLockContext.ClearIfEmpty(scopes);
+            throw;
+        }
         catch
         {
+            _logger.LogError(
+                "获取分布式锁异常退出 | LockKey={LockKey} | Attempts={Attempts} | ElapsedMs={ElapsedMs}",
+                lockKey,
+                attempt + 1,
+                stopwatch.ElapsedMilliseconds);
             _reentrantLockContext.ClearIfEmpty(scopes);
             throw;
         }

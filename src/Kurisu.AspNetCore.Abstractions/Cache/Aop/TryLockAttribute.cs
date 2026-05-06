@@ -11,9 +11,9 @@ namespace Kurisu.AspNetCore.Abstractions.Cache.Aop;
 public class TryLockAttribute(string scene, string tips) : AopAttribute
 {
     /// <summary>
-    /// 过期时间
+    /// 锁过期时间，单位秒。
     /// </summary>
-    public TimeSpan? Expiry { get; set; }
+    public int? ExpirySeconds { get; protected set; }
 
     /// <summary>
     /// 重试次数
@@ -67,7 +67,7 @@ public class TryLockAttribute(string scene, string tips) : AopAttribute
     /// </summary>
     protected virtual IDistributedLockTimeModeHandler GetTimeModeHandler()
     {
-        return LockTimeModeHandler.InfiniteRenewal(Expiry);
+        return LockTimeModeHandler.InfiniteRenewal(GetExpiry());
     }
 
     /// <summary>
@@ -76,5 +76,13 @@ public class TryLockAttribute(string scene, string tips) : AopAttribute
     protected virtual IDistributedLockRetryStrategy GetRetryStrategy()
     {
         return new DefaultLockRetryStrategy(RetryCount);
+    }
+
+    /// <summary>
+    /// 获取锁过期时间。
+    /// </summary>
+    protected TimeSpan? GetExpiry()
+    {
+        return ExpirySeconds.HasValue ? TimeSpan.FromSeconds(ExpirySeconds.Value) : null;
     }
 }

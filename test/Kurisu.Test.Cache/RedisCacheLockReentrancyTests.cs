@@ -29,7 +29,7 @@ public class RedisCacheLockReentrancyTests
             new Kurisu.AspNetCore.Abstractions.Cache.DistributedLockAcquisitionOptions
             {
                 TimeModeHandler = Kurisu.AspNetCore.Abstractions.Cache.LockTimeModeHandler.LimitedRenewal(TimeSpan.FromMilliseconds(1200), maxRenewalCount: 1),
-                RetryStrategy = new Kurisu.Extensions.Cache.Locking.NoRetryDistributedLockRetryStrategy()
+                RetryStrategy = new Kurisu.AspNetCore.Abstractions.Cache.DefaultLockRetryStrategy(0)
             },
             true
         ];
@@ -59,7 +59,7 @@ public class RedisCacheLockReentrancyTests
             new Kurisu.AspNetCore.Abstractions.Cache.DistributedLockAcquisitionOptions
             {
                 TimeModeHandler = Kurisu.AspNetCore.Abstractions.Cache.LockTimeModeHandler.LimitedRenewal(TimeSpan.FromMilliseconds(1200), maxRenewalCount: 1),
-                RetryStrategy = new Kurisu.Extensions.Cache.Locking.NoRetryDistributedLockRetryStrategy()
+                RetryStrategy = new Kurisu.AspNetCore.Abstractions.Cache.DefaultLockRetryStrategy(0)
             },
             true,
             false
