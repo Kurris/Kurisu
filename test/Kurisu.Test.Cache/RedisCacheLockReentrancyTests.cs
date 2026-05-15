@@ -62,7 +62,7 @@ public class RedisCacheLockReentrancyTests
                 RetryStrategy = new Kurisu.AspNetCore.Abstractions.Cache.DefaultLockRetryStrategy(0)
             },
             true,
-            false
+            true // 重入走时间戳快速路径，不再被配额阻断
         ];
     }
 
