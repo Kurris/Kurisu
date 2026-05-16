@@ -1,53 +1,9 @@
 kind: pipeline
 type: docker
-name: csharp-api-pipeline
+name: default
 
 steps:
-# 步骤1：还原 NuGet 依赖包
-- name: restore
-  image: mcr.microsoft.com/dotnet/sdk:8.0
-  commands:
-    - dotnet restore
-
-# 步骤2：编译项目（Release 模式）
-- name: build
-  image: mcr.microsoft.com/dotnet/sdk:8.0
-  commands:
-    - dotnet build --no-restore --configuration Release
-
-# 步骤3：运行单元测试（如果有测试项目）
-- name: test
-  image: mcr.microsoft.com/dotnet/sdk:8.0
-  commands:
-    - dotnet test --no-build --configuration Release --collect:"XPlat Code Coverage"
-
-# 步骤4：发布成可直接运行的文件（输出到 ./publish 文件夹）
-- name: publish
-  image: mcr.microsoft.com/dotnet/sdk:8.0
-  commands:
-    - dotnet publish --no-build --configuration Release --output ./publish
-  # 将发布的结果保存为 Drone 的“制品”，后续步骤（如部署）可以直接引用
-  when:
-    branch:
-      - dev
-  volumes:
-    - name: publish_cache
-      path: /drone/src/publish
-
-# (可选) 步骤5：构建 Docker 镜像并推送到镜像仓库
-# - name: docker-build-push
-#   image: plugins/docker
-#   settings:
-#     repo: your-dockerhub-username/your-api-name
-#     tags: ${DRONE_COMMIT_SHA:8}
-#     dockerfile: Dockerfile
-#   when:
-#     branch:
-#       - main
-
-# 触发条件：仅当 push 到 main/master 或打 tag 时执行
-trigger:
-  branch:
-    - dev
-  event:
-    - push
+  - name: hello
+    image: alpine
+    commands:
+      - echo "Build triggered for dev branch"
