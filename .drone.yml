@@ -29,8 +29,7 @@ steps:
   # 将发布的结果保存为 Drone 的“制品”，后续步骤（如部署）可以直接引用
   when:
     branch:
-      - main
-      - master
+      - dev
   volumes:
     - name: publish_cache
       path: /drone/src/publish
@@ -45,11 +44,6 @@ steps:
 #   when:
 #     branch:
 #       - main
-
-# 存储卷定义（用于在步骤间传递发布结果）
-volumes:
-  - name: publish_cache
-    temp: {}
 
 # 触发条件：仅当 push 到 main/master 或打 tag 时执行
 trigger:
