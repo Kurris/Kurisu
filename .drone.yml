@@ -2,16 +2,28 @@ kind: pipeline
 type: docker
 name: default
 
+# 关键：禁用 Drone 的自动克隆
+clone:
+  disable: true
+
 steps:
-  - name: debug-network
-    image: alpine
+  # 手动克隆代码仓库
+  - name: manual-clone
+    image: alpine/git
     environment:
       HTTP_PROXY: http://192.168.101.59:7897
       HTTPS_PROXY: http://192.168.101.59:7897
+      NO_PROXY: localhost,127.0.0.1
     commands:
-      - echo "=== 环境变量 ==="
-      - env | grep -i proxy
-      - echo "=== 测试直接连接代理端口 ==="
-      - wget -qO- http://192.168.101.59:7897 || echo "直接连接失败"
-      - echo "=== 通过代理访问外网 ==="
-      - wget -qO- https://github.com || echo "代理访问失败"
+      - echo "--- 克隆仓库 ---"
+      # 注意：请将下面的 REPLACE_YOUR_REPO_URL 替换为你的实际仓库地址
+      - git clone https://github.com/Kurris/Kurisu.git .
+      - echo "--- 验证克隆成功 ---"
+      - ls -la
+      - git log -1
+
+  # （可选）你的实际构建步骤
+  # - name: build
+  #   image: your-build-image
+  #   commands:
+  #     - make build
