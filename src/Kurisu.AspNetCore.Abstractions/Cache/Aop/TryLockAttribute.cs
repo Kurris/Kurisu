@@ -1,5 +1,5 @@
-﻿using AspectCore.DynamicProxy;
-using Kurisu.AspNetCore.Abstractions.Result;
+using AspectCore.DynamicProxy;
+using AspectCore.DynamicProxy.Parameters;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Kurisu.AspNetCore.Abstractions.Cache.Aop;
@@ -8,67 +8,81 @@ namespace Kurisu.AspNetCore.Abstractions.Cache.Aop;
 /// 操作锁定
 /// </summary>
 [AttributeUsage(AttributeTargets.Method)]
-public class TryLockAttribute : AopAttribute
+public class TryLockAttribute(string scene, string tips) : AopAttribute
 {
     /// <summary>
-    /// 场景
+    /// 锁过期时间，单位秒。
     /// </summary>
-    private readonly string _sence;
+    public int? ExpirySeconds { get; protected set; }
 
     /// <summary>
-    /// 提醒
-    /// </summary>
-    private readonly string _tips;
-
-    /// <summary>
-    /// ctor
-    /// </summary>
-    /// <param name="sence">场景</param>
-    /// <param name="tips"></param>
-    public TryLockAttribute(string sence, string tips)
-    {
-        _sence = sence;
-        _tips = tips;
-    }
-
-    /// <summary>
-    /// 过期时间 
-    /// </summary>
-    public TimeSpan? Expiry { get; set; }
-
-    /// <summary>
-    /// 重试间隔 
-    /// </summary>
-    public TimeSpan? RetryInterval { get; set; }
-
-    /// <summary>
-    /// 重试次数 
+    /// 重试次数
     /// </summary>
     public int RetryCount { get; set; } = 3;
 
     /// <summary>
+    /// 锁Key参数索引（默认从首个参数获取）
+    /// </summary>
+    public int KeyParameterIndex { get; set; } = 0;
+
+    /// <summary>
     /// invoke
     /// </summary>
-    /// <param name="context"></param>
-    /// <param name="next"></param>
     public override async Task Invoke(AspectContext context, AspectDelegate next)
     {
-        var value = context.Parameters[0];
-        string redisKey = value switch
+        var parameters = context.GetParameters(true);
+        var keyParam = parameters[KeyParameterIndex];
+        var lockable = context.ServiceProvider.GetRequiredService<ILockable>();
+        var cancellationToken = ResolveCancellationToken(parameters);
+        var options = new DistributedLockAcquisitionOptions
         {
-            string s => s,
-            ITryLockKey k => k.GetKey(context.ServiceProvider),
-            _ => throw new ArgumentException($"方法首个参数必须为string类型,或者实现{nameof(ITryLockKey)}接口 .")
+            TimeModeHandler = GetTimeModeHandler(),
+            RetryStrategy = GetRetryStrategy()
         };
 
-        var lockable = context.ServiceProvider.GetRequiredService<ILockable>();
-        await using var locker = await lockable.LockAsync(GetLockKey(redisKey), Expiry, RetryInterval, RetryCount);
-        locker.Acquired.ThrowIfFalse(_tips);
+        await using var multiLock = await MultiLock.AcquireAsync(lockable,
+        scene,
+        keyParam.Value,
+        keyParam.Name, KeyParameterIndex,
+        options, tips, cancellationToken);
         await next(context);
     }
 
-    private string GetLockKey(string key)
+    private static CancellationToken ResolveCancellationToken(ParameterCollection parameters)
     {
-        return $"Locker:{_sence}:{key}";
+        for (var i = 0; i < parameters.Count; i++)
+        {
+            var parameter = parameters[i];
+            if (parameter.Type == typeof(CancellationToken) && parameter.Value is CancellationToken cancellationToken)
+            {
+                return cancellationToken;
+            }
+        }
+
+        return CancellationToken.None;
+    }
+
+    /// <summary>
+    /// 获取锁时间模式处理器
+    /// </summary>
+    protected virtual IDistributedLockTimeModeHandler GetTimeModeHandler()
+    {
+        return LockTimeModeHandler.InfiniteRenewal(GetExpiry());
+    }
+
+    /// <summary>
+    /// 获取重试策略
+    /// </summary>
+    protected virtual IDistributedLockRetryStrategy GetRetryStrategy()
+    {
+        return new DefaultLockRetryStrategy(RetryCount);
+    }
+
+    /// <summary>
+    /// 获取锁过期时间。
+    /// </summary>
+    protected TimeSpan? GetExpiry()
+    {
+        return ExpirySeconds.HasValue ? TimeSpan.FromSeconds(ExpirySeconds.Value) : null;
     }
 }

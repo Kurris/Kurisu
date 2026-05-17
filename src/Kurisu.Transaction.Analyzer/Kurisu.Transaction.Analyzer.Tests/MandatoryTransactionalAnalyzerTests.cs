@@ -1,4 +1,6 @@
 using System.Threading.Tasks;
+using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.Testing;
 using Xunit;
 using VerifyCS = Microsoft.CodeAnalysis.CSharp.Testing.CSharpAnalyzerTest<Kurisu.Transaction.Analyzer.MandatoryTransactionalAnalyzer, Microsoft.CodeAnalysis.Testing.Verifiers.XUnitVerifier>;
 
@@ -59,6 +61,10 @@ public class NestedCaller2
 }
 "
         };
+        test.ExpectedDiagnostics.Add(
+            new DiagnosticResult("KS1001", DiagnosticSeverity.Error)
+                .WithSpan(24, 9, 24, 26)
+                .WithArguments("DoMandatory"));
         await test.RunAsync();
     }
 }

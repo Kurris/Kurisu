@@ -1,7 +1,7 @@
 ﻿using System.IO;
 using Kurisu.AspNetCore.Abstractions.Cache;
-using Kurisu.Extensions.Cache.Implements;
 using Kurisu.Extensions.Cache.Options;
+using Kurisu.Extensions.Cache.Providers;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Options;
@@ -26,7 +26,13 @@ public static class CacheServiceCollectionExtensions
     {
         services.AddSingleton<IConnectionMultiplexer>(sp =>
         {
-            var redisOptions = sp.GetService<IOptions<RedisOptions>>().Value;
+            var redisOptions = sp.GetRequiredService<IOptions<RedisOptions>>().Value
+                ?? throw new InvalidOperationException("RedisOptions 未配置。");
+
+            if (string.IsNullOrWhiteSpace(redisOptions.ConnectionString))
+            {
+                throw new InvalidOperationException("RedisOptions.ConnectionString 未配置。");
+            }
 
             return !isSentinel
                 ? ConnectionMultiplexer.Connect(redisOptions.ConnectionString, log)
@@ -35,6 +41,7 @@ public static class CacheServiceCollectionExtensions
 
         services.AddSingleton<RedisCache>();
         services.TryAddSingleton<ILockable>(sp => sp.GetRequiredService<RedisCache>());
+        services.TryAddSingleton<ICache>(sp => sp.GetRequiredService<RedisCache>());
         return services;
     }
 }

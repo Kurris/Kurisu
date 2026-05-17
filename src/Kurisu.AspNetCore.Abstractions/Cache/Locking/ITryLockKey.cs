@@ -2,5 +2,5 @@
 
 public interface ITryLockKey
 {
-    public string GetKey(IServiceProvider serviceProvider);
+    string GetKey();
 }

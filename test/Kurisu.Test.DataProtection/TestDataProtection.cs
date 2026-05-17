@@ -1,4 +1,4 @@
-using Kurisu.Extensions.Cache.Implements;
+using Kurisu.Extensions.Cache.Providers;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.Extensions.Options;
 
