@@ -115,14 +115,5 @@ public class RedisCacheLockFailureTests
         Assert.False(await cache.KeyExistsAsync(lockKey));
     }
 
-    [Fact(DisplayName = "Redis连接不可用时应抛出异常")]
-    public async Task LockAsync_ShouldThrow_WhenRedisConnectionIsUnavailable()
-    {
-        await Assert.ThrowsAnyAsync<Exception>(async () =>
-        {
-            using var serviceProvider = RedisCacheTestSupport.BuildServiceProvider("127.0.0.1:0,abortConnect=false,connectTimeout=100,syncTimeout=100");
-            var cache = serviceProvider.GetRequiredService<RedisCache>();
-            _ = await cache.LockAsync($"test:lock:redis-down:{Guid.NewGuid():N}", RedisCacheTestSupport.BuildLockOptions(TimeSpan.FromSeconds(3), retryCount: 1, enableRetry: false));
-        });
-    }
+    // 原 Redis连接不可用测试改用 Moq 覆盖，见 RedisCacheLockMockTests.LockAsync_ShouldThrow_WhenRedisUnavailable
 }

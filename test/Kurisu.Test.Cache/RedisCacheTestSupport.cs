@@ -9,11 +9,10 @@ internal static class RedisCacheTestSupport
 {
     public static ServiceProvider BuildServiceProvider()
     {
-        const string fallbackConnectionString = "192.168.199.124:6379,defaultDatabase=1,password=dlhis123";
         var connectionString = Environment.GetEnvironmentVariable("KURISU_TEST_REDIS");
         if (string.IsNullOrWhiteSpace(connectionString))
         {
-            connectionString = fallbackConnectionString;
+            throw new InvalidOperationException("环境变量 KURISU_TEST_REDIS 未设置。请设置 Redis 连接字符串后重试，例如: localhost:6379");
         }
 
         return BuildServiceProvider(connectionString);

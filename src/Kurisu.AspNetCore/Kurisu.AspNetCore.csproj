@@ -29,7 +29,7 @@
 		<PackageReference Include="Serilog.AspNetCore" Version="8.0.3" />
 		<PackageReference Include="Swashbuckle.AspNetCore" Version="8.1.4" />
 		<PackageReference Include="Swashbuckle.AspNetCore.Filters" Version="9.0.1" />
-		<PackageReference Include="Kurisu.Extensions.Cache" Version="0.1.5" />
-		<PackageReference Include="Kurisu.Aspect" Version="1.1.6" />
+		<ProjectReference Include="../Kurisu.Extensions.Cache/Kurisu.Extensions.Cache.csproj" />
+		<ProjectReference Include="../Kurisu.Aspect/Kurisu.Aspect.csproj" />
 	</ItemGroup>
 </Project>
