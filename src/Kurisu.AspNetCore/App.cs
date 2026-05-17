@@ -15,7 +15,7 @@ public class App
     /// <summary>
     /// 启动项配置
     /// </summary>
-    public static readonly StartupOptions StartupOptions { get; } = new();
+    public static StartupOptions StartupOptions { get; } = new();
 
     /// <summary>
     /// 自定义应用pack
