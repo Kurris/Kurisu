@@ -1,4 +1,4 @@
-namespace Kurisu.Test.Framework.DependencyInjection.Dtos;
+namespace Kurisu.Test.Framework.DependencyInjection.Models;
 
 public abstract class Animal
 {

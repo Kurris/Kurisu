@@ -1,6 +1,6 @@
 using Kurisu.AspNetCore.Abstractions.DependencyInjection;
 using Kurisu.Test.Framework.DependencyInjection.Dependencies.Abstractions;
-using Kurisu.Test.Framework.DependencyInjection.Dtos;
+using Kurisu.Test.Framework.DependencyInjection.Models;
 
 namespace Kurisu.Test.Framework.DependencyInjection.Dependencies;
 

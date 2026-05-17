@@ -1,4 +1,4 @@
-using Kurisu.Test.Framework.DependencyInjection.Dtos;
+using Kurisu.Test.Framework.DependencyInjection.Models;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Kurisu.Test.Framework.DependencyInjection.Dependencies.Abstractions;

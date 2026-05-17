@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 	<PropertyGroup>
 		<LangVersion>latestmajor</LangVersion>
 		<PackageVersion>0.10.6</PackageVersion>
@@ -16,6 +16,9 @@
 	<PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
 		<NoWarn>1701;1702;EF1001</NoWarn>
 	</PropertyGroup>
+	<ItemGroup>
+		<InternalsVisibleTo Include="Kurisu.Test.Framework.DependencyInjection" />
+	</ItemGroup>
 	<ItemGroup>
 		<FrameworkReference Include="Microsoft.AspNetCore.App" />
 	</ItemGroup>

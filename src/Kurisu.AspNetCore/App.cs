@@ -15,24 +15,30 @@ public class App
     /// <summary>
     /// 启动项配置
     /// </summary>
-    public static StartupOptions StartupOptions { get; } = new();
+    public static readonly StartupOptions StartupOptions { get; } = new();
 
     /// <summary>
     /// 自定义应用pack
     /// </summary>
-    internal static Lazy<List<AppModule>> Modules = new(() =>
+    public static readonly Lazy<List<AppModule>> Modules = new(() =>
     {
-        var packTypes = DependencyInjectionHelper.ActiveTypes.Value
-               .Where(x => typeof(AppModule).IsAssignableFrom(x)
-                           && x != typeof(AppModule)
-                           && !x.IsAbstract
-               ).ToList();
+        var moduleTypes = DependencyInjectionHelper.ActiveTypes.Value
+            .Where(x => x.IsClass && !x.IsAbstract && typeof(AppModule).IsAssignableFrom(x))
+            .ToArray();
 
-        var leafTypes = packTypes
-            .Where(x => !packTypes.Any(y => y != x && x.IsAssignableFrom(y)))
-            .ToList();
+        // 收集所有作为其他模块基类的类型，O(n * 继承深度)
+        var baseTypes = new HashSet<Type>();
+        foreach (var t in moduleTypes)
+        {
+            for (var bt = t.BaseType; bt != null && bt != typeof(AppModule); bt = bt.BaseType)
+            {
+                baseTypes.Add(bt);
+            }
+        }
 
-        return leafTypes.Select(x => (AppModule)Activator.CreateInstance(x)!)
+        return moduleTypes
+            .Where(x => !baseTypes.Contains(x))
+            .Select(x => (AppModule)Activator.CreateInstance(x)!)
             .OrderBy(x => x.Order)
             .ToList();
     });

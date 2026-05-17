@@ -71,7 +71,7 @@ public static class ConfigurationServiceCollectionExtensions
             {
                 // 构造 Action<T> 类型
                 var actionType = typeof(Action<>).MakeGenericType(type);
-                var PostConfigureMethod = optionsBuilder.GetType().GetMethod("PostConfigure", new Type[] { actionType })!;
+                var PostConfigureMethod = optionsBuilder.GetType().GetMethod("PostConfigure", [actionType])!;
 
                 var del = Delegate.CreateDelegate(actionType, null, startupConfigure.MakeGenericMethod(type));
                 PostConfigureMethod.Invoke(optionsBuilder, [del]);

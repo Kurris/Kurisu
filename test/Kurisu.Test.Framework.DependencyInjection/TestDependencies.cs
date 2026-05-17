@@ -1,6 +1,6 @@
 using System;
 using Kurisu.Test.Framework.DependencyInjection.Dependencies.Abstractions;
-using Kurisu.Test.Framework.DependencyInjection.Dtos;
+using Kurisu.Test.Framework.DependencyInjection.Models;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
