@@ -1,4 +1,4 @@
-using Kurisu.AspNetCore.Abstractions.Cache;
+using Kurisu.AspNetCore.Abstractions.DistributedLock;
 
 namespace Kurisu.Extensions.EventBus.Abstractions;
 

@@ -1,5 +1,6 @@
 ﻿using System.IO;
 using Kurisu.AspNetCore.Abstractions.Cache;
+using Kurisu.AspNetCore.Abstractions.DistributedLock;
 using Kurisu.Extensions.Cache.Options;
 using Kurisu.Extensions.Cache.Providers;
 using Microsoft.Extensions.DependencyInjection;
@@ -40,8 +41,9 @@ public static class CacheServiceCollectionExtensions
         });
 
         services.AddSingleton<RedisCache>();
-        services.TryAddSingleton<ILockable>(sp => sp.GetRequiredService<RedisCache>());
+        services.AddSingleton<RedisDistributedLockProvider>();
         services.TryAddSingleton<ICache>(sp => sp.GetRequiredService<RedisCache>());
+        services.TryAddSingleton<ILockable>(sp => sp.GetRequiredService<RedisDistributedLockProvider>());
         return services;
     }
 }

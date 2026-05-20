@@ -90,8 +90,8 @@ end";
         _acquired = 0;
 
         _logger.LogDebug(
-            "Redis锁handler初始化 | 键名={LockKey} | 锁值={LockValue} | 过期时间={Expiry} | 自动续期={AutoRenew} | 最大续期次数={MaxRenewalCount}",
-            _lockKey, _lockValue, _expiry, _enableAutoRenew, _maxRenewalCount);
+            "Redis锁handler初始化 | LockKey={LockKey} | LockToken={LockToken} | Expiry={Expiry} | AutoRenew={AutoRenew} | MaxRenewalCount={MaxRenewalCount}",
+            _lockKey, GetLockTokenForLog(), _expiry, _enableAutoRenew, _maxRenewalCount);
     }
 
     /// <summary>
@@ -142,11 +142,11 @@ end";
 
             try
             {
-                _logger.LogDebug("释放Redis锁 | 键名={LockKey} | 锁值={LockValue} | 状态: 正在释放", _lockKey, _lockValue);
+                _logger.LogDebug("释放Redis锁 | LockKey={LockKey} | LockToken={LockToken} | State=Releasing", _lockKey, GetLockTokenForLog());
                 bool released = await ReleaseAsync().ConfigureAwait(false);
                 if (released)
                 {
-                    _logger.LogInformation("Redis锁释放完成 | LockKey={LockKey}", _lockKey);
+                    _logger.LogDebug("Redis锁释放完成 | LockKey={LockKey}", _lockKey);
                 }
                 else
                 {
@@ -156,8 +156,8 @@ end";
             catch (Exception ex)
             {
                 _logger.LogError(ex,
-                    "Redis锁释放失败 | 键名={LockKey} | 锁值={LockValue} | 错误: {ErrorMessage} | 修复建议: 检查Redis连接或锁值一致性",
-                    _lockKey, _lockValue, ex.Message);
+                    "Redis锁释放失败 | LockKey={LockKey} | LockToken={LockToken} | ErrorMessage={ErrorMessage}",
+                    _lockKey, GetLockTokenForLog(), ex.Message);
             }
         }
         else
@@ -175,9 +175,10 @@ end";
     public async Task<RedisLock> LockAsync(int attempt = 1, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        _logger.LogDebug("尝试获取Redis锁 | 键名={LockKey} | 尝试次数={Attempt} | 状态: 尝试中", _lockKey, attempt);
+        _logger.LogDebug("尝试获取Redis锁 | LockKey={LockKey} | Attempt={Attempt} | Expiry={Expiry} | AutoRenew={AutoRenew} | MaxRenewalCount={MaxRenewalCount}",
+            _lockKey, attempt, _expiry, _enableAutoRenew, _maxRenewalCount);
         bool got = await _db.StringSetAsync(_lockKey, _lockValue, _expiry, When.NotExists).ConfigureAwait(false);
-        _logger.LogDebug("Redis锁获取结果 | 键名={LockKey} | 尝试次数={Attempt} | 是否成功={Got} | 请检查: 锁是否被抢占", _lockKey, attempt,
+        _logger.LogDebug("Redis锁获取结果 | LockKey={LockKey} | Attempt={Attempt} | Got={Got}", _lockKey, attempt,
             got);
         if (got)
         {
@@ -204,8 +205,8 @@ end";
                 _ = StartRenewalAsync(cts.Token);
             }
 
-            _logger.LogInformation("Redis锁获取成功 | LockKey={LockKey} | Attempt={Attempt} | AutoRenew={AutoRenew}",
-                _lockKey, attempt, _enableAutoRenew);
+            _logger.LogDebug("Redis锁获取成功 | LockKey={LockKey} | Attempt={Attempt} | AutoRenew={AutoRenew} | MaxRenewalCount={MaxRenewalCount}",
+                _lockKey, attempt, _enableAutoRenew, _maxRenewalCount);
         }
 
         return this;
@@ -217,7 +218,8 @@ end";
     /// <param name="token">取消令牌。</param>
     private async Task StartRenewalAsync(CancellationToken token)
     {
-        _logger.LogDebug("Redis锁续期任务启动 | 键名={LockKey} | 续期间隔={Interval} | 安全提示: 避免锁过期", _lockKey, _interval);
+        _logger.LogDebug("Redis锁续期任务启动 | LockKey={LockKey} | Interval={Interval} | Expiry={Expiry} | MaxRenewalCount={MaxRenewalCount}",
+            _lockKey, _interval, _expiry, _maxRenewalCount);
 
         while (Volatile.Read(ref _acquired) == 1 && !token.IsCancellationRequested)
         {
@@ -255,12 +257,12 @@ end";
                 }
 
                 _logger.LogError(ex,
-                    "Redis锁续期异常 | 键名={LockKey} | 锁值={LockValue} | 原因:{error} | 连续失败次数={FailureCount}", _lockKey,
-                    _lockValue, ex.Message, count);
+                    "Redis锁续期异常 | LockKey={LockKey} | LockToken={LockToken} | Error={Error} | FailureCount={FailureCount} | RenewedCount={RenewedCount}",
+                    _lockKey, GetLockTokenForLog(), ex.Message, count, Volatile.Read(ref _renewedCount));
             }
         }
 
-        _logger.LogInformation(
+        _logger.LogDebug(
             "Redis锁续期任务停止 | LockKey={LockKey} | Acquired={Acquired} | CancellationRequested={CancellationRequested} | RenewedCount={RenewedCount}",
             _lockKey,
             Acquired,
@@ -316,8 +318,8 @@ end";
                 }
 
                 _logger.LogDebug(
-                    "Redis锁续期失败 | 键名={LockKey} | 当前Redis锁值={RedisValue} | 本机锁值={LockValue} | 原因: 被其他实例抢占 | 请检查: 锁值一致性",
-                    _lockKey, await _db.StringGetAsync(_lockKey), _lockValue);
+                    "Redis锁续期失败 | LockKey={LockKey} | Reason=LostOwnership | QuotaReserved={QuotaReserved} | RenewedCount={RenewedCount}",
+                    _lockKey, didReserve, Volatile.Read(ref _renewedCount));
                 MarkLostOwnership();
                 return false;
             }
@@ -374,7 +376,7 @@ end";
         }
 
         Volatile.Write(ref _lastSuccessfulRenewalMs, 0);
-        _logger.LogWarning("Redis锁已失去所有权 | LockKey={LockKey} | LockValue={LockValue}", _lockKey, _lockValue);
+        _logger.LogWarning("Redis锁已失去所有权 | LockKey={LockKey} | LockToken={LockToken}", _lockKey, GetLockTokenForLog());
 
         CancellationTokenSource cts = Interlocked.Exchange(ref _cts, null);
         try
@@ -386,5 +388,10 @@ end";
         }
 
         cts?.Dispose();
+    }
+
+    private string GetLockTokenForLog()
+    {
+        return _lockValue.Length <= 8 ? _lockValue : _lockValue[..8];
     }
 }

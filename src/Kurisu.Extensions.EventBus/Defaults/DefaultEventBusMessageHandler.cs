@@ -1,4 +1,4 @@
-﻿using Kurisu.AspNetCore.Abstractions.Cache.Aop;
+﻿using Kurisu.AspNetCore.Abstractions.DistributedLock.Aop;
 using Kurisu.AspNetCore.Abstractions.DataAccess.Aop;
 using Kurisu.Extensions.EventBus.Abstractions;
 

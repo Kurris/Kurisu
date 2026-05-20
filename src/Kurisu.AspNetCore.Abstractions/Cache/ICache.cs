@@ -36,4 +36,14 @@ public interface ICache
     /// <param name="key">缓存的Key</param>
     /// <returns>返回缓存是否存在</returns>
     Task<bool> ExistsAsync(string key);
+
+    /// <summary>
+    /// 获取缓存值，不存在时通过 factory 创建并写入缓存
+    /// </summary>
+    /// <typeparam name="T">缓存值的类型</typeparam>
+    /// <param name="key">缓存的Key</param>
+    /// <param name="factory">缓存不存在时的值创建工厂</param>
+    /// <param name="expiry">缓存的过期时间</param>
+    /// <returns>返回缓存的值</returns>
+    Task<T> GetOrSetAsync<T>(string key, Func<Task<T>> factory, TimeSpan? expiry = null);
 }

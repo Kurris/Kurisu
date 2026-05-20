@@ -1,4 +1,4 @@
-using Kurisu.AspNetCore.Abstractions.Cache;
+using Kurisu.AspNetCore.Abstractions.DistributedLock;
 using Kurisu.Extensions.Cache;
 using Kurisu.Extensions.Cache.Options;
 using Microsoft.Extensions.DependencyInjection;
