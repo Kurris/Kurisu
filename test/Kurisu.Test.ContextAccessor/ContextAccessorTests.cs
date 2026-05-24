@@ -1,7 +1,11 @@
+using System.Collections.Generic;
+using System.Threading.Tasks;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Kurisu.AspNetCore.Abstractions.Startup;
 using Kurisu.Extensions.ContextAccessor;
 using Kurisu.Extensions.ContextAccessor.Abstractions;
+using Kurisu.Extensions.ContextAccessor.Default;
 
 namespace Kurisu.Test.ContextAccessor;
 
@@ -17,6 +21,29 @@ public class ContextAccessorTests
             Name = null;
             Counter = 0;
         }
+    }
+
+    /// <summary>
+    /// 包含只读属性的测试状态
+    /// </summary>
+    public class ReadOnlyTestState : IContextable<ReadOnlyTestState>
+    {
+        public string Name { get; set; }
+        public int Counter { get; }
+
+        public ReadOnlyTestState()
+        {
+            Name = null;
+            Counter = 42;
+        }
+    }
+
+    /// <summary>
+    /// 包含引用类型属性的测试状态,用于验证深拷贝
+    /// </summary>
+    public class ComplexTestState : IContextable<ComplexTestState>
+    {
+        public List<string> Tags { get; set; } = new();
     }
 
     [Fact]
@@ -274,5 +301,184 @@ public class ContextAccessorTests
         Assert.Equal("orig", accessor.Current.Name);
 
         lifecycle.Remove();
+    }
+
+    [Theory]
+    [InlineData("/api/users")]
+    [InlineData("/openapi/swagger")]
+    public async Task Middleware_ApiPaths_InitializesContext(string path)
+    {
+        var services = new ServiceCollection();
+        services.AddLogging();
+        services.AddContextAccessor<TestState>();
+        var sp = services.BuildServiceProvider();
+
+        TestState capturedState = null;
+
+        var middleware = new ContextAccessorMiddleware(ctx =>
+        {
+            var accessor = ctx.RequestServices.GetRequiredService<IContextAccessor<TestState>>();
+            capturedState = accessor.Current;
+            return Task.CompletedTask;
+        });
+
+        var context = new DefaultHttpContext();
+        context.RequestServices = sp;
+        context.Request.Path = path;
+
+        await middleware.Invoke(context);
+
+        Assert.NotNull(capturedState);
+    }
+
+    [Theory]
+    [InlineData("/health")]
+    [InlineData("/healthz")]
+    [InlineData("/swagger/index.html")]
+    [InlineData("/home/index")]
+    public async Task Middleware_NonApiPaths_SkipsContextInit(string path)
+    {
+        var services = new ServiceCollection();
+        services.AddLogging();
+        services.AddContextAccessor<TestState>();
+        var sp = services.BuildServiceProvider();
+
+        TestState capturedState = null;
+
+        var middleware = new ContextAccessorMiddleware(ctx =>
+        {
+            var accessor = ctx.RequestServices.GetRequiredService<IContextAccessor<TestState>>();
+            capturedState = accessor.Current;
+            return Task.CompletedTask;
+        });
+
+        var context = new DefaultHttpContext();
+        context.RequestServices = sp;
+        context.Request.Path = path;
+
+        await middleware.Invoke(context);
+
+        Assert.Null(capturedState);
+    }
+
+    [Fact]
+    public void Snapshot_WithReadOnlyProperties_DoesNotThrow()
+    {
+        var services = new ServiceCollection();
+        services.AddLogging();
+        services.AddContextAccessor<ReadOnlyTestState>().WithSnapshot();
+
+        var sp = services.BuildServiceProvider();
+
+        var accessor = sp.GetRequiredService<IContextAccessor<ReadOnlyTestState>>();
+        var lifecycle = sp.GetRequiredService<IAppAsyncLocalLifecycle>();
+        var snapshotManager = sp.GetRequiredService<IContextSnapshotManager<ReadOnlyTestState>>();
+
+        lifecycle.Initialize();
+
+        accessor.Current.Name = "original";
+        var originalCounter = accessor.Current.Counter;
+
+        using (snapshotManager.CreateScope(s =>
+        {
+            s.Name = "modified";
+        }, null))
+        {
+            Assert.Equal("modified", accessor.Current.Name);
+            Assert.Equal(originalCounter, accessor.Current.Counter);
+        }
+
+        // 可写属性被恢复,只读属性不变更
+        Assert.Equal("original", accessor.Current.Name);
+        Assert.Equal(originalCounter, accessor.Current.Counter);
+
+        lifecycle.Remove();
+    }
+
+    [Fact]
+    public void Current_Reinitialized_AfterRemove()
+    {
+        var services = new ServiceCollection();
+        services.AddLogging();
+        services.AddContextAccessor<TestState>();
+
+        var sp = services.BuildServiceProvider();
+
+        var lifecycle = sp.GetRequiredService<IAppAsyncLocalLifecycle>();
+        var accessor = sp.GetRequiredService<IContextAccessor<TestState>>();
+
+        lifecycle.Initialize();
+        accessor.Current.Name = "first";
+        lifecycle.Remove();
+        Assert.Null(accessor.Current);
+
+        lifecycle.Initialize();
+        Assert.NotNull(accessor.Current);
+        Assert.Null(accessor.Current.Name);
+        lifecycle.Remove();
+    }
+
+    [Fact]
+    public void Snapshot_CreateScopeAsync_NullSetter_Throws()
+    {
+        var services = new ServiceCollection();
+        services.AddLogging();
+        services.AddContextAccessor<TestState>().WithSnapshot();
+
+        var sp = services.BuildServiceProvider();
+        var snapshotManager = sp.GetRequiredService<IContextSnapshotManager<TestState>>();
+
+        Assert.Throws<ArgumentNullException>(() => snapshotManager.CreateScopeAsync(null, null));
+    }
+
+    [Fact]
+    public void Snapshot_CreateScope_NullOnDispose_DoesNotThrow()
+    {
+        var services = new ServiceCollection();
+        services.AddLogging();
+        services.AddContextAccessor<TestState>().WithSnapshot();
+
+        var sp = services.BuildServiceProvider();
+
+        var accessor = sp.GetRequiredService<IContextAccessor<TestState>>();
+        var lifecycle = sp.GetRequiredService<IAppAsyncLocalLifecycle>();
+        var snapshotManager = sp.GetRequiredService<IContextSnapshotManager<TestState>>();
+
+        lifecycle.Initialize();
+
+        var ex = Record.Exception(() =>
+        {
+            using (snapshotManager.CreateScope(s => s.Name = "test", null))
+            {
+            }
+        });
+
+        Assert.Null(ex);
+
+        lifecycle.Remove();
+    }
+
+    [Fact]
+    public void CopyState_DeepCopies_ReferenceTypeProperties()
+    {
+        var original = new ComplexTestState { Tags = new List<string> { "a", "b" } };
+        var clone = ((IContextable<ComplexTestState>)original).CopyState();
+
+        Assert.Equal(original.Tags, clone.Tags);
+        Assert.NotSame(original.Tags, clone.Tags);
+
+        original.Tags.Add("c");
+        Assert.Equal(2, clone.Tags.Count);
+        Assert.DoesNotContain("c", clone.Tags);
+    }
+
+    [Fact]
+    public void DefaultOperateContextModule_HasCorrectMetadata()
+    {
+        var module = new DefaultOperateContextModule();
+
+        Assert.Equal("操作状态模块", module.Name);
+        Assert.Equal(200, module.Order);
+        Assert.True(module.IsBeforeUseRouting);
     }
 }

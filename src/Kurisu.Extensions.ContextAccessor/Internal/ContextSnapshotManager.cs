@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq.Expressions;
 using System.Reflection;
 using System.Threading.Tasks;
 using Kurisu.AspNetCore.Abstractions.Utils.Disposables;
@@ -78,19 +79,21 @@ internal class ContextSnapshotManager<TContext> : IContextSnapshotManager<TConte
 
     internal record TempState<T> where T : IContextable<T>, new()
     {
-        private static readonly PropertyInfo[] SPropertyInfos = typeof(T).GetProperties(BindingFlags.Public | BindingFlags.Instance);
+        private static readonly Func<T, object>[] _getters;
+        private static readonly Action<T, object>[] _setters;
 
         private readonly object[] _values;
-        private readonly static PropertyInfo[] _propertyInfos;
 
         static TempState()
         {
-            _propertyInfos = SPropertyInfos;
-            //预热反射
-            foreach (var propertyInfo in SPropertyInfos)
+            var properties = typeof(T).GetProperties(BindingFlags.Public | BindingFlags.Instance);
+            _getters = new Func<T, object>[properties.Length];
+            _setters = new Action<T, object>[properties.Length];
+
+            for (var i = 0; i < properties.Length; i++)
             {
-                _ = propertyInfo.GetMethod;
-                _ = propertyInfo.SetMethod;
+                _getters[i] = CompileGetter(properties[i]);
+                _setters[i] = CompileSetter(properties[i]);
             }
         }
 
@@ -100,22 +103,41 @@ internal class ContextSnapshotManager<TContext> : IContextSnapshotManager<TConte
 
             var clonedState = state.CopyState();
 
-            _values = new object[_propertyInfos.Length];
-            for (var i = 0; i < _propertyInfos.Length; i++)
+            _values = new object[_getters.Length];
+            for (var i = 0; i < _getters.Length; i++)
             {
-                _values[i] = _propertyInfos[i].GetValue(clonedState);
+                _values[i] = _getters[i](clonedState);
             }
         }
 
-        public void RestoreTo(T s)
+        public void RestoreTo(T state)
         {
-            if (s == null) return;
-            for (var i = 0; i < _propertyInfos.Length; i++)
+            if (state == null) return;
+            for (var i = 0; i < _setters.Length; i++)
             {
-                var propertyInfo = _propertyInfos[i];
-                if (!propertyInfo.CanWrite) continue;
-                propertyInfo.SetValue(s, _values[i]);
+                _setters[i](state, _values[i]);
             }
+        }
+
+        private static Func<T, object> CompileGetter(PropertyInfo propertyInfo)
+        {
+            var param = Expression.Parameter(typeof(T), "source");
+            var property = Expression.Property(param, propertyInfo);
+            var convert = Expression.Convert(property, typeof(object));
+            return Expression.Lambda<Func<T, object>>(convert, param).Compile();
+        }
+
+        private static Action<T, object> CompileSetter(PropertyInfo propertyInfo)
+        {
+            if (!propertyInfo.CanWrite)
+                return (_, _) => { };
+
+            var target = Expression.Parameter(typeof(T), "target");
+            var value = Expression.Parameter(typeof(object), "value");
+            var property = Expression.Property(target, propertyInfo);
+            var convert = Expression.Convert(value, propertyInfo.PropertyType);
+            var assign = Expression.Assign(property, convert);
+            return Expression.Lambda<Action<T, object>>(assign, target, value).Compile();
         }
     }
 }

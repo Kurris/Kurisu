@@ -458,3 +458,7 @@ coverage*/
 .test/*/TestResults/
 
 .claude
+
+
+do-bump-*.sh
+package.bump.json

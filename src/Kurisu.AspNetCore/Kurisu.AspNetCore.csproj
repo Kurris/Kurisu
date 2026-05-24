@@ -1,38 +1,38 @@
 <Project Sdk="Microsoft.NET.Sdk">
-	<PropertyGroup>
-		<LangVersion>latestmajor</LangVersion>
-		<PackageVersion>0.10.6</PackageVersion>
-		<Copyright>Kurisu Copyright</Copyright>
-		<RepositoryUrl>https://github.com/Kurris/Kurisu</RepositoryUrl>
-		<RepositoryType>Github</RepositoryType>
-		<PackageTags>aspnetcore framework</PackageTags>
-		<PackageReleaseNotes>see more: https://github.com/Kurris/Kurisu</PackageReleaseNotes>
-		<Nullable>disable</Nullable>
-		<Authors>ligy</Authors>
-		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-		<GenerateDocumentationFile>True</GenerateDocumentationFile>
-		<TargetFramework>net8.0</TargetFramework>
-	</PropertyGroup>
-	<PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
-		<NoWarn>1701;1702;EF1001</NoWarn>
-	</PropertyGroup>
-	<ItemGroup>
-		<InternalsVisibleTo Include="Kurisu.Test.Framework.DependencyInjection" />
-	</ItemGroup>
-	<ItemGroup>
-		<FrameworkReference Include="Microsoft.AspNetCore.App" />
-	</ItemGroup>
-	<ItemGroup>
-		<PackageReference Include="IdentityModel.AspNetCore.OAuth2Introspection" Version="6.2.0" />
-		<PackageReference Include="Mapster.DependencyInjection" Version="1.0.1" />
-		<PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.25" />
-		<PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="8.0.20" />
-		<PackageReference Include="Microsoft.AspNetCore.DataProtection.StackExchangeRedis" Version="8.0.25" />
-		<PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks" Version="8.0.25" />
-		<PackageReference Include="Serilog.AspNetCore" Version="8.0.3" />
-		<PackageReference Include="Swashbuckle.AspNetCore" Version="8.1.4" />
-		<PackageReference Include="Swashbuckle.AspNetCore.Filters" Version="9.0.1" />
-		<ProjectReference Include="../Kurisu.Extensions.Cache/Kurisu.Extensions.Cache.csproj" />
-		<ProjectReference Include="../Kurisu.Aspect/Kurisu.Aspect.csproj" />
-	</ItemGroup>
+    <PropertyGroup>
+        <LangVersion>latestmajor</LangVersion>
+        <Version>0.11.0</Version>
+        <Copyright>Kurisu Copyright</Copyright>
+        <RepositoryUrl>https://github.com/Kurris/Kurisu</RepositoryUrl>
+        <RepositoryType>Github</RepositoryType>
+        <PackageTags>aspnetcore framework</PackageTags>
+        <PackageReleaseNotes>see more: https://github.com/Kurris/Kurisu</PackageReleaseNotes>
+        <Nullable>disable</Nullable>
+        <Authors>ligy</Authors>
+        <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+        <GenerateDocumentationFile>True</GenerateDocumentationFile>
+        <TargetFramework>net8.0</TargetFramework>
+    </PropertyGroup>
+    <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
+        <NoWarn>1701;1702;EF1001</NoWarn>
+    </PropertyGroup>
+    <ItemGroup>
+        <InternalsVisibleTo Include="Kurisu.Test.Framework.DependencyInjection"/>
+    </ItemGroup>
+    <ItemGroup>
+        <FrameworkReference Include="Microsoft.AspNetCore.App"/>
+    </ItemGroup>
+    <ItemGroup>
+        <PackageReference Include="IdentityModel.AspNetCore.OAuth2Introspection" Version="6.2.0"/>
+        <PackageReference Include="Mapster.DependencyInjection" Version="1.0.1"/>
+        <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.25"/>
+        <PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="8.0.20"/>
+        <PackageReference Include="Microsoft.AspNetCore.DataProtection.StackExchangeRedis" Version="8.0.25"/>
+        <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks" Version="8.0.25"/>
+        <PackageReference Include="Serilog.AspNetCore" Version="8.0.3"/>
+        <PackageReference Include="Swashbuckle.AspNetCore" Version="8.1.4"/>
+        <PackageReference Include="Swashbuckle.AspNetCore.Filters" Version="9.0.1"/>
+        <ProjectReference Include="../Kurisu.Extensions.Cache/Kurisu.Extensions.Cache.csproj"/>
+        <ProjectReference Include="../Kurisu.Aspect/Kurisu.Aspect.csproj"/>
+    </ItemGroup>
 </Project>
