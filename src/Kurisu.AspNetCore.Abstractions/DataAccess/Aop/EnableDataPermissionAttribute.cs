@@ -10,17 +10,6 @@ namespace Kurisu.AspNetCore.Abstractions.DataAccess.Aop;
 [AttributeUsage(AttributeTargets.Method)]
 public class EnableDataPermissionAttribute : AopAttribute
 {
-    private readonly Type[] _ignoreTypes;
-
-    /// <summary>
-    /// 数据权限
-    /// </summary>
-    /// <param name="ignoreTypes"></param>
-    public EnableDataPermissionAttribute(params Type[] ignoreTypes)
-    {
-        _ignoreTypes = ignoreTypes;
-    }
-
     public override async Task Invoke(AspectContext context, AspectDelegate next)
     {
         var dbContext = context.ServiceProvider.GetRequiredService<IDbContext>();

@@ -8,7 +8,7 @@ namespace Kurisu.Test.DataAccess;
 [Trait("Db", "Init")]
 public class TestInit
 {
-    [Fact]
+    [Fact(DisplayName = "CodeFirst建表: EnsureTablesExists 成功创建实体对应表")]
     public void Init()
     {
         var sp = TestHelper.GetServiceProvider();

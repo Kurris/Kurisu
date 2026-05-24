@@ -3,8 +3,6 @@
 /// <summary>
 /// 基础实体
 /// </summary>
-/// <typeparam name="TId"></typeparam>
-/// <typeparam name="TUser"></typeparam>
 public abstract class BaseEntity : IEntity
 {
     /// <summary>

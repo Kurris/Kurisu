@@ -17,7 +17,7 @@ internal class SqlsugarShardingCodeFirstMode : SqlsugarCodeFirstMode
         var suffixs = _client.Queryable<ShardingRouteTable>().Select(x => x.TableSuffix).ToList();
         foreach (var table in tables)
         {
-            if (table.IsAssignableTo(typeof(IShardingRoute)))
+            if (ShardingEntityHelper.IsEnabled(table))
             {
                 var originalTable = _client.EntityMaintenance.GetTableName(table);
                 foreach (var suffix in suffixs)

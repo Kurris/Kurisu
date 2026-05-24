@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Kurisu.AspNetCore.DataAccess.SqlSugar.Attributes;
+namespace Kurisu.Extensions.SqlSugar.Attributes;
 
 /// <summary>
 /// 新增时候自动创建时间

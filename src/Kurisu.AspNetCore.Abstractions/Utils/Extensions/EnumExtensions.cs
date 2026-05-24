@@ -1,7 +1,7 @@
 ﻿using System.ComponentModel;
 using System.Reflection;
 
-namespace Kurisu.AspNetCore.Utils.Extensions;
+namespace Kurisu.AspNetCore.Abstractions.Utils.Extensions;
 
 /// <summary>
 /// 枚举扩展类，提供用于枚举和类型的扩展方法以获取描述信息。

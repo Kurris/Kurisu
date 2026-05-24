@@ -3,7 +3,6 @@ using Kurisu.AspNetCore.Abstractions.DataAccess.Contract.Field;
 using Kurisu.AspNetCore.Abstractions.DataAccess.Core;
 using Kurisu.Extensions.ContextAccessor.Abstractions;
 using Kurisu.Extensions.SqlSugar.Core.Context;
-using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Kurisu.Extensions.SqlSugar.Sharding;
@@ -11,19 +10,24 @@ namespace Kurisu.Extensions.SqlSugar.Sharding;
 
 public class ShardingContext : SqlSugarDbContext
 {
-    private readonly IMemoryCache _memoryCache;
     private readonly IContextSnapshotManager<DbOperationState> _contextSnapshotManager;
+    private readonly IShardingRouteResolver _resolver;
 
     public ShardingContext(IServiceProvider serviceProvider) : base(serviceProvider)
     {
-        _memoryCache = serviceProvider.GetRequiredService<IMemoryCache>();
         _contextSnapshotManager = serviceProvider.GetRequiredService<IContextSnapshotManager<DbOperationState>>();
+        _resolver = serviceProvider.GetRequiredService<IShardingRouteResolver>();
     }
 
     private bool EnableSharding<T>()
     {
-        if (typeof(T).IsAssignableTo(typeof(IShardingRoute)))
+        if (ShardingEntityHelper.IsEnabled<T>())
         {
+            if (!typeof(T).IsAssignableTo(typeof(ITenantId)))
+            {
+                return false;
+            }
+
             var opState = _contextSnapshotManager.ContextAccessor.Current;
             return !opState.IgnoreSharding;
         }
@@ -70,6 +74,8 @@ public class ShardingContext : SqlSugarDbContext
                     return false;
                 }
             }
+
+            return true;
         }
 
         return base.Insert(objs);
@@ -87,7 +93,11 @@ public class ShardingContext : SqlSugarDbContext
                 {
                     var tableName = kv.Key;
                     var list = kv.Value;
-                    await Client.Insertable(list).AS(tableName).ExecuteCommandIdentityIntoEntityAsync();
+                    var flag = await Client.Insertable(list).AS(tableName).ExecuteCommandIdentityIntoEntityAsync();
+                    if (!flag)
+                    {
+                        return false;
+                    }
                 }
 
                 return true;
@@ -295,31 +305,24 @@ public class ShardingContext : SqlSugarDbContext
 
     private string GetSuffix<T>(T obj)
     {
-        if (obj is ITenantId tenant)
-        {
-            var currentUser = ServiceProvider.GetService<ICurrentUser>();
-            var snapshotManager = ServiceProvider.GetService<IContextSnapshotManager<DbOperationState>>();
-
-            var tenantId = tenant.TenantId;
-            var opState = snapshotManager.ContextAccessor.Current;
-            if (!opState.IgnoreTenant /*启用租户*/)
-            {
-                if (string.IsNullOrEmpty(tenantId))
-                {
-                    tenantId = currentUser.GetTenantId();
-                }
-            }
-
-            var cacheKey = $"sharding:tenant:{tenantId}";
-            if (!_memoryCache.TryGetValue<string>(cacheKey, out var suffix))
-            {
-                throw new InvalidOperationException($"未找到租户{tenantId}的路由配置，请检查是否已初始化路由信息");
-            }
-            return suffix;
-        }
-        else
+        if (obj is not ITenantId tenant)
         {
             throw new InvalidOperationException("路由分表请实现ITenantId");
         }
+
+        var currentUser = ServiceProvider.GetRequiredService<ICurrentUser>();
+        var tenantId = tenant.TenantId;
+        var opState = _contextSnapshotManager.ContextAccessor.Current;
+        if (!opState.IgnoreTenant && string.IsNullOrEmpty(tenantId))
+        {
+            tenantId = currentUser.GetTenantId();
+        }
+
+        if (string.IsNullOrEmpty(tenantId))
+        {
+            throw new InvalidOperationException("未能解析分表租户ID，请确认实体 TenantId 或当前用户租户信息已设置");
+        }
+
+        return _resolver.GetSuffix(tenantId);
     }
 }

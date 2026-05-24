@@ -11,34 +11,49 @@ public class ColumnAttribute : SugarColumn
         IsNullable = isNullable;
     }
 
+    private bool _isEnum;
+
     public bool IsEnum
     {
-        get => true;
+        get => _isEnum;
         set
         {
-            if (!value) return;
-            ColumnDataType = "varchar(30)";
-            SqlParameterDbType = typeof(EnumToStringConvert);
+            _isEnum = value;
+            if (value)
+            {
+                ColumnDataType = "varchar(30)";
+                SqlParameterDbType = typeof(EnumToStringConvert);
+            }
         }
     }
+
+    private bool _isMoney;
 
     public bool IsMoney
     {
-        get => true;
+        get => _isMoney;
         set
         {
-            if (!value) return;
-            ColumnDataType = "decimal(18,2)";
+            _isMoney = value;
+            if (value)
+            {
+                ColumnDataType = "decimal(18,2)";
+            }
         }
     }
 
+    private bool _isBoolean;
+
     public bool IsBoolean
     {
-        get => true;
+        get => _isBoolean;
         set
         {
-            if (!value) return;
-            ColumnDataType = "bit";
+            _isBoolean = value;
+            if (value)
+            {
+                ColumnDataType = "bit";
+            }
         }
     }
 }

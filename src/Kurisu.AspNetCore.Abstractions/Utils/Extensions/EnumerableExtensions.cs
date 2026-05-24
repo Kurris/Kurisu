@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace Kurisu.AspNetCore.Utils.Extensions;
+namespace Kurisu.AspNetCore.Abstractions.Utils.Extensions;
 
 /// <summary>
 /// 集合扩展类

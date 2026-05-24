@@ -1,6 +1,5 @@
 ﻿using Kurisu.AspNetCore.Abstractions.DataAccess.Contract;
 using Kurisu.AspNetCore.Abstractions.DataAccess.Contract.Field;
-using Kurisu.AspNetCore.DataAccess.SqlSugar.Attributes;
 using Kurisu.Extensions.SqlSugar.Attributes;
 using SqlSugar;
 

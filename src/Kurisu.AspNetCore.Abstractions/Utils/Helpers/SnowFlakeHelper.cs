@@ -1,4 +1,4 @@
-namespace Kurisu.AspNetCore.Utils.Helpers;
+namespace Kurisu.AspNetCore.Abstractions.Utils.Helpers;
 
 /// <summary>
 /// 雪花id帮助类

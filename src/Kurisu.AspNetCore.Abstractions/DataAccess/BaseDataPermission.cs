@@ -1,18 +1,4 @@
-﻿namespace Kurisu.AspNetCore.DataAccess.SqlSugar.Attributes;
-
-/// <summary>
-/// 数据权限
-/// </summary>
-public abstract class BaseDataPermissionAttribute : Attribute
-{
-}
-
-/// <summary>
-/// 标识租户/基地
-/// </summary>
-public class TenantIdAttribute : BaseDataPermissionAttribute
-{
-}
+﻿namespace Kurisu.AspNetCore.Abstractions.DataAccess;
 
 /// <summary>
 /// 定义获取数据权限
@@ -23,5 +9,5 @@ public interface IGetDataPermissions
     /// 获取数据
     /// </summary>
     /// <returns></returns>
-    Dictionary<string, List<Guid>> GetData<T>();
+    Dictionary<string, IReadOnlyList<object>> GetData<T>();
 }

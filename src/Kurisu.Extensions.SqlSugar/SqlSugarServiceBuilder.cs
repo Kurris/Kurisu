@@ -28,8 +28,6 @@ public class SqlSugarServiceBuilder
     /// <returns></returns>
     public SqlSugarServiceBuilder EnableSharding()
     {
-        _services.AddMemoryCache();
-
         _services.Replace(ServiceDescriptor.Describe(typeof(IDbContext), typeof(ShardingContext), ServiceLifetime.Scoped));
 
         _services.Replace(ServiceDescriptor.Describe(typeof(IContextAccessor<DbOperationState>), typeof(ShardingStateAccessor), ServiceLifetime.Singleton));

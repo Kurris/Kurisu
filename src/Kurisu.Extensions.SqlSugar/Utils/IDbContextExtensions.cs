@@ -4,7 +4,6 @@ using Kurisu.AspNetCore.Abstractions.DataAccess.Core.Context;
 using Kurisu.Extensions.ContextAccessor.Abstractions;
 using Kurisu.Extensions.SqlSugar.Core.Context;
 using Kurisu.Extensions.SqlSugar.Sharding;
-using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.DependencyInjection;
 using SqlSugar;
 
@@ -13,23 +12,28 @@ namespace Kurisu.Extensions.SqlSugar.Utils;
 public static class IDbContextExtensions
 {
     /// <summary>
-    /// ◊™SqlSugarÃÿ∂®≤Ÿ◊˜
+    /// ËΩ¨Êç¢‰∏∫ SqlSugar ‰∏ìÁî® DbContext
     /// </summary>
-    /// <param name="dbContext"></param>
-    /// <returns></returns>
     public static ISqlSugarDbContext AsSqlSugarDbContext(this IDbContext dbContext)
     {
         return (ISqlSugarDbContext)dbContext;
     }
 
-    public static ISugarQueryable<T> Queryable<T>(this IDbContext dbContext, bool ignoreSharding = false)
+    /// <summary>
+    /// Ëé∑ÂèñÊü•ËØ¢ÊûÑÈÄ†Âô®ÔºåËã•ÂÆû‰ΩìÊ†áËÆ∞‰∫Ü <see cref="EnableShardingAttribute"/> ÂàôËá™Âä®Â∫îÁî®ÂàÜË°®
+    /// </summary>
+    public static ISugarQueryable<T> Queryable<T>(this IDbContext dbContext)
     {
-        if (!ignoreSharding)
-        {
-            return dbContext.UseShardingQueryable<T>();
-        }
+        if (!ShardingEntityHelper.IsEnabled<T>())
+            return dbContext.DefaultQueryable<T>();
 
-        return dbContext.DefaultQueryable<T>();
+        if (dbContext.ServiceProvider.GetRequiredService<IContextAccessor<DbOperationState>>().Current.IgnoreSharding)
+            return dbContext.DefaultQueryable<T>();
+
+        if (!typeof(T).IsAssignableTo(typeof(ITenantId)))
+            return dbContext.DefaultQueryable<T>();
+
+        return dbContext.UseShardingQueryable<T>();
     }
 
     private static ISugarQueryable<T> DefaultQueryable<T>(this IDbContext dbContext)
@@ -37,54 +41,20 @@ public static class IDbContextExtensions
         return dbContext.AsSqlSugarDbContext().Queryable<T>();
     }
 
-
-    public static ISugarQueryable<T> UseShardingQueryable<T>(this IDbContext dbContext)
+    private static ISugarQueryable<T> UseShardingQueryable<T>(this IDbContext dbContext)
     {
-        if (dbContext.ServiceProvider.GetService<IContextAccessor<DbOperationState>>().Current.IgnoreSharding)
-        {
-            return dbContext.DefaultQueryable<T>();
-        }
-
-        var type = typeof(T);
-        if (!type.IsAssignableTo(typeof(IShardingRoute)) || !type.IsAssignableTo(typeof(ITenantId)))
-        {
-            return dbContext.DefaultQueryable<T>();
-        }
-
-        // Õ®π˝µ±«∞”√ªßªÒ»°◊‚ªßID,»∑∂®∑÷±Ì∫Û◊∫
         var currentUser = dbContext.ServiceProvider.GetRequiredService<ICurrentUser>();
         var tenantId = currentUser.GetTenantId();
-
-        // ƒ⁄¥ÊªÒ»°∑÷±Ì∫Û◊∫
-        var memoryCache = dbContext.ServiceProvider.GetService<IMemoryCache>();
-
-        var cacheKey = $"sharding:tenant:{tenantId}";
-        string suffix = null;
-
-        if (memoryCache.TryGetValue<string>(cacheKey, out var mval))
-        {
-            suffix = mval;
-        }
-
-        if (string.IsNullOrEmpty(suffix))
-        {
-            throw new InvalidOperationException($"Œﬁ∑®Œ™◊‚ªß {tenantId} Ω‚Œˆ∑÷±Ì∫Û◊∫");
-        }
+        var resolver = dbContext.ServiceProvider.GetRequiredService<IShardingRouteResolver>();
+        var suffix = resolver.GetSuffix(tenantId);
 
         return dbContext.Queryable<T>(suffix);
     }
 
-
-    public static ISugarQueryable<T> Queryable<T>(this IDbContext dbContext, string suffix)
+    private static ISugarQueryable<T> Queryable<T>(this IDbContext dbContext, string suffix)
     {
-        if (string.IsNullOrEmpty(suffix))
-        {
-            throw new ArgumentNullException(nameof(suffix));
-        }
         var sqlsugarDbContext = dbContext.AsSqlSugarDbContext();
         var originalTable = sqlsugarDbContext.GetClient().EntityMaintenance.GetTableName<T>();
-        var table = $"{originalTable}_{suffix}";
-
-        return sqlsugarDbContext.Queryable<T>().AS(table);
+        return sqlsugarDbContext.Queryable<T>().AS($"{originalTable}_{suffix}");
     }
 }

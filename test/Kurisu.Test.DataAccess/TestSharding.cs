@@ -21,7 +21,7 @@ public class TestSharding
         _sp = TestHelper.GetServiceProvider(TenantId, enableSharding: true);
     }
 
-    [Fact]
+    [Fact(DisplayName = "分表CRUD: 插入后分表可查询, 更新后数据变更, 删除后分表为空")]
     public async Task ShardingCrud_UsesShardTable()
     {
         using var scope = _sp.CreateScope();
@@ -59,7 +59,7 @@ public class TestSharding
         }
     }
 
-    [Fact]
+    [Fact(DisplayName = "忽略分表: 查询仅命中基表数据, 分表数据不可见")]
     public async Task IgnoreSharding_QueriesBaseTable()
     {
         using var scope = _sp.CreateScope();
@@ -96,7 +96,7 @@ public class TestSharding
         }
     }
 
-    [Fact]
+    [Fact(DisplayName = "同步批量插入: 数据仅写入分表, 忽略分表后基表为空")]
     public async Task SyncBatchInsert_WritesShardTableOnly()
     {
         using var scope = _sp.CreateScope();
