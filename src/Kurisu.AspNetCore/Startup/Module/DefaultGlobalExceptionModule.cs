@@ -14,7 +14,7 @@ public class DefaultGlobalExceptionModule : AppModule
     /// <summary>
     /// 优先级
     /// </summary>
-    public override int Order => -999;
+    public override int Order => 0;
 
     /// <inheritdoc />
     public override bool IsBeforeUseRouting => true;

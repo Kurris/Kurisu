@@ -11,6 +11,8 @@ public class DefaultHealthCheckModule : AppModule
 {
     public override string Name => "健康检查模块";
 
+    public override int Order => 200;
+
     /// <inheritdoc />
     public override void ConfigureServices(IServiceCollection services)
     {

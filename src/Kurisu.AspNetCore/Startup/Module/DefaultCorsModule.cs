@@ -14,7 +14,7 @@ public class DefaultCorsModule : AppModule
     private const string Cors = "defaultCors";
 
     /// <inheritdoc />
-    public override int Order => 1;
+    public override int Order => 100;
 
     /// <inheritdoc />
     public override void ConfigureServices(IServiceCollection services)

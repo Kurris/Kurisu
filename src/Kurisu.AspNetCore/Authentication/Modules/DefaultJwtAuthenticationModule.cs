@@ -15,7 +15,7 @@ public class DefaultJwtAuthenticationModule : AppModule
     public override string Name => "jwt认证模块";
 
     /// <inheritdoc />
-    public override int Order => 2;
+    public override int Order => 400;
 
     /// <inheritdoc />
     public override bool IsEnable => Configuration.GetSection(nameof(JwtOptions)).Get<JwtOptions>() != null;
@@ -33,6 +33,5 @@ public class DefaultJwtAuthenticationModule : AppModule
         app.UseAuthentication();
         app.UseAuthorization();
     }
-
     
 }

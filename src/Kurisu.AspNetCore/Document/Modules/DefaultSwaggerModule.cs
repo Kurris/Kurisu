@@ -38,7 +38,7 @@ public class DefaultSwaggerModule : AppModule
     }
 
     /// <inheritdoc />
-    public override int Order => 0;
+    public override int Order => 300;
 
     /// <inheritdoc />
     public override bool IsEnable => Configuration.GetSection("DocumentOptions").Get<DocumentOptions>() != null;

@@ -1,7 +1,7 @@
 using System.ComponentModel;
 using Kurisu.AspNetCore.Abstractions.DependencyInjection;
 using Kurisu.AspNetCore.Abstractions.Result;
-using Kurisu.AspNetCore.Utils.Extensions;
+using Kurisu.AspNetCore.Abstractions.Utils.Extensions;
 
 namespace Kurisu.AspNetCore.UnifyResultAndValidation;
 
