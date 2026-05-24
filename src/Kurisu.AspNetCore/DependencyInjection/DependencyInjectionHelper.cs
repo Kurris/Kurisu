@@ -134,13 +134,18 @@ internal static class DependencyInjectionHelper
         {
             foreach (var lib in context.RuntimeLibraries)
             {
-                if (!string.Equals(lib.Type, "project", StringComparison.OrdinalIgnoreCase))
+                if (!ShouldLoadRuntimeLibrary(lib))
                     continue;
 
                 foreach (var name in lib.GetDefaultAssemblyNames(context))
                 {
-                    try { assemblies.Add(Assembly.Load(name)); }
-                    catch { }
+                    try
+                    {
+                        assemblies.Add(Assembly.Load(name));
+                    }
+                    catch
+                    {
+                    }
                 }
             }
         }
@@ -151,16 +156,36 @@ internal static class DependencyInjectionHelper
             assemblies.Add(asm);
         }
 
-        return assemblies.SelectMany(assembly =>
+        return assemblies.SelectMany(GetScannableExportedTypes).ToList();
+    }
+
+    internal static IEnumerable<Type> GetScannableExportedTypes(Assembly assembly)
+    {
+        try
         {
-            try
-            {
-                return assembly.GetExportedTypes().Where(type => !type.IsDefined(typeof(SkipScanAttribute)));
-            }
-            catch (ReflectionTypeLoadException)
-            {
-                return [];
-            }
-        }).ToList();
+            return assembly.GetExportedTypes().Where(ShouldScanType);
+        }
+        catch (ReflectionTypeLoadException ex)
+        {
+            return ex.Types.Where(type => type != null).Where(ShouldScanType)!;
+        }
+    }
+
+    private static bool ShouldScanType(Type type)
+    {
+        return !type.IsDefined(typeof(SkipScanAttribute));
+    }
+
+    private static bool ShouldLoadRuntimeLibrary(RuntimeLibrary library)
+    {
+        if (string.Equals(library.Type, "project", StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+
+        // When Kurisu modules are consumed from NuGet packages, they are marked as
+        // package libraries instead of project libraries. They still need to be scanned
+        // for [Configuration] and [DiInject] types.
+        return library.Name.StartsWith("Kurisu.", StringComparison.OrdinalIgnoreCase);
     }
 }

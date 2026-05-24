@@ -8,7 +8,10 @@ internal class SqlSugarConnectionRegistry : IDbConnectionRegistry
 
     public void Register(Dictionary<string, string> connectionStrings)
     {
-        if (connectionStrings == null) throw new ArgumentNullException(nameof(connectionStrings));
+        if (connectionStrings == null || connectionStrings.Count == 0)
+        {
+            return;
+        }
 
         foreach (var kvp in connectionStrings)
         {
