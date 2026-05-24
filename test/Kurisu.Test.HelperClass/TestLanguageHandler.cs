@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using Kurisu.AspNetCore.MultiLanguage;
-using Kurisu.AspNetCore.Utils.Extensions;
+using Kurisu.AspNetCore.Abstractions.Utils.Extensions;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Xunit;
@@ -30,14 +30,14 @@ namespace Kurisu.Test.HelperClass
         [Fact]
         public void HandleResult_Class_zh_KeepsBaseAndRemovesSuffixes()
         {
-            var model = new TestModel { Title = "д╛хо", Titleen = "EN", Description = "desc", Descriptionfr = "fr" };
+            var model = new TestModel { Title = "д╛О©╫О©╫", Titleen = "EN", Description = "desc", Descriptionfr = "fr" };
 
             var result = LanguageHandler.HandleResult("zh", model);
             var json = JsonConvert.SerializeObject(result, JsonExtensions.DefaultSetting);
             var token = JToken.Parse(json);
 
             // base property should be original
-            Assert.Equal("д╛хо", token["title"]?.Value<string>());
+            Assert.Equal("д╛О©╫О©╫", token["title"]?.Value<string>());
             // suffixed properties removed
             Assert.Null(token["titleen"]);
             Assert.Equal("desc", token["description"]?.Value<string>());
@@ -47,7 +47,7 @@ namespace Kurisu.Test.HelperClass
         [Fact]
         public void HandleResult_Class_en_UsesSuffixValueAndRemovesOthers()
         {
-            var model = new TestModel { Title = "д╛хо", Titleen = "EN", Description = "desc", Descriptionfr = "fr" };
+            var model = new TestModel { Title = "д╛О©╫О©╫", Titleen = "EN", Description = "desc", Descriptionfr = "fr" };
 
             var result = LanguageHandler.HandleResult("en", model);
             var json = JsonConvert.SerializeObject(result, JsonExtensions.DefaultSetting);
@@ -67,8 +67,8 @@ namespace Kurisu.Test.HelperClass
         {
             var list = new List<TestModel>
             {
-                new TestModel { Title = "д╛хо1", Titleen = "EN1" },
-                new TestModel { Title = "д╛хо2", Titleen = "EN2" }
+                new TestModel { Title = "д╛О©╫О©╫1", Titleen = "EN1" },
+                new TestModel { Title = "д╛О©╫О©╫2", Titleen = "EN2" }
             };
 
             var result = LanguageHandler.HandleResult("en", list);
@@ -87,8 +87,8 @@ namespace Kurisu.Test.HelperClass
         {
             var dict = new Dictionary<string, TestModel>
             {
-                ["a"] = new TestModel { Title = "д╛хо1", Titleen = "EN1" },
-                ["b"] = new TestModel { Title = "д╛хо2", Titleen = "EN2" }
+                ["a"] = new TestModel { Title = "д╛О©╫О©╫1", Titleen = "EN1" },
+                ["b"] = new TestModel { Title = "д╛О©╫О©╫2", Titleen = "EN2" }
             };
 
             var result = LanguageHandler.HandleResult("en", dict);
@@ -128,8 +128,8 @@ namespace Kurisu.Test.HelperClass
         {
             var arr = new TestModel[]
             {
-                new TestModel { Title = "д╛хо1", Titleen = "EN1" },
-                new TestModel { Title = "д╛хо2", Titleen = "EN2" }
+                new TestModel { Title = "д╛О©╫О©╫1", Titleen = "EN1" },
+                new TestModel { Title = "д╛О©╫О©╫2", Titleen = "EN2" }
             };
 
             var result = LanguageHandler.HandleResult("en", arr);
@@ -146,8 +146,8 @@ namespace Kurisu.Test.HelperClass
         {
             var al = new ArrayList
             {
-                new TestModel { Title = "д╛хо1", Titleen = "EN1" },
-                new TestModel { Title = "д╛хо2", Titleen = "EN2" }
+                new TestModel { Title = "д╛О©╫О©╫1", Titleen = "EN1" },
+                new TestModel { Title = "д╛О©╫О©╫2", Titleen = "EN2" }
             };
             var result = LanguageHandler.HandleResult("en", al);
 
@@ -180,8 +180,8 @@ namespace Kurisu.Test.HelperClass
         public void HandleResult_NonGenericDictionary_TransformsValues()
         {
             var ht = new Hashtable();
-            ht["a"] = new TestModel { Title = "д╛хо", Titleen = "EN" };
-            ht[1] = new TestModel { Title = "д╛хо2", Titleen = "EN2" };
+            ht["a"] = new TestModel { Title = "д╛О©╫О©╫", Titleen = "EN" };
+            ht[1] = new TestModel { Title = "д╛О©╫О©╫2", Titleen = "EN2" };
 
             var result = LanguageHandler.HandleResult("en", ht);
 
@@ -195,7 +195,7 @@ namespace Kurisu.Test.HelperClass
         [Fact]
         public void HandleResult_NestedObject_TransformsChild()
         {
-            var parent = new ParentModel { Name = "p", Child = new TestModel { Title = "д╛хо", Titleen = "EN" } };
+            var parent = new ParentModel { Name = "p", Child = new TestModel { Title = "д╛О©╫О©╫", Titleen = "EN" } };
             var result = LanguageHandler.HandleResult("en", parent);
 
             var json = JsonConvert.SerializeObject(result, JsonExtensions.DefaultSetting);

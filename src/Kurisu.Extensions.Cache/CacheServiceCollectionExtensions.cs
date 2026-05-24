@@ -1,5 +1,4 @@
-﻿using System.IO;
-using Kurisu.AspNetCore.Abstractions.Cache;
+﻿using Kurisu.AspNetCore.Abstractions.Cache;
 using Kurisu.Extensions.Cache.Options;
 using Kurisu.Extensions.Cache.Providers;
 using Microsoft.Extensions.DependencyInjection;
@@ -26,8 +25,7 @@ public static class CacheServiceCollectionExtensions
     {
         services.AddSingleton<IConnectionMultiplexer>(sp =>
         {
-            var redisOptions = sp.GetRequiredService<IOptions<RedisOptions>>().Value
-                ?? throw new InvalidOperationException("RedisOptions 未配置。");
+            var redisOptions = sp.GetRequiredService<IOptions<RedisOptions>>().Value;
 
             if (string.IsNullOrWhiteSpace(redisOptions.ConnectionString))
             {
