@@ -13,7 +13,9 @@ public class MultiLanguageModule : AppModule
 
     public override string Name => "多语言模块";
 
-    public override int Order => -998;
+    public override int Order => 300;
+
+    public override bool IsBeforeUseRouting => true;
 
     public override void ConfigureServices(IServiceCollection services)
     {

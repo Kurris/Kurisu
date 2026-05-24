@@ -1,7 +1,7 @@
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 
-namespace Kurisu.AspNetCore.Utils.Extensions;
+namespace Kurisu.AspNetCore.Abstractions.Utils.Extensions;
 
 /// <summary>
 /// json扩展方法

@@ -1,5 +1,5 @@
 ﻿using Kurisu.AspNetCore.Abstractions.ObjectMapper;
-using Kurisu.AspNetCore.Utils.Extensions;
+using Kurisu.AspNetCore.Abstractions.Utils.Extensions;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Kurisu.Test.HelperClass;

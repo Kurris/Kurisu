@@ -2,9 +2,9 @@
 
 namespace Kurisu.AspNetCore.Abstractions.DataAccess.Core.Context;
 
-public abstract class WriteAbstractDbContext<TOperationClient> : ReadAbstractDbContext<TOperationClient>, IWriteDbContext where TOperationClient : class
+public abstract class WriteAbstractDbContext<TOperationClient> : IWriteDbContext where TOperationClient : class
 {
-    protected WriteAbstractDbContext(IServiceProvider serviceProvider) : base(serviceProvider)
+    protected WriteAbstractDbContext(IServiceProvider serviceProvider)
     {
     }
 

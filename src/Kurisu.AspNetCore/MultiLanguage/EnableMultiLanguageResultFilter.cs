@@ -2,7 +2,7 @@
 using System.Linq;
 using System.Threading.Tasks;
 using Kurisu.AspNetCore.Abstractions.Result;
-using Kurisu.AspNetCore.Utils.Extensions;
+using Kurisu.AspNetCore.Abstractions.Utils.Extensions;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 using Newtonsoft.Json.Linq;

@@ -13,7 +13,7 @@ public class DefaultOperateContextModule : AppModule
     /// <summary>
     /// order
     /// </summary>
-    public override int Order => -998;
+    public override int Order => 200;
 
     /// <summary>
     /// 在路由之前使用

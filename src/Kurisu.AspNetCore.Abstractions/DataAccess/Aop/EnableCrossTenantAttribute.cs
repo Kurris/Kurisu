@@ -10,25 +10,6 @@ namespace Kurisu.AspNetCore.Abstractions.DataAccess.Aop;
 [AttributeUsage(AttributeTargets.Method)]
 public class EnableCrossTenantAttribute : AopAttribute
 {
-    private readonly Type[] _ignoreTypes;
-
-    /// <summary>
-    /// ctor
-    /// </summary>
-    public EnableCrossTenantAttribute()
-    {
-        _ignoreTypes = [];
-    }
-
-    /// <summary>
-    /// ctor
-    /// </summary>
-    /// <param name="ignoreTypes"></param>
-    public EnableCrossTenantAttribute(params Type[] ignoreTypes)
-    {
-        _ignoreTypes = ignoreTypes;
-    }
-
     public override async Task Invoke(AspectContext context, AspectDelegate next)
     {
         var ctx = context.ServiceProvider.GetRequiredService<IDbContext>();

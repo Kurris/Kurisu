@@ -16,7 +16,7 @@ public class DefaultOAuth2AuthenticationModule : AppModule
     /// <summary>
     /// 执行顺序
     /// </summary>
-    public override int Order => 2;
+    public override int Order => 400;
 
     /// <inheritdoc />
     public override bool IsEnable => Configuration.GetSection(nameof(IdentityServerOptions)).Get<IdentityServerOptions>() != null;

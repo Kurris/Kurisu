@@ -1,7 +1,7 @@
 ﻿using System;
 using Newtonsoft.Json;
 
-namespace Kurisu.AspNetCore.Utils.Converters;
+namespace Kurisu.AspNetCore.Abstractions.Utils.Converters;
 
 /// <summary>
 /// 日期转换

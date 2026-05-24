@@ -2,7 +2,7 @@
 using System.Linq;
 using Newtonsoft.Json;
 
-namespace Kurisu.AspNetCore.Utils.Converters;
+namespace Kurisu.AspNetCore.Abstractions.Utils.Converters;
 
 /// <summary>
 /// 数据混淆

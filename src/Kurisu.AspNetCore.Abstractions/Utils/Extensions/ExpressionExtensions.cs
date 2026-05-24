@@ -3,7 +3,7 @@ using System.Collections.Concurrent;
 using System.Linq.Expressions;
 using System.Reflection;
 
-namespace Kurisu.AspNetCore.Utils.Extensions;
+namespace Kurisu.AspNetCore.Abstractions.Utils.Extensions;
 
 /// <summary>
 /// 表达式扩展类

@@ -17,7 +17,7 @@ public class TransactionalAttribute : AopAttribute
     public IsolationLevel? IsolationLevel { get; set; }
 
     /// <summary>
-    ///  指定不回滚的异常
+    ///  匹配的异常类型不触发回滚，事务正常提交。仅接受 <see cref="Exception"/> 的子类型。
     /// </summary>
     public Type NoRollbackFor { get; set; }
 
@@ -28,6 +28,9 @@ public class TransactionalAttribute : AopAttribute
 
     public override async Task Invoke(AspectContext context, AspectDelegate next)
     {
+        if (NoRollbackFor != null)
+            ValidateNoRollbackForType();
+
         var dbContext = context.ServiceProvider.GetRequiredService<IDbContext>();
         var datasourceManager = dbContext.DatasourceManager;
 
@@ -52,5 +55,18 @@ public class TransactionalAttribute : AopAttribute
 
             throw;
         }
+    }
+
+    private bool _noRollbackForValidated;
+
+    private void ValidateNoRollbackForType()
+    {
+        if (_noRollbackForValidated)
+            return;
+
+        if (!typeof(Exception).IsAssignableFrom(NoRollbackFor))
+            throw new InvalidOperationException($"NoRollbackFor 必须是 Exception 的子类型，当前值: {NoRollbackFor.FullName}");
+
+        _noRollbackForValidated = true;
     }
 }

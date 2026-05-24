@@ -27,8 +27,7 @@ public static class CacheServiceCollectionExtensions
     {
         services.AddSingleton<IConnectionMultiplexer>(sp =>
         {
-            var redisOptions = sp.GetRequiredService<IOptions<RedisOptions>>().Value
-                ?? throw new InvalidOperationException("RedisOptions 未配置。");
+            var redisOptions = sp.GetRequiredService<IOptions<RedisOptions>>().Value;
 
             if (string.IsNullOrWhiteSpace(redisOptions.ConnectionString))
             {

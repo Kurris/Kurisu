@@ -1,4 +1,4 @@
-﻿using System.Diagnostics.CodeAnalysis;
+using System.Diagnostics.CodeAnalysis;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using AspectCore.Extensions.DependencyInjection;
@@ -19,7 +19,7 @@ namespace Kurisu.Test.DataAccess;
 [ExcludeFromCodeCoverage]
 public class TestHelper
 {
-    public static IServiceProvider GetServiceProvider()
+    public static IServiceProvider GetServiceProvider(string tenantId = "1234", bool enableSharding = false, Action<IServiceCollection> configureServices = null)
     {
         var services = new ServiceCollection();
         var configuration = new ConfigurationBuilder()
@@ -31,42 +31,63 @@ public class TestHelper
         services.AddSingleton<ICurrentUser>(sp =>
         {
             var jwtOptions = sp.GetRequiredService<IOptions<JwtOptions>>().Value;
-
-            var token = JwtEncryption.GenerateToken(
-                new List<Claim>
-                {
-                    new("sub", 3.ToString()),
-                    new("role", "admin"),
-                    new("name", "ligy"),
-                    new("userType", "normal"),
-                    new("tenant", "1234"),
-                    new("code", "DL001")
-                },
-                jwtOptions.SecretKey, jwtOptions.Issuer!, jwtOptions.Audience!, 3600);
-
+            var token = BuildToken(tenantId);
             return GetResolver(token);
         });
 
         services.AddLogging();
         services.AddDependencyInjection();
-        services.AddSqlSugar(DbType.MySqlConnector);
+        var sqlSugarBuilder = services.AddSqlSugar(DbType.MySqlConnector);
+        if (enableSharding)
+        {
+            sqlSugarBuilder.EnableSharding();
+        }
         // register split services: inner and outer implementations located in Trans/mock
         services.AddScoped<ITransactionalInnerService, TransactionalInnerService>();
         services.AddScoped<ITransactionalOuterService, TransactionalOuterService>();
         services.AddScoped<IDatasourceScopeService, DatasourceScopeService>();
 
+        configureServices?.Invoke(services);
+
         var serviceProvider = services.BuildDynamicProxyProvider();
 
-        // Return the root provider; callers should create and hold a scope when they need
-        // a scoped IServiceProvider that must stay alive across test method invocations.
         return serviceProvider;
+    }
+
+    /// <summary>
+    /// 构建 JWT Token（默认 claims：sub, role, name, userType, tenant, code）
+    /// </summary>
+    /// <param name="tenantId">租户ID</param>
+    /// <param name="tenantsClaim">跨租户声明值，null 表示不添加该 claim</param>
+    public static string BuildToken(string tenantId, string tenantsClaim = null)
+    {
+        var configuration = new ConfigurationBuilder()
+            .AddJsonFile("appsettings.json")
+            .Build();
+
+        var jwtOptions = configuration.GetSection("JwtOptions").Get<JwtOptions>();
+
+        var claims = new List<Claim>
+        {
+            new("sub", 3.ToString()),
+            new("role", "admin"),
+            new("name", "ligy"),
+            new("userType", "normal"),
+            new("tenant", tenantId),
+            new("code", "DL001")
+        };
+
+        if (tenantsClaim != null)
+        {
+            claims.Add(new Claim("tenants", tenantsClaim));
+        }
+
+        return JwtEncryption.GenerateToken(claims, jwtOptions!.SecretKey, jwtOptions.Issuer!, jwtOptions.Audience!, 3600);
     }
 
     /// <summary>
     /// 获取用户信息处理器
     /// </summary>
-    /// <param name="token"></param>
-    /// <returns></returns>
     public static ICurrentUser GetResolver(string token)
     {
         var jwtSecurityToken = new JwtSecurityToken(token);
@@ -83,9 +104,6 @@ public class TestHelper
         var principal = new ClaimsPrincipal(new ClaimsIdentity(claims));
 
         var httpContext = new DefaultHttpContext();
-        // var type = Assembly.Load("Microsoft.AspNetCore.Http").GetType("Microsoft.AspNetCore.Http.DefaultHttpRequest");
-        // _ = Activator.CreateInstance(type!, httpContext);
-
         var httpContextAccessor = new HttpContextAccessor
         {
             HttpContext = httpContext

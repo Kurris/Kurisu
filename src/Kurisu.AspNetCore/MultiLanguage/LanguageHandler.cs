@@ -6,7 +6,6 @@ using System.Linq;
 using System.Reflection;
 using System.Collections.Concurrent;
 using Kurisu.AspNetCore.Abstractions.Utils.Extensions;
-using Kurisu.AspNetCore.Utils.Extensions;
 using Newtonsoft.Json;
 
 namespace Kurisu.AspNetCore.MultiLanguage;

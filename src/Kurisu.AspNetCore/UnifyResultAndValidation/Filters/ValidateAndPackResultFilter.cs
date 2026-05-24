@@ -6,7 +6,6 @@ using Kurisu.AspNetCore.Abstractions.DependencyInjection;
 using Kurisu.AspNetCore.Abstractions.Result;
 using Kurisu.AspNetCore.Abstractions.Utils.Extensions;
 using Kurisu.AspNetCore.UnifyResultAndValidation.Exceptions;
-using Kurisu.AspNetCore.Utils.Extensions;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Controllers;
 using Microsoft.AspNetCore.Mvc.Filters;

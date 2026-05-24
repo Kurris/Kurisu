@@ -3,12 +3,12 @@ using Kurisu.AspNetCore.Abstractions.Authentication;
 using Kurisu.AspNetCore.Abstractions.DataAccess.Contract.Field;
 using Kurisu.AspNetCore.Abstractions.DataAccess.Core;
 using Kurisu.AspNetCore.Abstractions.DataAccess.Core.Context;
-using Kurisu.AspNetCore.DataAccess.SqlSugar.Attributes;
 using Kurisu.Extensions.ContextAccessor;
 using Kurisu.Extensions.ContextAccessor.Abstractions;
 using Kurisu.Extensions.SqlSugar.Attributes;
 using Kurisu.Extensions.SqlSugar.Core.Context;
 using Kurisu.Extensions.SqlSugar.Core.Manager;
+using Kurisu.Extensions.SqlSugar.Sharding;
 using Kurisu.Extensions.SqlSugar.Options;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -50,6 +50,9 @@ public static class SqlSugarServiceCollectionExtensions
         services.TryAddTransient<IDatasourceManager>(sp => sp.GetRequiredService<IDatasourceManager<ISqlSugarClient>>());
 
         services.TryAddSingleton<DefaultSqlSugarConfigHandler>();
+        services.TryAddScoped<IQueryFilterProcessor, DefaultQueryFilterProcessor>();
+
+        services.TryAddSingleton<IShardingRouteResolver, DefaultShardingRouteResolver>();
 
         services.TryAddSingleton(typeof(ConfigureExternalServices), _ =>
         {
@@ -126,7 +129,7 @@ public static class SqlSugarServiceCollectionExtensions
     }
 }
 
-public class CustomSqlSugarClient : SqlSugarClient, IDisposable
+public class CustomSqlSugarClient : SqlSugarClient
 {
     public CustomSqlSugarClient(ConnectionConfig config) : base(config)
     {
@@ -142,14 +145,6 @@ public class CustomSqlSugarClient : SqlSugarClient, IDisposable
 
     public CustomSqlSugarClient(List<ConnectionConfig> configs, Action<SqlSugarClient> configAction) : base(configs, configAction)
     {
-    }
-
-    /// <summary>
-    /// 只在调试生命周期使用
-    /// </summary>
-    public new void Dispose()
-    {
-        base.Dispose();
     }
 }
 

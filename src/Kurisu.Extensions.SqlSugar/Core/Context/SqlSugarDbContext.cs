@@ -22,7 +22,8 @@ public class SqlSugarDbContext : SpecialQueryableDbContext
     {
         if (objs.Count > 0)
         {
-            return (await Client.Insertable(objs).ExecuteCommandAsync(cancellationToken)) > 0;
+            cancellationToken.ThrowIfCancellationRequested();
+            return await Client.Insertable(objs).ExecuteCommandIdentityIntoEntityAsync();
         }
 
         return true;
