@@ -8,7 +8,7 @@
 		<Version>0.1.3</Version>
 	</PropertyGroup>
 	<ItemGroup>
-		<PackageReference Include="Kurisu.Extensions.SqlSugar" Version="0.2.5" />
+        <ProjectReference Include="..\Kurisu.Extensions.SqlSugar\Kurisu.Extensions.SqlSugar.csproj"/>
 		<PackageReference Include="Microsoft.AspNetCore.DataProtection" Version="8.0.20" />
 		<PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="8.0.3" />
 	</ItemGroup>

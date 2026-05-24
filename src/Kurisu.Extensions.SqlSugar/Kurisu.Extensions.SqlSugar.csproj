@@ -8,7 +8,7 @@
 		<Version>0.2.5</Version>
 	</PropertyGroup>
 	<ItemGroup>
-		<PackageReference Include="Kurisu.Extensions.ContextAccessor" Version="0.1.4" />
+        <ProjectReference Include="..\Kurisu.Extensions.ContextAccessor\Kurisu.Extensions.ContextAccessor.csproj"/>
 		<PackageReference Include="SqlSugarCore" Version="5.1.4.214" />
 	</ItemGroup>
 	<ItemGroup>

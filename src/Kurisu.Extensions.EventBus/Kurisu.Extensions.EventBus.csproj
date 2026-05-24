@@ -7,7 +7,7 @@
 		<Version>0.2.3</Version>
 	</PropertyGroup>
 	<ItemGroup>
-		<PackageReference Include="Kurisu.Extensions.SqlSugar" Version="0.2.5" />
+        <ProjectReference Include="..\Kurisu.Extensions.SqlSugar\Kurisu.Extensions.SqlSugar.csproj"/>
 	</ItemGroup>
 	<ItemGroup>
 		<ProjectReference Include="..\Kurisu.AspNetCore.Abstractions\Kurisu.AspNetCore.Abstractions.csproj" />

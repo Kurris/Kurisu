@@ -7,6 +7,6 @@
 		<Version>0.1.4</Version>
 	</PropertyGroup>
 	<ItemGroup>
-		<PackageReference Include="Kurisu.AspNetCore.Abstractions" Version="0.1.5" />
+        <ProjectReference Include="..\Kurisu.AspNetCore.Abstractions\Kurisu.AspNetCore.Abstractions.csproj"/>
 	</ItemGroup>
 </Project>
