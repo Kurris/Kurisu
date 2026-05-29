@@ -12,5 +12,6 @@ public class CustomJsonConfigurationProvider : IJsonConfigurationProvider
         yield return new JsonConfigurationFile("custom.json");
         yield return new JsonConfigurationFile($"custom.{environmentName}.json", optional: true);
         yield return new JsonConfigurationFile("custom.missing.json", optional: true);
+        yield return new JsonConfigurationFile("output-only.json");
     }
 }

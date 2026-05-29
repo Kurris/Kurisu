@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
     <PropertyGroup>
         <LangVersion>latestmajor</LangVersion>
-        <Version>0.11.3</Version>
+        <Version>0.12.1</Version>
         <Copyright>Kurisu Copyright</Copyright>
         <RepositoryUrl>https://github.com/Kurris/Kurisu</RepositoryUrl>
         <RepositoryType>Github</RepositoryType>

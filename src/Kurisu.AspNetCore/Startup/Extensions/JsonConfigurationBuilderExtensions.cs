@@ -1,9 +1,11 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using Kurisu.AspNetCore.Abstractions.DependencyInjection;
 using Kurisu.AspNetCore.Abstractions.Startup;
 using Kurisu.AspNetCore.DependencyInjection;
+using Microsoft.Extensions.FileProviders;
 
 // ReSharper disable once CheckNamespace
 namespace Microsoft.Extensions.Configuration;
@@ -24,9 +26,16 @@ public static class JsonConfigurationBuilderExtensions
         this IConfigurationBuilder configurationBuilder,
         string environmentName)
     {
+        var fileProvider = new PhysicalFileProvider(AppContext.BaseDirectory);
         foreach (var file in GetJsonConfigurationFiles(environmentName))
         {
-            configurationBuilder.AddJsonFile(file.Path, file.Optional, file.ReloadOnChange);
+            if (Path.IsPathRooted(file.Path))
+            {
+                configurationBuilder.AddJsonFile(file.Path, file.Optional, file.ReloadOnChange);
+                continue;
+            }
+
+            configurationBuilder.AddJsonFile(fileProvider, file.Path, file.Optional, file.ReloadOnChange);
         }
 
         return configurationBuilder;
