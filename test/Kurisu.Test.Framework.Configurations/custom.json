@@ -1,0 +1,7 @@
+{
+  "KurisuJson": {
+    "Environment": "Base",
+    "Source": "custom.json",
+    "OptionalMissingFileIgnored": "true"
+  }
+}

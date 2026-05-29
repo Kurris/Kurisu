@@ -3,6 +3,7 @@ using Kurisu.AspNetCore.Abstractions.DependencyInjection;
 using Kurisu.AspNetCore.Startup;
 using Kurisu.AspNetCore.Startup.Extensions;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 
 // ReSharper disable once CheckNamespace
@@ -40,6 +41,10 @@ public static class ProgramExtensions
     private static IHostBuilder CreateHostBuild<TStartup>(this IHostBuilder hostBuilder) where TStartup : DefaultStartup
     {
         var host = hostBuilder
+            .ConfigureAppConfiguration((context, configurationBuilder) =>
+            {
+                configurationBuilder.AddKurisuJsonConfigurationFiles(context.HostingEnvironment.EnvironmentName);
+            })
             .ConfigSerilog()
             .ConfigureWebHostDefaults(webBuilder => { webBuilder.UseStartup<TStartup>(); });
 

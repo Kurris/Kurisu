@@ -1,0 +1,6 @@
+{
+  "KurisuJson": {
+    "Environment": "Development",
+    "Source": "custom.Development.json"
+  }
+}
