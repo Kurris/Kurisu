@@ -22,10 +22,10 @@ public class LocalMessage : SugarEntity, IIndexConfigurator
     public string Content { get; set; }
 
     /// <summary>
-    /// 是否已处理
+    /// 消息状态
     /// </summary>
-    [Column("是否已处理", false, IsBoolean = true)]
-    public bool Processed { get; set; } = false;
+    [Column("消息状态", false, IsEnum = true)]
+    public LocalMessageStatus Status { get; set; } = LocalMessageStatus.Pending;
 
     /// <summary>
     /// 重试次数
@@ -40,15 +40,67 @@ public class LocalMessage : SugarEntity, IIndexConfigurator
     public DateTime? NextRetryTime { get; set; }
 
     /// <summary>
+    /// 当前处理租约到期时间
+    /// </summary>
+    [Column("处理租约到期时间", true)]
+    public DateTime? LockedUntil { get; set; }
+
+    /// <summary>
+    /// 当前处理令牌
+    /// </summary>
+    [Column("处理令牌", true, ColumnDataType = "varchar(36)")]
+    public string ProcessingToken { get; set; }
+
+    /// <summary>
     /// 处理结果
     /// </summary>
-    [Column("处理结果", false, ColumnDataType = "text")]
+    [Column("处理结果", true, ColumnDataType = "text")]
     public string Result { get; set; }
+
+    /// <summary>
+    /// 转入死信的时间
+    /// </summary>
+    [Column("死信时间", true)]
+    public DateTime? DeadLetterTime { get; set; }
+
+    /// <summary>
+    /// 人工重试次数
+    /// </summary>
+    [Column("人工重试次数", false)]
+    public int ManualRetry { get; set; }
+
+    /// <summary>
+    /// 人工处置原因
+    /// </summary>
+    [Column("人工处置原因", true, ColumnDataType = "text")]
+    public string DispositionReason { get; set; }
 
     public List<IndexModel> GetIndexConfigs()
     {
         return [
-            new IndexModel() {IsUnique = true,IndexName = "idx_local_message_code",ColumnNames = [nameof(Code)] }
+            new IndexModel() {IsUnique = true,IndexName = "idx_local_message_code",ColumnNames = [nameof(Code)] },
+            new IndexModel() {IsUnique = false,IndexName = "idx_local_message_retry",ColumnNames = [nameof(Status), nameof(NextRetryTime), nameof(LockedUntil)] }
         ];
     }
+}
+
+/// <summary>
+/// 本地消息状态
+/// </summary>
+public enum LocalMessageStatus
+{
+    /// <summary>待处理，等待后台服务扫描投递</summary>
+    Pending,
+
+    /// <summary>处理中，已被领取未完成</summary>
+    Processing,
+
+    /// <summary>已完成</summary>
+    Completed,
+
+    /// <summary>死信，超过最大重试次数</summary>
+    DeadLetter,
+
+    /// <summary>人工忽略</summary>
+    Ignored
 }

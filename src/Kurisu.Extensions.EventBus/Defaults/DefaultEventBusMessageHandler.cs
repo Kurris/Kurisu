@@ -1,33 +1,34 @@
-﻿using Kurisu.AspNetCore.Abstractions.DistributedLock.Aop;
-using Kurisu.AspNetCore.Abstractions.DataAccess.Aop;
+﻿using Kurisu.AspNetCore.Abstractions.DataAccess.Aop;
 using Kurisu.Extensions.EventBus.Abstractions;
 
 namespace Kurisu.Extensions.EventBus.Defaults;
 
+/// <summary>
+/// Channel 消息消费入口，从 Channel 读取消息后调用消息追踪和服务分发。
+/// </summary>
 public class DefaultEventBusMessageHandler(
     IEventBusLocalMessageHandler localMessageHandler,
     IEventBusMessageServiceHandler messageServiceHandler
     )
     : IEventBusMessageHandler
 {
-    [TryLock("EventBus", "正在处理中")]
     [Datasource]
     public async Task HandleAsync<TMessage>(TMessage message, Type handlerType, CancellationToken cancellationToken)
         where TMessage : EventMessage
     {
-        await using (var tracker = await localMessageHandler.BeginTrackingAsync(message.Code, cancellationToken))
+        await using (var tracker = await localMessageHandler.BeginTrackingAsync(message.Code, message.ProcessingToken, cancellationToken))
         {
+            if (tracker is null) return;
+
             try
             {
                 await messageServiceHandler.HandlerAsync(message, handlerType, cancellationToken);
+                tracker.Complete();
             }
             catch (Exception ex)
             {
-                //不能throw
                 tracker.Fail(ex.Message);
             }
-
-            tracker.Complete();
         }
 
     }
