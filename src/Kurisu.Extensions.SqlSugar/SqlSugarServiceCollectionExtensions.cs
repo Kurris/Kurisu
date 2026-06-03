@@ -107,18 +107,18 @@ public static class SqlSugarServiceCollectionExtensions
                 ConfigureExternalServices = configureExternalServices
             });
 
-            db.Aop.OnDiffLogEvent = diffLogModel => { configHandler.OnDiffLogEvent(diffLogModel); };
-            db.Aop.OnLogExecuting = (x, parameters) => { configHandler.OnLogExecuting(x, parameters); };
-            db.Aop.OnExecutingChangeSql = (x, parameters) => configHandler.OnExecutingChangeSql(x, parameters);
-            db.Aop.OnGetDataReadered = (x, parameters, timeSpan) => { configHandler.OnGetDataReadered(x, parameters, timeSpan); };
-            db.Aop.OnGetDataReadering = (x, parameters) => { configHandler.OnGetDataReadering(x, parameters); };
-            db.Aop.CheckConnectionExecuting = dbConnection => { configHandler.CheckConnectionExecuting(dbConnection); };
-            db.Aop.CheckConnectionExecuted = (dbConnection, timeSpan) => { configHandler.CheckConnectionExecuted(dbConnection, timeSpan); };
+            db.Aop.OnDiffLogEvent = configHandler.OnDiffLogEvent;
+            db.Aop.OnLogExecuting = configHandler.OnLogExecuting;
+            db.Aop.OnExecutingChangeSql = configHandler.OnExecutingChangeSql;
+            db.Aop.OnGetDataReadered = configHandler.OnGetDataReadered;
+            db.Aop.OnGetDataReadering = configHandler.OnGetDataReadering;
+            db.Aop.CheckConnectionExecuting = configHandler.CheckConnectionExecuting;
+            db.Aop.CheckConnectionExecuted = configHandler.CheckConnectionExecuted;
             db.Aop.OnLogExecuted = (sql, parameters) => { configHandler.OnLogExecuted(dbType, sql, parameters, db.Ado.SqlExecutionTime.Milliseconds); };
-            db.Aop.DataExecuting = (obj, model) => { configHandler.DataExecuting(obj, model); };
-            db.Aop.OnError = exception => { configHandler.OnError(exception); };
-            db.Aop.DataChangesExecuted = (obj, model) => { configHandler.DataChangesExecuted(obj, model); };
-            db.Aop.DataExecuted = (obj, model) => { configHandler.DataExecuted(obj, model); };
+            db.Aop.DataExecuting = configHandler.DataExecuting;
+            db.Aop.OnError = configHandler.OnError;
+            db.Aop.DataChangesExecuted = configHandler.DataChangesExecuted;
+            db.Aop.DataExecuted = configHandler.DataExecuted;
 
             configHandler.DbSetting(db);
 
@@ -201,56 +201,56 @@ public class DefaultSqlSugarConfigHandler
         switch (model.OperationType)
         {
             case DataFilterType.InsertByObject:
+            {
+                if (model.IsAnyAttribute<InsertDateTimeGenerationAttribute>())
                 {
-                    if (model.IsAnyAttribute<InsertDateTimeGenerationAttribute>())
+                    var v = model.EntityColumnInfo.PropertyInfo.GetValue(model.EntityValue);
+                    if (v == null || (DateTime)v == default)
                     {
-                        var v = model.EntityColumnInfo.PropertyInfo.GetValue(model.EntityValue);
-                        if (v == null || (DateTime)v == default)
-                        {
-                            model.SetValue(DateTime.Now);
-                        }
-                    }
-
-                    if (_currentUser != null && model.IsAnyAttribute<InsertUserIdGenerationAttribute>())
-                    {
-                        var v = model.EntityColumnInfo.PropertyInfo.GetValue(model.EntityValue);
-                        if (v == null || v.Equals(0) || v.ToString() == string.Empty || v.Equals(Guid.Empty))
-                        {
-                            model.SetValue(_currentUser.GetUserId());
-                        }
-                    }
-
-                    if (_currentUser != null && model.IsAnyAttribute<InsertUserNameGenerationAttribute>())
-                    {
-                        var v = model.EntityColumnInfo.PropertyInfo.GetValue(model.EntityValue);
-                        if (string.IsNullOrEmpty(v?.ToString()))
-                        {
-                            model.SetValue(_currentUser.GetName());
-                        }
-                    }
-
-                    break;
-                }
-            case DataFilterType.UpdateByObject:
-                {
-                    if (model.IsAnyAttribute<UpdateDateTimeGenerationAttribute>())
-                    {
-                        var v = model.EntityColumnInfo.PropertyInfo.GetValue(model.EntityValue);
                         model.SetValue(DateTime.Now);
                     }
+                }
 
-                    if (_currentUser != null && model.IsAnyAttribute<UpdateUserIdGenerationAttribute>())
+                if (_currentUser != null && model.IsAnyAttribute<InsertUserIdGenerationAttribute>())
+                {
+                    var v = model.EntityColumnInfo.PropertyInfo.GetValue(model.EntityValue);
+                    if (v == null || v.Equals(0) || v.ToString() == string.Empty || v.Equals(Guid.Empty))
                     {
                         model.SetValue(_currentUser.GetUserId());
                     }
+                }
 
-                    if (_currentUser != null && model.IsAnyAttribute<UpdateUserNameGenerationAttribute>())
+                if (_currentUser != null && model.IsAnyAttribute<InsertUserNameGenerationAttribute>())
+                {
+                    var v = model.EntityColumnInfo.PropertyInfo.GetValue(model.EntityValue);
+                    if (string.IsNullOrEmpty(v?.ToString()))
                     {
                         model.SetValue(_currentUser.GetName());
                     }
-
-                    break;
                 }
+
+                break;
+            }
+            case DataFilterType.UpdateByObject:
+            {
+                if (model.IsAnyAttribute<UpdateDateTimeGenerationAttribute>())
+                {
+                    var v = model.EntityColumnInfo.PropertyInfo.GetValue(model.EntityValue);
+                    model.SetValue(DateTime.Now);
+                }
+
+                if (_currentUser != null && model.IsAnyAttribute<UpdateUserIdGenerationAttribute>())
+                {
+                    model.SetValue(_currentUser.GetUserId());
+                }
+
+                if (_currentUser != null && model.IsAnyAttribute<UpdateUserNameGenerationAttribute>())
+                {
+                    model.SetValue(_currentUser.GetName());
+                }
+
+                break;
+            }
         }
     }
 

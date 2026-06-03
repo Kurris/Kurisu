@@ -2,6 +2,7 @@
 using System.Globalization;
 using System.Linq;
 using Kurisu.AspNetCore.Abstractions.Startup;
+using Kurisu.AspNetCore.Abstractions.Utils.Extensions;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Localization;
 using Microsoft.Extensions.DependencyInjection;
@@ -10,7 +11,7 @@ namespace Kurisu.AspNetCore.MultiLanguage;
 
 public class MultiLanguageModule : AppModule
 {
-
+    public override bool IsEnable => App.StartupOptions.LanguageHeaderName.IsPresent();
     public override string Name => "多语言模块";
 
     public override int Order => 300;

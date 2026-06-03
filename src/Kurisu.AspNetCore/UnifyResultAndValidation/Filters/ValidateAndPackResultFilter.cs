@@ -5,6 +5,7 @@ using Kurisu.AspNetCore.Abstractions.DataAccess.Core.Context;
 using Kurisu.AspNetCore.Abstractions.DependencyInjection;
 using Kurisu.AspNetCore.Abstractions.Result;
 using Kurisu.AspNetCore.Abstractions.Utils.Extensions;
+using Kurisu.AspNetCore.UnifyResultAndValidation.Attributes;
 using Kurisu.AspNetCore.UnifyResultAndValidation.Exceptions;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Controllers;
@@ -125,6 +126,13 @@ public class ValidateAndPackResultFilter : IAsyncActionFilter, IAsyncResultFilte
 
     private static void ResultHandle(ResultExecutingContext context)
     {
+        if (context.ActionDescriptor is ControllerActionDescriptor controllerActionDescriptor
+            && (controllerActionDescriptor.MethodInfo.IsDefined(typeof(SkipPackResultAttribute), true)
+                || controllerActionDescriptor.ControllerTypeInfo.IsDefined(typeof(SkipPackResultAttribute), true)))
+        {
+            return;
+        }
+
         var apiResult = context.HttpContext.RequestServices.GetRequiredService<IApiResult>();
         //200
         switch (context.Result)

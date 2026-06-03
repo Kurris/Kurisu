@@ -16,8 +16,6 @@ public class StartupOptions
     /// </summary>
     public StartupOptions()
     {
-
-
         RouteOptions = options => options.LowercaseUrls = true;
 
         MvcOptions = options => options.SuppressImplicitRequiredAttributeForNonNullableReferenceTypes = true;

@@ -19,7 +19,7 @@ public class IdentityServerOptions
     /// <summary>
     /// 是否需要https
     /// </summary>
-    public bool RequireHttpsMetadata => Authority.StartsWith("https", StringComparison.OrdinalIgnoreCase);
+    public bool RequireHttpsMetadata => Authority?.StartsWith("https", StringComparison.OrdinalIgnoreCase) ?? false;
 
     /// <summary>
     /// 签发人

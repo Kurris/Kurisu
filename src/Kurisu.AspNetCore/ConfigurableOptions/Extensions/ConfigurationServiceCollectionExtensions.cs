@@ -25,7 +25,8 @@ public static class ConfigurationServiceCollectionExtensions
     /// <returns></returns>
     public static IServiceCollection AddConfiguration(this IServiceCollection services, IConfiguration configuration)
     {
-        var types = DependencyInjectionHelper.Configurations.Value;
+        // 复制列表避免修改共享的静态Configurations集合
+        var types = DependencyInjectionHelper.Configurations.Value.ToList();
         if (types.Count == 0) return services;
 
 
@@ -36,9 +37,13 @@ public static class ConfigurationServiceCollectionExtensions
         ).ToList();
         types.RemoveAll(postConfigureOptions.Contains);
 
-        //Options
+        //Options AddOptions<T>(IServiceCollection) 单参数重载
         var addOptionsMethod = typeof(OptionsServiceCollectionExtensions)
-            .GetRuntimeMethods().First(x => x.Name.Equals(nameof(OptionsServiceCollectionExtensions.AddOptions)) && x.IsGenericMethod);
+            .GetRuntimeMethods()
+            .First(x => x.Name.Equals(nameof(OptionsServiceCollectionExtensions.AddOptions))
+                        && x.IsGenericMethod
+                        && x.GetParameters().Length == 1
+                        && x.GetParameters()[0].ParameterType == typeof(IServiceCollection));
 
         var bind = typeof(OptionsBuilderConfigurationExtensions)
             .GetMethods()
@@ -48,11 +53,6 @@ public static class ConfigurationServiceCollectionExtensions
 
         //ValidateDataAnnotations
         var validateDataAnnotationsMethod = typeof(OptionsBuilderDataAnnotationsExtensions).GetMethod(nameof(OptionsBuilderDataAnnotationsExtensions.ValidateDataAnnotations))!;
-
-        var get = typeof(ConfigurationBinder)
-            .GetMethods()
-            .Where(x => x.Name.Equals(nameof(ConfigurationBinder.Get)))
-            .First(x => x.IsGenericMethod);
 
         var getType = typeof(ConfigurationServiceCollectionExtensions).GetMethod(nameof(GetType), BindingFlags.NonPublic | BindingFlags.Static)!;
         var startupConfigure = typeof(ConfigurationServiceCollectionExtensions).GetMethod(nameof(StartupConfigure), BindingFlags.NonPublic | BindingFlags.Static)!;

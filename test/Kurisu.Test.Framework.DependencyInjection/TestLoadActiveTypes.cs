@@ -149,11 +149,10 @@ public class TestLoadActiveTypes
     }
 
     [Fact]
-    public void GetScannableExportedTypes_Swallows_FileNotFoundException()
+    public void GetScannableExportedTypes_Throws_FileNotFoundException()
     {
-        var types = DependencyInjectionHelper.GetScannableExportedTypes(new ThrowingAssembly(new FileNotFoundException()));
-
-        Assert.Empty(types);
+        Assert.Throws<FileNotFoundException>(() =>
+            DependencyInjectionHelper.GetScannableExportedTypes(new ThrowingAssembly(new FileNotFoundException())));
     }
 
     [Fact]
