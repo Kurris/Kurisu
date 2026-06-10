@@ -129,6 +129,38 @@ public class TestSharding
         }
     }
 
+    [Fact(DisplayName = "UseTenant分表: 实体租户为空时按UseTenant租户路由")]
+    public async Task UseTenant_EmptyEntityTenant_UsesScopedTenantForRoute()
+    {
+        var sp = TestHelper.GetServiceProvider("other-tenant", enableSharding: true);
+        using var scope = sp.CreateScope();
+        using (scope.ServiceProvider.InitLifecycle())
+        {
+            var ctx = scope.ServiceProvider.GetRequiredService<IDbContext>();
+            using (ctx.CreateDatasourceScope())
+            {
+                await PrepareShardingAsync(ctx);
+
+                using (ctx.UseTenant(TenantId))
+                {
+                    await ctx.InsertAsync(new TestShardingEntity
+                    {
+                        Name = "use-tenant-shard",
+                        Age = 32
+                    });
+                }
+
+                using (ctx.UseTenant(TenantId))
+                {
+                    var shardRows = await QueryShardTableAsync(ctx);
+                    Assert.Single(shardRows);
+                    Assert.Equal(TenantId, shardRows[0].TenantId);
+                    Assert.Equal("use-tenant-shard", shardRows[0].Name);
+                }
+            }
+        }
+    }
+
     private static async Task<List<TestShardingEntity>> QueryShardTableAsync(IDbContext ctx)
     {
         var client = ctx.AsSqlSugarDbContext().GetClient();

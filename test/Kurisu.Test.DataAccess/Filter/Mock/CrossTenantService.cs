@@ -24,4 +24,55 @@ public class CrossTenantService : ICrossTenantService
     {
         await _dbContext.InsertAsync(entity);
     }
+
+    [UseTenant("tenantId")]
+    public async Task<Test1Entity> InsertWithTenantParameterAsync(string tenantId, Test1Entity entity)
+    {
+        await _dbContext.InsertAsync(entity);
+        return entity;
+    }
+
+    [UseTenant("tenantId")]
+    public async Task<List<Test1Entity>> QueryWithTenantParameterAsync(string tenantId)
+    {
+        return await _dbContext.Queryable<Test1Entity>().OrderBy(x => x.Id).ToListAsync();
+    }
+
+    [UseTenant("input.TenantId")]
+    public async Task<List<Test1Entity>> QueryWithTenantInputAsync(UseTenantInput input)
+    {
+        return await _dbContext.Queryable<Test1Entity>().OrderBy(x => x.Id).ToListAsync();
+    }
+
+    [UseTenant<MethodArgumentTenantResolver>]
+    public async Task<List<Test1Entity>> QueryWithResolverAsync(string tenantId)
+    {
+        return await _dbContext.Queryable<Test1Entity>().OrderBy(x => x.Id).ToListAsync();
+    }
+
+    [UseTenant("tenantId")]
+    public async Task<List<Test1Entity>> QueryWithMissingTenantAsync(string tenantId)
+    {
+        return await _dbContext.Queryable<Test1Entity>().ToListAsync();
+    }
+
+    [UseTenant("outerTenantId")]
+    public async Task<List<string>> QueryNestedTenantAsync(string outerTenantId, string innerTenantId)
+    {
+        var outerBefore = await QueryNamesAsync();
+
+        List<string> inner;
+        using (_dbContext.UseTenant(innerTenantId))
+        {
+            inner = await QueryNamesAsync();
+        }
+
+        var outerAfter = await QueryNamesAsync();
+        return [outerBefore.Single(), inner.Single(), outerAfter.Single()];
+    }
+
+    private async Task<List<string>> QueryNamesAsync()
+    {
+        return await _dbContext.Queryable<Test1Entity>().OrderBy(x => x.Id).Select(x => x.Name).ToListAsync();
+    }
 }

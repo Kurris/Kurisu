@@ -180,7 +180,7 @@ public class DefaultSqlSugarConfigHandler
         db.QueryFilter.AddTableFilter<ISoftDeleted>(x => x.IsDeleted == false);
 
         //ITenantId租户处理
-        var tenantId = _tenantAccessor.GetTenantId();
+        var tenantId = _tenantAccessor.GetEffectiveTenantId(_snapshotManager);
         db.QueryFilter.AddTableFilter<ITenantId>(x => x.TenantId == tenantId);
     }
 
@@ -195,12 +195,12 @@ public class DefaultSqlSugarConfigHandler
             var v = model.EntityColumnInfo.PropertyInfo.GetValue(model.EntityValue);
             if (v == null)
             {
-                if (!_tenantAccessor.HasTenant)
+                if (!_tenantAccessor.HasEffectiveTenant(_snapshotManager))
                 {
                     throw new InvalidOperationException("未能解析当前租户ID，请确认已配置数据库租户访问器");
                 }
 
-                var tenant = _tenantAccessor.GetTenantId();
+                var tenant = _tenantAccessor.GetEffectiveTenantId(_snapshotManager);
                 model.SetValue(tenant);
             }
         }

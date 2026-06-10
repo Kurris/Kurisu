@@ -57,6 +57,25 @@ public abstract class SpecialQueryableDbContext : AbstractDbContext<ISqlSugarCli
                Client.QueryFilter.Restore);
     }
 
+    public override IDisposable UseTenant(string tenantId)
+    {
+        if (string.IsNullOrWhiteSpace(tenantId))
+        {
+            throw new ArgumentNullException(nameof(tenantId));
+        }
+
+        return _snapshotManager.CreateScope(s =>
+            {
+                s.UseTenantId = tenantId;
+                if (!s.IgnoreTenant)
+                {
+                    Client.QueryFilter.ClearAndBackup<ITenantId>();
+                    Client.QueryFilter.AddTableFilter<ITenantId>(x => x.TenantId == tenantId);
+                }
+            },
+            Client.QueryFilter.Restore);
+    }
+
     public override IDisposable IgnoreSoftDeleted()
     {
         return _snapshotManager.CreateScope(s =>

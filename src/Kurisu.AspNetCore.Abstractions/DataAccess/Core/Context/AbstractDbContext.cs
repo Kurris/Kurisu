@@ -82,6 +82,13 @@ public abstract class AbstractDbContext<TOperationClient> : WriteAbstractDbConte
 
     public abstract IDisposable IgnoreTenant();
 
+    /// <summary>
+    /// 指定当前数据库操作使用的租户。
+    /// </summary>
+    /// <param name="tenantId">租户ID。</param>
+    /// <returns></returns>
+    public abstract IDisposable UseTenant(string tenantId);
+
     public abstract IDisposable IgnoreSoftDeleted();
 
     public abstract IDisposable EnableDataPermission();

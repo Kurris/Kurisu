@@ -7,6 +7,7 @@ internal class DbOperationState : IContextable<DbOperationState>
     public DbOperationState()
     {
         IgnoreTenant = false;
+        UseTenantId = null;
         IgnoreSoftDeleted = false;
         EnableCrossTenant = false;
         EnableDataPermission = false;
@@ -17,6 +18,11 @@ internal class DbOperationState : IContextable<DbOperationState>
     /// 忽略租户
     /// </summary>
     public bool IgnoreTenant { get; set; }
+
+    /// <summary>
+    /// 当前操作使用的租户ID
+    /// </summary>
+    public string UseTenantId { get; set; }
 
     /// <summary>
     /// 忽略逻辑删除
