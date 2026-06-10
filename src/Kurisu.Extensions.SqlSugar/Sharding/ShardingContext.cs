@@ -1,7 +1,7 @@
-﻿using Kurisu.AspNetCore.Abstractions.Authentication;
-using Kurisu.AspNetCore.Abstractions.DataAccess.Contract.Field;
+﻿using Kurisu.AspNetCore.Abstractions.DataAccess.Contract.Field;
 using Kurisu.AspNetCore.Abstractions.DataAccess.Core;
 using Kurisu.Extensions.ContextAccessor.Abstractions;
+using Kurisu.Extensions.SqlSugar.Context;
 using Kurisu.Extensions.SqlSugar.Core.Context;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -310,12 +310,11 @@ public class ShardingContext : SqlSugarDbContext
             throw new InvalidOperationException("路由分表请实现ITenantId");
         }
 
-        var currentUser = ServiceProvider.GetRequiredService<ICurrentUser>();
         var tenantId = tenant.TenantId;
         var opState = _contextSnapshotManager.ContextAccessor.Current;
         if (!opState.IgnoreTenant && string.IsNullOrEmpty(tenantId))
         {
-            tenantId = currentUser.GetTenantId();
+            tenantId = ServiceProvider.GetRequiredService<IDbTenantAccessor>().GetTenantId();
         }
 
         if (string.IsNullOrEmpty(tenantId))

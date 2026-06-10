@@ -37,7 +37,7 @@ public class TestHelper
 
         services.AddLogging();
         services.AddDependencyInjection();
-        var sqlSugarBuilder = services.AddSqlSugar(DbType.MySqlConnector);
+        var sqlSugarBuilder = services.AddSqlSugar(DbType.MySqlConnector).UseCurrentUserContext();
         if (enableSharding)
         {
             sqlSugarBuilder.EnableSharding();

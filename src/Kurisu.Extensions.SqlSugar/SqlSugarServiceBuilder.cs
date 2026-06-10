@@ -1,6 +1,7 @@
 ﻿using Kurisu.AspNetCore.Abstractions.DataAccess.Core.Context;
 using Kurisu.Extensions.ContextAccessor;
 using Kurisu.Extensions.ContextAccessor.Abstractions;
+using Kurisu.Extensions.SqlSugar.Context;
 using Kurisu.Extensions.SqlSugar.Sharding;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -11,16 +12,86 @@ namespace Kurisu.Extensions.SqlSugar;
 /// <summary>
 /// sqlsugar注入构建器
 /// </summary>
-public class SqlSugarServiceBuilder
+public class SqlSugarServiceBuilder(IServiceCollection services)
 {
-    private readonly IServiceCollection _services;
+    public bool UseSharding { get; set; }
 
-    public SqlSugarServiceBuilder(IServiceCollection services)
+    /// <summary>
+    /// 使用自定义数据库审计用户访问器。
+    /// </summary>
+    /// <typeparam name="TAccessor"></typeparam>
+    /// <returns></returns>
+    public SqlSugarServiceBuilder UseAuditAccessor<TAccessor>() where TAccessor : class, IDbAuditAccessor
     {
-        _services = services;
+        services.Replace(ServiceDescriptor.Singleton<IDbAuditAccessor, TAccessor>());
+        return this;
     }
 
-    public bool UseSharding { get; set; }
+    /// <summary>
+    /// 使用自定义数据库审计用户访问器。
+    /// </summary>
+    /// <param name="factory"></param>
+    /// <returns></returns>
+    public SqlSugarServiceBuilder UseAuditAccessor(Func<IServiceProvider, IDbAuditAccessor> factory)
+    {
+        services.Replace(ServiceDescriptor.Singleton(factory));
+        return this;
+    }
+
+    /// <summary>
+    /// 使用自定义数据库租户访问器。
+    /// </summary>
+    /// <typeparam name="TAccessor"></typeparam>
+    /// <returns></returns>
+    public SqlSugarServiceBuilder UseTenantAccessor<TAccessor>() where TAccessor : class, IDbTenantAccessor
+    {
+        services.Replace(ServiceDescriptor.Singleton<IDbTenantAccessor, TAccessor>());
+        return this;
+    }
+
+    /// <summary>
+    /// 使用自定义数据库租户访问器。
+    /// </summary>
+    /// <param name="factory"></param>
+    /// <returns></returns>
+    public SqlSugarServiceBuilder UseTenantAccessor(Func<IServiceProvider, IDbTenantAccessor> factory)
+    {
+        services.Replace(ServiceDescriptor.Singleton(factory));
+        return this;
+    }
+
+    /// <summary>
+    /// 使用自定义数据库审计时间访问器。
+    /// </summary>
+    /// <typeparam name="TClock"></typeparam>
+    /// <returns></returns>
+    public SqlSugarServiceBuilder UseClock<TClock>() where TClock : class, IDbClock
+    {
+        services.Replace(ServiceDescriptor.Singleton<IDbClock, TClock>());
+        return this;
+    }
+
+    /// <summary>
+    /// 使用自定义数据库审计时间访问器。
+    /// </summary>
+    /// <param name="factory"></param>
+    /// <returns></returns>
+    public SqlSugarServiceBuilder UseClock(Func<IServiceProvider, IDbClock> factory)
+    {
+        services.Replace(ServiceDescriptor.Singleton(factory));
+        return this;
+    }
+
+    /// <summary>
+    /// 使用 ICurrentUser 作为数据库上下文来源。
+    /// </summary>
+    /// <returns></returns>
+    public SqlSugarServiceBuilder UseCurrentUserContext()
+    {
+        services.Replace(ServiceDescriptor.Singleton<IDbAuditAccessor, CurrentUserDbAuditAccessor>());
+        services.Replace(ServiceDescriptor.Singleton<IDbTenantAccessor, CurrentUserDbTenantAccessor>());
+        return this;
+    }
 
     /// <summary>
     /// 启用shading功能
@@ -28,23 +99,18 @@ public class SqlSugarServiceBuilder
     /// <returns></returns>
     public SqlSugarServiceBuilder EnableSharding()
     {
-        _services.Replace(ServiceDescriptor.Describe(typeof(IDbContext), typeof(ShardingContext), ServiceLifetime.Scoped));
+        services.Replace(ServiceDescriptor.Describe(typeof(IDbContext), typeof(ShardingContext), ServiceLifetime.Scoped));
 
-        _services.Replace(ServiceDescriptor.Describe(typeof(IContextAccessor<DbOperationState>), typeof(ShardingStateAccessor), ServiceLifetime.Singleton));
+        services.Replace(ServiceDescriptor.Describe(typeof(IContextAccessor<DbOperationState>), typeof(ShardingStateAccessor), ServiceLifetime.Singleton));
 
         this.UseSharding = true;
         return this;
     }
 }
 
-
-internal class ShardingStateAccessor : AbstractContextAccessor<DbOperationState>
+internal class ShardingStateAccessor(ILogger<ShardingStateAccessor> logger) : AbstractContextAccessor<DbOperationState>(logger)
 {
     private static readonly AsyncLocal<StateHolder> _stateCurrent = new();
-
-    public ShardingStateAccessor(ILogger<ShardingStateAccessor> logger) : base(logger)
-    {
-    }
 
     public override void Initialize()
     {

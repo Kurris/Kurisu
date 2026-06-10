@@ -1,8 +1,8 @@
-using Kurisu.AspNetCore.Abstractions.Authentication;
 using Kurisu.AspNetCore.Abstractions.DataAccess.Contract.Field;
 using Kurisu.AspNetCore.Abstractions.DataAccess.Core.Context;
 using Kurisu.Extensions.ContextAccessor.Abstractions;
 using Kurisu.Extensions.SqlSugar.Core.Context;
+using Kurisu.Extensions.SqlSugar.Context;
 using Kurisu.Extensions.SqlSugar.Sharding;
 using Microsoft.Extensions.DependencyInjection;
 using SqlSugar;
@@ -43,8 +43,13 @@ public static class IDbContextExtensions
 
     private static ISugarQueryable<T> UseShardingQueryable<T>(this IDbContext dbContext)
     {
-        var currentUser = dbContext.ServiceProvider.GetRequiredService<ICurrentUser>();
-        var tenantId = currentUser.GetTenantId();
+        var tenantAccessor = dbContext.ServiceProvider.GetRequiredService<IDbTenantAccessor>();
+        var tenantId = tenantAccessor.GetTenantId();
+        if (string.IsNullOrEmpty(tenantId))
+        {
+            throw new InvalidOperationException("未能解析分表租户ID，请确认已配置数据库租户访问器");
+        }
+
         var resolver = dbContext.ServiceProvider.GetRequiredService<IShardingRouteResolver>();
         var suffix = resolver.GetSuffix(tenantId);
 

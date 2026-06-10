@@ -1,8 +1,10 @@
 using Kurisu.AspNetCore.Abstractions.DataAccess.Core.Context;
 using Kurisu.AspNetCore.Abstractions.Startup;
+using Kurisu.Extensions.SqlSugar.Context;
 using Kurisu.Extensions.SqlSugar.Utils;
 using Kurisu.Test.DataAccess.Entities;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace Kurisu.Test.DataAccess;
 
@@ -343,6 +345,65 @@ public class TestAudit
                 var results = await ctx.Queryable<TestAuditEntity>().OrderBy(x => x.Id).ToListAsync();
                 Assert.Equal(3, results.Count);
                 Assert.All(results, r => Assert.NotEqual(default, r.CreatedTime));
+            }
+        }
+    }
+
+    [Fact(DisplayName = "默认审计用户: 未接入当前用户上下文时写入系统用户-1")]
+    public async Task DefaultAuditAccessor_FillsSystemUserId()
+    {
+        var serviceProvider = TestHelper.GetServiceProvider(configureServices: services =>
+        {
+            services.Replace(ServiceDescriptor.Singleton<IDbAuditAccessor, NullDbAuditAccessor>());
+        });
+
+        using var scope = serviceProvider.CreateScope();
+        using (scope.ServiceProvider.InitLifecycle())
+        {
+            var ctx = scope.ServiceProvider.GetRequiredService<IDbContext>();
+            using (ctx.CreateDatasourceScope())
+            {
+                await PrepareTableAsync(ctx);
+
+                var entity = new TestAuditEntity { Name = "system-audit" };
+                await ctx.InsertAsync(entity);
+
+                var inserted = await ctx.Queryable<TestAuditEntity>().SingleAsync(x => x.Id == entity.Id);
+                Assert.Equal(-1, inserted.CreatedBy);
+                Assert.Equal(-1, inserted.ModifiedBy);
+
+                inserted.Name = "system-audit-updated";
+                await ctx.UpdateAsync(inserted);
+
+                var updated = await ctx.Queryable<TestAuditEntity>().SingleAsync(x => x.Id == entity.Id);
+                Assert.Equal(-1, updated.ModifiedBy);
+            }
+        }
+    }
+
+    [Fact(DisplayName = "当前用户审计: UseCurrentUserContext 使用 ICurrentUser 写入用户ID")]
+    public async Task CurrentUserAuditAccessor_FillsCurrentUserId()
+    {
+        using var scope = _sp.CreateScope();
+        using (scope.ServiceProvider.InitLifecycle())
+        {
+            var ctx = scope.ServiceProvider.GetRequiredService<IDbContext>();
+            using (ctx.CreateDatasourceScope())
+            {
+                await PrepareTableAsync(ctx);
+
+                var entity = new TestAuditEntity { Name = "current-user-audit" };
+                await ctx.InsertAsync(entity);
+
+                var inserted = await ctx.Queryable<TestAuditEntity>().SingleAsync(x => x.Id == entity.Id);
+                Assert.Equal(3, inserted.CreatedBy);
+                Assert.Equal(3, inserted.ModifiedBy);
+
+                inserted.Name = "current-user-audit-updated";
+                await ctx.UpdateAsync(inserted);
+
+                var updated = await ctx.Queryable<TestAuditEntity>().SingleAsync(x => x.Id == entity.Id);
+                Assert.Equal(3, updated.ModifiedBy);
             }
         }
     }

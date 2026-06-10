@@ -2,10 +2,10 @@ using System.Collections;
 using System.Globalization;
 using System.Linq.Expressions;
 using System.Reflection;
-using Kurisu.AspNetCore.Abstractions.Authentication;
 using Kurisu.AspNetCore.Abstractions.DataAccess;
 using Kurisu.AspNetCore.Abstractions.DataAccess.Contract.Field;
 using Kurisu.Extensions.ContextAccessor.Abstractions;
+using Kurisu.Extensions.SqlSugar.Context;
 using Microsoft.Extensions.DependencyInjection;
 using SqlSugar;
 
@@ -37,12 +37,8 @@ public class DefaultQueryFilterProcessor : IQueryFilterProcessor
         var type = typeof(T);
         if (!type.IsAssignableTo(typeof(ITenantId))) return query;
 
-        var tenantsStr = _serviceProvider.GetRequiredService<ICurrentUser>().GetUserClaim("tenants");
-        if (string.IsNullOrEmpty(tenantsStr))
-            tenantsStr = "";
-
         // 空集合会被 SqlSugar 翻译为 1=2，用于拒绝没有 tenants claim 的跨租户查询，避免误查全量数据。
-        var tenantIdValues = tenantsStr.Split(',').Select(s => s.Trim()).Where(s => s.Length > 0).ToList();
+        var tenantIdValues = _serviceProvider.GetRequiredService<IDbTenantAccessor>().GetAccessibleTenantIds().ToList();
         var tenantIdName = nameof(ITenantId.TenantId);
         return query.Where(BuildContainsExpression<T, string>(tenantIdName, tenantIdValues));
     }

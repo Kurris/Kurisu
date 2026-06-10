@@ -1,4 +1,3 @@
-using Kurisu.AspNetCore.Abstractions.DataAccess;
 using Kurisu.AspNetCore.Abstractions.DataAccess.Core.Context;
 using Kurisu.Extensions.SqlSugar.Utils;
 using Microsoft.Extensions.DependencyInjection;

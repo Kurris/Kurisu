@@ -1,10 +1,10 @@
 ﻿using System.Data;
-using Kurisu.AspNetCore.Abstractions.Authentication;
 using Kurisu.AspNetCore.Abstractions.DataAccess.Contract.Field;
 using Kurisu.AspNetCore.Abstractions.DataAccess.Core;
 using Kurisu.AspNetCore.Abstractions.DataAccess.Core.Context;
 using Kurisu.Extensions.ContextAccessor;
 using Kurisu.Extensions.ContextAccessor.Abstractions;
+using Kurisu.Extensions.SqlSugar.Context;
 using Kurisu.Extensions.SqlSugar.Attributes;
 using Kurisu.Extensions.SqlSugar.Core.Context;
 using Kurisu.Extensions.SqlSugar.Core.Manager;
@@ -51,6 +51,9 @@ public static class SqlSugarServiceCollectionExtensions
 
         services.TryAddSingleton<DefaultSqlSugarConfigHandler>();
         services.TryAddScoped<IQueryFilterProcessor, DefaultQueryFilterProcessor>();
+        services.TryAddSingleton<IDbAuditAccessor, NullDbAuditAccessor>();
+        services.TryAddSingleton<IDbTenantAccessor, NullDbTenantAccessor>();
+        services.TryAddSingleton<IDbClock, SystemDbClock>();
 
         services.TryAddSingleton<IShardingRouteResolver, DefaultShardingRouteResolver>();
 
@@ -152,14 +155,18 @@ public class DefaultSqlSugarConfigHandler
 {
     private const string InfoTemplate = "ExecuteCommand[{ms}] Timeout[{timeout}]\r\n{sql}";
 
-    private readonly ICurrentUser _currentUser;
+    private readonly IDbAuditAccessor _auditAccessor;
+    private readonly IDbTenantAccessor _tenantAccessor;
+    private readonly IDbClock _dbClock;
     private readonly IContextSnapshotManager<DbOperationState> _snapshotManager;
     private readonly DbOptions _sqlSugarOptions;
     protected ILogger<ISqlSugarClient> Logger { get; }
 
     public DefaultSqlSugarConfigHandler(IServiceProvider serviceProvider)
     {
-        _currentUser = serviceProvider.GetRequiredService<ICurrentUser>();
+        _auditAccessor = serviceProvider.GetRequiredService<IDbAuditAccessor>();
+        _tenantAccessor = serviceProvider.GetRequiredService<IDbTenantAccessor>();
+        _dbClock = serviceProvider.GetRequiredService<IDbClock>();
         _snapshotManager = serviceProvider.GetRequiredService<IContextSnapshotManager<DbOperationState>>();
         Logger = serviceProvider.GetRequiredService<ILogger<ISqlSugarClient>>();
         _sqlSugarOptions = serviceProvider.GetRequiredService<IOptions<DbOptions>>().Value;
@@ -173,11 +180,8 @@ public class DefaultSqlSugarConfigHandler
         db.QueryFilter.AddTableFilter<ISoftDeleted>(x => x.IsDeleted == false);
 
         //ITenantId租户处理
-        if (_currentUser != null)
-        {
-            var tenantId = _currentUser.GetTenantId();
-            db.QueryFilter.AddTableFilter<ITenantId>(x => x.TenantId == tenantId);
-        }
+        var tenantId = _tenantAccessor.GetTenantId();
+        db.QueryFilter.AddTableFilter<ITenantId>(x => x.TenantId == tenantId);
     }
 
 
@@ -185,14 +189,18 @@ public class DefaultSqlSugarConfigHandler
     {
         var opState = _snapshotManager.ContextAccessor.Current;
         if (!opState.IgnoreTenant //启用租户
-            && _currentUser != null //用户信息存在
             && model.PropertyName == nameof(ITenantId.TenantId) //当前为租户字段
             && model.EntityValue is ITenantId) //继承ITenantId
         {
             var v = model.EntityColumnInfo.PropertyInfo.GetValue(model.EntityValue);
             if (v == null)
             {
-                var tenant = _currentUser.GetTenantId();
+                if (!_tenantAccessor.HasTenant)
+                {
+                    throw new InvalidOperationException("未能解析当前租户ID，请确认已配置数据库租户访问器");
+                }
+
+                var tenant = _tenantAccessor.GetTenantId();
                 model.SetValue(tenant);
             }
         }
@@ -207,25 +215,25 @@ public class DefaultSqlSugarConfigHandler
                     var v = model.EntityColumnInfo.PropertyInfo.GetValue(model.EntityValue);
                     if (v == null || (DateTime)v == default)
                     {
-                        model.SetValue(DateTime.Now);
+                        model.SetValue(_dbClock.Now);
                     }
                 }
 
-                if (_currentUser != null && model.IsAnyAttribute<InsertUserIdGenerationAttribute>())
+                if (model.IsAnyAttribute<InsertUserIdGenerationAttribute>())
                 {
                     var v = model.EntityColumnInfo.PropertyInfo.GetValue(model.EntityValue);
                     if (v == null || v.Equals(0) || v.ToString() == string.Empty || v.Equals(Guid.Empty))
                     {
-                        model.SetValue(_currentUser.GetUserId());
+                        model.SetValue(_auditAccessor.GetUserId());
                     }
                 }
 
-                if (_currentUser != null && model.IsAnyAttribute<InsertUserNameGenerationAttribute>())
+                if (model.IsAnyAttribute<InsertUserNameGenerationAttribute>())
                 {
                     var v = model.EntityColumnInfo.PropertyInfo.GetValue(model.EntityValue);
                     if (string.IsNullOrEmpty(v?.ToString()))
                     {
-                        model.SetValue(_currentUser.GetName());
+                        model.SetValue(_auditAccessor.GetUserName());
                     }
                 }
 
@@ -236,17 +244,17 @@ public class DefaultSqlSugarConfigHandler
                 if (model.IsAnyAttribute<UpdateDateTimeGenerationAttribute>())
                 {
                     var v = model.EntityColumnInfo.PropertyInfo.GetValue(model.EntityValue);
-                    model.SetValue(DateTime.Now);
+                    model.SetValue(_dbClock.Now);
                 }
 
-                if (_currentUser != null && model.IsAnyAttribute<UpdateUserIdGenerationAttribute>())
+                if (model.IsAnyAttribute<UpdateUserIdGenerationAttribute>())
                 {
-                    model.SetValue(_currentUser.GetUserId());
+                    model.SetValue(_auditAccessor.GetUserId());
                 }
 
-                if (_currentUser != null && model.IsAnyAttribute<UpdateUserNameGenerationAttribute>())
+                if (model.IsAnyAttribute<UpdateUserNameGenerationAttribute>())
                 {
-                    model.SetValue(_currentUser.GetName());
+                    model.SetValue(_auditAccessor.GetUserName());
                 }
 
                 break;
