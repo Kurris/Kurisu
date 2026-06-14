@@ -5,6 +5,7 @@ using System.Text;
 using AspectCore.Extensions.DependencyInjection;
 using Kurisu.AspNetCore.Abstractions.Authentication;
 using Kurisu.AspNetCore.Abstractions.DataAccess.Core;
+using Kurisu.AspNetCore.Abstractions.Startup;
 using Kurisu.Extensions.SqlSugar;
 using Kurisu.Extensions.SqlSugar.Context;
 using Microsoft.Extensions.Configuration;
@@ -57,12 +58,13 @@ public class TestSqlSugarOptions
     public void AddSqlSugar_RegistersNullDatabaseContextAccessorsByDefault()
     {
         var services = new ServiceCollection();
+        services.AddLogging();
 
         services.AddSqlSugar(DbType.MySqlConnector);
         var provider = services.BuildServiceProvider();
 
         var auditAccessor = Assert.IsType<NullDbAuditAccessor>(provider.GetRequiredService<IDbAuditAccessor>());
-        Assert.IsType<NullDbTenantAccessor>(provider.GetRequiredService<IDbTenantAccessor>());
+        Assert.IsType<DefaultDbTenantAccessor>(provider.GetRequiredService<IDbTenantAccessor>());
         Assert.IsType<SystemDbClock>(provider.GetRequiredService<IDbClock>());
         Assert.Equal(-1, auditAccessor.GetUserId());
         Assert.Equal("system", auditAccessor.GetUserName());
@@ -104,19 +106,23 @@ public class TestSqlSugarOptions
     public void SqlSugarServiceBuilder_UseCurrentUserContext_AdaptsCurrentUser()
     {
         var services = new ServiceCollection();
+        services.AddLogging();
         services.AddSingleton<ICurrentUser, FakeCurrentUser>();
 
         services.AddSqlSugar(DbType.MySqlConnector).UseCurrentUserContext();
         var provider = services.BuildServiceProvider();
 
-        var auditAccessor = provider.GetRequiredService<IDbAuditAccessor>();
-        var tenantAccessor = provider.GetRequiredService<IDbTenantAccessor>();
+        using var scope = provider.CreateScope();
+        using (scope.ServiceProvider.InitLifecycle())
+        {
+            var auditAccessor = scope.ServiceProvider.GetRequiredService<IDbAuditAccessor>();
+            var tenantAccessor = scope.ServiceProvider.GetRequiredService<IDbTenantAccessor>();
 
-        Assert.Equal(3, auditAccessor.GetUserId());
-        Assert.Equal("ligy", auditAccessor.GetUserName());
-        Assert.True(tenantAccessor.HasTenant);
-        Assert.Equal("1234", tenantAccessor.GetTenantId());
-        Assert.Equal(["1001", "1002"], tenantAccessor.GetAccessibleTenantIds());
+            Assert.Equal(3, auditAccessor.GetUserId());
+            Assert.Equal("ligy", auditAccessor.GetUserName());
+            Assert.Equal("1234", tenantAccessor.GetTenantId());
+            Assert.Equal(["1001", "1002"], tenantAccessor.GetAccessibleTenantIds());
+        }
     }
 
     private class CustomAuditAccessor : IDbAuditAccessor
@@ -134,8 +140,6 @@ public class TestSqlSugarOptions
 
     private class CustomTenantAccessor : IDbTenantAccessor
     {
-        public bool HasTenant => true;
-
         public string GetTenantId()
         {
             return "custom-tenant";

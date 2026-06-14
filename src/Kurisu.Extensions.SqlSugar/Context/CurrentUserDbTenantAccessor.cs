@@ -7,13 +7,13 @@ namespace Kurisu.Extensions.SqlSugar.Context;
 /// </summary>
 public class CurrentUserDbTenantAccessor(ICurrentUser currentUser) : IDbTenantAccessor
 {
-    public bool HasTenant => !string.IsNullOrEmpty(GetTenantId());
-
+    /// <inheritdoc />
     public string GetTenantId()
     {
         return currentUser.GetTenantId();
     }
 
+    /// <inheritdoc />
     public IReadOnlyList<string> GetAccessibleTenantIds()
     {
         var tenants = currentUser.GetUserClaim("tenants");

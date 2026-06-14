@@ -1,4 +1,5 @@
-﻿using Kurisu.AspNetCore.Abstractions.DataAccess.Core.Context;
+﻿using Kurisu.AspNetCore.Abstractions.Authentication;
+using Kurisu.AspNetCore.Abstractions.DataAccess.Core.Context;
 using Kurisu.Extensions.ContextAccessor;
 using Kurisu.Extensions.ContextAccessor.Abstractions;
 using Kurisu.Extensions.SqlSugar.Context;
@@ -83,13 +84,16 @@ public class SqlSugarServiceBuilder(IServiceCollection services)
     }
 
     /// <summary>
-    /// 使用 ICurrentUser 作为数据库上下文来源。
+    /// 使用 ICurrentUser 作为数据库上下文来源，自动包装 UseTenant 作用域优先逻辑。
     /// </summary>
     /// <returns></returns>
     public SqlSugarServiceBuilder UseCurrentUserContext()
     {
         services.Replace(ServiceDescriptor.Singleton<IDbAuditAccessor, CurrentUserDbAuditAccessor>());
-        services.Replace(ServiceDescriptor.Singleton<IDbTenantAccessor, CurrentUserDbTenantAccessor>());
+        services.Replace(ServiceDescriptor.Singleton<IDbTenantAccessor>(sp =>
+            new EffectiveDbTenantAccessor(
+                new CurrentUserDbTenantAccessor(sp.GetRequiredService<ICurrentUser>()), sp.GetRequiredService<IContextSnapshotManager<DbOperationState>>()))
+        );
         return this;
     }
 

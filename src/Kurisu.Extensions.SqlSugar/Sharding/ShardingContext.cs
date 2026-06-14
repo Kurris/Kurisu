@@ -314,7 +314,7 @@ public class ShardingContext : SqlSugarDbContext
         var opState = _contextSnapshotManager.ContextAccessor.Current;
         if (!opState.IgnoreTenant && string.IsNullOrEmpty(tenantId))
         {
-            tenantId = ServiceProvider.GetRequiredService<IDbTenantAccessor>().GetEffectiveTenantId(_contextSnapshotManager);
+            tenantId = ServiceProvider.GetRequiredService<IDbTenantAccessor>().GetTenantId();
         }
 
         if (string.IsNullOrEmpty(tenantId))
