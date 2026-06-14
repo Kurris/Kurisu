@@ -1,4 +1,3 @@
-using Kurisu.AspNetCore.Abstractions.DataAccess.Aop;
 using Kurisu.AspNetCore.Abstractions.DataAccess.Core.Context;
 using Kurisu.AspNetCore.Abstractions.Startup;
 using Kurisu.Extensions.SqlSugar.Utils;
@@ -16,8 +15,6 @@ public class TestUseTenant
         return TestHelper.GetServiceProvider(tenantId, configureServices: services =>
         {
             services.AddScoped<ICrossTenantService, CrossTenantService>();
-            services.AddScoped<IUseTenantResolver, MethodArgumentTenantResolver>();
-            services.AddScoped<MethodArgumentTenantResolver>();
         });
     }
 

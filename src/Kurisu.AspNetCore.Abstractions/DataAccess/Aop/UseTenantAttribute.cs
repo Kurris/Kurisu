@@ -14,7 +14,7 @@ public class UseTenantAttribute : AopAttribute
     private protected readonly string _parameterName;
 
     /// <summary>
-    /// 使用 DI 中默认注册的 <see cref="IUseTenantResolver"/> 解析租户。
+    /// 默认取方法第一个参数作为租户ID，参数必须为 string 类型。
     /// </summary>
     public UseTenantAttribute()
     {
@@ -53,7 +53,7 @@ public class UseTenantAttribute : AopAttribute
 
     /// <summary>
     /// 解析租户ID。当指定了 <c>parameterName</c> 时从方法参数解析，
-    /// 否则从 DI 获取 <see cref="IUseTenantResolver"/> 解析。
+    /// 否则取方法第一个参数作为租户ID（必须为 string 类型）。
     /// </summary>
     /// <param name="context">切面上下文。</param>
     /// <returns>租户ID。</returns>
@@ -64,9 +64,19 @@ public class UseTenantAttribute : AopAttribute
             return new ValueTask<string>(ResolveFromParameter(context, _parameterName));
         }
 
-        var resolver = context.ServiceProvider.GetRequiredService<IUseTenantResolver>();
-        var resolveContext = new UseTenantResolveContext(context.ServiceProvider, context.ImplementationMethod, context.Parameters);
-        return resolver.ResolveTenantIdAsync(resolveContext);
+        // 无 parameterName 时，取方法第一个参数作为租户ID
+        if (context.Parameters is not { Length: > 0 })
+        {
+            throw new InvalidOperationException("UseTenant 未指定参数名且方法没有参数，无法解析租户ID。请指定参数名或确保方法第一个参数为 string 类型的租户ID。");
+        }
+
+        if (context.Parameters[0] is not string tenantId)
+        {
+            throw new InvalidOperationException(
+                $"UseTenant 默认取方法第一个参数作为租户ID，但第一个参数类型为 {context.Parameters[0]?.GetType().FullName ?? "null"}，期望为 string 类型。");
+        }
+
+        return new ValueTask<string>(tenantId);
     }
 
     /// <summary>
@@ -134,11 +144,11 @@ public class UseTenantAttribute : AopAttribute
 }
 
 /// <summary>
-/// 使用指定 <see cref="IUseTenantResolver"/> 类型解析租户。
+/// 使用指定 <see cref="IUseTenantResolver"/> 类型解析租户，Resolver 直接通过无参构造函数创建。
 /// </summary>
-/// <typeparam name="TResolver">租户解析器类型，必须实现 <see cref="IUseTenantResolver"/>。</typeparam>
+/// <typeparam name="TResolver">租户解析器类型，必须实现 <see cref="IUseTenantResolver"/> 且具有无参构造函数。</typeparam>
 [AttributeUsage(AttributeTargets.Method | AttributeTargets.Class | AttributeTargets.Interface, Inherited = false)]
-public class UseTenantAttribute<TResolver> : UseTenantAttribute where TResolver : IUseTenantResolver
+public class UseTenantAttribute<TResolver> : UseTenantAttribute where TResolver : IUseTenantResolver, new()
 {
     /// <summary>
     /// 使用指定 <see cref="IUseTenantResolver"/> 类型解析租户。
@@ -163,7 +173,7 @@ public class UseTenantAttribute<TResolver> : UseTenantAttribute where TResolver 
             return new ValueTask<string>(ResolveFromParameter(context, _parameterName));
         }
 
-        var resolver = context.ServiceProvider.GetRequiredService<TResolver>();
+        var resolver = new TResolver();
         var resolveContext = new UseTenantResolveContext(context.ServiceProvider, context.ImplementationMethod, context.Parameters);
         return resolver.ResolveTenantIdAsync(resolveContext);
     }
