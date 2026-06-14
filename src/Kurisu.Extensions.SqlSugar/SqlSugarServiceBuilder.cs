@@ -3,6 +3,7 @@ using Kurisu.AspNetCore.Abstractions.DataAccess.Core.Context;
 using Kurisu.Extensions.ContextAccessor;
 using Kurisu.Extensions.ContextAccessor.Abstractions;
 using Kurisu.Extensions.SqlSugar.Context;
+using Kurisu.Extensions.SqlSugar.Context.Impl;
 using Kurisu.Extensions.SqlSugar.Sharding;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;

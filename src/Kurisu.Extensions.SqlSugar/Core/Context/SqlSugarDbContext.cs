@@ -4,7 +4,7 @@ using SqlSugar;
 
 namespace Kurisu.Extensions.SqlSugar.Core.Context;
 
-public class SqlSugarDbContext : SpecialQueryableDbContext
+public class SqlSugarDbContext : SpecificQueryDbContext
 {
     public SqlSugarDbContext(IServiceProvider serviceProvider) : base(serviceProvider)
     {

@@ -11,12 +11,12 @@ using SqlSugar;
 
 namespace Kurisu.Extensions.SqlSugar.Core.Context;
 
-public abstract class SpecialQueryableDbContext : AbstractDbContext<ISqlSugarClient>, ISqlSugarDbContext
+public abstract class SpecificQueryDbContext : AbstractDbContext<ISqlSugarClient>, ISqlSugarDbContext
 {
     private readonly IQueryFilterProcessor _queryFilterProcessor;
     private readonly IContextSnapshotManager<DbOperationState> _snapshotManager;
 
-    protected SpecialQueryableDbContext(IServiceProvider serviceProvider) : base(serviceProvider)
+    protected SpecificQueryDbContext(IServiceProvider serviceProvider) : base(serviceProvider)
     {
         _queryFilterProcessor = ServiceProvider.GetRequiredService<IQueryFilterProcessor>();
         _snapshotManager = ServiceProvider.GetRequiredService<IContextSnapshotManager<DbOperationState>>();
@@ -49,6 +49,12 @@ public abstract class SpecialQueryableDbContext : AbstractDbContext<ISqlSugarCli
 
     public override IDisposable IgnoreTenant()
     {
+        var current = _snapshotManager.ContextAccessor.Current;
+        if (!string.IsNullOrWhiteSpace(current.UseTenantId))
+        {
+            throw new InvalidOperationException("[IgnoreTenant] 和 [UseTenant] 不能同时使用，请移除其中一个 AOP 属性");
+        }
+
         return _snapshotManager.CreateScope(s =>
                {
                    s.IgnoreTenant = true;
@@ -64,14 +70,17 @@ public abstract class SpecialQueryableDbContext : AbstractDbContext<ISqlSugarCli
             throw new ArgumentNullException(nameof(tenantId));
         }
 
+        var current = _snapshotManager.ContextAccessor.Current;
+        if (current.IgnoreTenant == true)
+        {
+            throw new InvalidOperationException("[UseTenant] 和 [IgnoreTenant] 不能同时使用，请移除其中一个 AOP 属性");
+        }
+
         return _snapshotManager.CreateScope(s =>
             {
                 s.UseTenantId = tenantId;
-                if (!s.IgnoreTenant)
-                {
-                    Client.QueryFilter.ClearAndBackup<ITenantId>();
-                    Client.QueryFilter.AddTableFilter<ITenantId>(x => x.TenantId == tenantId);
-                }
+                Client.QueryFilter.ClearAndBackup<ITenantId>();
+                Client.QueryFilter.AddTableFilter<ITenantId>(x => x.TenantId == tenantId);
             },
             Client.QueryFilter.Restore);
     }

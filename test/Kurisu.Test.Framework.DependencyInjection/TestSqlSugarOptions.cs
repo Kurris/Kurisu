@@ -8,6 +8,7 @@ using Kurisu.AspNetCore.Abstractions.DataAccess.Core;
 using Kurisu.AspNetCore.Abstractions.Startup;
 using Kurisu.Extensions.SqlSugar;
 using Kurisu.Extensions.SqlSugar.Context;
+using Kurisu.Extensions.SqlSugar.Context.Impl;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using SqlSugar;

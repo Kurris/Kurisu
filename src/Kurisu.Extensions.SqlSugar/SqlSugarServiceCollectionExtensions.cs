@@ -6,6 +6,7 @@ using Kurisu.Extensions.ContextAccessor;
 using Kurisu.Extensions.ContextAccessor.Abstractions;
 using Kurisu.Extensions.SqlSugar.Context;
 using Kurisu.Extensions.SqlSugar.Attributes;
+using Kurisu.Extensions.SqlSugar.Context.Impl;
 using Kurisu.Extensions.SqlSugar.Core.Context;
 using Kurisu.Extensions.SqlSugar.Core.Manager;
 using Kurisu.Extensions.SqlSugar.Sharding;

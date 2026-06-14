@@ -1,6 +1,6 @@
 using Kurisu.AspNetCore.Abstractions.Authentication;
 
-namespace Kurisu.Extensions.SqlSugar.Context;
+namespace Kurisu.Extensions.SqlSugar.Context.Impl;
 
 /// <summary>
 /// 基于 ICurrentUser 的数据库租户上下文访问器。

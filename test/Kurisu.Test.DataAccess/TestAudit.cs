@@ -1,6 +1,7 @@
 using Kurisu.AspNetCore.Abstractions.DataAccess.Core.Context;
 using Kurisu.AspNetCore.Abstractions.Startup;
 using Kurisu.Extensions.SqlSugar.Context;
+using Kurisu.Extensions.SqlSugar.Context.Impl;
 using Kurisu.Extensions.SqlSugar.Utils;
 using Kurisu.Test.DataAccess.Entities;
 using Microsoft.Extensions.DependencyInjection;

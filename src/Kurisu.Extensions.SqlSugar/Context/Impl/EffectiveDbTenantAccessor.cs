@@ -1,6 +1,6 @@
 using Kurisu.Extensions.ContextAccessor.Abstractions;
 
-namespace Kurisu.Extensions.SqlSugar.Context;
+namespace Kurisu.Extensions.SqlSugar.Context.Impl;
 
 /// <summary>
 /// IDbTenantAccessor 装饰器，统一处理 <see cref="DbOperationState.UseTenantId"/> 优先逻辑。
@@ -18,6 +18,14 @@ internal class EffectiveDbTenantAccessor(IDbTenantAccessor inner, IContextSnapsh
     /// <inheritdoc />
     public IReadOnlyList<string> GetAccessibleTenantIds()
     {
-        return inner.GetAccessibleTenantIds();
+        var useTenantId = snapshotManager.ContextAccessor.Current?.UseTenantId;
+        var innerList = inner.GetAccessibleTenantIds();
+
+        if (string.IsNullOrWhiteSpace(useTenantId) || innerList.Contains(useTenantId))
+        {
+            return innerList;
+        }
+
+        return [useTenantId, .. innerList];
     }
 }

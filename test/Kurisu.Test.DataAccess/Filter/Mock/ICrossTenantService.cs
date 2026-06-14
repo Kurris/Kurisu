@@ -12,6 +12,8 @@ public interface ICrossTenantService
     Task<List<Test1Entity>> QueryWithResolverAsync(string tenantId);
     Task<List<Test1Entity>> QueryWithMissingTenantAsync(string tenantId);
     Task<List<string>> QueryNestedTenantAsync(string outerTenantId, string innerTenantId);
+
+    Task<List<Test1Entity>> QueryWithUseTenantAndIgnoreTenantAsync(string tenantId);
 }
 
 public class UseTenantInput

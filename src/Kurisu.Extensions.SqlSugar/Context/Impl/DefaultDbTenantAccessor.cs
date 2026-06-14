@@ -1,7 +1,7 @@
 using Kurisu.Extensions.ContextAccessor.Abstractions;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace Kurisu.Extensions.SqlSugar.Context;
+namespace Kurisu.Extensions.SqlSugar.Context.Impl;
 
 /// <summary>
 /// 默认数据库租户上下文访问器，从 UseTenant 作用域（如 [UseTenant]）获取租户ID。
@@ -28,6 +28,7 @@ public class DefaultDbTenantAccessor : IDbTenantAccessor
     /// <inheritdoc />
     public IReadOnlyList<string> GetAccessibleTenantIds()
     {
-        return [];
+        var tenantId = GetTenantId();
+        return !string.IsNullOrWhiteSpace(tenantId) ? [tenantId] : [];
     }
 }

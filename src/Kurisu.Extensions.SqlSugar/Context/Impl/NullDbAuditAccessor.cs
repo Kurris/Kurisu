@@ -1,4 +1,4 @@
-namespace Kurisu.Extensions.SqlSugar.Context;
+namespace Kurisu.Extensions.SqlSugar.Context.Impl;
 
 /// <summary>
 /// 空数据库审计用户访问器。

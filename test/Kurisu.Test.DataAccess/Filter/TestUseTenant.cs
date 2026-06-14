@@ -1,5 +1,6 @@
 using Kurisu.AspNetCore.Abstractions.DataAccess.Core.Context;
 using Kurisu.AspNetCore.Abstractions.Startup;
+using Kurisu.Extensions.SqlSugar.Context;
 using Kurisu.Extensions.SqlSugar.Utils;
 using Kurisu.Test.DataAccess.Entities;
 using Kurisu.Test.DataAccess.Filter.Mock;
@@ -154,6 +155,81 @@ public class TestUseTenant
                 var names = await service.QueryNestedTenantAsync("outer-tenant", "inner-tenant");
 
                 Assert.Equal(["outer", "inner", "outer"], names);
+            }
+        }
+    }
+
+    [Fact(DisplayName = "UseTenant和IgnoreTenant互斥: UseTenant内调用IgnoreTenant时抛异常")]
+    public async Task UseTenant_Then_IgnoreTenant_Throws()
+    {
+        using var scope = GetServiceProvider("current-tenant").CreateScope();
+        using (scope.ServiceProvider.InitLifecycle())
+        {
+            var ctx = scope.ServiceProvider.GetRequiredService<IDbContext>();
+            using (ctx.CreateDatasourceScope())
+            {
+                using (ctx.UseTenant("tenant-a"))
+                {
+                    var ex = Assert.Throws<InvalidOperationException>(() => ctx.IgnoreTenant());
+                    Assert.Contains("不能同时使用", ex.Message);
+                }
+            }
+        }
+    }
+
+    [Fact(DisplayName = "UseTenant和IgnoreTenant互斥: IgnoreTenant内调用UseTenant时抛异常")]
+    public async Task IgnoreTenant_Then_UseTenant_Throws()
+    {
+        using var scope = GetServiceProvider("current-tenant").CreateScope();
+        using (scope.ServiceProvider.InitLifecycle())
+        {
+            var ctx = scope.ServiceProvider.GetRequiredService<IDbContext>();
+            using (ctx.CreateDatasourceScope())
+            {
+                using (ctx.IgnoreTenant())
+                {
+                    var ex = Assert.Throws<InvalidOperationException>(() => ctx.UseTenant("tenant-a"));
+                    Assert.Contains("不能同时使用", ex.Message);
+                }
+            }
+        }
+    }
+
+    [Fact(DisplayName = "UseTenant和IgnoreTenant互斥: AOP同时标记时抛异常")]
+    public async Task UseTenant_And_IgnoreTenant_AOP_Throws()
+    {
+        using var scope = GetServiceProvider("current-tenant").CreateScope();
+        using (scope.ServiceProvider.InitLifecycle())
+        {
+            var ctx = scope.ServiceProvider.GetRequiredService<IDbContext>();
+            using (ctx.CreateDatasourceScope())
+            {
+                await PrepareAsync(ctx);
+
+                var service = scope.ServiceProvider.GetRequiredService<ICrossTenantService>();
+                var ex = await Assert.ThrowsAsync<InvalidOperationException>(
+                    () => service.QueryWithUseTenantAndIgnoreTenantAsync("tenant-a"));
+                Assert.Contains("不能同时使用", ex.Message);
+            }
+        }
+    }
+
+    [Fact(DisplayName = "DefaultDbTenantAccessor: UseTenant作用域内GetAccessibleTenantIds返回当前租户")]
+    public async Task DefaultDbTenantAccessor_GetAccessibleTenantIds_ReturnsUseTenantId()
+    {
+        using var scope = GetServiceProvider("current-tenant").CreateScope();
+        using (scope.ServiceProvider.InitLifecycle())
+        {
+            var ctx = scope.ServiceProvider.GetRequiredService<IDbContext>();
+            using (ctx.CreateDatasourceScope())
+            {
+                var tenantAccessor = scope.ServiceProvider.GetRequiredService<IDbTenantAccessor>();
+                Assert.Empty(tenantAccessor.GetAccessibleTenantIds());
+
+                using (ctx.UseTenant("tenant-a"))
+                {
+                    Assert.Equal(["tenant-a"], tenantAccessor.GetAccessibleTenantIds());
+                }
             }
         }
     }

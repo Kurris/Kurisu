@@ -71,6 +71,13 @@ public class CrossTenantService : ICrossTenantService
         return [outerBefore.Single(), inner.Single(), outerAfter.Single()];
     }
 
+    [UseTenant("tenantId")]
+    [IgnoreTenant]
+    public async Task<List<Test1Entity>> QueryWithUseTenantAndIgnoreTenantAsync(string tenantId)
+    {
+        return await _dbContext.Queryable<Test1Entity>().OrderBy(x => x.Id).ToListAsync();
+    }
+
     private async Task<List<string>> QueryNamesAsync()
     {
         return await _dbContext.Queryable<Test1Entity>().OrderBy(x => x.Id).Select(x => x.Name).ToListAsync();
