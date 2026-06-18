@@ -19,6 +19,7 @@ internal class LocalMessageRetryBackgroundService(
     ILogger<LocalMessageRetryBackgroundService> logger,
     IServiceProvider serviceProvider,
     ChannelWriter<EventMessage> writer,
+    LocalMessageDispatchSignal dispatchSignal,
     IOptions<EventBusOptions> options) : BackgroundService
 {
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -27,8 +28,8 @@ internal class LocalMessageRetryBackgroundService(
         {
             try
             {
+                await dispatchSignal.WaitAsync(options.Value.ScanInterval, stoppingToken);
                 await ScanAndRetryAsync(stoppingToken);
-                await Task.Delay(options.Value.ScanInterval, stoppingToken);
             }
             catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
             {
@@ -63,7 +64,7 @@ internal class LocalMessageRetryBackgroundService(
                     .Where(x => (x.Status == LocalMessageStatus.Pending
                                 || (x.Status == LocalMessageStatus.Processing && (x.LockedUntil == null || x.LockedUntil <= now)))
                                 && (x.NextRetryTime == null || x.NextRetryTime <= now))
-                    .Take(options.Value.RetryBatchSize)
+                    .Take(options.Value.ScanBatchSize)
                     .ToListAsync(stoppingToken);
 
                 if (pendingMessages.Count == 0) return;
@@ -90,7 +91,10 @@ internal class LocalMessageRetryBackgroundService(
                         message.Code = localMessage.Code;
                         message.ProcessingToken = processingToken;
                         await writer.WriteAsync(message, stoppingToken);
-                        logger.LogInformation("LocalMessageRetry 重新投递消息 code={code}, retry={retry}", localMessage.Code, localMessage.Retry);
+                        logger.LogInformation(
+                            "LocalMessageRetry 重新投递消息 code={code}, attempts={attempts}",
+                            localMessage.Code,
+                            localMessage.Attempts);
                     }
                     catch (Exception ex)
                     {

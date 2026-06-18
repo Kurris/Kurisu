@@ -9,18 +9,23 @@ internal class NestedTransactionScope : AbstractTransactionScope
     private readonly ISqlSugarClient _client;
     private readonly IsolationLevel? _isolationLevel;
     private readonly Action _afterScope;
+    private readonly TransactionCallbackRegistry _callbackRegistry;
     private readonly string _savepointName;
     private bool _isSavepointCreated;
-    private readonly bool _hasTransaction;
+    private bool _isRootTransactionStarted;
 
-    public NestedTransactionScope(ISqlSugarClient client, IsolationLevel? isolationLevel, Action afterScope)
+    public NestedTransactionScope(
+        ISqlSugarClient client,
+        IsolationLevel? isolationLevel,
+        Action afterScope,
+        TransactionCallbackRegistry callbackRegistry)
     {
         _client = client;
         _isolationLevel = isolationLevel;
         _afterScope = afterScope;
+        _callbackRegistry = callbackRegistry;
         _savepointName = "SP_" + Guid.NewGuid().ToString("N");
         _isSavepointCreated = false;
-        _hasTransaction = client.Ado.IsAnyTran();
     }
 
     public override async Task BeginAsync()
@@ -37,6 +42,8 @@ internal class NestedTransactionScope : AbstractTransactionScope
                 await _client.Ado.BeginTranAsync();
             }
 
+            _isRootTransactionStarted = true;
+            _callbackRegistry.BeginRoot();
             return;
         }
 
@@ -44,6 +51,7 @@ internal class NestedTransactionScope : AbstractTransactionScope
         // 创建 savepoint（MySQL/Postgres 风格）
         await _client.CreateSavepointAsync(_savepointName);
         _isSavepointCreated = true;
+        _callbackRegistry.BeginNested();
     }
 
     public override async Task CommitAsync()
@@ -52,6 +60,11 @@ internal class NestedTransactionScope : AbstractTransactionScope
         {
             // 如果没有 savepoint（可能是新开事务），直接提交
             await _client.Ado.CommitTranAsync();
+            if (_isRootTransactionStarted)
+            {
+                await _callbackRegistry.CommitRootAsync();
+            }
+
             return;
         }
 
@@ -64,6 +77,8 @@ internal class NestedTransactionScope : AbstractTransactionScope
         {
             // 某些驱动/数据库 不支持 RELEASE SAVEPOINT，可以忽略错误
         }
+
+        _callbackRegistry.CommitNested();
     }
 
     public override async Task RollbackAsync()
@@ -72,11 +87,17 @@ internal class NestedTransactionScope : AbstractTransactionScope
         {
             // 非 savepoint 情形，回滚整个事务
             await _client.Ado.RollbackTranAsync();
+            if (_isRootTransactionStarted)
+            {
+                _callbackRegistry.RollbackRoot();
+            }
+
             return;
         }
 
         // 回滚到 savepoint（只撤销内层改动）
         await _client.RollbackToSavepointAsync(_savepointName);
+        _callbackRegistry.RollbackNested();
     }
 
     public override void Dispose()

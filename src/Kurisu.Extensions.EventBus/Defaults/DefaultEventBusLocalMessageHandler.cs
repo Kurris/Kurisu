@@ -51,7 +51,7 @@ public class DefaultEventBusLocalMessageHandler(
                 Status = LocalMessageStatus.Processing,
                 LockedUntil = now.Add(options.Value.ProcessingLease),
                 ProcessingToken = processingToken,
-                Retry = x.Retry + 1
+                Attempts = x.Attempts + 1
             })
             .Where(x => x.Code == code
                         && (x.Status == LocalMessageStatus.Pending
@@ -122,15 +122,15 @@ public class DefaultEventBusLocalMessageHandler(
     }
 
     /// <summary>
-    /// 标记消息处理失败。若重试次数已达上限则转入 DeadLetter，否则退回 Pending 等待下次重试。
-    /// 重试延迟采用指数退避策略：2^Retry 分钟，上限由 MaxRetryDelay 控制。
+    /// 标记消息处理失败。若尝试次数已达上限则转入 DeadLetter，否则退回 Pending 等待下次重试。
+    /// 重试延迟采用指数退避策略：2^Attempts 分钟，上限由 MaxRetryDelay 控制。
     /// </summary>
     private async Task CompleteFailureAsync(LocalMessage localMessage, string error, CancellationToken cancellationToken)
     {
         var now = DateTime.Now;
-        var deadLetter = localMessage.Retry >= options.Value.MaxRetryCount;
+        var deadLetter = localMessage.Attempts >= options.Value.MaxAttemptCount;
         var status = deadLetter ? LocalMessageStatus.DeadLetter : LocalMessageStatus.Pending;
-        DateTime? nextRetryTime = deadLetter ? null : now.Add(GetRetryDelay(localMessage.Retry));
+        DateTime? nextRetryTime = deadLetter ? null : now.Add(GetRetryDelay(localMessage.Attempts));
 
         var effect = await db.AsSqlSugarDbContext().Updateable<LocalMessage>()
             .SetColumns(x => new LocalMessage
@@ -150,19 +150,19 @@ public class DefaultEventBusLocalMessageHandler(
         if (effect == 1 && deadLetter)
         {
             logger.LogError(
-                "EventBus 消息进入死信状态: code={code}, retry={retry}, error={error}",
+                "EventBus 消息进入死信状态: code={code}, attempts={attempts}, error={error}",
                 localMessage.Code,
-                localMessage.Retry,
+                localMessage.Attempts,
                 error);
         }
     }
 
     /// <summary>
-    /// 指数退避重试延迟：2^Retry 分钟，重试次数超过 10 时按 2^10 计算，且不超过 MaxRetryDelay。
+    /// 指数退避重试延迟：2^Attempts 分钟，尝试次数超过 10 时按 2^10 计算，且不超过 MaxRetryDelay。
     /// </summary>
-    private TimeSpan GetRetryDelay(int retry)
+    private TimeSpan GetRetryDelay(int attempts)
     {
-        var delay = TimeSpan.FromMinutes(Math.Pow(2, Math.Min(retry, 10)));
+        var delay = TimeSpan.FromMinutes(Math.Pow(2, Math.Min(attempts, 10)));
         return delay <= options.Value.MaxRetryDelay ? delay : options.Value.MaxRetryDelay;
     }
 

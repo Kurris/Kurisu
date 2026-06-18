@@ -28,13 +28,13 @@ public class LocalMessage : SugarEntity, IIndexConfigurator
     public LocalMessageStatus Status { get; set; } = LocalMessageStatus.Pending;
 
     /// <summary>
-    /// 重试次数
+    /// 投递/处理尝试次数
     /// </summary>
-    [Column("重试次数", false)]
-    public int Retry { get; set; } = 0;
+    [Column("尝试次数", false)]
+    public int Attempts { get; set; } = 0;
 
     /// <summary>
-    /// 下次重试时间（指数退避：CreateTime + 2^Retry 分钟）
+    /// 下次重试时间（指数退避：CreateTime + 2^Attempts 分钟）
     /// </summary>
     [Column("下次重试时间", true)]
     public DateTime? NextRetryTime { get; set; }
@@ -62,12 +62,6 @@ public class LocalMessage : SugarEntity, IIndexConfigurator
     /// </summary>
     [Column("死信时间", true)]
     public DateTime? DeadLetterTime { get; set; }
-
-    /// <summary>
-    /// 人工重试次数
-    /// </summary>
-    [Column("人工重试次数", false)]
-    public int ManualRetry { get; set; }
 
     /// <summary>
     /// 人工处置原因

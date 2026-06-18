@@ -46,6 +46,9 @@ public static class SqlSugarServiceCollectionExtensions
         services.AddContextAccessor<NamesDbConnectionStringStack>();
 
         services.TryAddSingleton<IDbConnectionStringManager, SqlSugarConnectionStringManager>();
+        services.TryAddScoped<TransactionCallbackRegistry>();
+        services.Replace(ServiceDescriptor.Scoped<ITransactionCallbackRegistry>(sp =>
+            sp.GetRequiredService<TransactionCallbackRegistry>()));
         // Transient：
         services.TryAddTransient<IDatasourceManager<ISqlSugarClient>, SqlSugarDatasourceManager>();
         services.TryAddTransient<IDatasourceManager>(sp => sp.GetRequiredService<IDatasourceManager<ISqlSugarClient>>());

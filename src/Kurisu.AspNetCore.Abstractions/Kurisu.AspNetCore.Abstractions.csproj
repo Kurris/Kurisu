@@ -1,10 +1,10 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 	<PropertyGroup>
 		<LangVersion>latestmajor</LangVersion>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>disable</Nullable>
 		<TargetFramework>net8.0</TargetFramework>
-        <Version>0.5.1</Version>
+        <Version>0.5.4</Version>
 		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
 		<GenerateDocumentationFile>True</GenerateDocumentationFile>
 	</PropertyGroup>
@@ -17,8 +17,18 @@
 		<PackageReference Include="Microsoft.AspNetCore.Http.Abstractions" Version="2.3.0" />
 	</ItemGroup>
 	<ItemGroup>
-		<None Include="..\Kurisu.Transaction.Analyzer\Kurisu.Transaction.Analyzer\Kurisu.Transaction.Analyzer.csproj" Pack="true" PackagePath="analyzers/dotnet/cs" />
+		<ProjectReference Include="..\Kurisu.Transaction.Analyzer\Kurisu.Transaction.Analyzer\Kurisu.Transaction.Analyzer.csproj"
+		                  ReferenceOutputAssembly="false"
+		                  PrivateAssets="all" />
 	</ItemGroup>
+	<!-- 将 Analyzer DLL 打包进 analyzers/dotnet/cs/ -->
+	<Target Name="PackAnalyzerDll" AfterTargets="Build" BeforeTargets="GenerateNuspec">
+		<ItemGroup>
+			<_AnalyzerDll Include="..\Kurisu.Transaction.Analyzer\Kurisu.Transaction.Analyzer\bin\$(Configuration)\netstandard2.0\Kurisu.Transaction.Analyzer.dll"
+			              Condition="Exists('..\Kurisu.Transaction.Analyzer\Kurisu.Transaction.Analyzer\bin\$(Configuration)\netstandard2.0\Kurisu.Transaction.Analyzer.dll')" />
+			<None Include="@(_AnalyzerDll)" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
+		</ItemGroup>
+	</Target>
 	<ItemGroup>
 		<PackageReference Include="Mapster.DependencyInjection" Version="1.0.1" />
 		<PackageReference Include="Newtonsoft.Json" Version="13.0.4" />

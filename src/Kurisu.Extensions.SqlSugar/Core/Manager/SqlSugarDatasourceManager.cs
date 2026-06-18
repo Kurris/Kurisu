@@ -17,6 +17,7 @@ public sealed class SqlSugarDatasourceManager : AbstractDatasourceManager<ISqlSu
     private readonly IServiceProvider _serviceProvider;
     private readonly ILogger<ISqlSugarClient> _logger;
     private readonly IDbConnectionStringManager _dbConnectionManager;
+    private readonly TransactionCallbackRegistry _callbackRegistry;
     private int _newClientIndex = 0;
 
     /// <summary>
@@ -31,6 +32,7 @@ public sealed class SqlSugarDatasourceManager : AbstractDatasourceManager<ISqlSu
         _serviceProvider = serviceProvider;
         _logger = serviceProvider.GetService<ILogger<ISqlSugarClient>>();
         _dbConnectionManager = serviceProvider.GetService<IDbConnectionStringManager>();
+        _callbackRegistry = serviceProvider.GetRequiredService<TransactionCallbackRegistry>();
         CreateClient(Current);
     }
 
@@ -73,7 +75,7 @@ public sealed class SqlSugarDatasourceManager : AbstractDatasourceManager<ISqlSu
                     var hasTran = client.Ado.IsAnyTran();
 
                     return new RequiredTransactionScope(client, isolationLevel, hasTran, () =>
-                        _logger.LogDebug("Required 事务作用域结束. 当前数据源='{Current}'", Current));
+                        _logger.LogDebug("Required 事务作用域结束. 当前数据源='{Current}'", Current), _callbackRegistry);
                 }
             case Propagation.RequiresNew:
                 {
@@ -88,7 +90,7 @@ public sealed class SqlSugarDatasourceManager : AbstractDatasourceManager<ISqlSu
                         _newClientIndex--;
                         _nameClientCollection.Release(newName);
                         d.Dispose();
-                    });
+                    }, _callbackRegistry);
                 }
             case Propagation.Mandatory:
                 {
@@ -99,7 +101,7 @@ public sealed class SqlSugarDatasourceManager : AbstractDatasourceManager<ISqlSu
                     }
 
                     return new MandatoryTransactionScope(client, isolationLevel,
-                        () => _logger.LogDebug("Mandatory 事务作用域结束. 当前数据源='{Current}'", Current));
+                        () => _logger.LogDebug("Mandatory 事务作用域结束. 当前数据源='{Current}'", Current), _callbackRegistry);
                 }
             case Propagation.Nested:
                 {
@@ -109,11 +111,11 @@ public sealed class SqlSugarDatasourceManager : AbstractDatasourceManager<ISqlSu
                     if (!hasTran)
                     {
                         return new RequiredTransactionScope(client, isolationLevel, false,
-                            () => _logger.LogDebug("Nested(降级为Required) 事务作用域结束. 当前数据源='{Current}'", Current));
+                            () => _logger.LogDebug("Nested(降级为Required) 事务作用域结束. 当前数据源='{Current}'", Current), _callbackRegistry);
                     }
 
                     return new NestedTransactionScope(client, isolationLevel,
-                        () => _logger.LogDebug("Nested 事务作用域结束. 当前数据源='{Current}'", Current));
+                        () => _logger.LogDebug("Nested 事务作用域结束. 当前数据源='{Current}'", Current), _callbackRegistry);
                 }
             case Propagation.Never:
                 {

@@ -53,7 +53,7 @@ public abstract class BaseFrameworkExceptionHandlers : IFrameworkExceptionHandle
     /// <summary>
     /// 处理异常。根据异常类型调用对应的处理方法。
     /// </summary>
-    /// <param name="ex">待处理的异常��例。</param>
+    /// <param name="ex">待处理的异常实例。</param>
     /// <returns>处理成功返回 true，否则返回 false。</returns>
     public async Task<bool> HandleAsync(Exception ex)
     {
@@ -84,7 +84,7 @@ public abstract class BaseFrameworkExceptionHandlers : IFrameworkExceptionHandle
     /// <summary>
     /// 获取所有异常处理方法的集合。Key 为异常类型，Value 为对应的处理方法。
     /// </summary>
-    /// <returns>异常类型与处理方法���字典。</returns>
+    /// <returns>异常类型与处理方法的字典。</returns>
     public Dictionary<Type, MethodInfo> GetMethods()
     {
         if (_methods != null)

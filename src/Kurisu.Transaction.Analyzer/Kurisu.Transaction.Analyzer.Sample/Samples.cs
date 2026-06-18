@@ -13,7 +13,7 @@ class Program
 
         var nestedCaller2 = provider.GetRequiredService<INestedCaller>();
         nestedCaller2.Run();
-        
+
         var nestedCaller22 = provider.GetRequiredService<NestedCaller>();
         nestedCaller22.Run();
     }

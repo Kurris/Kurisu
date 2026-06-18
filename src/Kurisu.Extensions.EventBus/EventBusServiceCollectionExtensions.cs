@@ -29,6 +29,8 @@ public static class EventBusServiceCollectionExtensions
         services.TryAddSingleton(Channel.CreateBounded<EventMessage>(options));
         services.AddSingleton(sp => sp.GetRequiredService<Channel<EventMessage>>().Writer);
         services.AddSingleton(sp => sp.GetRequiredService<Channel<EventMessage>>().Reader);
+        services.TryAddSingleton<LocalMessageDispatchSignal>();
+        services.TryAddSingleton<IEventBusDispatchSignal>(sp => sp.GetRequiredService<LocalMessageDispatchSignal>());
 
         // 后台服务
         services.AddHostedService<MessageConsumerBackgroundService>();

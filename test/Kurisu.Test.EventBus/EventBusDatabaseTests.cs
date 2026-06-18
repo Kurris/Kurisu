@@ -25,9 +25,9 @@ public class EventBusDatabaseTests
     }
 
     [Fact]
-    public async Task DeadLetter_CanBeRetriedAndIgnoredManually()
+    public async Task DeadLetter_CanBeQueriedAndIgnoredManually()
     {
-        using var provider = CreateProvider(maxRetryCount: 1);
+        using var provider = CreateProvider(maxAttemptCount: 1);
         var code = await PersistAsync(provider);
         var token = await ClaimAsync(provider, code);
 
@@ -41,23 +41,10 @@ public class EventBusDatabaseTests
         {
             var deadLetterService = services.GetRequiredService<IEventBusDeadLetterService>();
             var deadLetter = await deadLetterService.GetAsync(code);
-            Assert.Equal(1, services.GetRequiredService<IOptions<EventBusOptions>>().Value.MaxRetryCount);
-            Assert.Equal(1, deadLetter.Retry);
+            Assert.Equal(1, services.GetRequiredService<IOptions<EventBusOptions>>().Value.MaxAttemptCount);
+            Assert.Equal(1, deadLetter.Attempts);
             Assert.Equal(LocalMessageStatus.DeadLetter, deadLetter.Status);
 
-            await deadLetterService.RetryAsync(code);
-            var retried = await deadLetterService.GetAsync(code);
-            Assert.Equal(LocalMessageStatus.Pending, retried.Status);
-            Assert.Equal(1, retried.ManualRetry);
-        });
-
-        token = await ClaimAsync(provider, code);
-        await InScopeAsync(provider, async services =>
-        {
-            var handler = services.GetRequiredService<IEventBusLocalMessageHandler>();
-            await handler.FailDeliveryAsync(code, token, "test failure again");
-
-            var deadLetterService = services.GetRequiredService<IEventBusDeadLetterService>();
             await deadLetterService.IgnoreAsync(code, "verified by test");
             var ignored = await deadLetterService.GetAsync(code);
             Assert.Equal(LocalMessageStatus.Ignored, ignored.Status);
@@ -65,13 +52,13 @@ public class EventBusDatabaseTests
         });
     }
 
-    private static ServiceProvider CreateProvider(int maxRetryCount = 5)
+    private static ServiceProvider CreateProvider(int maxAttemptCount = 5)
     {
         return (ServiceProvider)TestHelper.GetServiceProvider(configureServices: services =>
         {
             services.AddEventBus(options =>
             {
-                options.MaxRetryCount = maxRetryCount;
+                options.MaxAttemptCount = maxAttemptCount;
             });
         });
     }

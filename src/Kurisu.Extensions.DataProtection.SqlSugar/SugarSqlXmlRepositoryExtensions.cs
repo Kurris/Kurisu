@@ -83,9 +83,9 @@ internal class SugarSqlXmlRepository : BaseXmlRepository
     }
 
     /// <summary>
-    /// 存��密钥元素到数据库。
+    /// 存储密钥元素到数据库。
     /// </summary>
-    /// <param name="element">密��元素。</param>
+    /// <param name="element">密钥元素。</param>
     /// <param name="friendlyName">友好名称。</param>
     public override void StoreElement(XElement element, string friendlyName)
     {
@@ -126,7 +126,7 @@ public abstract class BaseXmlRepository : IXmlRepository
     /// <summary>
     /// 存储密钥元素。
     /// </summary>
-    /// <param name="element">密钥元���。</param>
+    /// <param name="element">密钥元素。</param>
     /// <param name="friendlyName">友好名称。</param>
     public abstract void StoreElement(XElement element, string friendlyName);
 }

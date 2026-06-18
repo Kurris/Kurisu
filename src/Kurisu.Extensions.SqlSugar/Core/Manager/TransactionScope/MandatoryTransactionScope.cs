@@ -5,8 +5,12 @@ namespace Kurisu.Extensions.SqlSugar.Core.Manager.TransactionScope;
 
 internal class MandatoryTransactionScope : RequiredTransactionScope
 {
-    public MandatoryTransactionScope(ISqlSugarClient client, IsolationLevel? isolationLevel, Action afterScope)
-        : base(client, isolationLevel, client.Ado.IsAnyTran(), afterScope)
+    public MandatoryTransactionScope(
+        ISqlSugarClient client,
+        IsolationLevel? isolationLevel,
+        Action afterScope,
+        TransactionCallbackRegistry callbackRegistry)
+        : base(client, isolationLevel, client.Ado.IsAnyTran(), afterScope, callbackRegistry)
     {
     }
 }

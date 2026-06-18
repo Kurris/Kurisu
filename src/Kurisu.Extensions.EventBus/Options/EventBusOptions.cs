@@ -6,9 +6,9 @@ namespace Kurisu.Extensions.EventBus.Options;
 public class EventBusOptions
 {
     /// <summary>
-    /// 重试扫描间隔，默认 1 秒。
+    /// 重试兜底扫描间隔，默认 30 秒。正常发布会通过唤醒信号触发即时扫描，不依赖高频轮询。
     /// </summary>
-    public TimeSpan ScanInterval { get; set; } = TimeSpan.FromSeconds(1);
+    public TimeSpan ScanInterval { get; set; } = TimeSpan.FromSeconds(30);
 
     /// <summary>
     /// 消息处理租约时长，超过后其他实例可重新领取。默认 5 分钟。
@@ -18,12 +18,32 @@ public class EventBusOptions
     /// <summary>
     /// 每次扫描的最大消息数。默认 100。
     /// </summary>
-    public int RetryBatchSize { get; set; } = 100;
+    public int ScanBatchSize { get; set; } = 100;
 
     /// <summary>
-    /// 最大自动重试次数，超过后转入死信。默认 5。
+    /// 每次扫描的最大消息数兼容别名。建议使用 ScanBatchSize。
     /// </summary>
-    public int MaxRetryCount { get; set; } = 5;
+    [Obsolete("Use ScanBatchSize instead.")]
+    public int RetryBatchSize
+    {
+        get => ScanBatchSize;
+        set => ScanBatchSize = value;
+    }
+
+    /// <summary>
+    /// 最大自动尝试次数，超过后转入死信。默认 5。
+    /// </summary>
+    public int MaxAttemptCount { get; set; } = 5;
+
+    /// <summary>
+    /// 最大自动尝试次数兼容别名。建议使用 MaxAttemptCount。
+    /// </summary>
+    [Obsolete("Use MaxAttemptCount instead.")]
+    public int MaxRetryCount
+    {
+        get => MaxAttemptCount;
+        set => MaxAttemptCount = value;
+    }
 
     /// <summary>
     /// 指数退避重试的最大延迟上限。默认 1 小时。

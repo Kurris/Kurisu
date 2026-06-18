@@ -1,3 +1,6 @@
+using Kurisu.AspNetCore.Abstractions.DataAccess;
+using Kurisu.AspNetCore.Abstractions.DataAccess.Aop;
+
 namespace Kurisu.Extensions.EventBus.Abstractions;
 
 /// <summary>
@@ -11,5 +14,6 @@ public interface IEventBus
     /// <param name="message"></param>
     /// <typeparam name="TMessage"></typeparam>
     /// <returns></returns>
+    [Transactional(Propagation = Propagation.Mandatory)]
     Task PublishAsync<TMessage>(TMessage message) where TMessage : EventMessage;
 }

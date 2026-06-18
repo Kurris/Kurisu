@@ -406,4 +406,223 @@ public class TransactionManagerTests
             }
         }
     }
+
+    [Fact(DisplayName = "事务回调: 无事务时立即执行")]
+    public async Task TransactionCallback_WithoutAmbient_ExecutesImmediately()
+    {
+        var scope = _sp.CreateScope();
+        var sp = scope.ServiceProvider;
+        using (sp.InitLifecycle())
+        {
+            var callbacks = new List<string>();
+            var registry = sp.GetRequiredService<ITransactionCallbackRegistry>();
+
+            await registry.RegisterAfterCommitAsync(() =>
+            {
+                callbacks.Add("immediate");
+                return Task.CompletedTask;
+            });
+
+            Assert.Equal(["immediate"], callbacks);
+        }
+    }
+
+    [Fact(DisplayName = "事务回调: Required根事务提交后执行, 回滚后不执行")]
+    public async Task TransactionCallback_RequiredCommitAndRollback_ExecutesOnlyAfterCommit()
+    {
+        var scope = _sp.CreateScope();
+        var sp = scope.ServiceProvider;
+        using (sp.InitLifecycle())
+        {
+            using (sp.GetService<IDbContext>().CreateDatasourceScope())
+            {
+                var callbacks = new List<string>();
+                var manager = sp.GetRequiredService<IDatasourceManager>();
+                var registry = sp.GetRequiredService<ITransactionCallbackRegistry>();
+
+                using (var transaction = manager.CreateTransScope(Propagation.Required))
+                {
+                    await transaction.BeginAsync();
+                    await registry.RegisterAfterCommitAsync(() =>
+                    {
+                        callbacks.Add("commit");
+                        return Task.CompletedTask;
+                    });
+
+                    Assert.Empty(callbacks);
+                    await transaction.CommitAsync();
+                }
+
+                using (var transaction = manager.CreateTransScope(Propagation.Required))
+                {
+                    await transaction.BeginAsync();
+                    await registry.RegisterAfterCommitAsync(() =>
+                    {
+                        callbacks.Add("rollback");
+                        return Task.CompletedTask;
+                    });
+
+                    await transaction.RollbackAsync();
+                }
+
+                Assert.Equal(["commit"], callbacks);
+            }
+        }
+    }
+
+    [Fact(DisplayName = "事务回调: Mandatory加入外层事务, 只在外层提交后执行")]
+    public async Task TransactionCallback_Mandatory_ExecutesOnlyWhenOuterCommits()
+    {
+        var scope = _sp.CreateScope();
+        var sp = scope.ServiceProvider;
+        using (sp.InitLifecycle())
+        {
+            using (sp.GetService<IDbContext>().CreateDatasourceScope())
+            {
+                var callbacks = new List<string>();
+                var manager = sp.GetRequiredService<IDatasourceManager>();
+                var registry = sp.GetRequiredService<ITransactionCallbackRegistry>();
+
+                using (var outer = manager.CreateTransScope(Propagation.Required))
+                {
+                    await outer.BeginAsync();
+                    using (var inner = manager.CreateTransScope(Propagation.Mandatory))
+                    {
+                        await inner.BeginAsync();
+                        await registry.RegisterAfterCommitAsync(() =>
+                        {
+                            callbacks.Add("mandatory");
+                            return Task.CompletedTask;
+                        });
+                        await inner.CommitAsync();
+                    }
+
+                    Assert.Empty(callbacks);
+                    await outer.CommitAsync();
+                }
+
+                Assert.Equal(["mandatory"], callbacks);
+            }
+        }
+    }
+
+    [Fact(DisplayName = "事务回调: RequiresNew独立提交后执行, 不受外层回滚影响")]
+    public async Task TransactionCallback_RequiresNew_ExecutesBeforeOuterRollback()
+    {
+        var scope = _sp.CreateScope();
+        var sp = scope.ServiceProvider;
+        using (sp.InitLifecycle())
+        {
+            using (sp.GetService<IDbContext>().CreateDatasourceScope())
+            {
+                var callbacks = new List<string>();
+                var manager = sp.GetRequiredService<IDatasourceManager>();
+                var registry = sp.GetRequiredService<ITransactionCallbackRegistry>();
+
+                using (var outer = manager.CreateTransScope(Propagation.Required))
+                {
+                    await outer.BeginAsync();
+                    await registry.RegisterAfterCommitAsync(() =>
+                    {
+                        callbacks.Add("outer");
+                        return Task.CompletedTask;
+                    });
+
+                    using (var inner = manager.CreateTransScope(Propagation.RequiresNew))
+                    {
+                        await inner.BeginAsync();
+                        await registry.RegisterAfterCommitAsync(() =>
+                        {
+                            callbacks.Add("inner");
+                            return Task.CompletedTask;
+                        });
+                        await inner.CommitAsync();
+                    }
+
+                    Assert.Equal(["inner"], callbacks);
+                    await outer.RollbackAsync();
+                }
+
+                Assert.Equal(["inner"], callbacks);
+            }
+        }
+    }
+
+    [Fact(DisplayName = "事务回调: Nested回滚丢弃内层回调, Nested提交后随外层提交执行")]
+    public async Task TransactionCallback_Nested_HandlesSavepointCommitAndRollback()
+    {
+        var scope = _sp.CreateScope();
+        var sp = scope.ServiceProvider;
+        using (sp.InitLifecycle())
+        {
+            using (sp.GetService<IDbContext>().CreateDatasourceScope())
+            {
+                var callbacks = new List<string>();
+                var manager = sp.GetRequiredService<IDatasourceManager>();
+                var registry = sp.GetRequiredService<ITransactionCallbackRegistry>();
+
+                using (var outer = manager.CreateTransScope(Propagation.Required))
+                {
+                    await outer.BeginAsync();
+                    using (var inner = manager.CreateTransScope(Propagation.Nested))
+                    {
+                        await inner.BeginAsync();
+                        await registry.RegisterAfterCommitAsync(() =>
+                        {
+                            callbacks.Add("discarded");
+                            return Task.CompletedTask;
+                        });
+                        await inner.RollbackAsync();
+                    }
+
+                    using (var inner = manager.CreateTransScope(Propagation.Nested))
+                    {
+                        await inner.BeginAsync();
+                        await registry.RegisterAfterCommitAsync(() =>
+                        {
+                            callbacks.Add("nested");
+                            return Task.CompletedTask;
+                        });
+                        await inner.CommitAsync();
+                    }
+
+                    Assert.Empty(callbacks);
+                    await outer.CommitAsync();
+                }
+
+                Assert.Equal(["nested"], callbacks);
+            }
+        }
+    }
+
+    [Fact(DisplayName = "事务回调: 回调异常不影响提交, 后续回调继续执行")]
+    public async Task TransactionCallback_CallbackFailure_DoesNotThrowAndContinues()
+    {
+        var scope = _sp.CreateScope();
+        var sp = scope.ServiceProvider;
+        using (sp.InitLifecycle())
+        {
+            using (sp.GetService<IDbContext>().CreateDatasourceScope())
+            {
+                var callbacks = new List<string>();
+                var manager = sp.GetRequiredService<IDatasourceManager>();
+                var registry = sp.GetRequiredService<ITransactionCallbackRegistry>();
+
+                using (var transaction = manager.CreateTransScope(Propagation.Required))
+                {
+                    await transaction.BeginAsync();
+                    await registry.RegisterAfterCommitAsync(() => throw new InvalidOperationException("callback failed"));
+                    await registry.RegisterAfterCommitAsync(() =>
+                    {
+                        callbacks.Add("continued");
+                        return Task.CompletedTask;
+                    });
+
+                    await transaction.CommitAsync();
+                }
+
+                Assert.Equal(["continued"], callbacks);
+            }
+        }
+    }
 }

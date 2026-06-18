@@ -9,16 +9,19 @@ internal class RequiredTransactionScope : AbstractTransactionScope
     private readonly IsolationLevel? _isolationLevel;
     private readonly bool _hasTransaction;
     private readonly Action _afterScope;
+    private readonly TransactionCallbackRegistry _callbackRegistry;
 
     public RequiredTransactionScope(ISqlSugarClient client,
         IsolationLevel? isolationLevel,
         bool hasTransaction,
-        Action afterScope)
+        Action afterScope,
+        TransactionCallbackRegistry callbackRegistry)
     {
         _client = client;
         _isolationLevel = isolationLevel;
         _hasTransaction = hasTransaction;
         _afterScope = afterScope;
+        _callbackRegistry = callbackRegistry;
     }
 
     public override async Task BeginAsync()
@@ -38,6 +41,8 @@ internal class RequiredTransactionScope : AbstractTransactionScope
         {
             await _client.Ado.BeginTranAsync();
         }
+
+        _callbackRegistry.BeginRoot();
     }
 
     public override async Task CommitAsync()
@@ -48,6 +53,7 @@ internal class RequiredTransactionScope : AbstractTransactionScope
         }
 
         await _client.Ado.CommitTranAsync();
+        await _callbackRegistry.CommitRootAsync();
     }
 
     public override async Task RollbackAsync()
@@ -58,6 +64,7 @@ internal class RequiredTransactionScope : AbstractTransactionScope
         }
 
         await _client.Ado.RollbackTranAsync();
+        _callbackRegistry.RollbackRoot();
     }
 
     public override void Dispose()

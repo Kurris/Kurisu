@@ -16,7 +16,7 @@ namespace Kurisu.Transaction.Analyzer
     {
         public const string DiagnosticId = "KS1001";
         private static readonly LocalizableString Title = "Mandatory transaction propagation requires an ambient transactional method on the call chain";
-        private static readonly LocalizableString MessageFormat = "µ÷ÓÃ¾ßÓĞ Propagation.Mandatory µÄÊÂÎñ·½·¨ '{0}' ±ØĞëÔÚµ÷ÓÃÁ´ÉÏ´æÔÚ±ê×¢ [Transactional] µÄ·½·¨¡£";
+        private static readonly LocalizableString MessageFormat = "ä½¿ç”¨äº† Propagation.Mandatory æ ‡è®°çš„æ–¹æ³• '{0}' å¿…é¡»åœ¨è°ƒç”¨é“¾ä¸Šå­˜åœ¨æ ‡æ³¨ [Transactional] çš„æ–¹æ³•";
         private static readonly LocalizableString Description = "Methods annotated with Transactional(Propagation = Propagation.Mandatory) require that the caller chain contains a method annotated with Transactional.";
         private const string Category = "Correctness";
 
@@ -26,36 +26,63 @@ namespace Kurisu.Transaction.Analyzer
 
         public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => ImmutableArray.Create(Rule);
 
-        // ±àÒë¼¶±ğµÄ»º´æÀà£¬±ÜÃâ¾²Ì¬»º´æ¿ç±àÒë»á»°Ğ¹Â©
+        // ç¼–è¯‘çº§åˆ«çš„ç¼“å­˜ç±»ï¼Œé¿å…é™æ€å­—å…¸è·¨ä¼šè¯æ³„æ¼
         private sealed class AnalyzerCache
         {
-            public ConcurrentDictionary<IMethodSymbol, bool?> HasMandatoryCache { get; } 
+            public ConcurrentDictionary<IMethodSymbol, bool?> HasMandatoryCache { get; }
                 = new(SymbolEqualityComparer.Default);
-            
-            public ConcurrentDictionary<IMethodSymbol, bool?> HasTransactionalCache { get; } 
+
+            public ConcurrentDictionary<IMethodSymbol, bool?> HasTransactionalCache { get; }
                 = new(SymbolEqualityComparer.Default);
-            
-            // »º´æ½Ó¿ÚÊµÏÖ²éÕÒ½á¹û£¬±ÜÃâÖØ¸´²éÕÒ
-            public ConcurrentDictionary<(INamedTypeSymbol, INamedTypeSymbol, IMethodSymbol), IMethodSymbol> InterfaceImplementationCache { get; }
+
+            // ç¼“å­˜æ¥å£å®ç°æŸ¥æ‰¾ç»“æœï¼ˆåŒ…æ‹¬ nullï¼Œè¡¨ç¤ºå·²æŸ¥æ‰¾ä½†æ— ç»“æœï¼‰ï¼Œé¿å…é‡å¤æŸ¥æ‰¾
+            public ConcurrentDictionary<(INamedTypeSymbol, INamedTypeSymbol, IMethodSymbol), IMethodSymbol?> InterfaceImplementationCache { get; }
                 = new(new InterfaceImplementationComparer());
-            
-            // »º´æ½Ó¿Ú·½·¨µÄËùÓĞÊµÏÖÀà·½·¨£¨·´Ïò²éÕÒ£©
+
+            // ç¼“å­˜æ¥å£æ–¹æ³•åˆ°å®ç°ç±»æ–¹æ³•çš„æ˜ å°„æŸ¥æ‰¾
             public ConcurrentDictionary<IMethodSymbol, ImmutableArray<IMethodSymbol>> InterfaceToImplementationsCache { get; }
                 = new(SymbolEqualityComparer.Default);
-            
-            // ´æ´¢µ±Ç°±àÒëµÄËùÓĞÀàĞÍ£¨ÑÓ³Ù³õÊ¼»¯£©
+
+            // å­˜å‚¨å½“å‰ç¼–è¯‘çš„æ‰€æœ‰ç±»å‹ï¼Œå»¶è¿Ÿåˆå§‹åŒ–
             private ImmutableArray<INamedTypeSymbol>? _allTypes;
             public ImmutableArray<INamedTypeSymbol> AllTypes
             {
                 get => _allTypes ?? ImmutableArray<INamedTypeSymbol>.Empty;
                 set => _allTypes = value;
             }
+
+            // æ¥å£ â†’ å®ç°ç±»ç´¢å¼•ï¼ŒåŠ é€Ÿ FindImplementationsOfInterfaceMethod æŸ¥æ‰¾ï¼ˆå»¶è¿Ÿåˆå§‹åŒ–ï¼‰
+            private Dictionary<INamedTypeSymbol, List<INamedTypeSymbol>>? _interfaceToTypesIndex;
+            public Dictionary<INamedTypeSymbol, List<INamedTypeSymbol>> InterfaceToTypesIndex
+            {
+                get
+                {
+                    if (_interfaceToTypesIndex == null)
+                    {
+                        _interfaceToTypesIndex = new Dictionary<INamedTypeSymbol, List<INamedTypeSymbol>>(SymbolEqualityComparer.Default);
+                        foreach (var type in AllTypes)
+                        {
+                            if (type.TypeKind != TypeKind.Class) continue;
+                            foreach (var iface in type.AllInterfaces)
+                            {
+                                if (!_interfaceToTypesIndex.TryGetValue(iface, out var list))
+                                {
+                                    list = new List<INamedTypeSymbol>();
+                                    _interfaceToTypesIndex[iface] = list;
+                                }
+                                list.Add(type);
+                            }
+                        }
+                    }
+                    return _interfaceToTypesIndex;
+                }
+            }
         }
 
-        // ÓÃÓÚ»º´æµÄÏàµÈ±È½ÏÆ÷
+        // ç”¨äºç¼“å­˜é”®çš„ç›¸ç­‰æ¯”è¾ƒå™¨
         private sealed class InterfaceImplementationComparer : IEqualityComparer<(INamedTypeSymbol type, INamedTypeSymbol iface, IMethodSymbol method)>
         {
-            public bool Equals((INamedTypeSymbol type, INamedTypeSymbol iface, IMethodSymbol method) x, 
+            public bool Equals((INamedTypeSymbol type, INamedTypeSymbol iface, IMethodSymbol method) x,
                              (INamedTypeSymbol type, INamedTypeSymbol iface, IMethodSymbol method) y)
             {
                 return SymbolEqualityComparer.Default.Equals(x.type, y.type)
@@ -81,12 +108,12 @@ namespace Kurisu.Transaction.Analyzer
             context.ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.None);
             context.EnableConcurrentExecution();
 
-            // Ê¹ÓÃ CompilationStartAction ´´½¨±àÒë¼¶±ğ»º´æ
+            // ä½¿ç”¨ CompilationStartAction åˆ›å»ºç¼–è¯‘çº§åˆ«ç¼“å­˜
             context.RegisterCompilationStartAction(compilationContext =>
             {
                 var cache = new AnalyzerCache();
-                
-                // ÑÓ³Ù³õÊ¼»¯ËùÓĞÀàĞÍ£¨½öÔÚĞèÒªÊ±ÊÕ¼¯£©
+
+                // å»¶è¿Ÿåˆå§‹åŒ–æ‰€æœ‰ç±»å‹ï¼Œä»…åœ¨éœ€è¦æ—¶æ”¶é›†
                 var allTypesInitialized = false;
                 void EnsureAllTypesInitialized()
                 {
@@ -97,11 +124,11 @@ namespace Kurisu.Transaction.Analyzer
                         allTypesInitialized = true;
                     }
                 }
-                
+
                 compilationContext.RegisterOperationAction(
                     operationContext =>
                     {
-                        // ½öÔÚĞèÒªÊ±³õÊ¼»¯ËùÓĞÀàĞÍ
+                        // ä»…åœ¨éœ€è¦æ—¶åˆå§‹åŒ–æ‰€æœ‰ç±»å‹
                         EnsureAllTypesInitialized();
                         AnalyzeInvocation(operationContext, cache);
                     },
@@ -115,57 +142,73 @@ namespace Kurisu.Transaction.Analyzer
             var targetMethod = invocation.TargetMethod;
             if (targetMethod == null) return;
 
-            // ¼ì²é±»µ÷ÓÃ·½·¨ÊÇ·ñÒªÇó Mandatory
+            // æ£€æŸ¥è¢«è°ƒç”¨æ–¹æ³•æ˜¯å¦è¦æ±‚ Mandatory
             if (!HasTransactionalWithMandatory(targetMethod, cache))
                 return;
 
-            // ½öÍ¨¹ı Operation Ê÷ÏòÉÏ²éÕÒ£¬²»½øĞĞÈ«¾ÖËÑË÷
+            // é€šè¿‡ Operation å‘ä¸ŠæŸ¥æ‰¾ï¼Œæ£€æŸ¥æ•´ä¸ªè°ƒç”¨é“¾
             if (EnclosingChainHasTransactional(invocation, cache))
                 return;
 
-            // ±¨¸æ´íÎó
+            // æŠ¥å‘Šè¯Šæ–­
             var diagnostic = Diagnostic.Create(Rule, invocation.Syntax.GetLocation(), targetMethod.Name);
             context.ReportDiagnostic(diagnostic);
         }
 
-        // ÓÅ»¯£ºÌí¼Ó»º´æ£¬¼ò»¯½Ó¿Ú¼ì²é£¬Ò»Ö±ÍùÉÏ¼ì²é½Ó¿Ú²ã´Î£¨´øÉî¶ÈÏŞÖÆ£©
+        // ä¼˜åŒ–çš„é“¾å¼ç¼“å­˜ï¼Œç®€åŒ–æ¥å£æ£€æŸ¥ï¼Œä¸€ç›´å‘ä¸Šæ£€æŸ¥æ¥å£å±‚æ¬¡ï¼ˆæœ‰æ·±åº¦é™åˆ¶ï¼‰
         private static bool HasTransactionalWithMandatory(IMethodSymbol method, AnalyzerCache cache)
         {
             if (method == null) return false;
 
-            // ¼ì²é»º´æ
             if (cache.HasMandatoryCache.TryGetValue(method, out var cached) && cached.HasValue)
                 return cached.Value;
 
-            bool result = HasTransactionalWithMandatoryIncludingInterfaces(method, cache, depth: 0);
+            bool result = HasTransactionalAttributeIncludingInterfaces(method, cache, HasTransactionalWithMandatory_Self, depth: 0);
             cache.HasMandatoryCache[method] = result;
             return result;
         }
 
-        // µİ¹é¼ì²é·½·¨¼°Æä½Ó¿ÚÊµÏÖ/»ùÀàÊÇ·ñÓĞ Mandatory£¨Ò»Ö±ÍùÉÏ£¬´øÉî¶ÈÏŞÖÆ£©
-        private static bool HasTransactionalWithMandatoryIncludingInterfaces(IMethodSymbol method, AnalyzerCache cache, int depth = 0)
+        // æ£€æŸ¥æ–¹æ³•æ˜¯å¦æœ‰åˆæ ¼çš„ Transactionalï¼ˆåŒ…æ‹¬æ¥å£å®ç°çš„æ£€æŸ¥ï¼‰
+        private static bool HasTransactionalWithoutPropagation(IMethodSymbol method, AnalyzerCache cache)
         {
-            const int MaxRecursionDepth = 10; // ÏŞÖÆ×î´óµİ¹éÉî¶È
-            
-            if (method == null || depth > MaxRecursionDepth) 
+            if (method == null) return false;
+
+            if (cache.HasTransactionalCache.TryGetValue(method, out var cached) && cached.HasValue)
+                return cached.Value;
+
+            bool result = HasTransactionalAttributeIncludingInterfaces(method, cache, HasTransactionalWithoutPropagation_Self, depth: 0);
+            cache.HasTransactionalCache[method] = result;
+            return result;
+        }
+
+        // ç»Ÿä¸€çš„é€’å½’éå†ï¼šæ£€æŸ¥æ–¹æ³•åŠå…¶æ¥å£å®ç°/é‡å†™é“¾æ˜¯å¦æ»¡è¶³ selfCheckï¼Œä¸€ç›´å‘ä¸Šï¼ˆæœ‰æ·±åº¦é™åˆ¶ï¼‰
+        private static bool HasTransactionalAttributeIncludingInterfaces(
+            IMethodSymbol method,
+            AnalyzerCache cache,
+            Func<IMethodSymbol, bool> selfCheck,
+            int depth)
+        {
+            const int MaxRecursionDepth = 10; // é˜²æ­¢æ— é™é€’å½’æ·±åº¦
+
+            if (method == null || depth > MaxRecursionDepth)
                 return false;
 
-            // 1) ÏÈ¼ì²é·½·¨×ÔÉíµÄ attribute
-            if (HasTransactionalWithMandatory_Self(method))
+            // 1) æ£€æŸ¥æ–¹æ³•æœ¬èº«çš„ attribute
+            if (selfCheck(method))
                 return true;
 
-            // 2) ¼ì²éÏÔÊ½½Ó¿ÚÊµÏÖ
+            // 2) æ£€æŸ¥æ˜¾å¼æ¥å£å®ç°
             foreach (var ei in method.ExplicitInterfaceImplementations)
             {
-                if (HasTransactionalWithMandatory_Self(ei))
+                if (selfCheck(ei))
                     return true;
-                
-                // µİ¹é¼ì²é½Ó¿ÚµÄ¸¸½Ó¿Ú
-                if (HasTransactionalWithMandatoryIncludingInterfaces(ei, cache, depth + 1))
+
+                // é€’å½’æŸ¥æ¥å£çš„çˆ¶æ¥å£
+                if (HasTransactionalAttributeIncludingInterfaces(ei, cache, selfCheck, depth + 1))
                     return true;
             }
 
-            // 3) ¼ì²éÒşÊ½½Ó¿ÚÊµÏÖ£¨½ö¶ÔÀà·½·¨£©
+            // 3) æ£€æŸ¥éšå¼æ¥å£å®ç°ï¼ˆé€šè¿‡ç±»æ–¹æ³•æŸ¥æ‰¾ï¼‰
             if (method.ContainingType != null && method.ContainingType.TypeKind == TypeKind.Class)
             {
                 var containingType = method.ContainingType;
@@ -174,61 +217,60 @@ namespace Kurisu.Transaction.Analyzer
                     var interfaceMethod = SafeFindImplementation(containingType, iface, method, cache);
                     if (interfaceMethod != null)
                     {
-                        if (HasTransactionalWithMandatory_Self(interfaceMethod))
+                        if (selfCheck(interfaceMethod))
                             return true;
-                        
-                        // µİ¹é¼ì²é½Ó¿Ú·½·¨µÄ¸¸½Ó¿Ú
-                        if (HasTransactionalWithMandatoryIncludingInterfaces(interfaceMethod, cache, depth + 1))
+
+                        // é€’å½’æŸ¥æ¥å£æ–¹æ³•çš„çˆ¶æ¥å£
+                        if (HasTransactionalAttributeIncludingInterfaces(interfaceMethod, cache, selfCheck, depth + 1))
                             return true;
                     }
                 }
             }
 
-            // 4) ? ĞÂÔö£ºÈç¹û·½·¨ÊÇ½Ó¿Ú·½·¨£¬¼ì²éÆäÔÚµ±Ç°±àÒëµ¥ÔªÖĞµÄËùÓĞÊµÏÖÀà
+            // 4) å¦‚æœå½“å‰æ–¹æ³•æœ¬èº«æ˜¯æ¥å£æ–¹æ³•ï¼ŒæŸ¥æ‰¾å½“å‰ç¼–è¯‘å•å…ƒä¸­çš„æ‰€æœ‰å®ç°ç±»
             if (method.ContainingType?.TypeKind == TypeKind.Interface)
             {
                 var implementations = FindImplementationsOfInterfaceMethod(method, cache);
                 foreach (var impl in implementations)
                 {
-                    if (HasTransactionalWithMandatory_Self(impl))
+                    if (selfCheck(impl))
                         return true;
-                    
-                    // µİ¹é¼ì²éÊµÏÖÀà·½·¨£¨¿ÉÄÜ»¹ÊµÏÖÁËÆäËû½Ó¿Ú£©
-                    if (HasTransactionalWithMandatoryIncludingInterfaces(impl, cache, depth + 1))
+
+                    // é€’å½’æŸ¥å®ç°ç±»æ–¹æ³•ï¼ˆå¯èƒ½ä¼šå®ç°å¤šä¸ªæ¥å£ï¼‰
+                    if (HasTransactionalAttributeIncludingInterfaces(impl, cache, selfCheck, depth + 1))
                         return true;
                 }
             }
 
-            // 5) ¼ì²éÖØĞ´µÄ»ùÀà·½·¨
+            // 5) æ£€æŸ¥è¢«é‡å†™çš„åŸºç±»æ–¹æ³•
             if (method.OverriddenMethod != null)
             {
-                if (HasTransactionalWithMandatoryIncludingInterfaces(method.OverriddenMethod, cache, depth + 1))
+                if (HasTransactionalAttributeIncludingInterfaces(method.OverriddenMethod, cache, selfCheck, depth + 1))
                     return true;
             }
 
             return false;
         }
 
-        // °²È«µØ²éÕÒ½Ó¿ÚÊµÏÖ£¬±ÜÃâ¹ı¶È±éÀú£¬Ìí¼Ó»º´æ
-        private static IMethodSymbol SafeFindImplementation(INamedTypeSymbol type, INamedTypeSymbol iface, IMethodSymbol method, AnalyzerCache cache)
+        // å®‰å…¨åœ°æŸ¥æ‰¾æ¥å£å®ç°ï¼ŒåŒ…å«ç¼“å­˜ä»¥é¿å…é‡å¤è®¡ç®—
+        private static IMethodSymbol? SafeFindImplementation(INamedTypeSymbol type, INamedTypeSymbol iface, IMethodSymbol method, AnalyzerCache cache)
         {
             if (type == null || iface == null || method == null)
                 return null;
 
             var cacheKey = (type, iface, method);
-            
-            // ¼ì²é»º´æ
+
             if (cache.InterfaceImplementationCache.TryGetValue(cacheKey, out var cachedResult))
                 return cachedResult;
 
-            IMethodSymbol result = null;
-            
+            IMethodSymbol? result = null;
+
             try
             {
-                // Ö»±éÀúµ±Ç°½Ó¿ÚµÄ³ÉÔ±£¨²»°üÀ¨¸¸½Ó¿Ú£©
+                // åªæ£€æŸ¥å½“å‰æ¥å£çš„æˆå‘˜ï¼ˆä¸åŒ…æ‹¬çˆ¶æ¥å£ï¼‰
                 foreach (var ifaceMember in iface.GetMembers().OfType<IMethodSymbol>())
                 {
-                    // Ìø¹ı²»Æ¥ÅäµÄ·½·¨Ãû£¨ÔçÆÚÓÅ»¯£©
+                    // å…ˆæŒ‰æ–¹æ³•ååŒ¹é…ï¼Œå†åšæ·±åº¦æ£€æŸ¥
                     if (ifaceMember.Name != method.Name)
                         continue;
 
@@ -242,149 +284,66 @@ namespace Kurisu.Transaction.Analyzer
             }
             catch
             {
-                // ºöÂÔÒì³£
+                // å¿½ç•¥å¼‚å¸¸
             }
 
-            // »º´æ½á¹û£¨°üÀ¨ null£©
+            // ç¼“å­˜æŸ¥æ‰¾ç»“æœï¼ˆåŒ…æ‹¬ nullï¼‰
             cache.InterfaceImplementationCache[cacheKey] = result;
             return result;
         }
 
-        // ¸¨Öú£º½ö¼ì²é·½·¨×ÔÉíÊÇ·ñ´øÓĞ Propagation=Mandatory µÄ Transactional ÌØĞÔ
+        // ä»…åœ¨ç›®æ ‡æ–¹æ³•ä¸Šæ£€æŸ¥æ˜¯å¦å­˜åœ¨ Propagation=Mandatory çš„ Transactional ç‰¹æ€§
         private static bool HasTransactionalWithMandatory_Self(IMethodSymbol method)
         {
-            if (method == null) return false;
-
-            foreach (var attr in method.GetAttributes())
-            {
-                var attrClass = attr.AttributeClass;
-                if (attrClass == null || !attrClass.Name.Contains("Transactional")) 
-                    continue;
-
-                // ¼ì²é constructor args ºÍÃüÃû²ÎÊıÊÇ·ñ°üº¬ Propagation.Mandatory
-                if (attr.ConstructorArguments.Any(IsMandatoryPropagationTypedConstant))
-                    return true;
-
-                foreach (var na in attr.NamedArguments)
-                {
-                    if (na.Key.Equals("Propagation", StringComparison.OrdinalIgnoreCase) 
-                        && IsMandatoryPropagationTypedConstant(na.Value))
-                        return true;
-                }
-            }
-
-            return false;
+            return CheckTransactionalAttribute(method, checkMandatory: true);
         }
 
-        // ¼ì²é·½·¨ÊÇ·ñÓĞºÏ¸ñµÄ Transactional£¨°üÀ¨½Ó¿ÚÊµÏÖµÄ¼ì²é£©
-        private static bool HasTransactionalWithoutPropagation(IMethodSymbol method, AnalyzerCache cache)
-        {
-            if (method == null) return false;
-
-            // ¼ì²é»º´æ
-            if (cache.HasTransactionalCache.TryGetValue(method, out var cached) && cached.HasValue)
-                return cached.Value;
-
-            bool result = HasTransactionalWithoutPropagationIncludingInterfaces(method, cache, depth: 0);
-            cache.HasTransactionalCache[method] = result;
-            return result;
-        }
-
-        // ¼ì²é·½·¨¼°Æä½Ó¿ÚÊµÏÖÊÇ·ñÓĞºÏ¸ñµÄ Transactional£¨Ò»Ö±ÍùÉÏ¼ì²é£¬´øÉî¶ÈÏŞÖÆ£©
-        private static bool HasTransactionalWithoutPropagationIncludingInterfaces(IMethodSymbol method, AnalyzerCache cache, int depth = 0)
-        {
-            const int MaxRecursionDepth = 10; // ÏŞÖÆ×î´óµİ¹éÉî¶È
-            
-            if (method == null || depth > MaxRecursionDepth) 
-                return false;
-
-            // 1) ¼ì²é·½·¨×ÔÉí
-            if (HasTransactionalWithoutPropagation_Self(method))
-                return true;
-
-            // 2) ¼ì²éÏÔÊ½½Ó¿ÚÊµÏÖ
-            foreach (var ei in method.ExplicitInterfaceImplementations)
-            {
-                if (HasTransactionalWithoutPropagation_Self(ei))
-                    return true;
-                
-                // µİ¹é¼ì²é½Ó¿ÚµÄ¸¸½Ó¿Ú
-                if (HasTransactionalWithoutPropagationIncludingInterfaces(ei, cache, depth + 1))
-                    return true;
-            }
-
-            // 3) ¼ì²éÒşÊ½½Ó¿ÚÊµÏÖ£¨½ö¶ÔÀà·½·¨£©
-            var containingType = method.ContainingType;
-            if (containingType != null && containingType.TypeKind == TypeKind.Class)
-            {
-                foreach (var iface in containingType.AllInterfaces)
-                {
-                    var interfaceMethod = SafeFindImplementation(containingType, iface, method, cache);
-                    if (interfaceMethod != null)
-                    {
-                        if (HasTransactionalWithoutPropagation_Self(interfaceMethod))
-                            return true;
-                        
-                        // µİ¹é¼ì²é½Ó¿Ú·½·¨µÄ¸¸½Ó¿Ú
-                        if (HasTransactionalWithoutPropagationIncludingInterfaces(interfaceMethod, cache, depth + 1))
-                            return true;
-                    }
-                }
-            }
-
-            // 4) ? ĞÂÔö£ºÈç¹û·½·¨ÊÇ½Ó¿Ú·½·¨£¬¼ì²éÆäÔÚµ±Ç°±àÒëµ¥ÔªÖĞµÄËùÓĞÊµÏÖÀà
-            if (method.ContainingType?.TypeKind == TypeKind.Interface)
-            {
-                var implementations = FindImplementationsOfInterfaceMethod(method, cache);
-                foreach (var impl in implementations)
-                {
-                    if (HasTransactionalWithoutPropagation_Self(impl))
-                        return true;
-                    
-                    // µİ¹é¼ì²éÊµÏÖÀà·½·¨
-                    if (HasTransactionalWithoutPropagationIncludingInterfaces(impl, cache, depth + 1))
-                        return true;
-                }
-            }
-
-            // 5) ¼ì²éÖØĞ´µÄ»ùÀà·½·¨
-            if (method.OverriddenMethod != null)
-            {
-                if (HasTransactionalWithoutPropagationIncludingInterfaces(method.OverriddenMethod, cache, depth + 1))
-                    return true;
-            }
-
-            return false;
-        }
-
-        // ½ö¼ì²é·½·¨×ÔÉíµÄ Transactional ÊôĞÔ
+        // ä»…æ£€æŸ¥æ–¹æ³•æœ¬èº«çš„ Transactional ç‰¹æ€§ï¼ˆä¸å« Propagation=Mandatoryï¼‰
         private static bool HasTransactionalWithoutPropagation_Self(IMethodSymbol method)
         {
+            return CheckTransactionalAttribute(method, checkMandatory: false);
+        }
+
+        // ç»Ÿä¸€çš„ Transactional ç‰¹æ€§æ£€æŸ¥ï¼Œåˆå¹¶äº† Mandatory å’Œé Mandatory ä¸¤ç§åœºæ™¯
+        private static bool CheckTransactionalAttribute(IMethodSymbol method, bool checkMandatory)
+        {
             if (method == null) return false;
 
             foreach (var attr in method.GetAttributes())
             {
                 var attrClass = attr.AttributeClass;
-                if (attrClass == null || !attrClass.Name.Contains("Transactional")) 
+                if (attrClass == null || !attrClass.Name.Contains("Transactional"))
                     continue;
 
-                // ¼ì²éÃüÃû²ÎÊı Propagation
-                foreach (var na in attr.NamedArguments)
+                if (checkMandatory)
                 {
-                    if (na.Key.Equals("Propagation", StringComparison.OrdinalIgnoreCase))
-                    {
-                        if (IsMandatoryPropagationTypedConstant(na.Value))
-                            return false;
+                    // æ£€æŸ¥æ˜¯å¦å­˜åœ¨ Propagation.Mandatoryï¼ˆæ„é€ å‡½æ•°å‚æ•°æˆ–å‘½åå‚æ•°ï¼‰
+                    if (attr.ConstructorArguments.Any(IsMandatoryPropagationTypedConstant))
                         return true;
+
+                    foreach (var na in attr.NamedArguments)
+                    {
+                        if (na.Key.Equals("Propagation", StringComparison.OrdinalIgnoreCase)
+                            && IsMandatoryPropagationTypedConstant(na.Value))
+                            return true;
                     }
                 }
+                else
+                {
+                    // æ£€æŸ¥å‘½åå‚æ•° Propagation â€” é Mandatory å³ä¸ºåˆæ ¼
+                    foreach (var na in attr.NamedArguments)
+                    {
+                        if (na.Key.Equals("Propagation", StringComparison.OrdinalIgnoreCase))
+                            return !IsMandatoryPropagationTypedConstant(na.Value);
+                    }
 
-                // ¼ì²é¹¹Ôì²ÎÊı
-                if (attr.ConstructorArguments.Any(IsMandatoryPropagationTypedConstant))
-                    return false;
+                    // æ£€æŸ¥æ„é€ å‡½æ•°å‚æ•°
+                    if (attr.ConstructorArguments.Any(IsMandatoryPropagationTypedConstant))
+                        return false;
 
-                // Î´ÏÔÊ½Ö¸¶¨ Propagation£¬Ä¬ÈÏÈÏÎª²»ÊÇ Mandatory
-                return true;
+                    // æœªæ˜¾å¼æŒ‡å®š Propagationï¼Œé»˜è®¤è¡Œä¸ºé Mandatory
+                    return true;
+                }
             }
 
             return false;
@@ -392,42 +351,72 @@ namespace Kurisu.Transaction.Analyzer
 
         private static bool IsMandatoryPropagationTypedConstant(TypedConstant tc)
         {
-            return tc.ToCSharpString().Contains("Propagation.Mandatory");
+            // æºä»£ç åœºæ™¯ï¼šC# å­—ç¬¦ä¸²è¡¨ç¤ºé€šå¸¸åŒ…å« "Propagation.Mandatory"
+            if (tc.ToCSharpString().Contains("Propagation.Mandatory"))
+                return true;
+
+            // ç¼–è¯‘åå¼•ç”¨ç¨‹åºé›†ï¼ˆNuGetï¼‰åœºæ™¯ï¼šenum å€¼ä»¥æ•´æ•°å­˜å‚¨ï¼Œæ— æ³•ä» ToCSharpString è·å–æšä¸¾åç§°
+            // Propagation.Mandatory == 2
+            if (tc.Kind == TypedConstantKind.Enum && tc.Value != null)
+            {
+                try
+                {
+                    return Convert.ToInt32(tc.Value) == 2;
+                }
+                catch
+                {
+                    // å¿½ç•¥è½¬æ¢å¼‚å¸¸
+                }
+            }
+
+            return false;
         }
 
-        // ÓÅ»¯£º½öÍ¨¹ı Operation Ê÷ÏòÉÏ²éÕÒ£¬²»½øĞĞÈ«¾ÖËÑË÷
+        // ä¼˜åŒ–ç‰ˆï¼šé€šè¿‡ Operation å‘ä¸ŠæŸ¥æ‰¾ï¼Œæ£€æŸ¥æ•´ä¸ªè°ƒç”¨é“¾
+        // æ€§èƒ½ä¼˜åŒ–ï¼šé¿å…åœ¨æ¯ä¸€å±‚éƒ½è°ƒç”¨ GetEnclosingSymbolï¼Œä»…åœ¨å¿…è¦æ—¶è°ƒç”¨
         private static bool EnclosingChainHasTransactional(IOperation invocationOperation, AnalyzerCache cache)
         {
             var op = invocationOperation?.Parent;
+            if (op == null) return false;
+
             var visitedMethods = new HashSet<IMethodSymbol>(SymbolEqualityComparer.Default);
+
+            // ç¼“å­˜æœ€è¿‘ä¸€æ¬¡ GetEnclosingSymbol çš„ç»“æœåŠå…¶è¯­æ³•æ ‘ï¼Œé¿å…åŒæ ‘å†…é‡å¤è°ƒç”¨
+            IMethodSymbol? lastEnclosingMethod = null;
+            SyntaxTree? lastSyntaxTree = null;
 
             while (op != null)
             {
-                // 1) ¼ì²éÊÇ·ñÔÚÁíÒ»¸ö·½·¨µ÷ÓÃÄÚ£¨Ç¶Ì×µ÷ÓÃ£©
+                // 1) æ£€æŸ¥æ˜¯å¦è¢«å¦ä¸€ä¸ªæ–¹æ³•è°ƒç”¨ï¼ˆåµŒå¥—è°ƒç”¨ï¼‰
                 if (op is IInvocationOperation parentInvocation)
                 {
                     var parentMethod = parentInvocation.TargetMethod;
                     if (parentMethod != null && visitedMethods.Add(parentMethod))
                     {
-                        // Ê¹ÓÃÍ³Ò»µÄ½Ó¿Ú¼ì²é·½·¨£¬»áÒ»Ö±ÍùÉÏ¼ì²é
                         if (HasTransactionalWithoutPropagation(parentMethod, cache))
                             return true;
                     }
                 }
 
-                // 2) ¼ì²é°üº¬·½·¨£¨Í¨¹ı SemanticModel£©
+                // 2) æ£€æŸ¥ç¬¦å·å±‚çº§ï¼ˆé€šè¿‡ SemanticModelï¼‰ï¼Œä½†ä»…åœ¨è·¨è¶Šè¯­æ³•æ ‘è¾¹ç•Œæˆ–é¦–æ¬¡æ—¶è°ƒç”¨
                 var semanticModel = op.SemanticModel;
                 if (semanticModel != null && op.Syntax != null)
                 {
-                    var enclosingSymbol = semanticModel.GetEnclosingSymbol(op.Syntax.SpanStart);
-                    if (enclosingSymbol is IMethodSymbol enclosingMethod && visitedMethods.Add(enclosingMethod))
+                    var currentTree = op.Syntax.SyntaxTree;
+                    // ä»…å½“è¯­æ³•æ ‘å‘ç”Ÿå˜åŒ–æˆ–å°šæœªç¼“å­˜æ—¶æ‰è°ƒç”¨ GetEnclosingSymbol
+                    if (lastSyntaxTree != currentTree || lastEnclosingMethod == null)
                     {
-                        // Ê¹ÓÃÍ³Ò»µÄ½Ó¿Ú¼ì²é·½·¨£¬»áÒ»Ö±ÍùÉÏ¼ì²é
-                        if (HasTransactionalWithoutPropagation(enclosingMethod, cache))
+                        lastSyntaxTree = currentTree;
+                        var symbol = semanticModel.GetEnclosingSymbol(op.Syntax.SpanStart);
+                        lastEnclosingMethod = symbol as IMethodSymbol;
+                    }
+
+                    if (lastEnclosingMethod != null && visitedMethods.Add(lastEnclosingMethod))
+                    {
+                        if (HasTransactionalWithoutPropagation(lastEnclosingMethod, cache))
                             return true;
                     }
                 }
-
 
                 op = op.Parent;
             }
@@ -435,48 +424,49 @@ namespace Kurisu.Transaction.Analyzer
             return false;
         }
 
-        // »ñÈ¡±àÒëµ¥ÔªÖĞµÄËùÓĞÃüÃûÀàĞÍ£¨½öÏŞµ±Ç°ÏîÄ¿£¬²»°üÀ¨ÒıÓÃµÄ³ÌĞò¼¯£©
+        // è·å–ç¼–è¯‘å•å…ƒä¸­çš„æ‰€æœ‰å‘½åç±»å‹ï¼ˆä»…é™äºå½“å‰é¡¹ç›®çš„è¯­æ³•æ ‘ï¼Œé¿å…åŠ è½½å¼•ç”¨çš„ç¨‹åºé›†ï¼‰
+        // ä»…åœ¨ CompilationStartAction ä¸­è°ƒç”¨ä¸€æ¬¡ï¼Œåœ¨æ­¤ä¸Šä¸‹æ–‡ä¸­è°ƒç”¨ GetSemanticModel æ˜¯å®‰å…¨çš„
+#pragma warning disable RS1030
         private static ImmutableArray<INamedTypeSymbol> GetAllTypesInCompilation(Compilation compilation)
         {
-            var types = new List<INamedTypeSymbol>();
-            
-            // Ö»±éÀúµ±Ç°±àÒëµ¥ÔªµÄÓï·¨Ê÷£¨²»°üÀ¨ÒıÓÃµÄ³ÌĞò¼¯£©
+            var types = ImmutableArray.CreateBuilder<INamedTypeSymbol>();
+
+            // åªéå†å½“å‰ç¼–è¯‘å•å…ƒçš„è¯­æ³•æ ‘ï¼ˆé¿å…åŠ è½½å¼•ç”¨çš„ç¨‹åºé›†ï¼‰
             foreach (var tree in compilation.SyntaxTrees)
             {
                 var semanticModel = compilation.GetSemanticModel(tree);
                 var root = tree.GetRoot();
-                
-                var typeDeclarations = root.DescendantNodes()
-                    .Where(n => n is ClassDeclarationSyntax || n is StructDeclarationSyntax || n is RecordDeclarationSyntax);
-                
-                foreach (var typeDecl in typeDeclarations)
+
+                // ä½¿ç”¨æ˜¾å¼ foreach éå† DescendantNodesï¼Œé¿å… LINQ Where çš„å§”æ‰˜åˆ†é…
+                foreach (var node in root.DescendantNodes())
                 {
-                    var symbol = semanticModel.GetDeclaredSymbol(typeDecl);
-                    if (symbol is INamedTypeSymbol namedType)
+                    if (node is ClassDeclarationSyntax or StructDeclarationSyntax or RecordDeclarationSyntax)
                     {
-                        types.Add(namedType);
+                        var symbol = semanticModel.GetDeclaredSymbol(node);
+                        if (symbol is INamedTypeSymbol namedType)
+                        {
+                            types.Add(namedType);
+                        }
                     }
                 }
             }
-            
-            return types.ToImmutableArray();
-        }
 
-        // ²éÕÒ½Ó¿Ú·½·¨ÔÚµ±Ç°±àÒëµ¥ÔªÖĞµÄËùÓĞÊµÏÖ£¨·´Ïò²éÕÒ£©
+            return types.ToImmutable();
+        }
+#pragma warning restore RS1030
+
+        // æŸ¥æ‰¾æ¥å£æ–¹æ³•åœ¨å½“å‰ç¼–è¯‘å•å…ƒä¸­çš„æ‰€æœ‰å®ç°ï¼ˆå¸¦ç¼“å­˜æŸ¥æ‰¾ï¼Œåˆ©ç”¨é¢„å»ºç´¢å¼•åŠ é€Ÿï¼‰
         private static ImmutableArray<IMethodSymbol> FindImplementationsOfInterfaceMethod(
-            IMethodSymbol interfaceMethod, 
+            IMethodSymbol interfaceMethod,
             AnalyzerCache cache)
         {
             if (interfaceMethod == null)
                 return ImmutableArray<IMethodSymbol>.Empty;
 
-            // ¼ì²é»º´æ
             if (cache.InterfaceToImplementationsCache.TryGetValue(interfaceMethod, out var cached))
                 return cached;
 
-            var implementations = new List<IMethodSymbol>();
-            
-            // Ö»ÓĞ½Ó¿Ú·½·¨²ÅĞèÒª²éÕÒÊµÏÖ
+            // åªæœ‰æ¥å£æ–¹æ³•æ‰éœ€è¦æŸ¥æ‰¾å®ç°
             if (interfaceMethod.ContainingType?.TypeKind != TypeKind.Interface)
             {
                 cache.InterfaceToImplementationsCache[interfaceMethod] = ImmutableArray<IMethodSymbol>.Empty;
@@ -484,34 +474,30 @@ namespace Kurisu.Transaction.Analyzer
             }
 
             var interfaceType = interfaceMethod.ContainingType;
+            var implementations = ImmutableArray.CreateBuilder<IMethodSymbol>();
 
-            // ±éÀúµ±Ç°±àÒëµ¥ÔªÖĞµÄËùÓĞÀàĞÍ
-            foreach (var type in cache.AllTypes)
+            // ä½¿ç”¨é¢„å»ºç´¢å¼•ï¼šæ¥å£â†’å®ç°ç±»åˆ—è¡¨ï¼Œé¿å… O(n) å…¨ç±»å‹æ‰«æ
+            var index = cache.InterfaceToTypesIndex;
+            if (index.TryGetValue(interfaceType, out var implementingTypes))
             {
-                // Ö»¼ì²éÀà£¨²»¼ì²é½á¹¹Ìå¡¢½Ó¿ÚµÈ£©
-                if (type.TypeKind != TypeKind.Class)
-                    continue;
-
-                // ¼ì²é¸ÃÀàĞÍÊÇ·ñÊµÏÖÁËÄ¿±ê½Ó¿Ú
-                if (!type.AllInterfaces.Contains(interfaceType, SymbolEqualityComparer.Default))
-                    continue;
-
-                try
+                foreach (var type in implementingTypes)
                 {
-                    // ²éÕÒ¸Ã½Ó¿Ú·½·¨ÔÚ´ËÀàĞÍÖĞµÄÊµÏÖ
-                    var implementation = type.FindImplementationForInterfaceMember(interfaceMethod) as IMethodSymbol;
-                    if (implementation != null)
+                    try
                     {
-                        implementations.Add(implementation);
+                        var implementation = type.FindImplementationForInterfaceMember(interfaceMethod) as IMethodSymbol;
+                        if (implementation != null)
+                        {
+                            implementations.Add(implementation);
+                        }
                     }
-                }
-                catch
-                {
-                    // ºöÂÔÒì³£
+                    catch
+                    {
+                        // å¿½ç•¥å¼‚å¸¸
+                    }
                 }
             }
 
-            var result = implementations.ToImmutableArray();
+            var result = implementations.ToImmutable();
             cache.InterfaceToImplementationsCache[interfaceMethod] = result;
             return result;
         }

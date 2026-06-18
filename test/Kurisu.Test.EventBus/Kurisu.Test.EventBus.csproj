@@ -17,6 +17,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\Kurisu.Extensions.EventBus\Kurisu.Extensions.EventBus.csproj" />
     <ProjectReference Include="..\Kurisu.Test.DataAccess\Kurisu.Test.DataAccess.csproj" />
+    <ProjectReference Include="..\..\src\Kurisu.Transaction.Analyzer\Kurisu.Transaction.Analyzer\Kurisu.Transaction.Analyzer.csproj" />
   </ItemGroup>
   <ItemGroup>
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
