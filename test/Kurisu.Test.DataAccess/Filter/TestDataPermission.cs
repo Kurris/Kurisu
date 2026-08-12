@@ -87,10 +87,9 @@ public class TestDataPermission
         }
     }
 
-    [Fact(DisplayName = "数据权限空值列表: 权限数据返回空Dictionary时不过滤, 返回全量数据")]
-    public async Task DataPermission_EmptyPermission_ReturnsAllData()
+    [Fact(DisplayName = "数据权限空字典: 按无权限处理, 不返回数据")]
+    public async Task DataPermission_EmptyPermission_ReturnsEmpty()
     {
-        // GetData<T> 返回空字典 → foreach 不执行 → query 无额外过滤
         var permission = new MockDataPermissionProvider();
 
         var sp = GetServiceProvider(permission);
@@ -108,7 +107,41 @@ public class TestDataPermission
 
                 var result = await svc.QueryWithDataPermissionAsync();
 
-                Assert.Equal(2, result.Count);
+                Assert.Empty(result);
+            }
+        }
+    }
+
+    [Fact(DisplayName = "数据权限可空Guid过滤: 使用HasValue和Value构建Contains条件")]
+    public async Task DataPermission_NullableGuidFilter_ReturnsOnlyMatchingValues()
+    {
+        var guidA = Guid.NewGuid();
+        var guidB = Guid.NewGuid();
+        var permission = new MockDataPermissionProvider();
+        permission.SetPermission<TestDataPermissionEntity>(nameof(TestDataPermissionEntity.OptionalDepartmentId),
+            new List<object> { guidA });
+
+        var sp = GetServiceProvider(permission);
+        using var scope = sp.CreateScope();
+        using (scope.ServiceProvider.InitLifecycle())
+        {
+            var ctx = scope.ServiceProvider.GetRequiredService<IDbContext>();
+            using (ctx.CreateDatasourceScope())
+            {
+                await PrepareTableAsync(ctx);
+                var svc = scope.ServiceProvider.GetRequiredService<IDataPermissionService>();
+
+                await svc.InsertAsync(new TestDataPermissionEntity
+                    { Name = "nullable-match", DepartmentId = "any", OptionalDepartmentId = guidA });
+                await svc.InsertAsync(new TestDataPermissionEntity
+                    { Name = "nullable-other", DepartmentId = "any", OptionalDepartmentId = guidB });
+                await svc.InsertAsync(new TestDataPermissionEntity
+                    { Name = "nullable-null", DepartmentId = "any", OptionalDepartmentId = null });
+
+                var result = await svc.QueryWithDataPermissionAsync();
+
+                var row = Assert.Single(result);
+                Assert.Equal("nullable-match", row.Name);
             }
         }
     }

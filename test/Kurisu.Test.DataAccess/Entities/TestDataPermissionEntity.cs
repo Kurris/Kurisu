@@ -18,6 +18,9 @@ public class TestDataPermissionEntity : SugarEntity, ITenantId
     /// <summary>部门ID，用于数据权限过滤</summary>
     public string DepartmentId { get; set; }
 
+    /// <summary>可空权限字段，用于验证 Nullable 值类型过滤。</summary>
+    public Guid? OptionalDepartmentId { get; set; }
+
     /// <inheritdoc />
     public string TenantId { get; set; }
 }

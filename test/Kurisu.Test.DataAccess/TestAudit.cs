@@ -49,8 +49,8 @@ public class TestAudit
         }
     }
 
-    [Fact(DisplayName = "批量插入回填Id: 至少第一条记录回填Id>0, 且可通过DB查询到所有3条记录")]
-    public async Task BatchInsert_AutoFillsIdForEach()
+    [Fact(DisplayName = "批量插入不回填Id, 且可通过DB查询到所有3条记录")]
+    public async Task BatchInsert_DoesNotReturnIdsAndInsertsAllRows()
     {
         using var scope = _sp.CreateScope();
         using (scope.ServiceProvider.InitLifecycle())
@@ -69,8 +69,7 @@ public class TestAudit
 
                 Assert.All(entities, e => Assert.Equal(0, e.Id));
                 await ctx.InsertAsync(entities);
-                // SqlSugar 批量插入 MySQL 默认只回填第一条记录的自增Id
-                Assert.True(entities[0].Id > 0, $"批量插入后第一条记录的 Id 应被回填，实际值: {entities[0].Id}");
+                Assert.All(entities, e => Assert.Equal(0, e.Id));
 
                 // 可通过 DB 查询验证 3 条均已插入
                 var all = await ctx.Queryable<TestAuditEntity>().OrderBy(x => x.Id).ToListAsync();

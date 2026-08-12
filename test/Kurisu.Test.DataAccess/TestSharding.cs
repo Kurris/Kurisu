@@ -129,6 +129,39 @@ public class TestSharding
         }
     }
 
+    [Fact(DisplayName = "异步批量插入: 数据仅写入分表且不返回主键, 基表为空")]
+    public async Task AsyncBatchInsert_WritesShardTableOnlyWithoutReturningIdentities()
+    {
+        using var scope = _sp.CreateScope();
+        using (scope.ServiceProvider.InitLifecycle())
+        {
+            var ctx = scope.ServiceProvider.GetRequiredService<IDbContext>();
+            using (ctx.CreateDatasourceScope())
+            {
+                await PrepareShardingAsync(ctx, createBaseTable: true);
+
+                var entities = new List<TestShardingEntity>
+                {
+                    new() { Name = "async-batch-1", Age = 23 },
+                    new() { Name = "async-batch-2", Age = 24 }
+                };
+
+                var inserted = await ctx.InsertAsync(entities);
+                Assert.True(inserted);
+                Assert.All(entities, entity => Assert.Equal(0, entity.Id));
+
+                var shardRows = await QueryShardTableAsync(ctx);
+                Assert.Equal(2, shardRows.Count);
+
+                using (ctx.IgnoreSharding())
+                {
+                    var baseRows = await ctx.Queryable<TestShardingEntity>().ToListAsync();
+                    Assert.Empty(baseRows);
+                }
+            }
+        }
+    }
+
     [Fact(DisplayName = "UseTenant分表: 实体租户为空时按UseTenant租户路由")]
     public async Task UseTenant_EmptyEntityTenant_UsesScopedTenantForRoute()
     {

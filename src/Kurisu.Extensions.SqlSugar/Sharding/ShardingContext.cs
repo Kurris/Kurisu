@@ -48,19 +48,23 @@ public class ShardingContext : SqlSugarDbContext
         return base.Insert(obj);
     }
 
-    public override async Task<bool> InsertAsync<T>(T obj, CancellationToken cancellationToken)
+    public override Task<bool> InsertAsync<T>(T obj, CancellationToken cancellationToken)
     {
         if (EnableSharding<T>())
         {
+            cancellationToken.ThrowIfCancellationRequested();
             var tableName = GetShardingTableName(obj);
-            return await Client.Insertable(obj).AS(tableName).ExecuteCommandIdentityIntoEntityAsync();
+            return Client.Insertable(obj).AS(tableName).ExecuteCommandIdentityIntoEntityAsync();
         }
 
-        return await base.InsertAsync(obj, cancellationToken);
+        return base.InsertAsync(obj, cancellationToken);
     }
 
     public override bool Insert<T>(List<T> objs)
     {
+        if (objs.Count == 0)
+            return true;
+
         if (EnableSharding<T>())
         {
             var dict = GetShardingTableNames(objs);
@@ -68,8 +72,7 @@ public class ShardingContext : SqlSugarDbContext
             {
                 var tableName = kv.Key;
                 var list = kv.Value;
-                var flag = Client.Insertable(list).AS(tableName).ExecuteCommandIdentityIntoEntity();
-                if (!flag)
+                if (Client.Insertable(list).AS(tableName).ExecuteCommand() <= 0)
                 {
                     return false;
                 }
@@ -84,29 +87,27 @@ public class ShardingContext : SqlSugarDbContext
 
     public override async Task<bool> InsertAsync<T>(List<T> objs, CancellationToken cancellationToken)
     {
-        if (objs.Count > 0)
-        {
-            if (EnableSharding<T>())
-            {
-                var dict = GetShardingTableNames(objs);
-                foreach (var kv in dict)
-                {
-                    var tableName = kv.Key;
-                    var list = kv.Value;
-                    var flag = await Client.Insertable(list).AS(tableName).ExecuteCommandIdentityIntoEntityAsync();
-                    if (!flag)
-                    {
-                        return false;
-                    }
-                }
+        if (objs.Count == 0)
+            return true;
 
-                return true;
+        if (EnableSharding<T>())
+        {
+            var dict = GetShardingTableNames(objs);
+            foreach (var kv in dict)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                var tableName = kv.Key;
+                var list = kv.Value;
+                if (await Client.Insertable(list).AS(tableName).ExecuteCommandAsync() <= 0)
+                {
+                    return false;
+                }
             }
 
-            return await base.InsertAsync(objs, cancellationToken);
+            return true;
         }
 
-        return true;
+        return await base.InsertAsync(objs, cancellationToken);
     }
 
     public override int Update<T>(T obj)
@@ -134,7 +135,9 @@ public class ShardingContext : SqlSugarDbContext
             {
                 var tableName = kv.Key;
                 var list = kv.Value;
-                var count = Client.Updateable(list).AS(tableName).UpdateColumnsIF(updateColumns != null && updateColumns.Length > 0, updateColumns).ExecuteCommand();
+                var count = Client.Updateable(list).AS(tableName)
+                    .UpdateColumnsIF(updateColumns is { Length: > 0 }, updateColumns)
+                    .ExecuteCommand();
                 total += count;
             }
             return total;
@@ -170,7 +173,9 @@ public class ShardingContext : SqlSugarDbContext
                 {
                     var tableName = kv.Key;
                     var list = kv.Value;
-                    var count = await Client.Updateable(list).AS(tableName).UpdateColumnsIF(updateColumns != null && updateColumns.Length > 0, updateColumns).ExecuteCommandAsync(cancellationToken);
+                    var count = await Client.Updateable(list).AS(tableName)
+                        .UpdateColumnsIF(updateColumns is { Length: > 0 }, updateColumns)
+                        .ExecuteCommandAsync(cancellationToken);
                     total += count;
                 }
                 return total;
@@ -207,10 +212,7 @@ public class ShardingContext : SqlSugarDbContext
                     }
                     else
                     {
-                        foreach (ISoftDeleted item in list)
-                        {
-                            item.IsDeleted = true;
-                        }
+                        MarkAsDeleted(list);
                         count = Client.Updateable(list).AS(tableName).UpdateColumns(nameof(ISoftDeleted.IsDeleted)).ExecuteCommand();
                     }
                 }
@@ -251,11 +253,10 @@ public class ShardingContext : SqlSugarDbContext
                     }
                     else
                     {
-                        foreach (ISoftDeleted item in list)
-                        {
-                            item.IsDeleted = true;
-                        }
-                        count = await Client.Updateable(list).AS(tableName).UpdateColumns(nameof(ISoftDeleted.IsDeleted)).ExecuteCommandAsync(cancellationToken);
+                        MarkAsDeleted(list);
+                        count = await Client.Updateable(list).AS(tableName)
+                            .UpdateColumns(nameof(ISoftDeleted.IsDeleted))
+                            .ExecuteCommandAsync(cancellationToken);
                     }
                 }
                 else

@@ -67,13 +67,9 @@ public static class SqlSugarServiceCollectionExtensions
             {
                 EntityService = (c, p) =>
                 {
-                    if (!p.IsPrimarykey && c.PropertyType.IsGenericType && c.PropertyType.GetGenericTypeDefinition() == typeof(Nullable<>)
-                        || (!p.IsPrimarykey && p.PropertyInfo.PropertyType == typeof(string)))
+                    if (!p.IsPrimarykey && Nullable.GetUnderlyingType(c.PropertyType) != null)
                     {
-                        if (p.IsNullable)
-                        {
-                            p.IsNullable = true;
-                        }
+                        p.IsNullable = true;
                     }
                 }
             };

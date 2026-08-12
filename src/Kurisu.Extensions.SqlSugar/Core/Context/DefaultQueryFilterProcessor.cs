@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Collections.Concurrent;
 using System.Globalization;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -11,13 +12,15 @@ using SqlSugar;
 
 namespace Kurisu.Extensions.SqlSugar.Core.Context;
 
-public class DefaultQueryFilterProcessor : IQueryFilterProcessor
+public class DefaultQueryFilterProcessor(IServiceProvider serviceProvider) : IQueryFilterProcessor
 {
-    private readonly IServiceProvider _serviceProvider;
-
-    public DefaultQueryFilterProcessor(IServiceProvider serviceProvider)
+    private static readonly ConcurrentDictionary<(Type EntityType, string PropertyName), PropertyInfo> PermissionPropertyCache = new();
+    private static readonly ConcurrentDictionary<Type, MethodInfo> ContainsExpressionMethodCache = new();
+    private static class ContainsMethodCache<TItem>
     {
-        _serviceProvider = serviceProvider;
+        internal static readonly MethodInfo Method = typeof(List<TItem>).GetMethod(
+            nameof(List<TItem>.Contains),
+            [typeof(TItem)])!;
     }
 
     public ISugarQueryable<T> Apply<T>(ISugarQueryable<T> query)
@@ -29,7 +32,7 @@ public class DefaultQueryFilterProcessor : IQueryFilterProcessor
 
     protected virtual ISugarQueryable<T> TryEnableCrossTenantFilter<T>(ISugarQueryable<T> query)
     {
-        var snapshotManager = _serviceProvider.GetRequiredService<IContextSnapshotManager<DbOperationState>>();
+        var snapshotManager = serviceProvider.GetRequiredService<IContextSnapshotManager<DbOperationState>>();
         if (!snapshotManager.ContextAccessor.Current.EnableCrossTenant)
             return query;
 
@@ -38,22 +41,25 @@ public class DefaultQueryFilterProcessor : IQueryFilterProcessor
         if (!type.IsAssignableTo(typeof(ITenantId))) return query;
 
         // 空集合会被 SqlSugar 翻译为 1=2，用于拒绝没有 tenants claim 的跨租户查询，避免误查全量数据。
-        var tenantIdValues = _serviceProvider.GetRequiredService<IDbTenantAccessor>().GetAccessibleTenantIds().ToList();
+        var tenantIdValues = serviceProvider.GetRequiredService<IDbTenantAccessor>().GetAccessibleTenantIds().ToList();
         var tenantIdName = nameof(ITenantId.TenantId);
         return query.Where(BuildContainsExpression<T, string>(tenantIdName, tenantIdValues));
     }
 
     protected virtual ISugarQueryable<T> TryEnableDataPermissionFilter<T>(ISugarQueryable<T> query)
     {
-        var snapshotManager = _serviceProvider.GetRequiredService<IContextSnapshotManager<DbOperationState>>();
+        var snapshotManager = serviceProvider.GetRequiredService<IContextSnapshotManager<DbOperationState>>();
         if (!snapshotManager.ContextAccessor.Current.EnableDataPermission)
             return query;
 
-        var getDataPermissions = _serviceProvider.GetRequiredService<IGetDataPermissions>();
-        var permissionData = getDataPermissions.GetData<T>();
+        var getDataPermissions = serviceProvider.GetRequiredService<IGetDataPermissions>();
+        var permissionData = getDataPermissions.GetData<T>() ?? [];
+        if (permissionData.Count == 0)
+            return query.Where(_ => false);
+
         foreach (var kv in permissionData)
         {
-            query = ApplyDataPermissionFilter(query, kv.Key, kv.Value);
+            query = ApplyDataPermissionFilter(query, kv.Key, kv.Value ?? []);
         }
 
         return query;
@@ -61,9 +67,26 @@ public class DefaultQueryFilterProcessor : IQueryFilterProcessor
 
     protected virtual ISugarQueryable<T> ApplyDataPermissionFilter<T>(ISugarQueryable<T> query, string propertyName, IReadOnlyList<object> rawValues)
     {
-        var property = typeof(T).GetProperty(propertyName, BindingFlags.Public | BindingFlags.Instance);
-        if (property == null)
-            throw new InvalidOperationException($"实体 {typeof(T).Name} 不存在数据权限字段 {propertyName}");
+        ArgumentException.ThrowIfNullOrWhiteSpace(propertyName);
+
+        var property = PermissionPropertyCache.GetOrAdd(
+            (typeof(T), propertyName),
+            static key =>
+            {
+                var propertyInfo = key.EntityType.GetProperty(
+                    key.PropertyName,
+                    BindingFlags.Public | BindingFlags.Instance);
+
+                if (propertyInfo == null)
+                    throw new InvalidOperationException(
+                        $"实体类型 '{key.EntityType.FullName}' 不存在公共数据权限属性 '{key.PropertyName}'.");
+
+                if (!propertyInfo.CanRead)
+                    throw new InvalidOperationException(
+                        $"实体类型 '{key.EntityType.FullName}' 的数据权限属性 '{key.PropertyName}' 不可读.");
+
+                return propertyInfo;
+            });
 
         var itemType = Nullable.GetUnderlyingType(property.PropertyType) ?? property.PropertyType;
         var convertedValues = ConvertPermissionValues(itemType, rawValues);
@@ -130,9 +153,13 @@ public class DefaultQueryFilterProcessor : IQueryFilterProcessor
 
     protected virtual Expression<Func<T, bool>> BuildContainsExpression<T>(string propertyName, Type itemType, IList values)
     {
-        var method = GetType()
-            .GetMethods(BindingFlags.Instance | BindingFlags.NonPublic)
-            .Single(m => m.Name == nameof(BuildContainsExpression) && m.IsGenericMethodDefinition && m.GetParameters().Length == 2);
+        var method = ContainsExpressionMethodCache.GetOrAdd(
+            GetType(),
+            static processorType => processorType
+                .GetMethods(BindingFlags.Instance | BindingFlags.NonPublic)
+                .Single(m => m.Name == nameof(BuildContainsExpression) &&
+                             m.IsGenericMethodDefinition &&
+                             m.GetParameters().Length == 2));
 
         var genericMethod = method.MakeGenericMethod(typeof(T), itemType);
         return (Expression<Func<T, bool>>)genericMethod.Invoke(this, new object[] { propertyName, values })!;
@@ -142,9 +169,32 @@ public class DefaultQueryFilterProcessor : IQueryFilterProcessor
     {
         var parameterExpression = Expression.Parameter(typeof(T));
         var prop = Expression.Property(parameterExpression, propertyName);
-        var contains = typeof(List<TItem>).GetMethod("Contains", new[] { typeof(TItem) })!;
+        var contains = ContainsMethodCache<TItem>.Method;
         var constant = Expression.Constant(values, typeof(List<TItem>));
-        var containsExp = Expression.Call(constant, contains, prop);
-        return Expression.Lambda<Func<T, bool>>(containsExp, parameterExpression);
+        var nullableType = Nullable.GetUnderlyingType(prop.Type);
+
+        Expression valueExpression = prop;
+        Expression hasValueExpression = null;
+        if (nullableType != null)
+        {
+            if (nullableType != typeof(TItem))
+                throw new InvalidOperationException(
+                    $"实体类型 '{typeof(T).FullName}' 的数据权限属性 '{propertyName}' 类型与权限值类型不匹配.");
+
+            hasValueExpression = Expression.Property(prop, nameof(Nullable<int>.HasValue));
+            valueExpression = Expression.Property(prop, nameof(Nullable<int>.Value));
+        }
+        else if (prop.Type != typeof(TItem))
+        {
+            throw new InvalidOperationException(
+                $"实体类型 '{typeof(T).FullName}' 的数据权限属性 '{propertyName}' 类型与权限值类型不匹配.");
+        }
+
+        var containsExp = Expression.Call(constant, contains, valueExpression);
+        Expression body = hasValueExpression == null
+            ? containsExp
+            : Expression.AndAlso(hasValueExpression, containsExp);
+
+        return Expression.Lambda<Func<T, bool>>(body, parameterExpression);
     }
 }

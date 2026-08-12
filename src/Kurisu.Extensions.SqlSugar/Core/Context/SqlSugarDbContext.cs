@@ -13,30 +13,32 @@ public class SqlSugarDbContext : SpecificQueryDbContext
 
     #region insert
 
-    public override async Task<bool> InsertAsync<T>(T obj, CancellationToken cancellationToken)
+    public override Task<bool> InsertAsync<T>(T obj, CancellationToken cancellationToken)
     {
-        return await this.InsertAsync([obj], cancellationToken);
+        cancellationToken.ThrowIfCancellationRequested();
+        return Client.Insertable(obj).ExecuteCommandIdentityIntoEntityAsync();
     }
 
     public override async Task<bool> InsertAsync<T>(List<T> objs, CancellationToken cancellationToken)
     {
-        if (objs.Count > 0)
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-            return await Client.Insertable(objs).ExecuteCommandIdentityIntoEntityAsync();
-        }
+        if (objs.Count == 0)
+            return true;
 
-        return true;
+        cancellationToken.ThrowIfCancellationRequested();
+        return await Client.Insertable(objs).ExecuteCommandAsync() > 0;
     }
 
     public override bool Insert<T>(T obj)
     {
-        return this.Insert([obj]);
+        return Client.Insertable(obj).ExecuteCommandIdentityIntoEntity();
     }
 
     public override bool Insert<T>(List<T> objs)
     {
-        return Client.Insertable(objs).ExecuteCommandIdentityIntoEntity();
+        if (objs.Count == 0)
+            return true;
+
+        return Client.Insertable(objs).ExecuteCommand() > 0;
     }
 
     #endregion
@@ -44,40 +46,43 @@ public class SqlSugarDbContext : SpecificQueryDbContext
 
     #region delete
 
-    public override async Task<int> DeleteAsync<T>(T obj, bool isReally, CancellationToken cancellationToken)
+    public override Task<int> DeleteAsync<T>(T obj, bool isReally, CancellationToken cancellationToken)
     {
-        return await DeleteAsync(new List<T> { obj }, isReally, cancellationToken);
+        return DeleteAsync([obj], isReally, cancellationToken);
     }
 
-    public override async Task<int> DeleteAsync<T>(List<T> objs, bool isReally, CancellationToken cancellationToken)
+    public override Task<int> DeleteAsync<T>(List<T> objs, bool isReally, CancellationToken cancellationToken)
     {
+        if (objs.Count == 0)
+            return Task.FromResult(0);
+
         if (typeof(T).IsAssignableTo(typeof(ISoftDeleted)))
         {
             if (isReally)
             {
-                return await Client.Deleteable(objs).ExecuteCommandAsync(cancellationToken);
+                return Client.Deleteable(objs).ExecuteCommandAsync(cancellationToken);
             }
 
-            foreach (ISoftDeleted item in objs)
-            {
-                item.IsDeleted = true;
-            }
+            MarkAsDeleted(objs);
 
-            return await UpdateAsync(objs, cancellationToken);
+            return Client.Updateable(objs)
+                .UpdateColumns(nameof(ISoftDeleted.IsDeleted))
+                .ExecuteCommandAsync(cancellationToken);
         }
-        else
-        {
-            return await Client.Deleteable(objs).ExecuteCommandAsync(cancellationToken);
-        }
+
+        return Client.Deleteable(objs).ExecuteCommandAsync(cancellationToken);
     }
 
     public override int Delete<T>(T obj, bool isReally)
     {
-        return Delete(new List<T> { obj }, isReally);
+        return Delete([obj], isReally);
     }
 
     public override int Delete<T>(List<T> objs, bool isReally)
     {
+        if (objs.Count == 0)
+            return 0;
+
         if (typeof(T).IsAssignableTo(typeof(ISoftDeleted)))
         {
             if (isReally)
@@ -85,17 +90,14 @@ public class SqlSugarDbContext : SpecificQueryDbContext
                 return Client.Deleteable(objs).ExecuteCommand();
             }
 
-            foreach (ISoftDeleted item in objs)
-            {
-                item.IsDeleted = true;
-            }
+            MarkAsDeleted(objs);
 
-            return Update(objs);
+            return Client.Updateable(objs)
+                .UpdateColumns(nameof(ISoftDeleted.IsDeleted))
+                .ExecuteCommand();
         }
-        else
-        {
-            return Client.Deleteable(objs).ExecuteCommand();
-        }
+
+        return Client.Deleteable(objs).ExecuteCommand();
     }
 
     public IDeleteable<T> Deleteable<T>(T obj) where T : class, IEntity, new()
@@ -113,29 +115,30 @@ public class SqlSugarDbContext : SpecificQueryDbContext
 
     #region update
 
-    public override async Task<int> UpdateAsync<T>(T obj, CancellationToken cancellationToken)
+    public override Task<int> UpdateAsync<T>(T obj, CancellationToken cancellationToken)
     {
-        return await UpdateAsync(obj, null, cancellationToken);
+        return UpdateAsync(obj, null, cancellationToken);
     }
 
-    public override async Task<int> UpdateAsync<T>(T obj, string[] updateColumns, CancellationToken cancellationToken)
+    public override Task<int> UpdateAsync<T>(T obj, string[] updateColumns, CancellationToken cancellationToken)
     {
-        return await UpdateAsync(new List<T> { obj }, updateColumns, cancellationToken);
+        return UpdateAsync([obj], updateColumns, cancellationToken);
     }
 
 
-    public override async Task<int> UpdateAsync<T>(List<T> objs, CancellationToken cancellationToken)
+    public override Task<int> UpdateAsync<T>(List<T> objs, CancellationToken cancellationToken)
     {
-        return await UpdateAsync(objs, null, cancellationToken);
+        return UpdateAsync(objs, null, cancellationToken);
     }
 
-    public override async Task<int> UpdateAsync<T>(List<T> objs, string[] updateColumns, CancellationToken cancellationToken)
+    public override Task<int> UpdateAsync<T>(List<T> objs, string[] updateColumns, CancellationToken cancellationToken)
     {
-        if (objs.Count > 0)
-        {
-            return await Client.Updateable(objs).UpdateColumnsIF(updateColumns != null && updateColumns.Length > 0, updateColumns).ExecuteCommandAsync(cancellationToken);
-        }
-        return 0;
+        if (objs.Count == 0)
+            return Task.FromResult(0);
+
+        return Client.Updateable(objs)
+            .UpdateColumnsIF(updateColumns is { Length: > 0 }, updateColumns)
+            .ExecuteCommandAsync(cancellationToken);
     }
 
 
@@ -146,7 +149,7 @@ public class SqlSugarDbContext : SpecificQueryDbContext
 
     public override int Update<T>(T obj, string[] updateColumns)
     {
-        return Update(new List<T> { obj }, updateColumns);
+        return Update([obj], updateColumns);
     }
 
     public override int Update<T>(List<T> objs)
@@ -156,8 +159,22 @@ public class SqlSugarDbContext : SpecificQueryDbContext
 
     public override int Update<T>(List<T> objs, string[] updateColumns)
     {
-        return Client.Updateable(objs).UpdateColumnsIF(updateColumns != null && updateColumns.Length > 0, updateColumns).ExecuteCommand();
+        if (objs.Count == 0)
+            return 0;
+
+        return Client.Updateable(objs)
+            .UpdateColumnsIF(updateColumns is { Length: > 0 }, updateColumns)
+            .ExecuteCommand();
     }
 
     #endregion
+
+    protected static void MarkAsDeleted<T>(List<T> entities) where T : class
+    {
+        foreach (var entity in entities)
+        {
+            ((ISoftDeleted)entity).IsDeleted = true;
+        }
+    }
+
 }

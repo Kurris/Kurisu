@@ -30,12 +30,14 @@ public class TestSoftDelete
                 var dbContext = scope.ServiceProvider.GetRequiredService<IDbContext>();
                 await dbContext.AsSqlSugarDbContext().Deleteable<Test1WithSoftDeleteEntity>().ExecuteCommandAsync();
 
-                await dbContext.InsertAsync(new Test1WithSoftDeleteEntity
+                var entity = new Test1WithSoftDeleteEntity
                 {
                     Name = "ligy",
                     Type = "normal",
                     Age = 28,
-                });
+                };
+                await dbContext.InsertAsync(entity);
+                Assert.True(entity.Id > 0);
 
                 var data = await dbContext.Queryable<Test1WithSoftDeleteEntity>().ToListAsync();
                 Assert.Single(data);
@@ -52,6 +54,44 @@ public class TestSoftDelete
 
                 data = await dbContext.Queryable<Test1WithSoftDeleteEntity>().ToListAsync();
                 Assert.Empty(data);
+            }
+        }
+    }
+
+    [Fact(DisplayName = "软删除: 只更新IsDeleted, 不覆盖实体的其他旧字段")]
+    public async Task SoftDelete_UpdatesOnlyIsDeleted()
+    {
+        using var scope = _sp.CreateScope();
+        using (scope.ServiceProvider.InitLifecycle())
+        {
+            var dbContext = scope.ServiceProvider.GetRequiredService<IDbContext>();
+            using (dbContext.CreateDatasourceScope())
+            {
+                var client = dbContext.AsSqlSugarDbContext().GetClient();
+                await client.Deleteable<Test1WithSoftDeleteEntity>().ExecuteCommandAsync();
+
+                var staleEntity = new Test1WithSoftDeleteEntity
+                {
+                    Name = "stale-name",
+                    Type = "normal",
+                    Age = 28,
+                };
+                await dbContext.InsertAsync(staleEntity);
+
+                await client.Updateable<Test1WithSoftDeleteEntity>()
+                    .SetColumns(x => x.Name == "database-name")
+                    .Where(x => x.Id == staleEntity.Id)
+                    .ExecuteCommandAsync();
+
+                await dbContext.DeleteAsync(staleEntity);
+
+                using (dbContext.IgnoreSoftDeleted())
+                {
+                    var deleted = await dbContext.Queryable<Test1WithSoftDeleteEntity>()
+                        .SingleAsync(x => x.Id == staleEntity.Id);
+                    Assert.True(deleted.IsDeleted);
+                    Assert.Equal("database-name", deleted.Name);
+                }
             }
         }
     }
