@@ -1,30 +1,34 @@
 ﻿using Kurisu.AspNetCore.Abstractions.Startup;
 using Kurisu.Extensions.ContextAccessor.Abstractions;
 using Kurisu.Extensions.ContextAccessor.Internal;
+using System;
+using System.Linq;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace Kurisu.Extensions.ContextAccessor;
 
-
-public class ContextAccessorBuilder<TState> where TState : class, IContextable<TState>, new()
+public class ContextAccessorBuilder<TState>(IServiceCollection services)
+    where TState : class, IContextable<TState>, new()
 {
-    private readonly IServiceCollection _services;
-
-    public ContextAccessorBuilder(IServiceCollection services)
-    {
-        _services = services;
-    }
+    private static readonly Func<IServiceProvider, object> LifecycleFactory = sp => sp.GetRequiredService<IContextAccessor<TState>>();
 
     internal ContextAccessorBuilder<TState> WithLifecycle()
     {
-        _services.AddSingleton(typeof(IAppAsyncLocalLifecycle), sp => sp.GetRequiredService<IContextAccessor<TState>>());
+        if (services.Any(x =>
+                x.ServiceType == typeof(IAppAsyncLocalLifecycle) &&
+                x.ImplementationFactory == LifecycleFactory))
+        {
+            return this;
+        }
+
+        services.AddSingleton(typeof(IAppAsyncLocalLifecycle), LifecycleFactory);
         return this;
     }
 
     public ContextAccessorBuilder<TState> WithSnapshot()
     {
-        _services.TryAddSingleton(typeof(IContextSnapshotManager<TState>), typeof(ContextSnapshotManager<TState>));
+        services.TryAddSingleton(typeof(IContextSnapshotManager<TState>), typeof(ContextSnapshotManager<TState>));
         return this;
     }
 }

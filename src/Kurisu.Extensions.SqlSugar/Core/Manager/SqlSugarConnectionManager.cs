@@ -80,10 +80,5 @@ internal class SqlSugarConnectionStringManager(
 
 internal class NamesDbConnectionStringStack : IContextable<NamesDbConnectionStringStack>
 {
-    public NamesDbConnectionStringStack()
-    {
-        Names = new Stack<string>();
-    }
-
-    public Stack<string> Names { get; set; }
+    public Stack<string> Names { get; set; } = new();
 }

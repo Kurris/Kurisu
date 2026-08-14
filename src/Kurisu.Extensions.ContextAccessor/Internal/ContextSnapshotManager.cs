@@ -53,7 +53,7 @@ internal class ContextSnapshotManager<TContext> : IContextSnapshotManager<TConte
     /// <summary>
     /// 上下文快照作用域
     /// </summary>
-    /// <param name="setState"></param>
+    /// <param name="setter"></param>
     /// <param name="onAfterDispose"></param>
     /// <returns></returns>
     /// <exception cref="ArgumentNullException"></exception>
@@ -69,7 +69,10 @@ internal class ContextSnapshotManager<TContext> : IContextSnapshotManager<TConte
         return new AsyncActionScope(async () =>
         {
             snapshot.RestoreTo(context);
-            await onAfterDispose?.Invoke();
+            if (onAfterDispose != null)
+            {
+                await onAfterDispose();
+            }
         });
     }
 

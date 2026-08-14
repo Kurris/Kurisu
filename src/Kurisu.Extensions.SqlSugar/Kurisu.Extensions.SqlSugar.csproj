@@ -1,11 +1,11 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 	<PropertyGroup>
 		<LangVersion>latestmajor</LangVersion>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>disable</Nullable>
 		<TargetFramework>net8.0</TargetFramework>
 		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-        <Version>0.6.4</Version>
+        <Version>0.6.5</Version>
 	</PropertyGroup>
 	<ItemGroup>
         <ProjectReference Include="..\Kurisu.Extensions.ContextAccessor\Kurisu.Extensions.ContextAccessor.csproj"/>

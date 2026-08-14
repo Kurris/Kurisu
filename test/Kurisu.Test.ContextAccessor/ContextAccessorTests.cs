@@ -68,6 +68,26 @@ public class ContextAccessorTests
     }
 
     [Fact]
+    public void AddStateAccessor_CalledMoreThanOnce_RegistersLifecycleOnce()
+    {
+        var services = new ServiceCollection();
+        services.AddLogging();
+        services.AddContextAccessor<TestState>();
+        services.AddContextAccessor<TestState>();
+        services.AddContextAccessor<ReadOnlyTestState>();
+
+        var sp = services.BuildServiceProvider();
+
+        var accessor = sp.GetRequiredService<IContextAccessor<TestState>>();
+        var readOnlyAccessor = sp.GetRequiredService<IContextAccessor<ReadOnlyTestState>>();
+        var lifecycles = sp.GetServices<IAppAsyncLocalLifecycle>().ToList();
+
+        Assert.Equal(2, lifecycles.Count);
+        Assert.Contains(accessor, lifecycles);
+        Assert.Contains(readOnlyAccessor, lifecycles);
+    }
+
+    [Fact]
     public void WithSnapshot_CreateScope_RestoresState()
     {
         var services = new ServiceCollection();
@@ -264,6 +284,30 @@ public class ContextAccessorTests
         Assert.Equal("initial", accessor.Current.Name);
         Assert.Equal(1, accessor.Current.Counter);
 
+        lifecycle.Remove();
+    }
+
+    [Fact]
+    public async Task Snapshot_CreateScopeAsync_NullOnDispose_RestoresStateWithoutThrowing()
+    {
+        var services = new ServiceCollection();
+        services.AddLogging();
+        services.AddContextAccessor<TestState>().WithSnapshot();
+
+        var sp = services.BuildServiceProvider();
+        var accessor = sp.GetRequiredService<IContextAccessor<TestState>>();
+        var lifecycle = sp.GetRequiredService<IAppAsyncLocalLifecycle>();
+        var snapshotManager = sp.GetRequiredService<IContextSnapshotManager<TestState>>();
+
+        lifecycle.Initialize();
+        accessor.Current.Name = "initial";
+
+        await using (snapshotManager.CreateScopeAsync(s => s.Name = "inner", null))
+        {
+            Assert.Equal("inner", accessor.Current.Name);
+        }
+
+        Assert.Equal("initial", accessor.Current.Name);
         lifecycle.Remove();
     }
 
