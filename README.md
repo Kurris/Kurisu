@@ -178,4 +178,4 @@ KurisuHost.Run<Startup>(args)
 
 ## License
 
-MIT
+[MIT](LICENSE)
