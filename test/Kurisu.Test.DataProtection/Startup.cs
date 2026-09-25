@@ -15,6 +15,7 @@ public class Startup
         var configuration = new ConfigurationBuilder()
             .AddJsonFile("appsettings.json")
             //.AddJsonFile("appsettings.Development.json")
+            .AddEnvironmentVariables()
             .Build();
 
         services.AddConfiguration(configuration);

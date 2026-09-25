@@ -29,22 +29,21 @@ public static class EventBusServiceCollectionExtensions
         services.TryAddSingleton(Channel.CreateBounded<EventMessage>(options));
         services.AddSingleton(sp => sp.GetRequiredService<Channel<EventMessage>>().Writer);
         services.AddSingleton(sp => sp.GetRequiredService<Channel<EventMessage>>().Reader);
-        services.TryAddSingleton<LocalMessageDispatchSignal>();
-        services.TryAddSingleton<IEventBusDispatchSignal>(sp => sp.GetRequiredService<LocalMessageDispatchSignal>());
+        services.TryAddSingleton<IEventBusDispatchSignal, LocalMessageDispatchSignal>();
 
         // 后台服务
-        services.AddHostedService<MessageConsumerBackgroundService>();
+        services.AddHostedService<LocalMessageConsumerBackgroundService>();
         services.AddHostedService<LocalMessageRetryBackgroundService>();
-        services.AddHostedService<MessageCleanupBackgroundService>();
+        services.AddHostedService<LocalMessageCleanupBackgroundService>();
 
         services.AddOptions<EventBusOptions>();
         if (configure is not null) services.Configure(configure);
 
         // 默认实现
         services.TryAddSingleton<IEventBusSerializer, DefaultEventBusSerializer>();
-        services.TryAddScoped<IEventBusLocalMessageHandler, DefaultEventBusLocalMessageHandler>();
-        services.TryAddScoped<IEventBusMessageHandler, DefaultEventBusMessageHandler>();
-        services.TryAddScoped<IEventBusMessageServiceHandler, DefaultEventBusMessageServiceHandler>();
+        services.TryAddScoped<ILocalMessageStore, DefaultLocalMessageStore>();
+        services.TryAddScoped<IEventMessageProcessor, DefaultEventMessageProcessor>();
+        services.TryAddScoped<IEventMessageDispatcher, DefaultEventMessageDispatcher>();
         services.TryAddScoped<IEventBusDeadLetterService, DefaultEventBusDeadLetterService>();
         services.TryAddScoped<IEventBusUniqueCodeGenerator, DefaultEventBusUniqueCodeGenerator>();
         services.TryAddScoped<IEventBus, DefaultEventBus>();

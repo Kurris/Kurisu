@@ -33,7 +33,7 @@ public class EventBusDatabaseTests
 
         await InScopeAsync(provider, async services =>
         {
-            var handler = services.GetRequiredService<IEventBusLocalMessageHandler>();
+            var handler = services.GetRequiredService<ILocalMessageStore>();
             await handler.FailDeliveryAsync(code, token, "test failure");
         });
 
@@ -49,6 +49,88 @@ public class EventBusDatabaseTests
             var ignored = await deadLetterService.GetAsync(code);
             Assert.Equal(LocalMessageStatus.Ignored, ignored.Status);
             Assert.Equal("verified by test", ignored.DispositionReason);
+        });
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("failure")]
+    public async Task Tracker_FailureWinsRegardlessOfErrorText(string error)
+    {
+        using var provider = CreateProvider();
+        var code = await PersistAsync(provider);
+        var token = await ClaimAsync(provider, code);
+
+        await InScopeAsync(provider, async services =>
+        {
+            var store = services.GetRequiredService<ILocalMessageStore>();
+            using var cancellation = new CancellationTokenSource();
+            var tracker = await store.BeginTrackingAsync(code, token, cancellation.Token);
+            Assert.NotNull(tracker);
+            tracker.Complete();
+            tracker.Fail(error);
+            tracker.Complete();
+            await tracker.DisposeAsync();
+
+            // A second disposal must not issue another database operation.
+            cancellation.Cancel();
+            await tracker.DisposeAsync();
+            Assert.Throws<ObjectDisposedException>(() => tracker.Complete());
+            Assert.Throws<ObjectDisposedException>(() => tracker.Fail("late failure"));
+        });
+
+        // 验证持久化结果使用新 Scope，避免复用已接收取消令牌的 ORM 实例。
+        await InScopeAsync(provider, async services =>
+        {
+            var message = await services.GetRequiredService<IDbContext>()
+                .Queryable<LocalMessage>().SingleAsync(x => x.Code == code);
+            Assert.Equal(LocalMessageStatus.Pending, message.Status);
+            Assert.Null(message.ProcessingToken);
+            Assert.NotNull(message.NextRetryTime);
+        });
+    }
+
+    [Fact]
+    public async Task Tracker_StaleTokenCannotCompleteNewClaim()
+    {
+        using var provider = CreateProvider();
+        var code = await PersistAsync(provider);
+        var token = await ClaimAsync(provider, code);
+
+        await InScopeAsync(provider, async services =>
+        {
+            var store = services.GetRequiredService<ILocalMessageStore>();
+            var db = services.GetRequiredService<IDbContext>();
+            var tracker = await store.BeginTrackingAsync(code, token);
+            await db.AsSqlSugarDbContext().Updateable<LocalMessage>()
+                .SetColumns(x => x.LockedUntil == DateTime.Now.AddMinutes(-1))
+                .Where(x => x.Code == code).ExecuteCommandAsync();
+            var nextToken = await store.TryClaimAsync(code);
+            Assert.NotNull(nextToken);
+            Assert.NotEqual(token, nextToken);
+
+            tracker.Complete();
+            await tracker.DisposeAsync();
+            var message = await db.Queryable<LocalMessage>().SingleAsync(x => x.Code == code);
+            Assert.Equal(LocalMessageStatus.Processing, message.Status);
+            Assert.Equal(nextToken, message.ProcessingToken);
+        });
+    }
+
+    [Fact]
+    public async Task TrackingQueries_RespectCancellation()
+    {
+        using var provider = CreateProvider();
+        await InScopeAsync(provider, async services =>
+        {
+            var store = services.GetRequiredService<ILocalMessageStore>();
+            using var canceled = new CancellationTokenSource();
+            canceled.Cancel();
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
+                store.BeginTrackingAsync("code", "token", canceled.Token));
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
+                store.FailDeliveryAsync("code", "token", "error", canceled.Token));
         });
     }
 
@@ -70,7 +152,7 @@ public class EventBusDatabaseTests
             var db = services.GetRequiredService<IDbContext>();
             db.CodeFirst.EnsureTableExists(typeof(LocalMessage));
 
-            var handler = services.GetRequiredService<IEventBusLocalMessageHandler>();
+            var handler = services.GetRequiredService<ILocalMessageStore>();
             return await handler.PersistAsync(new DatabaseTestMessage { Name = Guid.NewGuid().ToString() });
         });
     }
@@ -79,7 +161,7 @@ public class EventBusDatabaseTests
     {
         return InScopeAsync(provider, services =>
         {
-            var handler = services.GetRequiredService<IEventBusLocalMessageHandler>();
+            var handler = services.GetRequiredService<ILocalMessageStore>();
             return handler.TryClaimAsync(code);
         });
     }

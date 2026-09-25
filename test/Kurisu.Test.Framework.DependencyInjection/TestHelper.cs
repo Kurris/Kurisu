@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.IdentityModel.Tokens.Jwt;
@@ -27,6 +27,7 @@ public class TestHelper
         var services = new ServiceCollection();
         var configuration = new ConfigurationBuilder()
             .AddJsonFile("appsettings.json")
+            .AddEnvironmentVariables()
             .Build();
         services.AddSingleton(typeof(IConfiguration), configuration);
         services.AddConfiguration(configuration);

@@ -176,6 +176,16 @@ KurisuHost.Run<Startup>(args)
        └─ UseEndpoints()
 ```
 
+## 测试环境变量
+
+运行相关测试前设置以下环境变量：
+
+| 环境变量 | 用途 |
+|------|------|
+| `DbOptions__DefaultConnectionString` | 默认数据库连接 |
+| `DbOptions__AdditionalConnectionStrings__SecondConnectionString` | 多数据源测试的第二个数据库连接 |
+| `RedisOptions__ConnectionString` | Redis 测试连接 |
+
 ## License
 
 [MIT](LICENSE)

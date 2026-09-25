@@ -12,8 +12,8 @@ namespace Kurisu.Extensions.EventBus.Internal;
 /// <summary>
 /// 消息清理后台服务，定期删除超过保留期的终态消息
 /// </summary>
-internal class MessageCleanupBackgroundService(
-    ILogger<MessageCleanupBackgroundService> logger,
+internal class LocalMessageCleanupBackgroundService(
+    ILogger<LocalMessageCleanupBackgroundService> logger,
     IServiceProvider serviceProvider,
     IOptions<EventBusOptions> options) : BackgroundService
 {

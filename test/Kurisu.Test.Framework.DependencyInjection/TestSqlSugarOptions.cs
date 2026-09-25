@@ -26,7 +26,7 @@ public class TestSqlSugarOptions
                             {
                               "DbOptions": {
                                 "DbType": "MySqlConnector",
-                                "DefaultConnectionString": "server=127.0.0.1;port=3306;userid=root;password=123456;database=test;charset=utf8mb4;",
+                                "DefaultConnectionString": "database=configuration_test;",
                                 "AdditionalConnectionStrings": {},
                                 "Timeout": 30,
                                 "SlowSqlTime": 1,
@@ -51,7 +51,7 @@ public class TestSqlSugarOptions
         var registry = provider.GetRequiredService<IDbConnectionRegistry>();
 
         Assert.Equal(
-            "server=127.0.0.1;port=3306;userid=root;password=123456;database=test;charset=utf8mb4;",
+            "database=configuration_test;",
             registry.GetConnectionString("DefaultConnectionString"));
     }
 

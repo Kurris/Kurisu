@@ -24,6 +24,7 @@ public class TestHelper
         var services = new ServiceCollection();
         var configuration = new ConfigurationBuilder()
             .AddJsonFile("appsettings.json")
+            .AddEnvironmentVariables()
             .Build();
 
         services.AddSingleton(typeof(IConfiguration), configuration);
@@ -63,6 +64,7 @@ public class TestHelper
     {
         var configuration = new ConfigurationBuilder()
             .AddJsonFile("appsettings.json")
+            .AddEnvironmentVariables()
             .Build();
 
         var jwtOptions = configuration.GetSection("JwtOptions").Get<JwtOptions>();

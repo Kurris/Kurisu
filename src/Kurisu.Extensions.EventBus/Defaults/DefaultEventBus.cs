@@ -10,10 +10,9 @@ namespace Kurisu.Extensions.EventBus.Defaults;
 /// 必须在事务内调用，消息的 INSERT 与业务数据在同一事务中提交，保证一致性。
 /// </summary>
 public class DefaultEventBus(
-    IEventBusLocalMessageHandler localMessageHandler,
+    ILocalMessageStore localMessageStore,
     IEventBusDispatchSignal dispatchSignal,
-    ITransactionCallbackRegistry transactionCallbackRegistry
-)
+    ITransactionCallbackRegistry transactionCallbackRegistry)
     : IEventBus
 {
     /// <summary>
@@ -23,8 +22,7 @@ public class DefaultEventBus(
     /// </summary>
     public async Task PublishAsync<TMessage>(TMessage message) where TMessage : EventMessage
     {
-        var code = await localMessageHandler.PersistAsync(message);
-        if (string.IsNullOrEmpty(message.Code)) message.Code = code;
+        await localMessageStore.PersistAsync(message);
         await transactionCallbackRegistry.RegisterAfterCommitAsync(() =>
         {
             dispatchSignal.Notify();

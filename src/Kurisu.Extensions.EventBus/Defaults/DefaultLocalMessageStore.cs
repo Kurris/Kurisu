@@ -8,15 +8,15 @@ using Microsoft.Extensions.Options;
 namespace Kurisu.Extensions.EventBus.Defaults;
 
 /// <summary>
-/// 本地消息处理器，管理消息的持久化、竞争领取、状态追踪的完整生命周期。
+/// 本地消息存储服务，管理消息的持久化、竞争领取、状态追踪的完整生命周期。
 /// </summary>
-public class DefaultEventBusLocalMessageHandler(
+public class DefaultLocalMessageStore(
     IDbContext db,
     IEventBusSerializer serializer,
     IEventBusUniqueCodeGenerator codeGenerator,
     IOptions<EventBusOptions> options,
-    ILogger<DefaultEventBusLocalMessageHandler> logger)
-    : IEventBusLocalMessageHandler
+    ILogger<DefaultLocalMessageStore> logger)
+    : ILocalMessageStore
 {
     /// <summary>
     /// 将消息持久化到本地消息表，状态为 Pending，等待后台服务扫描投递。
@@ -56,7 +56,8 @@ public class DefaultEventBusLocalMessageHandler(
             .Where(x => x.Code == code
                         && (x.Status == LocalMessageStatus.Pending
                             || (x.Status == LocalMessageStatus.Processing && (x.LockedUntil == null || x.LockedUntil <= now)))
-                        && (x.NextRetryTime == null || x.NextRetryTime <= now))
+                        && (x.NextRetryTime == null || x.NextRetryTime <= now)
+            )
             .ExecuteCommandAsync(cancellationToken);
 
         return effect == 1 ? processingToken : null;
@@ -71,12 +72,7 @@ public class DefaultEventBusLocalMessageHandler(
         string processingToken,
         CancellationToken cancellationToken = default)
     {
-        if (string.IsNullOrWhiteSpace(processingToken)) return null;
-
-        var localMessage = await db.Queryable<LocalMessage>()
-            .SingleAsync(x => x.Code == code
-                              && x.ProcessingToken == processingToken
-                              && x.Status == LocalMessageStatus.Processing);
+        var localMessage = await FindProcessingMessageAsync(code, processingToken, cancellationToken);
 
         return localMessage is null
             ? null
@@ -92,13 +88,25 @@ public class DefaultEventBusLocalMessageHandler(
         string error,
         CancellationToken cancellationToken = default)
     {
-        var localMessage = await db.Queryable<LocalMessage>()
-            .SingleAsync(x => x.Code == code
-                              && x.ProcessingToken == processingToken
-                              && x.Status == LocalMessageStatus.Processing);
+        var localMessage = await FindProcessingMessageAsync(code, processingToken, cancellationToken);
         if (localMessage is null) return;
 
         await CompleteFailureAsync(localMessage, error, cancellationToken);
+    }
+
+    private async Task<LocalMessage> FindProcessingMessageAsync(
+        string code, string processingToken, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        if (string.IsNullOrWhiteSpace(processingToken)) return null;
+
+        var messages = await db.Queryable<LocalMessage>()
+            .Where(x => x.Code == code
+                        && x.ProcessingToken == processingToken
+                        && x.Status == LocalMessageStatus.Processing)
+            .Take(2)
+            .ToListAsync(cancellationToken);
+        return messages.SingleOrDefault();
     }
 
     /// <summary>
@@ -106,7 +114,7 @@ public class DefaultEventBusLocalMessageHandler(
     /// </summary>
     private async Task CompleteSuccessAsync(LocalMessage localMessage, CancellationToken cancellationToken)
     {
-        await db.AsSqlSugarDbContext().Updateable<LocalMessage>()
+        var effect = await db.AsSqlSugarDbContext().Updateable<LocalMessage>()
             .SetColumns(x => new LocalMessage
             {
                 Status = LocalMessageStatus.Completed,
@@ -119,6 +127,8 @@ public class DefaultEventBusLocalMessageHandler(
                         && x.ProcessingToken == localMessage.ProcessingToken
                         && x.Status == LocalMessageStatus.Processing)
             .ExecuteCommandAsync(cancellationToken);
+
+        LogIfOwnershipLost(localMessage, effect);
     }
 
     /// <summary>
@@ -147,6 +157,8 @@ public class DefaultEventBusLocalMessageHandler(
                         && x.Status == LocalMessageStatus.Processing)
             .ExecuteCommandAsync(cancellationToken);
 
+        LogIfOwnershipLost(localMessage, effect);
+
         if (effect == 1 && deadLetter)
         {
             logger.LogError(
@@ -154,6 +166,14 @@ public class DefaultEventBusLocalMessageHandler(
                 localMessage.Code,
                 localMessage.Attempts,
                 error);
+        }
+    }
+
+    private void LogIfOwnershipLost(LocalMessage localMessage, int affectedRows)
+    {
+        if (affectedRows == 0)
+        {
+            logger.LogWarning("EventBus 消息处理权已失效或状态已改变，跳过结果更新: code={code}", localMessage.Code);
         }
     }
 
@@ -171,27 +191,47 @@ public class DefaultEventBusLocalMessageHandler(
     /// Dispose 时自动将状态写回数据库。
     /// </summary>
     private sealed class LocalMessageTracker(
-        DefaultEventBusLocalMessageHandler handler,
+        DefaultLocalMessageStore store,
         LocalMessage localMessage,
         CancellationToken cancellationToken)
         : ILocalMessageTracker
     {
+        private enum Outcome
+        {
+            None,
+            Completed,
+            Failed
+        }
+
         private string _error;
-        private bool _completed;
+        private Outcome _outcome;
+        private bool _disposed;
 
-        public void Complete() => _completed = true;
+        public void Complete()
+        {
+            ObjectDisposedException.ThrowIf(_disposed, this);
+            if (_outcome != Outcome.Failed) _outcome = Outcome.Completed;
+        }
 
-        public void Fail(string error) => _error = error;
+        public void Fail(string error)
+        {
+            ObjectDisposedException.ThrowIf(_disposed, this);
+            _outcome = Outcome.Failed;
+            _error = error;
+        }
 
         public async ValueTask DisposeAsync()
         {
-            if (!string.IsNullOrEmpty(_error))
+            if (_disposed) return;
+            _disposed = true;
+
+            if (_outcome == Outcome.Failed)
             {
-                await handler.CompleteFailureAsync(localMessage, _error, cancellationToken);
+                await store.CompleteFailureAsync(localMessage, _error, cancellationToken);
             }
-            else if (_completed)
+            else if (_outcome == Outcome.Completed)
             {
-                await handler.CompleteSuccessAsync(localMessage, cancellationToken);
+                await store.CompleteSuccessAsync(localMessage, cancellationToken);
             }
         }
     }

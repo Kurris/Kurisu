@@ -19,7 +19,7 @@ internal class LocalMessageRetryBackgroundService(
     ILogger<LocalMessageRetryBackgroundService> logger,
     IServiceProvider serviceProvider,
     ChannelWriter<EventMessage> writer,
-    LocalMessageDispatchSignal dispatchSignal,
+    IEventBusDispatchSignal dispatchSignal,
     IOptions<EventBusOptions> options) : BackgroundService
 {
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -29,7 +29,11 @@ internal class LocalMessageRetryBackgroundService(
             try
             {
                 await dispatchSignal.WaitAsync(options.Value.ScanInterval, stoppingToken);
-                await ScanAndRetryAsync(stoppingToken);
+                stoppingToken.ThrowIfCancellationRequested();
+                while (await ScanAndRetryAsync(stoppingToken))
+                {
+                    stoppingToken.ThrowIfCancellationRequested();
+                }
             }
             catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
             {
@@ -48,26 +52,28 @@ internal class LocalMessageRetryBackgroundService(
     /// 每条消息先 TryClaimAsync 竞争领取，领取成功后再反序列化并写入 Channel。
     /// 反序列化失败或投递异常时调用 FailDeliveryAsync 记录失败状态。
     /// </summary>
-    private async Task ScanAndRetryAsync(CancellationToken stoppingToken)
+    protected virtual async Task<bool> ScanAndRetryAsync(CancellationToken stoppingToken)
     {
         using var scope = serviceProvider.CreateScope();
         using (scope.ServiceProvider.InitLifecycle())
         {
             var db = scope.ServiceProvider.GetRequiredService<IDbContext>();
             var serializer = scope.ServiceProvider.GetRequiredService<IEventBusSerializer>();
-            var localMessageHandler = scope.ServiceProvider.GetRequiredService<IEventBusLocalMessageHandler>();
+            var localMessageStore = scope.ServiceProvider.GetRequiredService<ILocalMessageStore>();
             using (db.CreateDatasourceScope())
             {
                 var now = DateTime.Now;
+                var batchSize = options.Value.ScanBatchSize;
+                var claimedCount = 0;
 
                 var pendingMessages = await db.Queryable<LocalMessage>()
                     .Where(x => (x.Status == LocalMessageStatus.Pending
                                 || (x.Status == LocalMessageStatus.Processing && (x.LockedUntil == null || x.LockedUntil <= now)))
                                 && (x.NextRetryTime == null || x.NextRetryTime <= now))
-                    .Take(options.Value.ScanBatchSize)
+                    .Take(batchSize)
                     .ToListAsync(stoppingToken);
 
-                if (pendingMessages.Count == 0) return;
+                if (pendingMessages.Count == 0) return false;
 
                 logger.LogInformation("LocalMessageRetry 发现 {count} 条待重试消息", pendingMessages.Count);
 
@@ -77,13 +83,14 @@ internal class LocalMessageRetryBackgroundService(
                     try
                     {
                         // 竞争领取，失败说明已被其他实例领取
-                        processingToken = await localMessageHandler.TryClaimAsync(localMessage.Code, stoppingToken);
+                        processingToken = await localMessageStore.TryClaimAsync(localMessage.Code, stoppingToken);
                         if (string.IsNullOrEmpty(processingToken)) continue;
+                        claimedCount++;
 
                         var message = serializer.Deserialize<EventMessage>(localMessage.Content);
                         if (message is null)
                         {
-                            await localMessageHandler.FailDeliveryAsync(localMessage.Code, processingToken, "反序列化结果为空", stoppingToken);
+                            await localMessageStore.FailDeliveryAsync(localMessage.Code, processingToken, "反序列化结果为空", stoppingToken);
                             logger.LogWarning("LocalMessageRetry 反序列化结果为空，code={code}", localMessage.Code);
                             continue;
                         }
@@ -96,15 +103,22 @@ internal class LocalMessageRetryBackgroundService(
                             localMessage.Code,
                             localMessage.Attempts);
                     }
+                    catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
+                    {
+                        throw;
+                    }
                     catch (Exception ex)
                     {
                         if (!string.IsNullOrEmpty(processingToken))
                         {
-                            await localMessageHandler.FailDeliveryAsync(localMessage.Code, processingToken, ex.Message, stoppingToken);
+                            await localMessageStore.FailDeliveryAsync(localMessage.Code, processingToken, ex.Message, stoppingToken);
                         }
                         logger.LogError(ex, "LocalMessageRetry 投递失败 code={code}: {error}", localMessage.Code, ex.Message);
                     }
                 }
+
+                // 满批且本轮有领取进展时继续扫描；全部竞争失败时退回等待，避免空转。
+                return pendingMessages.Count == batchSize && claimedCount > 0;
             }
         }
     }

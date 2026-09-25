@@ -7,16 +7,18 @@ namespace Kurisu.Test.Cache;
 
 internal static class RedisCacheTestSupport
 {
-    public static ServiceProvider BuildServiceProvider()
+    public static string GetConnectionString()
     {
-        var connectionString = Environment.GetEnvironmentVariable("KURISU_TEST_REDIS");
+        var connectionString = Environment.GetEnvironmentVariable("RedisOptions__ConnectionString");
         if (string.IsNullOrWhiteSpace(connectionString))
         {
-            throw new InvalidOperationException("环境变量 KURISU_TEST_REDIS 未设置。请设置 Redis 连接字符串后重试，例如: localhost:6379");
+            throw new InvalidOperationException("环境变量 RedisOptions__ConnectionString 未设置。请设置 Redis 连接字符串后重试，例如: localhost:6379");
         }
 
-        return BuildServiceProvider(connectionString);
+        return connectionString;
     }
+
+    public static ServiceProvider BuildServiceProvider() => BuildServiceProvider(GetConnectionString());
 
     public static ServiceProvider BuildServiceProvider(string connectionString)
     {

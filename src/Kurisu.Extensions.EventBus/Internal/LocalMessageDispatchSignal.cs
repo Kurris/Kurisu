@@ -22,19 +22,19 @@ internal sealed class LocalMessageDispatchSignal : IEventBusDispatchSignal
 
     public async Task<bool> WaitAsync(TimeSpan timeout, CancellationToken cancellationToken)
     {
-        var delayTask = Task.Delay(timeout, cancellationToken);
-        var signalTask = _channel.Reader.WaitToReadAsync(cancellationToken).AsTask();
+        cancellationToken.ThrowIfCancellationRequested();
+        using var timeoutSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        timeoutSource.CancelAfter(timeout);
 
-        var completedTask = await Task.WhenAny(signalTask, delayTask);
-        if (completedTask != signalTask || !await signalTask)
+        try
+        {
+            await _channel.Reader.ReadAsync(timeoutSource.Token);
+            cancellationToken.ThrowIfCancellationRequested();
+            return true;
+        }
+        catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
         {
             return false;
         }
-
-        while (_channel.Reader.TryRead(out _))
-        {
-        }
-
-        return true;
     }
 }

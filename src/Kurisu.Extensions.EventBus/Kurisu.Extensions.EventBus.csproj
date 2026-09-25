@@ -12,4 +12,7 @@
 	<ItemGroup>
 		<ProjectReference Include="..\Kurisu.AspNetCore.Abstractions\Kurisu.AspNetCore.Abstractions.csproj" />
 	</ItemGroup>
+    <ItemGroup>
+        <InternalsVisibleTo Include="Kurisu.Test.EventBus" />
+    </ItemGroup>
 </Project>

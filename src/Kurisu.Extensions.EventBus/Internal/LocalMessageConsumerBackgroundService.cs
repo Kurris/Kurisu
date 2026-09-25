@@ -1,4 +1,4 @@
-﻿using System.Threading.Channels;
+using System.Threading.Channels;
 using Kurisu.AspNetCore.Abstractions.Startup;
 using Kurisu.Extensions.EventBus.Abstractions;
 using Microsoft.Extensions.DependencyInjection;
@@ -11,8 +11,8 @@ namespace Kurisu.Extensions.EventBus.Internal;
 /// 消息消费后台服务，从 Channel 中持续读取消息并分发到对应的处理器。
 /// 每条消息在独立 Scope 中消费，异常隔离不影响其他消息。
 /// </summary>
-internal class MessageConsumerBackgroundService(
-    ILogger<MessageConsumerBackgroundService> logger,
+internal class LocalMessageConsumerBackgroundService(
+    ILogger<LocalMessageConsumerBackgroundService> logger,
     IServiceProvider serviceProvider,
     ChannelReader<EventMessage> reader)
     : BackgroundService
@@ -22,15 +22,14 @@ internal class MessageConsumerBackgroundService(
         await foreach (var message in reader.ReadAllAsync(stoppingToken))
         {
             var messageType = message.GetType();
-            var handlerType = typeof(IEventMessageHandler<>).MakeGenericType(messageType);
 
             try
             {
                 using var scope = serviceProvider.CreateScope();
                 using (scope.ServiceProvider.InitLifecycle())
                 {
-                    var handler = scope.ServiceProvider.GetRequiredService<IEventBusMessageHandler>();
-                    await handler.HandleAsync(message, handlerType, stoppingToken);
+                    var processor = scope.ServiceProvider.GetRequiredService<IEventMessageProcessor>();
+                    await processor.ProcessAsync(message, stoppingToken);
                 }
             }
             catch (Exception ex)

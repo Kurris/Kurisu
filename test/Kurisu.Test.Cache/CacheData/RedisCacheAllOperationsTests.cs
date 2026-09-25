@@ -1,5 +1,3 @@
-using Kurisu.Extensions.Cache;
-using Kurisu.Extensions.Cache.Options;
 using Kurisu.Extensions.Cache.Providers;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
@@ -9,16 +7,7 @@ namespace Kurisu.Test.Cache;
 [Trait("feature", "all-operations")]
 public class RedisCacheAllOperationsTests
 {
-    private static ServiceProvider BuildServiceProvider()
-    {
-        var cs = Environment.GetEnvironmentVariable("KURISU_TEST_REDIS")
-            ?? throw new InvalidOperationException("KURISU_TEST_REDIS 未设置");
-        var services = new ServiceCollection();
-        services.AddLogging();
-        services.AddOptions<RedisOptions>().Configure(o => o.ConnectionString = cs);
-        services.AddRedis();
-        return services.BuildServiceProvider();
-    }
+    private static ServiceProvider BuildServiceProvider() => RedisCacheTestSupport.BuildServiceProvider();
 
     #region String 同步操作
 

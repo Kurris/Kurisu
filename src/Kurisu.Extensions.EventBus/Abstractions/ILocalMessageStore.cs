@@ -2,12 +2,12 @@
 namespace Kurisu.Extensions.EventBus.Abstractions;
 
 /// <summary>
-/// 本地消息处理接口，管理消息的持久化、竞争领取、状态追踪的完整生命周期。
+/// 本地消息存储接口，管理消息的持久化、竞争领取、状态追踪的完整生命周期。
 /// </summary>
-public interface IEventBusLocalMessageHandler
+public interface ILocalMessageStore
 {
     /// <summary>
-    /// 持久化消息到本地消息表，返回生成的唯一 code。
+    /// 生成唯一 Code 并在序列化前写入 message.Code，将消息持久化到本地消息表，返回该 Code。
     /// </summary>
     Task<string> PersistAsync<TMessage>(TMessage message) where TMessage : EventMessage;
 

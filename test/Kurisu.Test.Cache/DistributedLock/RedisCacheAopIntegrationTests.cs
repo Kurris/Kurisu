@@ -14,8 +14,7 @@ public class RedisCacheAopIntegrationTests
 {
     private static ServiceProvider BuildAopServiceProvider()
     {
-        var connectionString = Environment.GetEnvironmentVariable("KURISU_TEST_REDIS")
-            ?? throw new InvalidOperationException("环境变量 KURISU_TEST_REDIS 未设置");
+        var connectionString = RedisCacheTestSupport.GetConnectionString();
 
         var services = new ServiceCollection();
         services.AddLogging();
