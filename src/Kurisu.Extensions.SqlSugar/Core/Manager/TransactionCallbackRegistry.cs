@@ -7,6 +7,8 @@ internal sealed class TransactionCallbackRegistry(ILogger<TransactionCallbackReg
 {
     private readonly Stack<TransactionCallbackFrame> _frames = new();
 
+    public bool HasActiveTransaction => _frames.Count != 0;
+
     public async Task RegisterAfterCommitAsync(Func<Task> callback)
     {
         if (callback is null) throw new ArgumentNullException(nameof(callback));
