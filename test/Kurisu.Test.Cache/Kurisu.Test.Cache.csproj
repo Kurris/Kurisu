@@ -19,6 +19,7 @@
   <ItemGroup>
     <ProjectReference Include="../../src/Kurisu.AspNetCore/Kurisu.AspNetCore.csproj" />
     <ProjectReference Include="../../src/Kurisu.Extensions.Cache/Kurisu.Extensions.Cache.csproj" />
+    <ProjectReference Include="../../src/Kurisu.Extensions.SqlSugar/Kurisu.Extensions.SqlSugar.csproj" />
   </ItemGroup>
 
 </Project>
