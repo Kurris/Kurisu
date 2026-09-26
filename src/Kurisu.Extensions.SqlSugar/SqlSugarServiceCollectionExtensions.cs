@@ -1,6 +1,5 @@
 ﻿using System.Data;
 using Kurisu.AspNetCore.Abstractions.DataAccess.Contract.Field;
-using Kurisu.AspNetCore.Abstractions.Cache;
 using Kurisu.AspNetCore.Abstractions.DataAccess.Core;
 using Kurisu.AspNetCore.Abstractions.DataAccess.Core.Context;
 using Kurisu.Extensions.ContextAccessor;
@@ -45,7 +44,6 @@ public static class SqlSugarServiceCollectionExtensions
 
         services.AddContextAccessor<DbOperationState>().WithSnapshot();
         services.AddContextAccessor<NamesDbConnectionStringStack>();
-        services.TryAddEnumerable(ServiceDescriptor.Scoped<IMethodCacheScopeContributor, SqlSugarMethodCacheScopeContributor>());
 
         services.TryAddSingleton<IDbConnectionStringManager, SqlSugarConnectionStringManager>();
         services.TryAddScoped<TransactionCallbackRegistry>();

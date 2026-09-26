@@ -1,3 +1,4 @@
+using Kurisu.AspNetCore.Abstractions.DataAccess.Core.Context;
 using Kurisu.Extensions.ContextAccessor.Abstractions;
 
 namespace Kurisu.Extensions.SqlSugar.Context.Impl;

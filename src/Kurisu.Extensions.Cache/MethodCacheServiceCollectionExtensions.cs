@@ -1,3 +1,4 @@
+using Kurisu.Expressions;
 using Kurisu.AspNetCore.Abstractions.Cache;
 using Kurisu.Extensions.Cache.MethodCaching;
 using Microsoft.Extensions.DependencyInjection;
@@ -14,6 +15,8 @@ public static class MethodCacheServiceCollectionExtensions
         if (configure != null) builder.Configure(configure);
         builder.Validate(o => !string.IsNullOrWhiteSpace(o.KeyPrefix) && o.Policies.Count > 0 &&
             o.Policies.All(p => !string.IsNullOrWhiteSpace(p.Key) && IsValid(p.Value)), "方法缓存配置无效。");
+        services.TryAddSingleton<ExpressionCompiler>();
+        services.TryAddSingleton<MethodExpressionEvaluator>();
         services.TryAddSingleton<MethodCacheCoordinator>();
         services.TryAddSingleton<ICacheKeyGenerator, DefaultCacheKeyGenerator>();
         services.TryAddScoped<IMethodCacheExecutor, MethodCacheExecutor>();
@@ -22,8 +25,7 @@ public static class MethodCacheServiceCollectionExtensions
 
     private static bool IsValid(MethodCachePolicy policy) => policy != null &&
         !string.IsNullOrWhiteSpace(policy.Version) &&
-        policy.Expiry > TimeSpan.Zero && policy.NullExpiry > TimeSpan.Zero &&
-        policy.ExpiryJitterRatio >= 0 && policy.ExpiryJitterRatio < 1 &&
+        policy.Expiry > TimeSpan.Zero &&
         ValidTimer(policy.LockWaitTimeout) && ValidTimer(policy.LockPollInterval) &&
         ValidTimer(policy.LockExpiry) && ValidTimer(policy.QueryTimeout);
 

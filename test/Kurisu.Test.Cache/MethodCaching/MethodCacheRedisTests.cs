@@ -1,6 +1,7 @@
 using System.Collections.Concurrent;
 using AspectCore.Extensions.DependencyInjection;
 using Kurisu.AspNetCore.Abstractions.Cache;
+using Kurisu.AspNetCore.Abstractions.DataAccess.Core;
 using Kurisu.Extensions.Cache;
 using Kurisu.Extensions.Cache.Options;
 using Kurisu.Extensions.Cache.Providers;
@@ -13,7 +14,8 @@ namespace Kurisu.Test.Cache.MethodCaching;
 [Trait("feature", "method-cache-redis")]
 public class MethodCacheRedisTests
 {
-    private static ServiceProvider Build(QueryWork work, string prefix, ConcurrentDictionary<string, byte> keys)
+    private static ServiceProvider Build(QueryWork work, string prefix, ConcurrentDictionary<string, byte> keys,
+        TestTransactions? transactions = null)
     {
         var services = new ServiceCollection();
         services.AddLogging();
@@ -21,6 +23,7 @@ public class MethodCacheRedisTests
         services.AddRedis();
         services.Replace(ServiceDescriptor.Singleton<ICache>(sp => new TrackedCache(sp.GetRequiredService<RedisCache>(), keys)));
         services.AddSingleton(work);
+        if (transactions != null) services.AddSingleton<ITransactionCallbackRegistry>(transactions);
         services.AddMethodCaching(o =>
         {
             o.KeyPrefix = prefix;
@@ -87,6 +90,42 @@ public class MethodCacheRedisTests
         {
             await redis.RemoveAsync(key);
             await redis.RemoveAsync(lockKey);
+        }
+    }
+
+    [Fact]
+    public async Task ConditionalBatchEviction_RollbackKeepsRedisEntries_CommitRemovesCapturedKeys()
+    {
+        var keys = new ConcurrentDictionary<string, byte>();
+        var work = new QueryWork();
+        var transactions = new TestTransactions();
+        using var provider = Build(work, $"kurisu:test:expressions:{Guid.NewGuid():N}", keys, transactions);
+        var service = provider.GetRequiredService<IQueryService>();
+        var redis = provider.GetRequiredService<RedisCache>();
+        try
+        {
+            foreach (var id in new[] { 1, 2, 3 }) await service.GetAsync(id);
+            transactions.HasActiveTransaction = true;
+            await service.SaveAsync(new SaveInput());
+            Assert.Equal(0, transactions.Registrations);
+            await service.SaveBatchAsync([new() { Id = 1 }, new() { Id = 2 }, new() { Id = 1 }]);
+            Assert.Equal(1, transactions.Registrations);
+            foreach (var key in keys.Keys) Assert.True(await redis.ExistsAsync(key));
+            transactions.Rollback();
+            foreach (var id in new[] { 1, 2, 3 }) await service.GetAsync(id);
+            Assert.Equal(3, work.Calls);
+
+            transactions.HasActiveTransaction = true;
+            await service.SaveBatchAsync([new() { Id = 1 }, new() { Id = 2 }, new()]);
+            foreach (var key in keys.Keys) Assert.True(await redis.ExistsAsync(key));
+            await transactions.CommitAsync();
+            Assert.Equal(1, (await Task.WhenAll(keys.Keys.Select(redis.ExistsAsync))).Count(exists => exists));
+            foreach (var id in new[] { 1, 2, 3 }) await service.GetAsync(id);
+            Assert.Equal(5, work.Calls);
+        }
+        finally
+        {
+            foreach (var key in keys.Keys) await redis.RemoveAsync(key);
         }
     }
 
