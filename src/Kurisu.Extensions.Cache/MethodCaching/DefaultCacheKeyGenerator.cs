@@ -11,34 +11,36 @@ namespace Kurisu.Extensions.Cache.MethodCaching;
 
 public sealed class DefaultCacheKeyGenerator(IOptions<MethodCacheOptions> options) : ICacheKeyGenerator
 {
-    public string Generate(AspectContext context, string region, int keyParameterIndex,
-        MethodCachePolicy policy, MethodCacheScope scope)
+    public string Generate(AspectContext context, string region, MethodCachePolicy policy, MethodCacheScope scope)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(region);
         var method = context.ServiceMethod;
         var parameters = method.GetParameters();
-        if (parameters.Any(p => p.ParameterType.IsByRef))
-            throw new NotSupportedException("方法缓存不支持 ref/out 参数。");
-        if (keyParameterIndex < -1 || keyParameterIndex >= parameters.Length ||
-            (keyParameterIndex >= 0 && parameters[keyParameterIndex].ParameterType == typeof(CancellationToken)))
-            throw new ArgumentException("缓存 Key 参数索引无效。");
 
-        var indices = keyParameterIndex >= 0
-            ? new[] { keyParameterIndex }
-            : Enumerable.Range(0, parameters.Length).Where(i => parameters[i].ParameterType != typeof(CancellationToken));
+        if (parameters.Any(p => p.ParameterType.IsByRef)) throw new NotSupportedException("方法缓存不支持 ref/out 参数。");
+
+        var indices = Enumerable.Range(0, parameters.Length)
+            .Where(i => parameters[i].ParameterType != typeof(CancellationToken));
+        return GenerateCore(region, $"{method.DeclaringType?.FullName}:{method}",
+            indices.Select(i => new { Type = parameters[i].ParameterType.FullName, Value = context.Parameters[i] }).ToArray(), policy, scope);
+    }
+
+    public string Generate(string region, object value, MethodCachePolicy policy, MethodCacheScope scope)
+        => GenerateCore(region, null, new[] { new { Type = value?.GetType().FullName, Value = value } }, policy, scope);
+
+    private string GenerateCore(string region, string method, object arguments, MethodCachePolicy policy, MethodCacheScope scope)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(region);
         var key = new
         {
             options.Value.KeyPrefix,
             Region = region,
             policy.Version,
             Scope = scope.Dimensions,
-            Method = keyParameterIndex >= 0 ? null : $"{method.DeclaringType?.FullName}:{method}",
-            Arguments = indices.Select(i => new
-            {
-                Type = parameters[i].ParameterType.FullName,
-                Value = context.Parameters[i]
-            }).ToArray()
+            Method = method,
+            Arguments = arguments
         };
+
         var serializer = JsonSerializer.Create(new JsonSerializerSettings
         {
             Culture = CultureInfo.InvariantCulture,

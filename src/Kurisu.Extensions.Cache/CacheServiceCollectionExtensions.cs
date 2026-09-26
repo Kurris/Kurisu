@@ -1,3 +1,4 @@
+using Kurisu.Expressions;
 ﻿using System.IO;
 using Kurisu.AspNetCore.Abstractions.Cache;
 using Kurisu.AspNetCore.Abstractions.DistributedLock;
@@ -39,6 +40,8 @@ public static class CacheServiceCollectionExtensions
                 : ConnectionMultiplexer.SentinelConnect(redisOptions.ConnectionString, log);
         });
 
+        services.TryAddSingleton<ExpressionCompiler>();
+        services.TryAddSingleton<MethodExpressionEvaluator>();
         services.AddSingleton<RedisCache>();
         services.AddSingleton<RedisDistributedLockProvider>();
         services.TryAddSingleton<ICache>(sp => sp.GetRequiredService<RedisCache>());

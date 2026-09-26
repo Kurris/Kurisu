@@ -22,7 +22,7 @@ public class RedisCacheAopIntegrationTests
         services.AddRedis();
         services.AddSingleton<ILockAopTestService, LockAopTestService>();
         services.AddSingleton<IMultiKeyLockAopService, MultiKeyLockAopService>();
-        services.AddSingleton<ITryLockKeyAopService, TryLockKeyAopService>();
+        services.AddSingleton<ILockKeyExpressionService, LockKeyExpressionService>();
 
         return services.BuildDynamicProxyProvider();
     }
@@ -37,7 +37,7 @@ public class RedisCacheAopIntegrationTests
         var lockId = $"trylock:{Guid.NewGuid():N}";
         var expectedKey = $"Locker:test-scene:{lockId}";
 
-        await service.ExecuteAsync(lockId);
+        await service.ExecuteAsync(lockId, async () => Assert.True(await cache.KeyExistsAsync(expectedKey)));
 
         // 方法执行后锁应已释放
         Assert.False(await cache.KeyExistsAsync(expectedKey));
@@ -116,23 +116,23 @@ public class RedisCacheAopIntegrationTests
         Assert.False(await cache.KeyExistsAsync(expectedKey));
     }
 
-    [Fact(DisplayName = "ITryLockKey参数应被解析为锁Key")]
-    public async Task TryLock_ShouldResolveLockKey_FromTryLockKeyParameter()
+    [Fact(DisplayName = "DTO属性应被解析为锁Key")]
+    public async Task TryLock_ShouldResolveLockKey_FromDtoProperty()
     {
         using var serviceProvider = BuildAopServiceProvider();
         var cache = serviceProvider.GetRequiredService<RedisCache>();
-        var service = serviceProvider.GetRequiredService<ITryLockKeyAopService>();
+        var service = serviceProvider.GetRequiredService<ILockKeyExpressionService>();
 
         var keyModel = new TestLockKey { Id = $"itlk:{Guid.NewGuid():N}" };
-        var expectedKey = $"Locker:test-tlk:{keyModel.GetKey()}";
+        var expectedKey = $"Locker:test-tlk:{keyModel.Id}";
 
         await service.ExecuteAsync(keyModel);
 
         Assert.False(await cache.KeyExistsAsync(expectedKey));
     }
 
-    [Fact(DisplayName = "ITryLockKeys参数应被解析为多个锁Key")]
-    public async Task TryLock_ShouldAcquireMultipleLocks_FromTryLockKeysParameter()
+    [Fact(DisplayName = "DTO集合应被解析为多个锁Key")]
+    public async Task TryLock_ShouldAcquireMultipleLocks_FromDtoCollection()
     {
         using var serviceProvider = BuildAopServiceProvider();
         var cache = serviceProvider.GetRequiredService<RedisCache>();
@@ -141,9 +141,9 @@ public class RedisCacheAopIntegrationTests
         var keys = new TestLockKeys(["key-a", "key-b", "key-c"]);
         var expectedKeys = new[]
         {
-            $"Locker:test-multi:{keys.GetKeys().ElementAt(0)}",
-            $"Locker:test-multi:{keys.GetKeys().ElementAt(1)}",
-            $"Locker:test-multi:{keys.GetKeys().ElementAt(2)}",
+            $"Locker:test-multi:{keys.Values.ElementAt(0)}",
+            $"Locker:test-multi:{keys.Values.ElementAt(1)}",
+            $"Locker:test-multi:{keys.Values.ElementAt(2)}",
         };
 
         await service.ExecuteAsync(keys);
@@ -161,14 +161,14 @@ public class RedisCacheAopIntegrationTests
 
         // 先手动占用其中一个Key
         var keys = new TestLockKeys(["rollback-a", "rollback-b"]);
-        var preemptiveKey = $"Locker:test-rollback:{keys.GetKeys().ElementAt(0)}";
+        var preemptiveKey = $"Locker:test-rollback:{keys.Values.ElementAt(0)}";
         await cache.StringSetAsync(preemptiveKey, "external-holder", TimeSpan.FromSeconds(10), StackExchange.Redis.When.NotExists);
 
         // 调用应失败（因为第一个Key已被占用且不重试）
         await Assert.ThrowsAnyAsync<Exception>(() => service.ExecuteNoRetryAsync(keys));
 
         // 所有Key都不应有残留锁
-        foreach (var k in keys.GetKeys())
+        foreach (var k in keys.Values)
             await cache.KeyDeleteAsync($"Locker:test-rollback:{k}");
     }
 }
@@ -177,13 +177,13 @@ public class RedisCacheAopIntegrationTests
 
 public interface ILockAopTestService
 {
-    [TryLock("test-scene", "操作失败")]
+    [TryLock("test-scene", "操作失败", Key = "id")]
     Task ExecuteAsync(string id, Func<Task>? work = null);
 
-    [TryLockFixedExpiry("test-fixed", "操作失败", 3)]
+    [TryLockFixedExpiry("test-fixed", "操作失败", 3, Key = "id")]
     Task ExecuteFixedExpiryAsync(string id);
 
-    [TryLockLimitedRenewals("test-limited", "操作失败", 3, 2)]
+    [TryLockLimitedRenewals("test-limited", "操作失败", 3, 2, Key = "id")]
     Task ExecuteLimitedRenewalAsync(string id);
 }
 
@@ -201,39 +201,38 @@ public class LockAopTestService : ILockAopTestService
 
 public interface IMultiKeyLockAopService
 {
-    [TryLock("test-multi", "操作失败")]
-    Task ExecuteAsync(ITryLockKeys keys);
+    [TryLock("test-multi", "操作失败", Keys = "keys.Values")]
+    Task ExecuteAsync(TestLockKeys keys);
 
-    [TryLock("test-rollback", "操作失败", RetryCount = 0)]
-    Task ExecuteNoRetryAsync(ITryLockKeys keys);
+    [TryLock("test-rollback", "操作失败", RetryCount = 0, Keys = "keys.Values")]
+    Task ExecuteNoRetryAsync(TestLockKeys keys);
 }
 
 public class MultiKeyLockAopService : IMultiKeyLockAopService
 {
-    public Task ExecuteAsync(ITryLockKeys keys) => Task.CompletedTask;
-    public Task ExecuteNoRetryAsync(ITryLockKeys keys) => Task.CompletedTask;
+    public Task ExecuteAsync(TestLockKeys keys) => Task.CompletedTask;
+    public Task ExecuteNoRetryAsync(TestLockKeys keys) => Task.CompletedTask;
 }
 
-public interface ITryLockKeyAopService
+public interface ILockKeyExpressionService
 {
-    [TryLock("test-tlk", "操作失败")]
-    Task ExecuteAsync(ITryLockKey key);
+    [TryLock("test-tlk", "操作失败", Key = "key.Id")]
+    Task ExecuteAsync(TestLockKey key);
 }
 
-public class TryLockKeyAopService : ITryLockKeyAopService
+public class LockKeyExpressionService : ILockKeyExpressionService
 {
-    public Task ExecuteAsync(ITryLockKey key) => Task.CompletedTask;
+    public Task ExecuteAsync(TestLockKey key) => Task.CompletedTask;
 }
 
-public class TestLockKey : ITryLockKey
+public class TestLockKey
 {
     public string Id { get; set; } = string.Empty;
-    public string GetKey() => Id;
 }
 
-public class TestLockKeys : ITryLockKeys
+public class TestLockKeys
 {
     private readonly string[] _keys;
     public TestLockKeys(string[] keys) => _keys = keys;
-    public IEnumerable<string> GetKeys() => _keys;
+    public IEnumerable<string> Values => _keys;
 }

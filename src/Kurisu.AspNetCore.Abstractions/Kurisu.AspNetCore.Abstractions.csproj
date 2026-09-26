@@ -9,6 +9,7 @@
 		<GenerateDocumentationFile>True</GenerateDocumentationFile>
 	</PropertyGroup>
 	<ItemGroup>
+        <ProjectReference Include="../Kurisu.Expressions/Kurisu.Expressions.csproj" />
         <ProjectReference Include="..\Kurisu.Aspect.Abstractions\Kurisu.Aspect.Abstractions.csproj"/>
 		<PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="8.0.2" />
 		<PackageReference Include="Microsoft.AspNetCore.Hosting.Abstractions" Version="2.3.0" />

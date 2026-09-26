@@ -19,9 +19,7 @@ public class MultiLock : IAsyncDisposable
     /// </summary>
     /// <param name="lockable">锁提供者</param>
     /// <param name="scene">锁场景名</param>
-    /// <param name="parameterValue">方法参数值（string / ITryLockKey / ITryLockKeys）</param>
-    /// <param name="parameterName">参数名</param>
-    /// <param name="parameterIndex">参数索引</param>
+    /// <param name="keys">表达式解析后的锁 Key 集合。</param>
     /// <param name="options">锁获取选项</param>
     /// <param name="tips">获取失败时的提示信息</param>
     /// <param name="cancellationToken">取消令牌</param>
@@ -29,15 +27,16 @@ public class MultiLock : IAsyncDisposable
     public static async Task<MultiLock> AcquireAsync(
         ILockable lockable,
         string scene,
-        object parameterValue,
-        string parameterName,
-        int parameterIndex,
+        IEnumerable<string> keys,
         DistributedLockAcquisitionOptions options,
         string tips,
         CancellationToken cancellationToken = default)
     {
-        var lockKeys = ResolveLockKeys(parameterValue, parameterName, parameterIndex)
-            .Select(k => $"Locker:{scene}:{k}");
+        var lockKeys = keys?.Where(k => !string.IsNullOrWhiteSpace(k))
+            .Distinct(StringComparer.Ordinal).OrderBy(k => k, StringComparer.Ordinal)
+            .Select(k => $"Locker:{scene}:{k}").ToArray();
+        if (lockKeys == null || lockKeys.Length == 0)
+            throw new ArgumentException("必须提供至少一个有效的锁定 Key。", nameof(keys));
 
         var handlers = new Stack<ILockHandler>();
         try
@@ -61,25 +60,6 @@ public class MultiLock : IAsyncDisposable
 
             throw;
         }
-    }
-
-    private static string[] ResolveLockKeys(object value, string parameterName, int parameterIndex)
-    {
-        IEnumerable<string> keys = value switch
-        {
-            string s => [s],
-            ITryLockKey k => [k.GetKey()],
-            ITryLockKeys k => k.GetKeys(),
-            _ => throw new ArgumentException($"方法第{parameterIndex}个参数必须为string类型,或者实现{nameof(ITryLockKey)}/{nameof(ITryLockKeys)}接口.")
-        };
-
-        var lockKeys = keys?.Where(x => !string.IsNullOrWhiteSpace(x)).ToArray() ?? Array.Empty<string>();
-        if (lockKeys.Length == 0)
-        {
-            throw new ArgumentException("必须提供至少一个有效的锁定Key.", parameterName);
-        }
-
-        return lockKeys;
     }
 
     /// <summary>

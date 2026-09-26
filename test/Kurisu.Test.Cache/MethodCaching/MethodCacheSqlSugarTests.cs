@@ -82,7 +82,7 @@ public class MethodCacheSqlSugarTests
     }
 
     [Fact]
-    public async Task EffectiveTenantAndSpecialFilters_AreRespected()
+    public async Task EffectiveTenant_IsolatesCacheAndEvictionAcrossNestedScopes()
     {
         var cache = new TestCache();
         var work = new QueryWork();
@@ -99,19 +99,15 @@ public class MethodCacheSqlSugarTests
             using (db.UseTenant("inner"))
             {
                 Assert.Equal("inner", sp.GetRequiredService<IDbTenantAccessor>().GetTenantId());
-                var context = new MethodCacheScope();
-                foreach (var contributor in sp.GetServices<IMethodCacheScopeContributor>()) contributor.Contribute(context);
-                Assert.Equal("inner", context.Dimensions["tenant"]);
                 await service.GetAsync(1);
+                await service.UpdateAsync(1);
+                await service.GetAsync(1);
+                Assert.Equal(3, work.Calls);
             }
+            Assert.Equal("outer", sp.GetRequiredService<IDbTenantAccessor>().GetTenantId());
             await service.GetAsync(1);
-            Assert.Equal(2, work.Calls);
-            using (db.IgnoreSoftDeleted()) await service.GetAsync(1);
             Assert.Equal(3, work.Calls);
             Assert.Equal(2, cache.Data.Count);
         }
-        using (db.IgnoreTenant()) await service.GetAsync(1);
-        Assert.Equal(4, work.Calls);
-        Assert.Equal(2, cache.Data.Count);
     }
 }

@@ -1,7 +1,7 @@
+using Kurisu.AspNetCore.Abstractions.DataAccess.Core.Context;
 using Kurisu.AspNetCore.Abstractions.DataAccess;
 using Kurisu.AspNetCore.Abstractions.DataAccess.Contract.Field;
 using Kurisu.Extensions.ContextAccessor.Abstractions;
-using Kurisu.Extensions.SqlSugar.Context;
 using Microsoft.Extensions.DependencyInjection;
 using SqlSugar;
 
