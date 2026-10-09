@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- 验证 FluentValidation 模型规则及参数验证扩展, 不依赖外部数据库或 Redis. -->
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../src/Kurisu.Extensions.FluentValidation/Kurisu.Extensions.FluentValidation.csproj" />
+    <PackageReference Include="AspectCore.Extensions.DependencyInjection" Version="3.0.0" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.7.2" />
+    <PackageReference Include="xunit" Version="2.5.1" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.5.1" PrivateAssets="all" />
+  </ItemGroup>
+</Project>

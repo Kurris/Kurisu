@@ -33,6 +33,6 @@
         <PackageReference Include="Swashbuckle.AspNetCore" Version="8.1.4"/>
         <PackageReference Include="Swashbuckle.AspNetCore.Filters" Version="9.0.1"/>
         <ProjectReference Include="../Kurisu.Extensions.Cache/Kurisu.Extensions.Cache.csproj"/>
-        <ProjectReference Include="../Kurisu.Aspect/Kurisu.Aspect.csproj"/>
+        <PackageReference Include="AspectCore.Extensions.Hosting" Version="3.0.0" />
     </ItemGroup>
 </Project>

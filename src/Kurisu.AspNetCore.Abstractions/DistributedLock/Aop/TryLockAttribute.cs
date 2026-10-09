@@ -1,3 +1,4 @@
+using Kurisu.AspNetCore.Abstractions.Aop;
 using AspectCore.DynamicProxy;
 using AspectCore.DynamicProxy.Parameters;
 using Microsoft.Extensions.DependencyInjection;
@@ -30,7 +31,7 @@ public class TryLockAttribute(string scene, string tips) : AopAttribute
     /// </summary>
     public override async Task Invoke(AspectContext context, AspectDelegate next)
     {
-        var parameters = context.GetParameters(true);
+        var parameters = context.GetParameters();
         var keyParam = parameters[KeyParameterIndex];
         var lockable = context.ServiceProvider.GetRequiredService<ILockable>();
         var cancellationToken = ResolveCancellationToken(parameters);

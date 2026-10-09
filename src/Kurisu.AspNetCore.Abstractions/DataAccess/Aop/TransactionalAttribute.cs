@@ -1,4 +1,5 @@
-﻿using System.Data;
+using Kurisu.AspNetCore.Abstractions.Aop;
+using System.Data;
 using AspectCore.DynamicProxy;
 using Kurisu.AspNetCore.Abstractions.DataAccess.Core.Context;
 using Microsoft.Extensions.DependencyInjection;

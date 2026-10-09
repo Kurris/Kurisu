@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
 		<ImplicitUsings>enable</ImplicitUsings>
@@ -30,7 +30,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<ProjectReference Include="..\..\src\Kurisu.Aspect\Kurisu.Aspect.csproj" />
+		<PackageReference Include="AspectCore.Extensions.DependencyInjection" Version="3.0.0" />
 		<ProjectReference Include="..\..\src\Kurisu.Extensions.ContextAccessor\Kurisu.Extensions.ContextAccessor.csproj" />
 	</ItemGroup>
 

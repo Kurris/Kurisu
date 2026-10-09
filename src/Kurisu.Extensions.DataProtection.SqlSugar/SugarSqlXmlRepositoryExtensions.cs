@@ -1,6 +1,7 @@
 ﻿using System.Xml.Linq;
 using Kurisu.AspNetCore.Abstractions.DataAccess.Contract;
 using Kurisu.AspNetCore.Abstractions.DataAccess.Core.Context;
+using Kurisu.AspNetCore.Abstractions.Startup;
 using Kurisu.Extensions.SqlSugar.Utils;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.DataProtection.KeyManagement;
@@ -70,7 +71,10 @@ internal class SugarSqlXmlRepository : BaseXmlRepository
         IEnumerable<XElement> GetAllElementsCore()
         {
             using var scope = Services.CreateScope();
+            using var lifecycle = scope.ServiceProvider.EnsureLifecycle();
             var db = scope.ServiceProvider.GetRequiredService<IDbContext>();
+            // 密钥仓储也会由后台预加载调用, 不依赖 HTTP 请求的数据源作用域.
+            using var datasource = db.CreateDatasourceScope();
             var data = db.Queryable<DataProtectionKey>().ToList();
             foreach (var key in data)
             {
@@ -90,7 +94,10 @@ internal class SugarSqlXmlRepository : BaseXmlRepository
     public override void StoreElement(XElement element, string friendlyName)
     {
         using var scope = Services.CreateScope();
+        using var lifecycle = scope.ServiceProvider.EnsureLifecycle();
         var db = scope.ServiceProvider.GetRequiredService<IDbContext>();
+        // 独立解析的 DbContext 必须显式建立自己的数据源作用域.
+        using var datasource = db.CreateDatasourceScope();
 
         var newKey = new DataProtectionKey
         {

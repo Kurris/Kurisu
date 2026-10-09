@@ -29,6 +29,11 @@ public class LogAttribute : Attribute, IAsyncActionFilter
     /// </summary>
     public bool DisableResponseLogout { get; set; }
 
+    /// <summary>
+    /// 隐藏请求参数日志, 用于联系方式等不应记录到日志的业务输入.
+    /// </summary>
+    public bool DisableRequestLog { get; set; }
+
     /// <inheritdoc />
     public async Task OnActionExecutionAsync(ActionExecutingContext context, ActionExecutionDelegate next)
     {

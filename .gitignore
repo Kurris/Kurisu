@@ -447,17 +447,14 @@ $RECYCLE.BIN/
 ##
 ## Visual Studio Code
 ##
-.vscode/*
-!.vscode/settings.json
-!.vscode/tasks.json
-!.vscode/launch.json
-!.vscode/extensions.json
+.vscode/
 
 .tools/
 coverage*/
 .test/*/TestResults/
 
 .claude
+.codex/
 
 
 do-bump-*.sh

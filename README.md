@@ -117,15 +117,17 @@ public class JwtOptions : IStartupConfigure<JwtOptions>
 
 ### AOP 支持
 
-基于 AspectCore 的透明代理，提供声明式横切关注点。
+直接引用官方 AspectCore 3.0.0, 通过 `.UseDynamicProxy()` 在微软原生 DI 上启用透明代理。Kurisu 的切面基类为 `Kurisu.AspNetCore.Abstractions.Aop.AopAttribute`, 继承官方 `AbstractInterceptorAttribute`。
 
 ```csharp
 [TryLock("createOrder", "订单处理中，请稍后重试")]
 [Transactional]
-public void CreateOrder(OrderDto dto) { }
+public virtual void CreateOrder(OrderDto dto) { }
 ```
 
-内置拦截器：`[Transactional]`、`[TryLock]`、`[Datasource]`、`[IgnoreTenant]` 等。
+内置拦截器：`[Transactional]`、`[TryLock]`、`[Datasource]`、`[IgnoreTenant]` 等。可选的 [FluentValidation 扩展](src/Kurisu.Extensions.FluentValidation/README.md) 允许模型实现 `Kurisu.Extensions.FluentValidation.Abstractions.IAopValidatableObject` 并在 `CreateValidator` 中定义规则。宿主调用 `AddParameterValidation()` 后，扩展的方法拦截器自动异步验证这些模型，无需逐个标记参数，并在默认事务切面之前执行。只有声明为可验证模型类型的方法参数会自动触发验证, 普通服务不因验证功能而被代理。
+
+自定义切面需引用 `Kurisu.AspNetCore.Abstractions.Aop`。原 `Kurisu.Aspect` 与 `Kurisu.Aspect.Abstractions` 项目已移除, 消费方升级后需要重新编译。
 
 ### 远程调用
 
@@ -152,10 +154,10 @@ services.AddRemoteCall(typeof(IUserApi));
 |------|------|
 | `Kurisu.Extensions.Cache` | Redis 缓存与分布式锁 |
 | `Kurisu.Extensions.SqlSugar` | SqlSugar ORM 集成（多租户、软删除、分表、事务传播） |
-| `Kurisu.Extensions.EventBus` | 进程内事件总线（Channel 实现） |
+| `Kurisu.Extensions.EventBus` | 本地持久化事件总线（事务内发布、Channel 调度、租约、重试与死信） |
+| `Kurisu.Extensions.FluentValidation` | 模型接口自动触发异步参数 AOP，支持模型内规则及宿主字段错误响应 |
 | `Kurisu.Extensions.ContextAccessor` | 泛型 `AsyncLocal<T>` 上下文访问器 |
 | `Kurisu.RemoteCall` | 声明式 HTTP 客户端 |
-| `Kurisu.Aspect` | AOP 动态代理 |
 | `Kurisu.Extensions.DataProtection.Redis` | Redis 数据保护密钥存储 |
 | `Kurisu.Extensions.DataProtection.SqlSugar` | SqlSugar 数据保护密钥存储 |
 
@@ -185,6 +187,12 @@ KurisuHost.Run<Startup>(args)
 | `DbOptions__DefaultConnectionString` | 默认数据库连接 |
 | `DbOptions__AdditionalConnectionStrings__SecondConnectionString` | 多数据源测试的第二个数据库连接 |
 | `RedisOptions__ConnectionString` | Redis 测试连接 |
+
+## 电商微服务用例
+
+[Kurisu.Shop](sample/Kurisu.Shop/README.md) 提供 .NET 8、YARP 网关与 SQLite 的本地电商微服务用例，包含商城、管理后台、客户会员、营销活动、统一计价、地址与商品回收站，以及下单、库存、模拟支付和取消流程。购物车、营销与统一计价作为 Ordering 内部模块，会员由 Identity 提供。购物车默认使用后端内存缓存，可切换框架 Redis。用例使用框架表列配置、基础实体审计、数据访问与 CodeFirst、事务和参数 AOP、Mapster、动态 API、数据保护、分页及默认响应和 Swagger。
+
+服务间消息复用 `Kurisu.Extensions.EventBus` 的 `IEventBus / LocalMessage / IEventMessageHandler<T>`，每种业务事件直接对应一个强类型框架处理器。业务数据与事件在同一事务中持久化，再通过 HTTP 桥接和 Inbox 去重实现协作，无需第三方消息中间件。SQLite 的 `long` 自增主键通过用例自己的 `ConfigureExternalServices` 替换适配，不修改框架默认配置。各业务项目以 `.Service` 结尾，可通过 PowerShell 脚本启动，并运行框架接入、HTTP 回归及完整业务流程验证。
 
 ## License
 

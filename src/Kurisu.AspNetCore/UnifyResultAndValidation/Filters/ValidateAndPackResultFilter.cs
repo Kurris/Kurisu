@@ -49,6 +49,7 @@ public class ValidateAndPackResultFilter : IAsyncActionFilter, IAsyncResultFilte
         var logAttribute = controllerActionDescriptor.MethodInfo.GetCustomAttribute<LogAttribute>() ?? new LogAttribute(string.Empty);
         apiLogSetting.Title = logAttribute.Title;
         apiLogSetting.DisableResponseLogout = logAttribute.DisableResponseLogout;
+        apiLogSetting.DisableRequestLog = logAttribute.DisableRequestLog;
 
         var db = context.HttpContext.RequestServices.GetService<IDbContext>();
         if (apiLogSetting.Title.IsPresent())

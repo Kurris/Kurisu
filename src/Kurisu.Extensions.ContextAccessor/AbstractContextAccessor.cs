@@ -9,6 +9,9 @@ namespace Kurisu.Extensions.ContextAccessor;
 /// <typeparam name="TState"></typeparam>
 public abstract class AbstractContextAccessor<TState>(ILogger logger) : IContextAccessor<TState> where TState : class, new()
 {
+    /// <summary>用于后台或嵌套调用判断是否需要初始化, 不重置已有上下文.</summary>
+    public bool IsInitialized => Current is not null;
+
 
     /// <summary>
     /// 初始化上下文

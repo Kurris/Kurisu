@@ -22,6 +22,9 @@ internal class ApiLogSetting
 
     public bool DisableResponseLogout { get; set; }
 
+    /// <summary>保留请求元信息, 隐藏参数内容.</summary>
+    public bool DisableRequestLog { get; set; }
+
     public string ConnectionId { get; set; }
 
     public string Path { get; set; }
@@ -51,13 +54,13 @@ internal class ApiLogSetting
         const Formatting formatting = Formatting.None; //Indented
         if (!DisableResponseLogout)
         {
-            var formattedParams = JsonConvert.SerializeObject(Parameters, formatting);
+            var formattedParams = DisableRequestLog ? "[已隐藏]" : JsonConvert.SerializeObject(Parameters, formatting);
             var formattedResponse = JsonConvert.SerializeObject(Response, formatting);
             _logger.LogInformation("\r\nConnectionId:{connectionId} UserId:{userId} {httpMethod} {path}\r\nRequest:{params}\r\nResponse:{response}", ConnectionId, UserId, HttpMethod, Path, formattedParams, formattedResponse);
         }
         else
         {
-            var formattedParams = JsonConvert.SerializeObject(Parameters, formatting);
+            var formattedParams = DisableRequestLog ? "[已隐藏]" : JsonConvert.SerializeObject(Parameters, formatting);
             _logger.LogInformation("\r\nConnectionId:{connectionId} UserId:{userId} {httpMethod} {path}\r\nRequest:{params}", ConnectionId, UserId, HttpMethod, Path, formattedParams);
         }
 

@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- 可选的异步参数验证扩展, 不改变框架核心依赖. -->
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <Version>0.1.0</Version>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../Kurisu.AspNetCore.Abstractions/Kurisu.AspNetCore.Abstractions.csproj" />
+    <PackageReference Include="AspectCore.Extensions.DependencyInjection" Version="3.0.0" />
+    <PackageReference Include="FluentValidation" Version="12.1.1" />
+  </ItemGroup>
+</Project>
