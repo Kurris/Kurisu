@@ -33,16 +33,10 @@ namespace Kurisu.Test.RemoteCall.UnitTests
 
             public override string RequestType => "Test";
 
-            protected override Task<TResult> RequestAsync<TResult>(IProxyInvocation invocation)
+            protected override async Task<TResult> RequestAsync<TResult>(IProxyInvocation invocation)
             {
                 // delegate to provided func and cast; await to avoid AggregateException wrapping
-                return _impl(invocation).ContinueWith(tsk =>
-                {
-                    // propagate original exception types
-                    if (tsk.IsFaulted) return Task.FromException<TResult>(tsk.Exception!.InnerException ?? tsk.Exception!);
-                    if (tsk.IsCanceled) return Task.FromCanceled<TResult>(new CancellationToken(true));
-                    return Task.FromResult((TResult)tsk.Result);
-                }).Unwrap();
+                return (TResult)await _impl(invocation);
             }
 
             // expose the protected HandleAsync for testing

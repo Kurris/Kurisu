@@ -181,7 +181,7 @@ public class ContextAccessorTests
         var sp = services.BuildServiceProvider();
 
         // simulate two requests running on thread-pool threads (separate execution contexts)
-        var t1 = Task.Run(() =>
+        var t1 = Task.Run(async () =>
         {
             using var scope = sp.CreateScope();
             var prov = scope.ServiceProvider;
@@ -191,13 +191,13 @@ public class ContextAccessorTests
             lifecycle.Initialize();
             accessor.Current.Name = "RequestA";
             // ensure some overlap
-            Task.Delay(50).Wait();
+            await Task.Delay(50);
             var name = accessor.Current.Name;
             lifecycle.Remove();
             return name;
         });
 
-        var t2 = Task.Run(() =>
+        var t2 = Task.Run(async () =>
         {
             using var scope = sp.CreateScope();
             var prov = scope.ServiceProvider;
@@ -206,17 +206,17 @@ public class ContextAccessorTests
 
             lifecycle.Initialize();
             accessor.Current.Name = "RequestB";
-            Task.Delay(30).Wait();
+            await Task.Delay(30);
             var name = accessor.Current.Name;
             lifecycle.Remove();
             return name;
         });
 
-        await Task.WhenAll(t1, t2);
+        var names = await Task.WhenAll(t1, t2);
 
-        Assert.Equal("RequestA", t1.Result);
-        Assert.Equal("RequestB", t2.Result);
-        Assert.NotEqual(t1.Result, t2.Result);
+        Assert.Equal("RequestA", names[0]);
+        Assert.Equal("RequestB", names[1]);
+        Assert.NotEqual(names[0], names[1]);
     }
 
     [Fact]

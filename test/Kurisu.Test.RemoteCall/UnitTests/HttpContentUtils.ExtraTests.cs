@@ -35,11 +35,11 @@ public class HttpContentUtils_ExtraTests
     }
 
     [Fact]
-    public void Create_EmptyParameters_ReturnsJsonEmptyObject()
+    public async Task Create_EmptyParameters_ReturnsJsonEmptyObject()
     {
         var m = typeof(Dummy).GetMethod(nameof(Dummy.SingleString))!;
         var content = HttpContentUtils.Create(m, new List<ParameterValue>(), _json, _common);
-        var str = content.ReadAsStringAsync().Result;
+        var str = await content.ReadAsStringAsync();
         Assert.Equal("{}", str);
         Assert.Equal("application/json", content.Headers.ContentType.MediaType);
     }
@@ -54,27 +54,27 @@ public class HttpContentUtils_ExtraTests
     }
 
     [Fact]
-    public void Create_AsUrlencoded_RawString_EncodesAndReturnsStringContent()
+    public async Task Create_AsUrlencoded_RawString_EncodesAndReturnsStringContent()
     {
         var m = typeof(Dummy).GetMethod(nameof(Dummy.RawText))!;
         var pinfo = m.GetParameters()[0];
         var pv = new ParameterValue(pinfo, "a=1 b=2");
         var content = HttpContentUtils.Create(m, new List<ParameterValue>{ pv }, _json, _common);
-        var body = content.ReadAsStringAsync().Result;
+        var body = await content.ReadAsStringAsync();
         // WebUtility.UrlEncode encodes space as '+' in application/x-www-form-urlencoded style
         Assert.Contains("a=1+b%3D2", body);
         Assert.Equal("text/plain", content.Headers.ContentType.MediaType);
     }
 
     [Fact]
-    public void Create_AsUrlencoded_MultipleParams_FormUrlEncodedContent()
+    public async Task Create_AsUrlencoded_MultipleParams_FormUrlEncodedContent()
     {
         var m = typeof(Dummy).GetMethod(nameof(Dummy.Multi))!;
         var p1 = new ParameterValue(m.GetParameters()[0], new { x = 1 });
         var p2 = new ParameterValue(m.GetParameters()[1], new { y = 2 });
         var content = HttpContentUtils.Create(m, new List<ParameterValue>{ p1, p2 }, _json, _common);
         Assert.IsType<System.Net.Http.FormUrlEncodedContent>(content);
-        var body = content.ReadAsStringAsync().Result;
+        var body = await content.ReadAsStringAsync();
         Assert.Contains("x=1", body);
         Assert.Contains("y=2", body);
     }

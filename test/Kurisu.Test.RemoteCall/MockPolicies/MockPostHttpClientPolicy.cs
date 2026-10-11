@@ -14,11 +14,11 @@ public class MockPostHttpClientPolicy : IRemoteCallPolicyHandler
         {
             var mock = new MockHttpMessageHandler();
             mock.When(HttpMethod.Post, "http://localhost:5000/api/post1")
-                .Respond(httpRequest =>
+                .Respond(async httpRequest =>
                 {
                     var uri = httpRequest.RequestUri!;
 
-                    var result = httpRequest.Content.ReadAsStringAsync().GetAwaiter().GetResult();
+                    var result = await httpRequest.Content.ReadAsStringAsync();
 
                     // 4. 创建并返回 HttpResponseMessage
                     return new HttpResponseMessage(HttpStatusCode.OK)

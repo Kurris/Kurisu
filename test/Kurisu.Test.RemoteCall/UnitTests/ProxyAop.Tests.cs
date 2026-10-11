@@ -53,26 +53,24 @@ namespace Kurisu.Test.RemoteCall.UnitTests
         private static Task<string> DummyTaskString() => Task.FromResult("x");
 
         [Fact]
-        public void InterceptAsync_Assigns_Task_ReturnValue()
+        public async Task InterceptAsync_Assigns_Task_ReturnValue()
         {
             var inv = new TestInvocation { Method = typeof(ProxyAop_Tests).GetMethod(nameof(DummyTask), BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public) };
             var aop = new TestAop(Task.Delay(1));
             aop.InterceptAsync(inv);
-            Assert.IsAssignableFrom<Task>(inv.ReturnValue);
-            var t = (Task)inv.ReturnValue;
-            t.GetAwaiter().GetResult();
+            var t = Assert.IsAssignableFrom<Task>(inv.ReturnValue);
+            await t;
             Assert.True(t.IsCompleted);
         }
 
         [Fact]
-        public void InterceptAsync_Generic_Assigns_TaskOfT_ReturnValue()
+        public async Task InterceptAsync_Generic_Assigns_TaskOfT_ReturnValue()
         {
             var inv = new TestInvocation { Method = typeof(ProxyAop_Tests).GetMethod(nameof(DummyTaskString), BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public) };
             var aop = new TestAop();
             aop.InterceptAsync<string>(inv);
-            Assert.IsType<Task<string>>(inv.ReturnValue);
-            var t = (Task<string>)inv.ReturnValue;
-            var res = t.GetAwaiter().GetResult();
+            var t = Assert.IsType<Task<string>>(inv.ReturnValue);
+            var res = await t;
             Assert.Equal("ok", res);
         }
 

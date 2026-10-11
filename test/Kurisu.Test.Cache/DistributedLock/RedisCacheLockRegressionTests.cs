@@ -267,9 +267,9 @@ public class RedisCacheLockRegressionTests
     }
 
     [Fact(DisplayName = "构造时传无效过期时间应抛出参数异常")]
-    public void RedisLock_ShouldThrow_WhenExpiryNotPositive()
+    public async Task RedisLock_ShouldThrow_WhenExpiryNotPositive()
     {
-        Assert.Throws<ArgumentException>(() =>
+        await Assert.ThrowsAsync<ArgumentException>(async () =>
         {
             using var serviceProvider = RedisCacheTestSupport.BuildServiceProvider();
             var lockable = serviceProvider.GetRequiredService<ILockable>();
@@ -278,7 +278,7 @@ public class RedisCacheLockRegressionTests
                 TimeModeHandler = new LockTimeModeHandler(TimeSpan.Zero),
                 RetryStrategy = new DefaultLockRetryStrategy(0)
             };
-            _ = lockable.LockAsync($"test:lock:invalid-expiry:{Guid.NewGuid():N}", options).GetAwaiter().GetResult();
+            await lockable.LockAsync($"test:lock:invalid-expiry:{Guid.NewGuid():N}", options);
         });
     }
 
