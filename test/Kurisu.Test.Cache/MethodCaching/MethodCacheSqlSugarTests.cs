@@ -37,7 +37,7 @@ public class MethodCacheSqlSugarTests
     }
 
     [Fact]
-    public async Task RealSqlSugarTransactions_RequiredCommitAndRollbackControlEviction()
+    public async Task RealSqlSugarTransactions_DoNotDeferEviction_AndQueriesStillBypassCache()
     {
         var cache = new TestCache();
         var work = new QueryWork();
@@ -62,21 +62,24 @@ public class MethodCacheSqlSugarTests
                 await service.UpdateAsync(1);
                 await inner.CommitAsync();
             }
-            Assert.Single(cache.Data);
+
+            Assert.Empty(cache.Data);
             await service.GetAsync(1);
             Assert.Equal(2, work.Calls);
             await outer.RollbackAsync();
         }
+
         Assert.False(callbacks.HasActiveTransaction);
         await service.GetAsync(1);
-        Assert.Equal(2, work.Calls);
+        Assert.Equal(3, work.Calls);
         using (var transaction = db.DatasourceManager.CreateTransScope(Propagation.Required))
         {
             await transaction.BeginAsync();
             await service.UpdateAsync(1);
-            Assert.Single(cache.Data);
+            Assert.Empty(cache.Data);
             await transaction.CommitAsync();
         }
+
         Assert.Empty(cache.Data);
         Assert.False(callbacks.HasActiveTransaction);
     }
@@ -104,6 +107,7 @@ public class MethodCacheSqlSugarTests
                 await service.GetAsync(1);
                 Assert.Equal(3, work.Calls);
             }
+
             Assert.Equal("outer", sp.GetRequiredService<IDbTenantAccessor>().GetTenantId());
             await service.GetAsync(1);
             Assert.Equal(3, work.Calls);

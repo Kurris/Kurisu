@@ -1,4 +1,4 @@
-namespace Kurisu.AspNetCore.Abstractions.DistributedLock;
+namespace Kurisu.AspNetCore.Abstractions.DistributedLock.Impl;
 
 /// <summary>
 /// 分布式锁时间模式处理器。

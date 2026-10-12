@@ -1,6 +1,6 @@
 using Kurisu.AspNetCore.Abstractions.Result;
 
-namespace Kurisu.AspNetCore.Abstractions.DistributedLock;
+namespace Kurisu.AspNetCore.Abstractions.DistributedLock.Impl;
 
 /// <summary>
 /// 多锁持有器，用于同时持有多个分布式锁并在释放时按相反顺序解锁。

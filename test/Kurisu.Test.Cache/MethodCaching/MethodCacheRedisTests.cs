@@ -27,9 +27,9 @@ public class MethodCacheRedisTests
         services.AddMethodCaching(o =>
         {
             o.KeyPrefix = prefix;
-            o.Policies["Default"].LockExpiry = TimeSpan.FromMilliseconds(300);
-            o.Policies["Default"].LockPollInterval = TimeSpan.FromMilliseconds(25);
-            o.Policies["Default"].Expiry = TimeSpan.FromSeconds(30);
+            o.Default.LockExpiry = TimeSpan.FromMilliseconds(300);
+            o.Default.LockPollInterval = TimeSpan.FromMilliseconds(25);
+            o.Default.Expiry = TimeSpan.FromSeconds(30);
         });
         services.AddTransient<IQueryService, QueryService>();
         return services.BuildDynamicProxyProvider();
@@ -41,7 +41,15 @@ public class MethodCacheRedisTests
         var keys = new ConcurrentDictionary<string, byte>();
         var prefix = $"kurisu:test:method-cache:{Guid.NewGuid():N}";
         var entered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-        var work = new QueryWork { Handler = async (_, token) => { entered.TrySetResult(); await Task.Delay(1200, token); return "loaded"; } };
+        var work = new QueryWork
+        {
+            Handler = async (_, token) =>
+            {
+                entered.TrySetResult();
+                await Task.Delay(1200, token);
+                return "loaded";
+            }
+        };
         using var first = Build(work, prefix, keys);
         using var second = Build(work, prefix, keys);
         var firstService = first.GetRequiredService<IQueryService>();
@@ -94,7 +102,7 @@ public class MethodCacheRedisTests
     }
 
     [Fact]
-    public async Task ConditionalBatchEviction_RollbackKeepsRedisEntries_CommitRemovesCapturedKeys()
+    public async Task ConditionalBatchEviction_RemovesCapturedKeysWithoutWaitingForTransaction()
     {
         var keys = new ConcurrentDictionary<string, byte>();
         var work = new QueryWork();
@@ -109,19 +117,19 @@ public class MethodCacheRedisTests
             await service.SaveAsync(new SaveInput());
             Assert.Equal(0, transactions.Registrations);
             await service.SaveBatchAsync([new() { Id = 1 }, new() { Id = 2 }, new() { Id = 1 }]);
-            Assert.Equal(1, transactions.Registrations);
-            foreach (var key in keys.Keys) Assert.True(await redis.ExistsAsync(key));
+            Assert.Equal(0, transactions.Registrations);
+            Assert.Equal(1, (await Task.WhenAll(keys.Keys.Select(redis.ExistsAsync))).Count(exists => exists));
             transactions.Rollback();
             foreach (var id in new[] { 1, 2, 3 }) await service.GetAsync(id);
-            Assert.Equal(3, work.Calls);
+            Assert.Equal(5, work.Calls);
 
             transactions.HasActiveTransaction = true;
             await service.SaveBatchAsync([new() { Id = 1 }, new() { Id = 2 }, new()]);
-            foreach (var key in keys.Keys) Assert.True(await redis.ExistsAsync(key));
+            Assert.Equal(1, (await Task.WhenAll(keys.Keys.Select(redis.ExistsAsync))).Count(exists => exists));
             await transactions.CommitAsync();
             Assert.Equal(1, (await Task.WhenAll(keys.Keys.Select(redis.ExistsAsync))).Count(exists => exists));
             foreach (var id in new[] { 1, 2, 3 }) await service.GetAsync(id);
-            Assert.Equal(5, work.Calls);
+            Assert.Equal(7, work.Calls);
         }
         finally
         {
@@ -131,9 +139,15 @@ public class MethodCacheRedisTests
 
     private sealed class TrackedCache(ICache inner, ConcurrentDictionary<string, byte> keys) : ICache
     {
-        public Task<T> GetAsync<T>(string key) { keys.TryAdd(key, 0); return inner.GetAsync<T>(key); }
+        public Task<T> GetAsync<T>(string key)
+        {
+            keys.TryAdd(key, 0);
+            return inner.GetAsync<T>(key);
+        }
+
         public Task<bool> SetAsync<T>(string key, T value, TimeSpan? expiry = null) => inner.SetAsync(key, value, expiry);
         public Task<bool> RemoveAsync(string key) => inner.RemoveAsync(key);
+        public Task<long> RemoveManyAsync(IEnumerable<string> cacheKeys) => inner.RemoveManyAsync(cacheKeys);
         public Task<bool> ExistsAsync(string key) => inner.ExistsAsync(key);
         public Task<T> GetOrSetAsync<T>(string key, Func<Task<T>> factory, TimeSpan? expiry = null) => inner.GetOrSetAsync(key, factory, expiry);
     }

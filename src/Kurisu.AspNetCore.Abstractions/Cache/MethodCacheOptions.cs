@@ -5,10 +5,11 @@ public sealed class MethodCacheOptions
     /// <summary>必须为应用及环境设置独立前缀，例如 shop:production。</summary>
     public string KeyPrefix { get; set; } = "kurisu:method-cache";
 
-    public IDictionary<string, MethodCachePolicy> Policies { get; } = new Dictionary<string, MethodCachePolicy>(StringComparer.Ordinal)
-    {
-        ["Default"] = new()
-    };
+    /// <summary>兜底策略，未指定策略名称或名称未命中时使用。</summary>
+    public MethodCachePolicy Default { get; set; } = new();
+
+    /// <summary>命名策略集合，按名称匹配；没有保留名称。</summary>
+    public IDictionary<string, MethodCachePolicy> Policies { get; } = new Dictionary<string, MethodCachePolicy>(StringComparer.Ordinal);
 }
 
 /// <summary>方法查询缓存策略，控制缓存版本、有效期和加载超时。</summary>
@@ -35,5 +36,4 @@ public sealed class MethodCachePolicy
     /// <summary>业务查询的协作取消时限，默认 30 秒。通过替换查询方法的 CancellationToken 参数传递取消信号。</summary>
     /// <remarks>必须大于零且不超过 int.MaxValue 毫秒。方法没有取消参数或不响应取消时仍等待其完成，不提前释放锁；检测到超时后不回填缓存。</remarks>
     public TimeSpan QueryTimeout { get; set; } = TimeSpan.FromSeconds(30);
-
 }

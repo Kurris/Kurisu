@@ -1,3 +1,4 @@
+using Kurisu.AspNetCore.Abstractions.DistributedLock.Impl;
 using System.Collections;
 using Kurisu.Expressions;
 using System.Collections.Concurrent;
@@ -239,9 +240,10 @@ internal sealed class MethodCacheExecutor(
 
     public async Task EvictAsync(AspectContext context, AspectDelegate next, CacheEvictAttribute attribute)
     {
-        if ((attribute.Key == null) == (attribute.Keys == null))
-            throw new ArgumentException("CacheEvict 必须且只能指定 Key 或 Keys。");
+        if (attribute.Key != null && attribute.Keys != null)
+            throw new ArgumentException("CacheEvict 不能同时指定 Key 和 Keys。");
         var token = context.Parameters.OfType<CancellationToken>().FirstOrDefault();
+        token.ThrowIfCancellationRequested();
         var expressionMethod = context.ServiceMethod;
         if (attribute.Condition != null && !await expressions.EvaluateAsync<bool>(expressionMethod, attribute.Condition, context.Parameters, token))
         {
@@ -251,53 +253,99 @@ internal sealed class MethodCacheExecutor(
 
         var policy = GetPolicy(attribute.Policy);
         var scope = GetScope(context);
-        var value = await expressions.EvaluateAsync<object>(expressionMethod,
-            attribute.Key ?? attribute.Keys, context.Parameters, token);
-        var values = attribute.Keys == null ? new[] { value }
-            : value is IEnumerable sequence && value is not string ? sequence.Cast<object>()
-            : throw new ArgumentException("CacheEvict.Keys 必须返回集合。");
         // 执行前物化并去重，避免 Save 回填 ID 或修改集合后删除错误的 Key。
-        var cacheKeys = values.Select(v => keys.Generate(attribute.Region, v, policy, scope)).Distinct(StringComparer.Ordinal).ToArray();
-        var registry = context.ServiceProvider.GetService<ITransactionCallbackRegistry>();
-        await next(context);
-        if (cacheKeys.Length == 0) return;
+        string[] cacheKeys;
+        if (attribute.Key == null && attribute.Keys == null)
+        {
+            cacheKeys = [keys.Generate(context, attribute.Region, policy, scope)];
+        }
+        else
+        {
+            var value = await expressions.EvaluateAsync<object>(expressionMethod,
+                attribute.Key ?? attribute.Keys, context.Parameters, token);
+            var values = attribute.Keys == null ? new[] { value }
+                : value is IEnumerable sequence && value is not string ? sequence.Cast<object>()
+                : throw new ArgumentException("CacheEvict.Keys 必须返回集合。");
+            cacheKeys = values.Select(v => keys.Generate(attribute.Region, v, policy, scope)).Distinct(StringComparer.Ordinal).ToArray();
+        }
 
-        if (registry != null) await registry.RegisterAfterCommitAsync(() => RemoveAllAsync(cacheKeys));
-        else await RemoveAllAsync(cacheKeys);
+        if (cacheKeys.Length == 0)
+        {
+            await next(context);
+            return;
+        }
+
+        var handles = new Stack<ILockHandler>();
+        try
+        {
+            await AcquireEvictionLocksAsync(cacheKeys, policy, handles, token);
+            await next(context);
+            await RemoveAllAsync(cacheKeys);
+        }
+        finally
+        {
+            while (handles.TryPop(out var handle)) await ReleaseDistributedLockAsync(handle);
+        }
+    }
+
+    // 使用与查询加载相同的锁，全部获取后才进入业务；调用方负责逆序释放，包括部分获取失败。
+    private async Task AcquireEvictionLocksAsync(string[] cacheKeys, MethodCachePolicy policy,
+        Stack<ILockHandler> handles, CancellationToken callerToken)
+    {
+        using var waiting = CancellationTokenSource.CreateLinkedTokenSource(callerToken);
+        waiting.CancelAfter(policy.LockWaitTimeout);
+        try
+        {
+            foreach (var key in cacheKeys.OrderBy(k => k, StringComparer.Ordinal))
+            {
+                while (true)
+                {
+                    waiting.Token.ThrowIfCancellationRequested();
+                    var handle = await AcquireDistributedLockAsync(key, policy.LockExpiry, waiting.Token);
+                    if (handle.Acquired)
+                    {
+                        handles.Push(handle);
+                        break;
+                    }
+
+                    await ReleaseDistributedLockAsync(handle);
+                    await Task.Delay(policy.LockPollInterval, waiting.Token);
+                }
+            }
+        }
+        catch (OperationCanceledException ex) when (!callerToken.IsCancellationRequested && waiting.IsCancellationRequested)
+        {
+            throw new TimeoutException("等待缓存更新锁超时。", ex);
+        }
     }
 
     private async Task RemoveAllAsync(string[] cacheKeys)
     {
-        foreach (var key in cacheKeys) await RemoveAsync(key);
-    }
-
-    private async Task RemoveAsync(string key)
-    {
         try
         {
-            await cache.RemoveAsync(key); // false 也可能仅表示 Key 已不存在。
+            await cache.RemoveManyAsync(cacheKeys); // 删除数量较少也可能仅表示部分 Key 已不存在。
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "方法缓存提交后失效失败，缓存将依赖 TTL 过期。");
+            logger.LogError(ex, "方法缓存失效失败，缓存将依赖 TTL 过期。");
             throw;
         }
     }
 
     private MethodCachePolicy GetPolicy(string name)
     {
-        if (string.IsNullOrWhiteSpace(name) || !options.Value.Policies.TryGetValue(name, out var policy))
-            throw new InvalidOperationException($"未配置方法缓存策略 '{name}'。");
-        return policy;
+        var settings = options.Value;
+        return !string.IsNullOrWhiteSpace(name) && settings.Policies.TryGetValue(name, out var policy)
+            ? policy
+            : settings.Default;
     }
 
     private static MethodCacheScope GetScope(AspectContext context)
     {
         var scope = new MethodCacheScope();
         var user = context.ServiceProvider.GetService<ICurrentUser>();
-        var tenant = context.ServiceProvider.GetService<ICurrentTenant>() ?? user;
         var databaseTenant = context.ServiceProvider.GetService<IDbTenantAccessor>();
-        scope.Dimensions["tenant"] = databaseTenant != null ? databaseTenant.GetTenantId() : tenant?.GetTenantId();
+        scope.Dimensions["tenant"] = databaseTenant?.GetTenantId();
         foreach (var contributor in context.ServiceProvider.GetServices<IMethodCacheScopeContributor>())
             contributor.Contribute(scope);
         return scope;

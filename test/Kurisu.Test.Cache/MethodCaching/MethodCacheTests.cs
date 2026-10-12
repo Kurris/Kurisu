@@ -32,7 +32,7 @@ public class MethodCacheTests
         if (transactions != null) services.AddSingleton<ITransactionCallbackRegistry>(transactions);
         services.AddMethodCaching(o =>
         {
-            var policy = o.Policies["Default"];
+            var policy = o.Default;
             policy.LockPollInterval = TimeSpan.FromMilliseconds(5);
             configure?.Invoke(policy);
         });
@@ -63,7 +63,15 @@ public class MethodCacheTests
         var locks = new TestLocks();
         var entered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-        var work = new QueryWork { Handler = async (_, token) => { entered.TrySetResult(); await release.Task.WaitAsync(token); return "loaded"; } };
+        var work = new QueryWork
+        {
+            Handler = async (_, token) =>
+            {
+                entered.TrySetResult();
+                await release.Task.WaitAsync(token);
+                return "loaded";
+            }
+        };
         using var first = Build(cache, locks, work);
         using var second = Build(cache, locks, work);
         var leader = first.GetRequiredService<IQueryService>().GetAsync(1);
@@ -81,7 +89,19 @@ public class MethodCacheTests
     {
         var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         var entered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-        var work = new QueryWork { Handler = async (id, token) => { if (id == 1) { entered.SetResult(); await release.Task.WaitAsync(token); } return id.ToString(); } };
+        var work = new QueryWork
+        {
+            Handler = async (id, token) =>
+            {
+                if (id == 1)
+                {
+                    entered.SetResult();
+                    await release.Task.WaitAsync(token);
+                }
+
+                return id.ToString();
+            }
+        };
         using var provider = Build(new TestCache(), new TestLocks(), work);
         var service = provider.GetRequiredService<IQueryService>();
         var first = service.GetAsync(1);
@@ -92,7 +112,7 @@ public class MethodCacheTests
     }
 
     [Fact]
-    public async Task TenantAndMethodAndCanonicalParameters_ArePartOfKey()
+    public async Task TenantAndExplicitParameters_ArePartOfKey_WhileMethodsShareRegion()
     {
         var cache = new TestCache();
         var locks = new TestLocks();
@@ -108,7 +128,7 @@ public class MethodCacheTests
         await service.SearchAsync(new() { ["y"] = 2, ["x"] = 1 }, cts.Token);
         Assert.Equal(3, work.Calls);
         await service.OtherSearchAsync(new() { ["x"] = 1, ["y"] = 2 });
-        Assert.Equal(4, work.Calls);
+        Assert.Equal(3, work.Calls);
     }
 
     [Fact]
@@ -132,10 +152,7 @@ public class MethodCacheTests
         var cache = new TestCache();
         var locks = new TestLocks { BlockAll = true };
         var work = new QueryWork();
-        using var provider = Build(cache, locks, work, p =>
-        {
-            p.LockWaitTimeout = TimeSpan.FromMilliseconds(40);
-        });
+        using var provider = Build(cache, locks, work, p => { p.LockWaitTimeout = TimeSpan.FromMilliseconds(40); });
         var service = provider.GetRequiredService<IQueryService>();
         await Assert.ThrowsAsync<TimeoutException>(() => service.GetAsync(1));
         Assert.Equal(0, work.Calls);
@@ -166,7 +183,14 @@ public class MethodCacheTests
     {
         var cache = new TestCache();
         var locks = new TestLocks();
-        var work = new QueryWork { Handler = async (_, token) => { await Task.Delay(Timeout.Infinite, token); return "unused"; } };
+        var work = new QueryWork
+        {
+            Handler = async (_, token) =>
+            {
+                await Task.Delay(Timeout.Infinite, token);
+                return "unused";
+            }
+        };
         using var provider = Build(cache, locks, work, p =>
         {
             p.LockWaitTimeout = TimeSpan.FromMilliseconds(20);
@@ -213,7 +237,7 @@ public class MethodCacheTests
     }
 
     [Fact]
-    public async Task Eviction_WaitsForCommit_RollbackKeepsCache_AndTransactionsBypassCache()
+    public async Task Eviction_IsImmediate_WhileTransactionsStillBypassQueryCache()
     {
         var cache = new TestCache();
         var tx = new TestTransactions();
@@ -225,17 +249,18 @@ public class MethodCacheTests
         await service.GetAsync(1);
         Assert.Equal(2, work.Calls);
         await service.UpdateAsync(1);
-        Assert.Single(cache.Data);
+        Assert.Empty(cache.Data);
+        Assert.Equal(0, tx.Registrations);
         tx.Rollback();
         await service.GetAsync(1);
-        Assert.Equal(2, work.Calls);
+        Assert.Equal(3, work.Calls);
         tx.HasActiveTransaction = true;
         await service.UpdateAsync(1);
-        Assert.Single(cache.Data);
+        Assert.Empty(cache.Data);
         await tx.CommitAsync();
         Assert.Empty(cache.Data);
         await service.GetAsync(1);
-        Assert.Equal(3, work.Calls);
+        Assert.Equal(4, work.Calls);
         await service.UpdateAsync(1);
         Assert.Empty(cache.Data);
     }
@@ -327,7 +352,14 @@ public class MethodCacheTests
     {
         var locks = new TestLocks();
         var cache = new TestCache();
-        var work = new QueryWork { Handler = (_, _) => { locks.LostOwnership = true; return Task.FromResult<string?>("loaded"); } };
+        var work = new QueryWork
+        {
+            Handler = (_, _) =>
+            {
+                locks.LostOwnership = true;
+                return Task.FromResult<string?>("loaded");
+            }
+        };
         using var provider = Build(cache, locks, work);
         Assert.Equal("loaded", await provider.GetRequiredService<IQueryService>().GetAsync(1));
         Assert.Empty(cache.Data);
@@ -442,6 +474,7 @@ public class MethodCacheTests
         cache.VerifyNoOtherCalls();
         locks.VerifyNoOtherCalls();
     }
+
     [Fact]
     public async Task ExpressionEviction_UsesDtoIdBeforeSaveMutation()
     {
@@ -454,8 +487,8 @@ public class MethodCacheTests
         var input = new SaveInput { Id = 1 };
         await service.SaveAsync(input);
         Assert.Equal(101, input.Id);
-        Assert.Single(cache.Data);
-        Assert.Equal(1, tx.Registrations);
+        Assert.Empty(cache.Data);
+        Assert.Equal(0, tx.Registrations);
         await tx.CommitAsync();
         Assert.Empty(cache.Data);
     }
@@ -474,7 +507,7 @@ public class MethodCacheTests
     }
 
     [Fact]
-    public async Task BatchSave_CapturesDistinctKeysAndRegistersOneCommitCallback()
+    public async Task BatchSave_CapturesDistinctKeysAndImmediatelyDeletesOneBatch()
     {
         var cache = new TestCache();
         var tx = new TestTransactions();
@@ -485,11 +518,14 @@ public class MethodCacheTests
         await service.GetAsync(3);
         tx.HasActiveTransaction = true;
         await service.SaveBatchAsync([new() { Id = 1 }, new() { Id = 1 }, new() { Id = 2 }, new()]);
-        Assert.Equal(1, tx.Registrations);
-        Assert.Equal(3, cache.Data.Count);
+        Assert.Equal(0, tx.Registrations);
+        Assert.Single(cache.Data);
+        Assert.Equal(1, cache.BatchRemoves);
         await tx.CommitAsync();
         Assert.Single(cache.Data);
         Assert.Equal(2, cache.Removes);
+        Assert.Equal(1, cache.BatchRemoves);
+        Assert.Equal(0, cache.SingleRemoves);
     }
 
     [Fact]
@@ -516,7 +552,6 @@ public class MethodCacheTests
         Assert.Equal(0, work.Calls);
         cache.VerifyNoOtherCalls();
     }
-
 }
 
 public interface IQueryService
@@ -524,27 +559,39 @@ public interface IQueryService
     [CheckAccess]
     [Cacheable("detail", Key = "id")]
     Task<string?> GetAsync(int id, CancellationToken cancellationToken = default);
+
     [CacheEvict("detail", Key = "id")]
     Task UpdateAsync(int id);
+
     [CacheEvict("detail", Key = "input.Id", Condition = "input.Id > 0")]
     Task SaveAsync(SaveInput input);
+
     [CacheEvict("detail", Keys = "inputs.Where(x => x.Id > 0).Select(x => x.Id)")]
     Task SaveBatchAsync(List<SaveInput> inputs);
+
     [Cacheable("detail", Key = "id.Unknown")]
     Task<string?> BadExpressionAsync(int id);
-    [Cacheable("search")]
+
+    [Cacheable("search", Key = "$\"{input[\"x\"]}:{input[\"y\"]}\"")]
     Task<string?> SearchAsync(Dictionary<string, int> input, CancellationToken cancellationToken = default);
-    [Cacheable("search")]
+
+    [Cacheable("search", Key = "$\"{input[\"x\"]}:{input[\"y\"]}\"")]
     Task<string?> OtherSearchAsync(Dictionary<string, int> input);
+
     [Cacheable("invalid")]
     string Invalid();
-    [Cacheable("zero")]
+
+    [Cacheable("zero", Key = "\"value\"")]
     Task<int> ZeroAsync();
+
     Task<string?> ImplementationAsync();
+
     [Cacheable("page")]
     Task<Pagination<string>> PageAsync();
+
     [Cacheable("page")]
     Task<Pagination> UntypedPageAsync();
+
     [Cacheable("page")]
     Task<DerivedPagination> DerivedPageAsync();
 }
@@ -555,13 +602,16 @@ public sealed class SaveInput
     public bool Fail { get; set; }
 }
 
-public class DerivedPagination : Pagination<string> { }
+public class DerivedPagination : Pagination<string>
+{
+}
 
 public class QueryWork
 {
     public int Calls;
     public bool Denied;
     public Func<int, CancellationToken, Task<string?>> Handler = (id, _) => Task.FromResult(id == 0 ? null : id.ToString());
+
     public Task<string?> Run(int id, CancellationToken token)
     {
         Interlocked.Increment(ref Calls);
@@ -572,29 +622,53 @@ public class QueryWork
 public class QueryService(QueryWork work) : IQueryService
 {
     public Task<string?> GetAsync(int id, CancellationToken cancellationToken = default) => work.Run(id, cancellationToken);
+
     public Task SaveAsync(SaveInput input)
     {
         if (input.Fail) throw new InvalidOperationException("save failed");
         input.Id += 100;
         return Task.CompletedTask;
     }
+
     public Task SaveBatchAsync(List<SaveInput> inputs)
     {
         foreach (var input in inputs) input.Id += 100;
         inputs.Clear();
         return Task.CompletedTask;
     }
+
     public Task<string?> BadExpressionAsync(int id) => work.Run(id, default);
     public Task UpdateAsync(int id) => Task.CompletedTask;
     public Task<string?> SearchAsync(Dictionary<string, int> input, CancellationToken cancellationToken = default) => work.Run(1, cancellationToken);
     public Task<string?> OtherSearchAsync(Dictionary<string, int> input) => work.Run(1, default);
     public string Invalid() => "invalid";
-    public Task<int> ZeroAsync() { Interlocked.Increment(ref work.Calls); return Task.FromResult(0); }
-    [Cacheable("implementation")]
+
+    public Task<int> ZeroAsync()
+    {
+        Interlocked.Increment(ref work.Calls);
+        return Task.FromResult(0);
+    }
+
+    [Cacheable("implementation", Key = "\"value\"")]
     public Task<string?> ImplementationAsync() => work.Run(1, default);
-    public Task<Pagination<string>> PageAsync() { Interlocked.Increment(ref work.Calls); return Task.FromResult(new Pagination<string>()); }
-    public Task<Pagination> UntypedPageAsync() { Interlocked.Increment(ref work.Calls); return Task.FromResult(new Pagination()); }
-    public Task<DerivedPagination> DerivedPageAsync() { Interlocked.Increment(ref work.Calls); return Task.FromResult(new DerivedPagination()); }
+
+    public Task<Pagination<string>> PageAsync()
+    {
+        Interlocked.Increment(ref work.Calls);
+        return Task.FromResult(new Pagination<string>());
+    }
+
+    public Task<Pagination> UntypedPageAsync()
+    {
+        Interlocked.Increment(ref work.Calls);
+        return Task.FromResult(new Pagination());
+    }
+
+    public Task<DerivedPagination> DerivedPageAsync()
+    {
+        Interlocked.Increment(ref work.Calls);
+        return Task.FromResult(new DerivedPagination());
+    }
 }
 
 public class CheckAccessAttribute : Kurisu.AspNetCore.Abstractions.Aop.AopAttribute
@@ -617,6 +691,7 @@ internal sealed class TestTransactions : ITransactionCallbackRegistry
     public bool HasActiveTransaction { get; set; }
     public int Registrations;
     private readonly List<Func<Task>> _callbacks = [];
+
     public Task RegisterAfterCommitAsync(Func<Task> callback)
     {
         Registrations++;
@@ -624,13 +699,19 @@ internal sealed class TestTransactions : ITransactionCallbackRegistry
         _callbacks.Add(callback);
         return Task.CompletedTask;
     }
+
     public async Task CommitAsync()
     {
         HasActiveTransaction = false;
         foreach (var callback in _callbacks) await callback();
         _callbacks.Clear();
     }
-    public void Rollback() { HasActiveTransaction = false; _callbacks.Clear(); }
+
+    public void Rollback()
+    {
+        HasActiveTransaction = false;
+        _callbacks.Clear();
+    }
 }
 
 internal sealed class TestCache : ICache
@@ -641,11 +722,13 @@ internal sealed class TestCache : ICache
     private int _readCount;
     public bool FailWrite;
     public TimeSpan? LastExpiry;
+
     public Task<T> GetAsync<T>(string key)
     {
         if (Interlocked.Increment(ref _readCount) == FailOnRead || FailRead) throw new IOException("cache unavailable");
         return Task.FromResult(Data.TryGetValue(key, out var json) ? JsonConvert.DeserializeObject<T>(json)! : default!);
     }
+
     public Task<bool> SetAsync<T>(string key, T value, TimeSpan? expiry = null)
     {
         if (FailWrite) throw new IOException("cache unavailable");
@@ -653,8 +736,33 @@ internal sealed class TestCache : ICache
         Data[key] = JsonConvert.SerializeObject(value);
         return Task.FromResult(true);
     }
+
     public int Removes;
-    public Task<bool> RemoveAsync(string key) { Removes++; return Task.FromResult(Data.TryRemove(key, out _)); }
+    public int SingleRemoves;
+    public int BatchRemoves;
+    public Action? OnBatchRemove;
+
+    public Task<long> RemoveManyAsync(IEnumerable<string> keys)
+    {
+        BatchRemoves++;
+        OnBatchRemove?.Invoke();
+        long removed = 0;
+        foreach (var key in keys.Distinct(StringComparer.Ordinal))
+        {
+            Removes++;
+            if (Data.TryRemove(key, out _)) removed++;
+        }
+
+        return Task.FromResult(removed);
+    }
+
+    public Task<bool> RemoveAsync(string key)
+    {
+        SingleRemoves++;
+        Removes++;
+        return Task.FromResult(Data.TryRemove(key, out _));
+    }
+
     public Task<bool> ExistsAsync(string key) => Task.FromResult(Data.ContainsKey(key));
     public Task<T> GetOrSetAsync<T>(string key, Func<Task<T>> factory, TimeSpan? expiry = null) => throw new NotSupportedException();
 }
@@ -668,21 +776,34 @@ internal sealed class TestLocks : ILockable
     public bool LostOwnership;
     public Action<string>? OnAcquired;
     public int Held;
+
     public async Task<ILockHandler> LockAsync(string lockKey, DistributedLockAcquisitionOptions options, CancellationToken cancellationToken = default)
     {
         if (Fail) throw new IOException("lock unavailable");
         var gate = _gates.GetOrAdd(lockKey, _ => new SemaphoreSlim(1));
         var acquired = !BlockAll && await gate.WaitAsync(0, cancellationToken);
-        if (acquired) { Interlocked.Increment(ref Held); OnAcquired?.Invoke(lockKey); }
+        if (acquired)
+        {
+            Interlocked.Increment(ref Held);
+            OnAcquired?.Invoke(lockKey);
+        }
         else Contended.TrySetResult();
+
         return new Handle(this, gate, acquired);
     }
+
     private sealed class Handle(TestLocks owner, SemaphoreSlim gate, bool acquired) : ILockHandler
     {
         public bool Acquired => acquired && !owner.LostOwnership;
+
         public ValueTask DisposeAsync()
         {
-            if (acquired) { Interlocked.Decrement(ref owner.Held); gate.Release(); }
+            if (acquired)
+            {
+                Interlocked.Decrement(ref owner.Held);
+                gate.Release();
+            }
+
             return ValueTask.CompletedTask;
         }
     }

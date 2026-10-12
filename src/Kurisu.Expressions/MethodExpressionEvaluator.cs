@@ -16,20 +16,23 @@ public sealed class MethodExpressionEvaluator(ExpressionCompiler compiler)
     /// <param name="arguments">本次调用的参数值。</param>
     /// <param name="cancellationToken">取消本次等待。</param>
     /// <returns>表达式结果。</returns>
-    public async Task<TResult> EvaluateAsync<TResult>(MethodInfo method, string expression, object?[] arguments,
-        CancellationToken cancellationToken = default)
+    public async Task<TResult> EvaluateAsync<TResult>(MethodInfo method, string expression, object?[] arguments, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
         var key = (method, expression, typeof(TResult));
         var entry = _compiled.GetOrAdd(key, _ => new Lazy<Task<Delegate>>(() => CompileAsync<TResult>(method, expression)));
         var task = entry.Value;
         Delegate evaluate;
-        try { evaluate = await task.WaitAsync(cancellationToken).ConfigureAwait(false); }
+        try
+        {
+            evaluate = await task.WaitAsync(cancellationToken).ConfigureAwait(false);
+        }
         catch when (task.IsFaulted)
         {
             ((ICollection<KeyValuePair<(MethodInfo, string, Type), Lazy<Task<Delegate>>>>)_compiled).Remove(new(key, entry));
             throw;
         }
+
         return ((Func<object?[], TResult>)evaluate)(arguments);
     }
 

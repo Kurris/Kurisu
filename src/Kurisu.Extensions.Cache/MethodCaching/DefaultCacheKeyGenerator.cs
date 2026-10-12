@@ -1,11 +1,8 @@
 using System.Globalization;
-using System.Security.Cryptography;
 using System.Text;
 using AspectCore.DynamicProxy;
 using Kurisu.AspNetCore.Abstractions.Cache;
 using Microsoft.Extensions.Options;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 
 namespace Kurisu.Extensions.Cache.MethodCaching;
 
@@ -19,43 +16,34 @@ public sealed class DefaultCacheKeyGenerator(IOptions<MethodCacheOptions> option
 
         if (parameters.Any(p => p.ParameterType.IsByRef)) throw new NotSupportedException("方法缓存不支持 ref/out 参数。");
 
-        var indices = Enumerable.Range(0, parameters.Length)
-            .Where(i => parameters[i].ParameterType != typeof(CancellationToken));
-        return GenerateCore(region, $"{method.DeclaringType?.FullName}:{method}",
-            indices.Select(i => new { Type = parameters[i].ParameterType.FullName, Value = context.Parameters[i] }).ToArray(), policy, scope);
+        if (context.Parameters.Length == 0)
+            throw new ArgumentException("未指定缓存 Key 时必须提供首参数；无参数方法请显式指定 Key 表达式。");
+        return Generate(region, context.Parameters[0], policy, scope);
     }
+
+    private static string ToKeyString(object value, string description) => value switch
+    {
+        string text => text,
+        int or long => Convert.ToString(value, CultureInfo.InvariantCulture),
+        _ => throw new ArgumentException($"{description} 必须为 string、int 或 long，当前类型为 {value?.GetType().FullName ?? "null"}。请显式选择或转换业务 Key。")
+    };
 
     public string Generate(string region, object value, MethodCachePolicy policy, MethodCacheScope scope)
-        => GenerateCore(region, null, new[] { new { Type = value?.GetType().FullName, Value = value } }, policy, scope);
-
-    private string GenerateCore(string region, string method, object arguments, MethodCachePolicy policy, MethodCacheScope scope)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(region);
-        var key = new
+        var businessKey = ToKeyString(value, "缓存 Key");
+        var key = new StringBuilder(options.Value.KeyPrefix).Append(":data:s:").Append(Uri.EscapeDataString(region))
+            .Append(':').Append(Uri.EscapeDataString(policy.Version)).Append(":scope:")
+            .Append(scope.Dimensions.Count.ToString(CultureInfo.InvariantCulture));
+        foreach (var dimension in scope.Dimensions)
         {
-            options.Value.KeyPrefix,
-            Region = region,
-            policy.Version,
-            Scope = scope.Dimensions,
-            Method = method,
-            Arguments = arguments
-        };
+            key.Append(':').Append(Uri.EscapeDataString(dimension.Key));
+            // 没有等号表示 null，有等号且没有值表示空字符串。
+            if (dimension.Value != null)
+                key.Append('=').Append(Uri.EscapeDataString(ToKeyString(dimension.Value, $"缓存上下文 '{dimension.Key}'")));
+        }
 
-        var serializer = JsonSerializer.Create(new JsonSerializerSettings
-        {
-            Culture = CultureInfo.InvariantCulture,
-            TypeNameHandling = TypeNameHandling.None,
-            ReferenceLoopHandling = ReferenceLoopHandling.Error
-        });
-        var json = Canonicalize(JToken.FromObject(key, serializer)).ToString(Formatting.None);
-        return $"{options.Value.KeyPrefix}:data:{Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(json)))}";
+        key.Append(":key:").Append(Uri.EscapeDataString(businessKey));
+        return key.ToString();
     }
-
-    private static JToken Canonicalize(JToken token) => token switch
-    {
-        JObject obj => new JObject(obj.Properties().OrderBy(p => p.Name, StringComparer.Ordinal)
-            .Select(p => new JProperty(p.Name, Canonicalize(p.Value)))),
-        JArray array => new JArray(array.Select(Canonicalize)),
-        _ => token.DeepClone()
-    };
 }

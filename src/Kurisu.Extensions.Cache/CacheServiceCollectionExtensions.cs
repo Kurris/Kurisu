@@ -16,7 +16,6 @@ namespace Kurisu.Extensions.Cache;
 /// </summary>
 public static class CacheServiceCollectionExtensions
 {
-
     /// <summary>
     /// 添加redis服务
     /// </summary>
@@ -26,6 +25,7 @@ public static class CacheServiceCollectionExtensions
     /// <returns></returns>
     public static IServiceCollection AddRedis(this IServiceCollection services, TextWriter log = null, bool isSentinel = false)
     {
+        services.AddDistributedLockOptions();
         services.AddSingleton<IConnectionMultiplexer>(sp =>
         {
             var redisOptions = sp.GetRequiredService<IOptions<RedisOptions>>().Value;

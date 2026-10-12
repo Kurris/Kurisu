@@ -56,6 +56,25 @@ public partial class RedisCache : ICache, IDisposable
         return await _db.KeyDeleteAsync(key);
     }
 
+    /// <summary>批量删除；单机一次提交，Cluster 按槽分组并发提交，返回实际删除条目数。</summary>
+    public async Task<long> RemoveManyAsync(IEnumerable<string> keys)
+    {
+        ArgumentNullException.ThrowIfNull(keys);
+        var distinctKeys = keys.Distinct(StringComparer.Ordinal).ToArray();
+        foreach (var key in distinctKeys) ArgumentException.ThrowIfNullOrWhiteSpace(key);
+        if (distinctKeys.Length == 0) return 0;
+
+        var redisKeys = distinctKeys.Select(key => (RedisKey)key).ToArray();
+        if (_connectionMultiplexer.GetServers().All(server => server.ServerType != ServerType.Cluster))
+            return await _db.KeyDeleteAsync(redisKeys);
+
+        // 同槽批量删除；异步委托也将同步抛出的异常捕获到任务中，确保其他组仍会提交。
+        var tasks = redisKeys.GroupBy(key => _connectionMultiplexer.GetHashSlot(key))
+            .Select(async group => await _db.KeyDeleteAsync(group.ToArray()));
+        var removed = await Task.WhenAll(tasks);
+        return removed.Sum();
+    }
+
     public async Task<bool> ExistsAsync(string key)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(key);

@@ -2,6 +2,7 @@ using AspectCore.Extensions.DependencyInjection;
 using Kurisu.AspNetCore.Abstractions.DistributedLock;
 using Kurisu.AspNetCore.Abstractions.DistributedLock.Aop;
 using Kurisu.Expressions;
+using Kurisu.Extensions.Cache;
 using Kurisu.Test.Cache.MethodCaching;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
@@ -13,6 +14,7 @@ public class LockExpressionTests
     private static ServiceProvider Build(TestLocks locks)
     {
         var services = new ServiceCollection();
+        services.AddDistributedLockOptions();
         services.AddSingleton<ILockable>(locks);
         services.AddSingleton<ExpressionCompiler>();
         services.AddSingleton<MethodExpressionEvaluator>();
@@ -27,7 +29,11 @@ public class LockExpressionTests
         var locks = new TestLocks { OnAcquired = acquired.Add };
         using var provider = Build(locks);
         var service = provider.GetRequiredService<IExpressionLockService>();
-        await service.SingleAsync(new() { Id = 7 }, () => { Assert.Equal(1, locks.Held); return Task.CompletedTask; });
+        await service.SingleAsync(new() { Id = 7 }, () =>
+        {
+            Assert.Equal(1, locks.Held);
+            return Task.CompletedTask;
+        });
         Assert.Equal(new[] { "Locker:expression:7" }, acquired);
         Assert.Equal(0, locks.Held);
         acquired.Clear();
@@ -74,6 +80,7 @@ public interface IExpressionLockService
 {
     [TryLock("expression", "locked", Key = "input.Id")]
     Task SingleAsync(SaveInput input, Func<Task> work);
+
     [TryLock("expression", "locked", Keys = "inputs.Select(x => x.Id)")]
     Task BatchAsync(List<SaveInput> inputs);
 }

@@ -1,3 +1,4 @@
+using Kurisu.AspNetCore.Abstractions.DistributedLock.Impl;
 using AspectCore.Extensions.DependencyInjection;
 using Kurisu.AspNetCore.Abstractions.DistributedLock;
 using Kurisu.AspNetCore.Abstractions.DistributedLock.Aop;
@@ -86,8 +87,8 @@ public class RedisCacheAopIntegrationTests
         Assert.Equal(3, executionOrder.Count);
     }
 
-    [Fact(DisplayName = "[TryLockFixedExpiry]应使用固定过期模式")]
-    public async Task TryLockFixedExpiry_ShouldUseFixedExpiryMode()
+    [Fact(DisplayName = "[TryLock]禁用续期时应使用固定过期模式")]
+    public async Task TryLock_ShouldUseFixedExpiryMode_WhenAutoRenewalDisabled()
     {
         using var serviceProvider = BuildAopServiceProvider();
         var cache = serviceProvider.GetRequiredService<RedisCache>();
@@ -101,8 +102,8 @@ public class RedisCacheAopIntegrationTests
         Assert.False(await cache.KeyExistsAsync(expectedKey));
     }
 
-    [Fact(DisplayName = "[TryLockLimitedRenewals]应使用有限续期模式")]
-    public async Task TryLockLimitedRenewals_ShouldUseLimitedRenewalMode()
+    [Fact(DisplayName = "[TryLock]设置续期次数时应使用有限续期模式")]
+    public async Task TryLock_ShouldUseLimitedRenewalMode_WhenRenewalCountSpecified()
     {
         using var serviceProvider = BuildAopServiceProvider();
         var cache = serviceProvider.GetRequiredService<RedisCache>();
@@ -180,10 +181,10 @@ public interface ILockAopTestService
     [TryLock("test-scene", "操作失败", Key = "id")]
     Task ExecuteAsync(string id, Func<Task>? work = null);
 
-    [TryLockFixedExpiry("test-fixed", "操作失败", 3, Key = "id")]
+    [TryLock("test-fixed", "操作失败", ExpirySeconds = 3, MaxRenewalCount = LockRenewal.Disabled, Key = "id")]
     Task ExecuteFixedExpiryAsync(string id);
 
-    [TryLockLimitedRenewals("test-limited", "操作失败", 3, 2, Key = "id")]
+    [TryLock("test-limited", "操作失败", ExpirySeconds = 3, MaxRenewalCount = 2, Key = "id")]
     Task ExecuteLimitedRenewalAsync(string id);
 }
 

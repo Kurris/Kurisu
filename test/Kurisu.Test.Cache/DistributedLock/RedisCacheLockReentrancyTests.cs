@@ -1,3 +1,4 @@
+using Kurisu.AspNetCore.Abstractions.DistributedLock.Impl;
 using Kurisu.Extensions.Cache.Providers;
 using Kurisu.AspNetCore.Abstractions.DistributedLock;
 using Microsoft.Extensions.DependencyInjection;
@@ -29,8 +30,8 @@ public class RedisCacheLockReentrancyTests
             "有限续期",
             new Kurisu.AspNetCore.Abstractions.DistributedLock.DistributedLockAcquisitionOptions
             {
-                TimeModeHandler = Kurisu.AspNetCore.Abstractions.DistributedLock.LockTimeModeHandler.LimitedRenewal(TimeSpan.FromMilliseconds(1200), maxRenewalCount: 1),
-                RetryStrategy = new Kurisu.AspNetCore.Abstractions.DistributedLock.DefaultLockRetryStrategy(0)
+                TimeModeHandler = LockTimeModeHandler.LimitedRenewal(TimeSpan.FromMilliseconds(1200), maxRenewalCount: 1),
+                RetryStrategy = new DefaultLockRetryStrategy(0)
             },
             true
         ];
@@ -59,8 +60,8 @@ public class RedisCacheLockReentrancyTests
             "有限续期",
             new Kurisu.AspNetCore.Abstractions.DistributedLock.DistributedLockAcquisitionOptions
             {
-                TimeModeHandler = Kurisu.AspNetCore.Abstractions.DistributedLock.LockTimeModeHandler.LimitedRenewal(TimeSpan.FromMilliseconds(1200), maxRenewalCount: 1),
-                RetryStrategy = new Kurisu.AspNetCore.Abstractions.DistributedLock.DefaultLockRetryStrategy(0)
+                TimeModeHandler = LockTimeModeHandler.LimitedRenewal(TimeSpan.FromMilliseconds(1200), maxRenewalCount: 1),
+                RetryStrategy = new DefaultLockRetryStrategy(0)
             },
             true,
             true // 重入走时间戳快速路径，不再被配额阻断
